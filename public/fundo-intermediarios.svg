@@ -1,0 +1,58 @@
+<svg width="1600" height="1220" viewBox="0 0 1600 1220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&amp;display=swap');
+    </style>
+    <filter id="softShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="2" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.15"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1220" fill="#F0F2F5"/>
+  <path d="M0 0 H1600 V120 H80 V1220 H0 Z" fill="#000000"/>
+
+  <g fill="#FFFFFF" opacity="0.10">
+    <rect x="750" y="32" width="200" height="55" rx="8"/>
+    <rect x="980" y="32" width="200" height="55" rx="8"/>
+    <rect x="1210" y="32" width="200" height="55" rx="8"/>
+  </g>
+  <g transform="translate(1520, 60) scale(1.5)">
+    <polygon points="0,-50 11.2,-15.5 47.6,-15.5 18.2,5.9 29.4,40.5 0,19.1 -29.4,40.5 -18.2,5.9 -47.6,-15.5 -11.2,-15.5" fill="#FFFFFF" opacity="0.10"/>
+  </g>
+  <rect x="720" y="40" width="2" height="40" fill="#333333"/>
+
+  <rect x="110" y="150" width="240" height="240" rx="10" fill="#FFFFFF" filter="url(#softShadow)"/>
+  <rect x="110" y="150" width="6" height="240" rx="0" fill="#000000" opacity="0.8"/>
+  <text x="230" y="275" font-family="'Montserrat', sans-serif" font-weight="700" font-size="14" fill="#CCCCCC" text-anchor="middle">FOTO</text>
+
+  <text x="840" y="270" font-family="'Montserrat', sans-serif" font-weight="700" font-size="48" fill="#333333" text-anchor="middle" letter-spacing="-1">NOME DO INTERMEDIÁRIO</text>
+    <text x="840" y="300" font-family="'Montserrat', sans-serif" font-weight="400" font-size="18" fill="#666666" text-anchor="middle">ID: #123456</text>
+
+
+  <rect x="1210" y="150" width="360" height="240" rx="10" fill="#FFFFFF" filter="url(#softShadow)"/>
+  <rect x="1210" y="150" width="6" height="240" rx="0" fill="#000000" opacity="0.8"/>
+   <text x="1390" y="275" font-family="'Montserrat', sans-serif" font-weight="600" font-size="14" fill="#666666" text-anchor="middle" letter-spacing="0.5">VALOR TOTAL</text>
+   <rect x="110" y="430" width="335" height="140" rx="10" fill="#FFFFFF" filter="url(#softShadow)"/>
+  <rect x="110" y="430" width="6" height="140" rx="0" fill="#000000" opacity="0.8"/>
+  <text x="140" y="460" font-family="'Montserrat', sans-serif" font-weight="600" font-size="14" fill="#666666" letter-spacing="0.5">VALORES PAGOS</text>
+  <rect x="485" y="430" width="335" height="140" rx="10" fill="#FFFFFF" filter="url(#softShadow)"/>
+  <rect x="485" y="430" width="6" height="140" rx="0" fill="#000000" opacity="0.8"/>
+  <text x="515" y="460" font-family="'Montserrat', sans-serif" font-weight="600" font-size="14" fill="#666666" letter-spacing="0.5">VALORES EM ACORDO</text>
+  <rect x="860" y="430" width="335" height="140" rx="10" fill="#FFFFFF" filter="url(#softShadow)"/>
+  <rect x="860" y="430" width="6" height="140" rx="0" fill="#000000" opacity="0.8"/>
+  <text x="890" y="460" font-family="'Montserrat', sans-serif" font-weight="600" font-size="14" fill="#666666" letter-spacing="0.5">VALORES A PAGAR</text>
+  <rect x="1235" y="430" width="335" height="140" rx="10" fill="#FFFFFF" filter="url(#softShadow)"/>
+  <rect x="1235" y="430" width="6" height="140" rx="0" fill="#000000" opacity="0.8"/>
+  <text x="1265" y="460" font-family="'Montserrat', sans-serif" font-weight="600" font-size="14" fill="#666666" letter-spacing="0.5">VALORES EM ATRASO</text>
+  <rect x="110" y="610" width="1460" height="580" rx="10" fill="#FFFFFF" filter="url(#softShadow)"/>
+  <text x="140" y="640" font-family="'Montserrat', sans-serif" font-weight="700" font-size="16" fill="#333333" letter-spacing="0.3">DETALHAMENTO</text>
+
+</svg>

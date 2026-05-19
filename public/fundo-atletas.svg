@@ -1,0 +1,48 @@
+<svg width="1600" height="1895" viewBox="0 0 1600 1895" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <filter id="softShadowV5" x="-10%" y="-10%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/> 
+      <feOffset dx="4" dy="4" result="offsetblur"/> 
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/> 
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/> 
+        <feMergeNode in="SourceGraphic"/> 
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1895" fill="#F0F2F5"/>
+
+  <path d="M0 0 H1600 V120 H80 V1895 H0 Z" fill="#000000"/>
+
+  <g fill="#FFFFFF" opacity="0.10">
+      <rect x="750" y="32" width="200" height="55" rx="8"/>
+      <rect x="980" y="32" width="200" height="55" rx="8"/>
+      <rect x="1210" y="32" width="200" height="55" rx="8"/>
+  </g>
+
+  <g transform="translate(1520, 60) scale(1.5)">
+     <polygon points="0,-50 11.2,-15.5 47.6,-15.5 18.2,5.9 29.4,40.5 0,19.1 -29.4,40.5 -18.2,5.9 -47.6,-15.5 -11.2,-15.5" fill="#FFFFFF" opacity="0.10"/>
+  </g>
+
+  <rect x="720" y="40" width="2" height="40" fill="#333333"/>
+
+  <rect x="110" y="140" width="1460" height="70" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+
+  <rect x="110" y="230" width="240" height="395" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+  <text x="230" y="432" font-family="Segoe UI" font-size="12" fill="#E0E0E0" text-anchor="middle">FOTO</text>
+
+  <rect x="380" y="230" width="380" height="225" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+  <rect x="790" y="230" width="380" height="225" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+  <rect x="1200" y="230" width="370" height="225" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+
+  <rect x="380" y="475" width="1190" height="150" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+
+  <rect x="110" y="645" width="1460" height="600" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+
+  <rect x="110" y="1265" width="1460" height="600" rx="8" fill="#FFFFFF" filter="url(#softShadowV5)"/>
+
+</svg>
