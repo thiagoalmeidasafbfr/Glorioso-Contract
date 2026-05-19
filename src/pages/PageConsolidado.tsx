@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react'
 import { atletas, fmtData, fmtMi, type StatusContrato } from '../data/mockData'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
+import SheetIO from '../components/SheetIO'
+import { COLS_ATLETAS } from '../lib/xlsx-utils'
 
 const STATUS_OPTS: (StatusContrato | 'Todos')[] = ['Todos', 'Elenco', 'Emprestado', 'Rescindido']
 const POSICOES = ['Todos', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante']
@@ -109,7 +111,26 @@ export default function PageConsolidado() {
   return (
     <div style={{ padding: '12px 16px', maxWidth: 1600, margin: '0 auto', fontFamily: font }}>
 
-      <PageHero title="Consolidado" subtitle="VISÃO GERAL DO ELENCO" />
+      <PageHero title="Consolidado" subtitle="VISÃO GERAL DO ELENCO">
+        <SheetIO
+          exportFilename="consolidado-elenco.xlsx"
+          exportSheets={[{
+            name: 'Consolidado',
+            cols: [
+              ...COLS_ATLETAS.filter(c => ['id','nome','posicao','statusContrato','alocacao','inicioContrato','fimContrato',
+                'salarioCLT','direitoImagem','auxilioMoradiaM','auxilioAlimentacaoM','auxilioViagemA','outrosAuxiliosM'].includes(c.key)),
+              { key: 'totalMensal', header: 'Total Mensal' },
+              { key: 'custoAnual',  header: 'Custo Anual' },
+            ],
+            rows: atletas.map(a => ({
+              ...a,
+              totalMensal: a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM,
+              custoAnual: (a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM) * 12
+                + a.auxilioViagemA + (a.salarioCLT * 0.08 + a.salarioCLT / 3 + a.salarioCLT + a.salarioCLT * 0.05) * 12 / 12 * 12,
+            })) as unknown as Record<string, unknown>[],
+          }]}
+        />
+      </PageHero>
 
       {/* ── Filtros + Strip KPIs ── */}
       <div style={{

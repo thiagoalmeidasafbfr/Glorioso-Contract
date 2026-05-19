@@ -3,15 +3,24 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
 } from 'recharts'
 import {
-  atletas, pagamentosCertos, pagamentosCondicionais, acordos,
-  condicionaisSalario, passivosClube, passivosIntermediario,
+  atletas as atletasMock, pagamentosCertos as pagamentosCertosMock,
+  pagamentosCondicionais as pagamentosCondicionaisMock, acordos as acordosMock,
+  condicionaisSalario as condicionaisSalarioMock,
+  passivosClube, passivosIntermediario,
   parcelasDireitoImagem,
   fmtData, idade,
   statusColor, statusBg,
   type Atleta, type StatusContrato, type Alocacao,
+  type PagamentoCerto, type PagamentoCondicional, type Acordo, type CondicionalSalario,
 } from '../data/mockData'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
+import SheetIO from '../components/SheetIO'
+import {
+  COLS_ATLETAS, COLS_INTERMEDIARIOS_ATLETA, COLS_BICHOS,
+  COLS_PAGAMENTOS_CERTOS, COLS_PAGAMENTOS_CONDICIONAIS,
+  COLS_ACORDOS, COLS_CONDICIONAIS_SALARIO,
+} from '../lib/xlsx-utils'
 
 const STATUS_OPTS: (StatusContrato | 'Todos')[] = ['Todos', 'Elenco', 'Emprestado', 'Rescindido']
 const ALOC_OPTS: (Alocacao | 'Todos')[] = ['Todos', 'Profissional', 'Base']
@@ -144,9 +153,15 @@ const trH: React.CSSProperties = { height: 48 }
 export default function PageAtletas() {
   const { fmtMiC, fmtC, convert, t, openAtletaId, clearOpenAtleta } = useApp()
 
+  const [atletas, setAtletas] = useState<Atleta[]>(atletasMock)
+  const [pagamentosCertos, setPagamentosCertos] = useState<PagamentoCerto[]>(pagamentosCertosMock)
+  const [pagamentosCondicionais, setPagamentosCondicionais] = useState<PagamentoCondicional[]>(pagamentosCondicionaisMock)
+  const [acordos, setAcordos] = useState<Acordo[]>(acordosMock)
+  const [condicionaisSalario, setCondicionaisSalario] = useState<CondicionalSalario[]>(condicionaisSalarioMock)
+
   const [statusFiltro, setStatusFiltro] = useState<StatusContrato | 'Todos'>('Todos')
   const [alocacaoFiltro, setAlocacaoFiltro] = useState<Alocacao | 'Todos'>('Todos')
-  const [atletaId, setAtletaId] = useState(atletas[0].id)
+  const [atletaId, setAtletaId] = useState(atletasMock[0].id)
 
   useEffect(() => {
     if (openAtletaId !== null) {
@@ -219,7 +234,118 @@ export default function PageAtletas() {
   return (
     <div style={{ padding: '8px 12px', maxWidth: 1600, margin: '0 auto', fontFamily: font }}>
 
-      <PageHero title="Atletas" subtitle="GESTÃO DE CONTRATOS" />
+      <PageHero title="Atletas" subtitle="GESTÃO DE CONTRATOS">
+        <SheetIO
+          exportFilename="atletas.xlsx"
+          exportSheets={[
+            {
+              name: 'Atletas',
+              cols: COLS_ATLETAS,
+              rows: atletas.map(a => ({ ...a, intermediarios: undefined, bichos: undefined })) as unknown as Record<string, unknown>[],
+            },
+            {
+              name: 'Intermediarios_Atleta',
+              cols: COLS_INTERMEDIARIOS_ATLETA,
+              rows: atletas.flatMap(a => a.intermediarios.map(i => ({ atletaId: a.id, nome: i.nome, percVendaFutura: i.percVendaFutura }))),
+            },
+            {
+              name: 'Bichos',
+              cols: COLS_BICHOS,
+              rows: atletas.flatMap(a => a.bichos.map(b => ({ atletaId: a.id, competicao: b.competição, ano: b.ano, valor: b.valor }))),
+            },
+            { name: 'Pagamentos_Certos',        cols: COLS_PAGAMENTOS_CERTOS,       rows: pagamentosCertos as unknown as Record<string, unknown>[] },
+            { name: 'Pagamentos_Condicionais',   cols: COLS_PAGAMENTOS_CONDICIONAIS, rows: pagamentosCondicionais as unknown as Record<string, unknown>[] },
+            { name: 'Acordos',                   cols: COLS_ACORDOS,                 rows: acordos as unknown as Record<string, unknown>[] },
+            { name: 'Condicionais_Salario',      cols: COLS_CONDICIONAIS_SALARIO,    rows: condicionaisSalario as unknown as Record<string, unknown>[] },
+          ]}
+          onImport={sheets => {
+            const aRows = sheets['Atletas'] ?? []
+            const iRows = sheets['Intermediarios_Atleta'] ?? []
+            const bRows = sheets['Bichos'] ?? []
+            setAtletas(aRows.map((r, i) => ({
+              id: Number(r['ID']) || i + 1,
+              nome: r['Nome'] ?? '',
+              nomeCompleto: r['Nome Completo'] ?? '',
+              posicao: r['Posição'] ?? '',
+              dataNascimento: r['Data Nascimento'] ?? '',
+              paisNascimento: r['País Nascimento'] ?? '',
+              fotoArquivo: r['Foto Arquivo'] ?? '',
+              statusContrato: (r['Status Contrato'] as Atleta['statusContrato']) ?? 'Elenco',
+              alocacao: (r['Alocação'] as Atleta['alocacao']) ?? 'Profissional',
+              clubeAnterior: r['Clube Anterior'] ?? '',
+              percSAF: Number(r['% SAF']) || 100,
+              inicioContrato: r['Início Contrato'] ?? '',
+              fimContrato: r['Fim Contrato'] ?? '',
+              salarioCLT: Number(r['Salário CLT']) || 0,
+              direitoImagem: Number(r['Direito de Imagem']) || 0,
+              auxilioMoradiaM: Number(r['Auxílio Moradia (M)']) || 0,
+              auxilioAlimentacaoM: Number(r['Auxílio Alimentação (M)']) || 0,
+              auxilioViagemA: Number(r['Auxílio Viagem (A)']) || 0,
+              outrosAuxiliosM: Number(r['Outros Auxílios (M)']) || 0,
+              transferFeeTotal: Number(r['Transfer Fee Total']) || 0,
+              transferFeeQuitado: Number(r['Transfer Fee Quitado']) || 0,
+              transferFeePendente: Number(r['Transfer Fee Pendente']) || 0,
+              transferFeeAcordo: Number(r['Transfer Fee Acordo']) || 0,
+              transferFeeMoeda: (r['Transfer Fee Moeda'] as 'BRL' | 'USD' | 'EUR') ?? 'BRL',
+              valorMercado: Number(r['Valor de Mercado']) || 0,
+              valorMercadoMoeda: (r['Moeda Valor Mercado'] as 'BRL' | 'USD' | 'EUR') ?? 'EUR',
+              multaInternacional: r['Multa Internacional'] ?? '',
+              multaNacional: r['Multa Nacional'] ?? '',
+              multaCompensatoria: r['Multa Compensatória'] ?? '',
+              intermediarios: iRows.filter(ir => Number(ir['Atleta ID']) === (Number(r['ID']) || i + 1)).map(ir => ({
+                nome: ir['Nome Intermediário'] ?? '',
+                percVendaFutura: Number(ir['% Venda Futura']) || 0,
+              })),
+              bichos: bRows.filter(br => Number(br['Atleta ID']) === (Number(r['ID']) || i + 1)).map(br => ({
+                competição: br['Competição'] ?? '',
+                ano: Number(br['Ano']) || 0,
+                valor: Number(br['Valor']) || 0,
+              })),
+            })))
+            const pc = sheets['Pagamentos_Certos'] ?? []
+            setPagamentosCertos(pc.map((r, i) => ({
+              id: Number(r['ID']) || i + 1, atletaId: Number(r['Atleta ID']) || 0,
+              despesa: r['Despesa'] ?? '', contrato: r['Contrato'] ?? '',
+              parcela: r['Parcela'] ?? '', vencimento: r['Vencimento'] ?? '',
+              valor: Number(r['Valor']) || 0, moeda: (r['Moeda'] as 'BRL' | 'USD' | 'EUR') ?? 'BRL',
+              vencAntecipado: r['Venc Antecipado'] === 'true',
+              parcial: r['Parcial'] ? Number(r['Parcial']) : null,
+              moedaParcial: (r['Moeda Parcial'] as 'BRL' | 'USD' | 'EUR') || null,
+              status: (r['Status'] as PagamentoCerto['status']) ?? 'A pagar',
+            })))
+            const pcond = sheets['Pagamentos_Condicionais'] ?? []
+            setPagamentosCondicionais(pcond.map((r, i) => ({
+              id: Number(r['ID']) || i + 1, atletaId: Number(r['Atleta ID']) || 0,
+              despesa: r['Despesa'] ?? '', contrato: r['Contrato'] ?? '',
+              detalhesCondicao: r['Detalhes Condição'] ?? '',
+              valor: r['Valor'] ?? 0, moeda: (r['Moeda'] as 'BRL' | 'USD' | 'EUR') ?? 'BRL',
+              vencAntecipado: r['Venc Antecipado'] === 'true',
+              vencimento: r['Vencimento'] ?? '',
+              parcial: r['Parcial'] ? Number(r['Parcial']) : null,
+              moedaParcial: (r['Moeda Parcial'] as 'BRL' | 'USD' | 'EUR') || null,
+              status: (r['Status'] as PagamentoCondicional['status']) ?? 'Aguardando condição',
+            })))
+            const ac = sheets['Acordos'] ?? []
+            setAcordos(ac.map((r, i) => ({
+              id: Number(r['ID']) || i + 1, atletaId: Number(r['Atleta ID']) || 0,
+              natureza: r['Natureza'] ?? '', naturezaDivida: r['Natureza Dívida'] ?? '',
+              parcela: r['Parcela'] ?? '', condicao: r['Condição'] ?? '',
+              credor: r['Credor'] ?? '', vencAntecipado: r['Venc Antecipado'] ?? '',
+              valor: Number(r['Valor']) || 0, moedaContrato: (r['Moeda Contrato'] as 'BRL' | 'USD' | 'EUR') ?? 'BRL',
+              vencimento: r['Vencimento'] ?? '', dataLiquidacao: r['Data Liquidação'] || null,
+              status: (r['Status'] as Acordo['status']) ?? 'A pagar',
+            })))
+            const cs = sheets['Condicionais_Salario'] ?? []
+            setCondicionaisSalario(cs.map((r, i) => ({
+              id: Number(r['ID']) || i + 1, atletaId: Number(r['Atleta ID']) || 0,
+              condicao: r['Condição'] ?? '', despesa: r['Despesa'] ?? '',
+              detalhes: r['Detalhes'] ?? '', valor: r['Valor'] ?? 0,
+              moeda: (r['Moeda'] as 'BRL' | 'USD' | 'EUR') ?? 'BRL',
+              status: (r['Status'] as CondicionalSalario['status']) ?? 'Aguardando condição',
+            })))
+          }}
+        />
+      </PageHero>
 
       {/* ── Barra de topo: apenas filtros ── */}
       <div className="card" style={{ padding: '6px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react'
-import { atletas, parcelasDireitoImagem, fmtData, statusBg, statusColor } from '../data/mockData'
+import { atletas, parcelasDireitoImagem as parcelasMock, fmtData, statusBg, statusColor, type ParcelaDireitoImagem } from '../data/mockData'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
+import SheetIO from '../components/SheetIO'
+import { COLS_PARCELAS_IMAGEM } from '../lib/xlsx-utils'
 
 const font = "'Inter', system-ui, sans-serif"
 const fontLabel = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -36,6 +38,7 @@ const contractColor: Record<string, string> = {
 }
 export default function PageImagem() {
   const { fmtMiC, symbol, t, navigateToAtleta } = useApp()
+  const [parcelasDireitoImagem, setParcelasDireitoImagem] = useState<ParcelaDireitoImagem[]>(parcelasMock)
 
   const [busca, setBusca] = useState('')
   const [statusFiltro, setStatusFiltro] = useState('Todos')
@@ -108,7 +111,22 @@ export default function PageImagem() {
   return (
     <div style={{ padding: '12px 16px', maxWidth: 1600, margin: '0 auto', fontFamily: font }}>
 
-      <PageHero title="Direitos de Imagem" subtitle="GESTÃO DE IMAGEM" />
+      <PageHero title="Direitos de Imagem" subtitle="GESTÃO DE IMAGEM">
+        <SheetIO
+          exportFilename="parcelas-direito-imagem.xlsx"
+          exportSheets={[{ name: 'Parcelas_Imagem', cols: COLS_PARCELAS_IMAGEM, rows: parcelasDireitoImagem as unknown as Record<string, unknown>[] }]}
+          onImport={sheets => {
+            const rows = sheets['Parcelas_Imagem'] ?? sheets[Object.keys(sheets)[0]] ?? []
+            setParcelasDireitoImagem(rows.map((r, i) => ({
+              id: Number(r['ID']) || i + 1,
+              atletaId: Number(r['Atleta ID']) || 0,
+              mes: r['Mês (AAAA-MM)'] ?? '',
+              valor: Number(r['Valor']) || 0,
+              status: (r['Status'] as ParcelaDireitoImagem['status']) ?? 'A pagar',
+            })))
+          }}
+        />
+      </PageHero>
 
       {/* ── Filtros ── */}
       <div className="card" style={{ padding: '12px 16px', marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>

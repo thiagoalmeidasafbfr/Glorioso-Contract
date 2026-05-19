@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
-import { atletas, passivosClube, fmtData, statusColor, statusBg } from '../data/mockData'
+import { atletas, passivosClube as passivosClubeMock, fmtData, statusColor, statusBg, type PassivoClube } from '../data/mockData'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
+import SheetIO from '../components/SheetIO'
+import { COLS_PASSIVOS_CLUBE } from '../lib/xlsx-utils'
 
 const font = "'Inter', system-ui, sans-serif"
 const fontLabel = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -58,6 +60,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
 
 export default function PageClubes() {
   const { fmtMiC, symbol, t } = useApp()
+  const [passivosClube, setPassivosClube] = useState<PassivoClube[]>(passivosClubeMock)
 
   const [sortField, setSortField] = useState<string>('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -128,7 +131,36 @@ export default function PageClubes() {
   return (
     <div style={{ padding: '12px 16px', maxWidth: 1600, margin: '0 auto', fontFamily: font }}>
 
-      <PageHero title="Clubes Credores" subtitle="PASSIVO — CLUBES" />
+      <PageHero title="Clubes Credores" subtitle="PASSIVO — CLUBES">
+        <SheetIO
+          exportFilename="passivos-clubes.xlsx"
+          exportSheets={[{ name: 'Passivos_Clubes', cols: COLS_PASSIVOS_CLUBE, rows: passivosClube as unknown as Record<string, unknown>[] }]}
+          onImport={sheets => {
+            const rows = sheets['Passivos_Clubes'] ?? sheets[Object.keys(sheets)[0]] ?? []
+            setPassivosClube(rows.map((r, i) => ({
+              id: Number(r['ID']) || i + 1,
+              atletaId: Number(r['Atleta ID']) || 0,
+              contrato: r['Contrato'] ?? '',
+              despesa: r['Despesa'] ?? '',
+              credor: r['Credor'] ?? '',
+              condicional: r['Condicional'] === 'true' || r['Condicional'] === 'TRUE' || r['Condicional'] === '1',
+              parcela: r['Parcela'] ?? '',
+              vencimento: r['Vencimento'] ?? '',
+              valor: Number(r['Valor']) || 0,
+              moeda: (r['Moeda'] as 'BRL' | 'USD' | 'EUR') ?? 'BRL',
+              parcial: r['Parcial'] ? Number(r['Parcial']) : null,
+              moedaParcial: (r['Moeda Parcial'] as 'BRL' | 'USD' | 'EUR') || null,
+              saldoMoedaContrato: Number(r['Saldo Moeda Contrato']) || 0,
+              saldoBRL: Number(r['Saldo BRL']) || 0,
+              condicao: r['Condição'] ?? '',
+              vencAntecipado: r['Venc Antecipado'] === 'true' || r['Venc Antecipado'] === 'TRUE',
+              solidariedade: r['Solidariedade'] === 'true' || r['Solidariedade'] === 'TRUE',
+              dataLiquidacao: r['Data Liquidação'] || null,
+              status: (r['Status'] as PassivoClube['status']) ?? 'A pagar',
+            })))
+          }}
+        />
+      </PageHero>
 
       {/* ── Topo: Filtros + Display Clube + Valor Total ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 200px', gap: 12, marginBottom: 12, alignItems: 'stretch' }}>
