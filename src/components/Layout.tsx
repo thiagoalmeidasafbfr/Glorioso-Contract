@@ -1,4 +1,6 @@
 import { useApp, CURRENCY_OPTIONS, type AppCurrency } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
+import { USE_SUPABASE } from '../lib/supabase'
 
 const NAV_SECTIONS = [
   {
@@ -31,6 +33,7 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   const { currency, setCurrency, language, setLanguage, currentPage: page, setCurrentPage: setPage } = useApp()
+  const { profile, signOut, isMaster } = useAuth()
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -131,6 +134,53 @@ export default function Layout({ children }: Props) {
           ))}
         </nav>
 
+        {/* Import — master only */}
+        {USE_SUPABASE && isMaster && (
+          <div style={{ padding: '0 0 8px' }}>
+            <div style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9, fontWeight: 500,
+              letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: 'rgba(190,140,74,0.90)',
+              padding: '6px 20px 4px',
+            }}>
+              Admin
+            </div>
+            <button
+              onClick={() => setPage('import')}
+              style={{
+                width: '100%',
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 20px',
+                background: page === 'import' ? 'rgba(190,140,74,0.15)' : 'transparent',
+                border: 'none', cursor: 'pointer', textAlign: 'left',
+                transition: 'background 0.12s',
+              }}
+              onMouseEnter={e => {
+                if (page !== 'import') (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'
+              }}
+              onMouseLeave={e => {
+                if (page !== 'import') (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+              }}
+            >
+              <div style={{
+                width: 3, height: 3, borderRadius: '50%',
+                background: page === 'import' ? '#be8c4a' : 'rgba(255,255,255,0.25)',
+                flexShrink: 0,
+              }} />
+              <span style={{
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 13,
+                fontWeight: page === 'import' ? 600 : 400,
+                color: page === 'import' ? '#be8c4a' : 'rgba(243,238,226,0.70)',
+                letterSpacing: page === 'import' ? 0 : '-0.01em',
+              }}>
+                Importar XLSX
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Controls */}
         <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           {/* Language */}
@@ -208,9 +258,65 @@ export default function Layout({ children }: Props) {
             fontSize: 9,
             color: 'rgba(243,238,226,0.28)',
             letterSpacing: '0.08em',
+            marginBottom: USE_SUPABASE && profile ? 14 : 0,
           }}>
             Atualizado {new Date().toLocaleDateString('pt-BR')}
           </div>
+
+          {/* User info + logout */}
+          {USE_SUPABASE && profile && (
+            <div style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8,
+              padding: '8px 10px',
+            }}>
+              <div style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 9, fontWeight: 500,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                color: 'rgba(190,140,74,0.80)',
+                marginBottom: 2,
+              }}>
+                {profile.role === 'master' ? 'Master' : 'Jurídico'}
+              </div>
+              <div style={{
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 11,
+                color: 'rgba(243,238,226,0.60)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                marginBottom: 8,
+              }}>
+                {profile.email}
+              </div>
+              <button
+                onClick={() => signOut()}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  borderRadius: 6,
+                  padding: '5px 8px',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 9, fontWeight: 500,
+                  letterSpacing: '0.12em', textTransform: 'uppercase',
+                  color: 'rgba(243,238,226,0.50)',
+                  cursor: 'pointer',
+                  transition: 'background 0.12s, color 0.12s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(185,28,28,0.20)'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = '#f87171'
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(243,238,226,0.50)'
+                }}
+              >
+                Sair
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
