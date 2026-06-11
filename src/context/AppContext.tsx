@@ -42,7 +42,7 @@ interface AppContextType {
   fmtMiC: (brlValue: number) => string
   fmtC: (brlValue: number) => string
   t: (key: string) => string
-  // Navegação
+  // Navegação legada (mantida para compatibilidade com páginas antigas)
   currentPage: string
   setCurrentPage: (p: string) => void
   openAtletaId: number | null

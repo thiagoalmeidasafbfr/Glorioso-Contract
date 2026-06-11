@@ -1,18 +1,26 @@
 import './index.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { USE_SUPABASE } from './lib/supabase'
 import Layout from './components/Layout'
-import PageAtletas from './pages/PageAtletas'
+import PageLogin from './pages/PageLogin'
+
+// Páginas do sistema de atletas (novo)
+import PageDashboard from './pages/PageDashboard'
+import PageAthletesList from './pages/PageAthletesList'
+import PageAthleteDetail from './pages/PageAthleteDetail'
+import PageAthleteNewContract from './pages/PageAthleteNewContract'
+
+// Páginas legadas
+import PageConsolidado from './pages/PageConsolidado'
 import PageClubes from './pages/PageClubes'
 import PageIntermediarios from './pages/PageIntermediarios'
-import PageConsolidado from './pages/PageConsolidado'
 import PageImagem from './pages/PageImagem'
-import PageLogin from './pages/PageLogin'
 import PageImport from './pages/PageImport'
 import PageClausulas from './pages/PageClausulas'
 
-function AppInner() {
+function AppRoutes() {
   const { session, loading, isMaster } = useAuth()
 
   if (USE_SUPABASE && loading) {
@@ -29,24 +37,35 @@ function AppInner() {
   }
 
   if (USE_SUPABASE && !session) {
-    return <PageLogin />
+    return (
+      <Routes>
+        <Route path="*" element={<PageLogin />} />
+      </Routes>
+    )
   }
 
   return (
     <AppProvider>
       <Layout>
-        {(page) => {
-          if (page === 'import' && isMaster) return <PageImport />
-          switch (page) {
-            case 'atletas':        return <PageAtletas />
-            case 'clubes':         return <PageClubes />
-            case 'intermediarios': return <PageIntermediarios />
-            case 'consolidado':    return <PageConsolidado />
-            case 'imagem':         return <PageImagem />
-            case 'clausulas':      return <PageClausulas />
-            default:               return <PageAtletas />
-          }
-        }}
+        <Routes>
+          <Route path="/" element={<Navigate to="/atletas" replace />} />
+
+          {/* ── Sistema de Atletas (principal) ── */}
+          <Route path="/dashboard" element={<PageDashboard />} />
+          <Route path="/atletas" element={<PageAthletesList />} />
+          <Route path="/atletas/:id" element={<PageAthleteDetail />} />
+          <Route path="/atletas/:id/contratos/novo" element={<PageAthleteNewContract />} />
+
+          {/* ── Páginas legadas ── */}
+          <Route path="/consolidado" element={<PageConsolidado />} />
+          <Route path="/clubes" element={<PageClubes />} />
+          <Route path="/intermediarios" element={<PageIntermediarios />} />
+          <Route path="/imagem" element={<PageImagem />} />
+          <Route path="/clausulas-venda" element={<PageClausulas />} />
+          {isMaster && <Route path="/import" element={<PageImport />} />}
+
+          <Route path="*" element={<Navigate to="/atletas" replace />} />
+        </Routes>
       </Layout>
     </AppProvider>
   )
@@ -54,8 +73,10 @@ function AppInner() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
