@@ -13,6 +13,14 @@ import type {
 } from '../types/athlete-system'
 import { isOverdue, isDueSoon, addMonths, todayISO } from './format'
 
+// When the new tables don't exist yet (migration not applied), Supabase returns
+// error code 42P01 ("relation does not exist"). Fall back to mock data so the
+// UI stays functional until the migration is run in production.
+function isMissingTable(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return error.code === '42P01' || (error.message ?? '').includes('does not exist')
+}
+
 // ── Athletes ──────────────────────────────────────────────────────────────
 
 export async function fetchAthletes(): Promise<Athlete[]> {
@@ -21,7 +29,10 @@ export async function fetchAthletes(): Promise<Athlete[]> {
     .from('athletes')
     .select('*')
     .order('full_name')
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return [...ATHLETES_MOCK]
+    throw error
+  }
   return data
 }
 
@@ -32,7 +43,10 @@ export async function fetchAthlete(id: string): Promise<Athlete | null> {
     .select('*')
     .eq('id', id)
     .single()
-  if (error) return null
+  if (error) {
+    if (isMissingTable(error)) return ATHLETES_MOCK.find(a => a.id === id) ?? null
+    return null
+  }
   return data
 }
 
@@ -43,7 +57,14 @@ export async function createAthlete(input: Omit<Athlete, 'id' | 'created_at' | '
     return a
   }
   const { data, error } = await supabase.from('athletes').insert(input).select().single()
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) {
+      const a: Athlete = { ...input, id: crypto.randomUUID(), created_at: todayISO(), updated_at: todayISO() }
+      ATHLETES_MOCK.push(a)
+      return a
+    }
+    throw error
+  }
   return data
 }
 
@@ -57,7 +78,13 @@ export async function updateAthlete(id: string, input: Partial<Athlete>): Promis
   const { data, error } = await supabase
     .from('athletes').update({ ...input, updated_at: new Date().toISOString() })
     .eq('id', id).select().single()
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) {
+      const idx = ATHLETES_MOCK.findIndex(a => a.id === id)
+      if (idx !== -1) { ATHLETES_MOCK[idx] = { ...ATHLETES_MOCK[idx], ...input, updated_at: todayISO() }; return ATHLETES_MOCK[idx] }
+    }
+    throw error
+  }
   return data
 }
 
@@ -71,7 +98,10 @@ export async function fetchAthleteContracts(athleteId: string): Promise<Contract
     .select('*')
     .eq('athlete_id', athleteId)
     .order('start_date', { ascending: false })
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return CONTRACTS_MOCK.filter(c => c.athlete_id === athleteId)
+    throw error
+  }
   return data
 }
 
@@ -83,7 +113,13 @@ export async function createContract(athleteId: string, input: NewContractInput)
     return c
   }
   const { data, error } = await supabase.from('contracts').insert(contractData).select().single()
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) {
+      const c: Contract = { ...contractData, id: crypto.randomUUID(), created_by: 'usuario', created_at: todayISO(), updated_at: todayISO() }
+      CONTRACTS_MOCK.push(c); return c
+    }
+    throw error
+  }
   return data
 }
 
@@ -96,7 +132,10 @@ export async function fetchAthleteClauses(athleteId: string): Promise<Clause[]> 
     .select('*')
     .eq('athlete_id', athleteId)
     .order('due_date', { ascending: true, nullsFirst: false })
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return CLAUSES_MOCK.filter(c => c.athlete_id === athleteId)
+    throw error
+  }
   return data
 }
 
@@ -106,7 +145,10 @@ export async function fetchContractClauses(contractId: string): Promise<Clause[]
     .from('clauses')
     .select('*')
     .eq('contract_id', contractId)
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return CLAUSES_MOCK.filter(c => c.contract_id === contractId)
+    throw error
+  }
   return data
 }
 
@@ -125,7 +167,20 @@ export async function createClause(contractId: string, athleteId: string, input:
     return c
   }
   const { data, error } = await supabase.from('clauses').insert(clauseData).select().single()
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) {
+      const c: Clause = {
+        ...clauseData, id: crypto.randomUUID(),
+        installments_paid: 0, achievement_status: 'PENDENTE' as const,
+        achievement_date: null, payment_status: 'PENDENTE' as const,
+        payment_date: null, amount_paid_currency: null, amount_paid_brl: null,
+        exchange_rate: null, created_by: 'usuario',
+        created_at: todayISO(), updated_at: todayISO(),
+      }
+      CLAUSES_MOCK.push(c); return c
+    }
+    throw error
+  }
   return data
 }
 
@@ -139,7 +194,13 @@ export async function updateClause(id: string, input: Partial<Clause>): Promise<
   const { data, error } = await supabase
     .from('clauses').update({ ...input, updated_at: new Date().toISOString() })
     .eq('id', id).select().single()
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) {
+      const idx = CLAUSES_MOCK.findIndex(c => c.id === id)
+      if (idx !== -1) { CLAUSES_MOCK[idx] = { ...CLAUSES_MOCK[idx], ...input, updated_at: todayISO() }; return CLAUSES_MOCK[idx] }
+    }
+    throw error
+  }
   return data
 }
 
@@ -164,7 +225,10 @@ export async function fetchAthleteInstallments(athleteId: string): Promise<Claus
     .select('*')
     .eq('athlete_id', athleteId)
     .order('due_date', { ascending: true })
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return INSTALLMENTS_MOCK.filter(i => i.athlete_id === athleteId)
+    throw error
+  }
   return data
 }
 
@@ -176,7 +240,10 @@ export async function fetchClauseInstallments(clauseId: string): Promise<ClauseI
     .select('*')
     .eq('clause_id', clauseId)
     .order('installment_number')
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return INSTALLMENTS_MOCK.filter(i => i.clause_id === clauseId)
+    throw error
+  }
   return data
 }
 
@@ -207,7 +274,15 @@ export async function createInstallments(clauseId: string, athleteId: string, in
     return created
   }
   const { data, error } = await supabase.from('clause_installments').insert(installments).select()
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) {
+      const created = installments.map(inst => ({
+        ...inst, id: crypto.randomUUID(), created_at: todayISO(), updated_at: todayISO(),
+      })) as ClauseInstallment[]
+      INSTALLMENTS_MOCK.push(...created); return created
+    }
+    throw error
+  }
   return data
 }
 
@@ -230,7 +305,16 @@ export async function registerInstallmentPayment(id: string, payment: PaymentInp
     .from('clause_installments')
     .update({ payment_status: 'PAGA', payment_date: payment.payment_date, amount_paid_brl: payment.amount_paid_brl, exchange_rate: payment.exchange_rate, notes: payment.notes, updated_at: new Date().toISOString() })
     .eq('id', id).select().single()
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) {
+      const idx = INSTALLMENTS_MOCK.findIndex(i => i.id === id)
+      if (idx !== -1) {
+        INSTALLMENTS_MOCK[idx] = { ...INSTALLMENTS_MOCK[idx], payment_status: 'PAGA', payment_date: payment.payment_date, amount_paid_brl: payment.amount_paid_brl, exchange_rate: payment.exchange_rate, notes: payment.notes || null, updated_at: todayISO() }
+        return INSTALLMENTS_MOCK[idx]
+      }
+    }
+    throw error
+  }
   return data
 }
 
@@ -244,7 +328,10 @@ export async function fetchAthleteAlerts(athleteId: string): Promise<Alert[]> {
     .select('*')
     .eq('athlete_id', athleteId)
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return ALERTS_MOCK.filter(a => a.athlete_id === athleteId)
+    throw error
+  }
   return data
 }
 
@@ -259,7 +346,10 @@ export async function fetchAllAlerts(): Promise<Alert[]> {
     .select('*')
     .order('severity')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) {
+    if (isMissingTable(error)) return [...ALERTS_MOCK]
+    throw error
+  }
   return data
 }
 
@@ -269,7 +359,11 @@ export async function markAlertRead(id: string): Promise<void> {
     if (idx !== -1) ALERTS_MOCK[idx].is_read = true
     return
   }
-  await supabase.from('alerts').update({ is_read: true }).eq('id', id)
+  const { error } = await supabase.from('alerts').update({ is_read: true }).eq('id', id)
+  if (error && isMissingTable(error)) {
+    const idx = ALERTS_MOCK.findIndex(a => a.id === id)
+    if (idx !== -1) ALERTS_MOCK[idx].is_read = true
+  }
 }
 
 // ── Computed Stats ────────────────────────────────────────────────────────
