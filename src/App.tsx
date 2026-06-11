@@ -10,6 +10,7 @@ import PageConsolidado from './pages/PageConsolidado'
 import PageImagem from './pages/PageImagem'
 import PageLogin from './pages/PageLogin'
 import PageImport from './pages/PageImport'
+import PageClausulas from './pages/PageClausulas'
 
 function AppInner() {
   const { session, loading, isMaster } = useAuth()
@@ -42,6 +43,7 @@ function AppInner() {
             case 'intermediarios': return <PageIntermediarios />
             case 'consolidado':    return <PageConsolidado />
             case 'imagem':         return <PageImagem />
+            case 'clausulas':      return <PageClausulas />
             default:               return <PageAtletas />
           }
         }}

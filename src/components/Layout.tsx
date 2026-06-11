@@ -11,6 +11,12 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    label: 'Receitas',
+    items: [
+      { key: 'clausulas', label: 'Cláusulas de Venda' },
+    ],
+  },
+  {
     label: 'Passivos',
     items: [
       { key: 'clubes',         label: 'Clubes' },
