@@ -1,11 +1,41 @@
-import { useState, useMemo } from 'react'
-import { atletas, fmtData, fmtMi, type StatusContrato } from '../data/mockData'
+import { useState, useMemo, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
 import { COLS_ATLETAS } from '../lib/xlsx-utils'
 
+type StatusContrato = 'Elenco' | 'Emprestado' | 'Rescindido'
 const STATUS_OPTS: (StatusContrato | 'Todos')[] = ['Todos', 'Elenco', 'Emprestado', 'Rescindido']
+
+interface AtletaRow {
+  id: number; nome: string; posicao: string; statusContrato: StatusContrato
+  inicioContrato: string; fimContrato: string; alocacao: string
+  salarioCLT: number; direitoImagem: number; auxilioMoradiaM: number
+  auxilioAlimentacaoM: number; auxilioViagemA: number; outrosAuxiliosM: number
+}
+
+function mapAtleta(r: Record<string, unknown>): AtletaRow {
+  return {
+    id: r.id as number, nome: (r.nome as string) ?? '', posicao: (r.posicao as string) ?? '',
+    statusContrato: (r.status_contrato as StatusContrato) ?? 'Elenco',
+    inicioContrato: (r.inicio_contrato as string) ?? '', fimContrato: (r.fim_contrato as string) ?? '',
+    alocacao: (r.alocacao as string) ?? '',
+    salarioCLT: Number(r.salario_clt) || 0, direitoImagem: Number(r.direito_imagem) || 0,
+    auxilioMoradiaM: Number(r.auxilio_moradia_m) || 0,
+    auxilioAlimentacaoM: Number(r.auxilio_alimentacao_m) || 0,
+    auxilioViagemA: Number(r.auxilio_viagem_a) || 0,
+    outrosAuxiliosM: Number(r.outros_auxilios_m) || 0,
+  }
+}
+
+const fmtData = (s: string | null) => s ? new Date(s).toLocaleDateString('pt-BR') : '—'
+const fmtMi = (v: number) => {
+  if (v === 0) return 'R$ 0'
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Mi`
+  if (v >= 1_000) return `R$ ${(v / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })} Mil`
+  return `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+}
 const POSICOES = ['Todos', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante']
 
 const font = "'Inter', system-ui, sans-serif"
@@ -18,11 +48,11 @@ const inss = (clt: number) => clt * 0.05
 const feriasAnual = (clt: number) => clt / 3
 const decimoTerceiro = (clt: number) => clt
 
-const custoMensal = (a: (typeof atletas)[number]) =>
+const custoMensal = (a: AtletaRow) =>
   a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM
   + fgts(a.salarioCLT) + inss(a.salarioCLT)
 
-const custoAnual = (a: (typeof atletas)[number]) =>
+const custoAnual = (a: AtletaRow) =>
   custoMensal(a) * 12 + a.auxilioViagemA + feriasAnual(a.salarioCLT) + decimoTerceiro(a.salarioCLT)
 
 function StripKpi({ label, value, first }: { label: string; value: string; first?: boolean }) {
@@ -50,6 +80,14 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
 
 export default function PageConsolidado() {
   const { fmtMiC, t } = useApp()
+  const [atletas, setAtletas] = useState<AtletaRow[]>([])
+
+  useEffect(() => {
+    supabase.from('atletas').select('id,nome,posicao,status_contrato,inicio_contrato,fim_contrato,alocacao,salario_clt,direito_imagem,auxilio_moradia_m,auxilio_alimentacao_m,auxilio_viagem_a,outros_auxilios_m').order('nome')
+      .then(({ data, error }) => {
+        if (!error && data) setAtletas(data.map(mapAtleta))
+      })
+  }, [])
 
   const [sortField, setSortField] = useState<string>('custoAnual')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -124,9 +162,8 @@ export default function PageConsolidado() {
             ],
             rows: atletas.map(a => ({
               ...a,
-              totalMensal: a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM,
-              custoAnual: (a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM) * 12
-                + a.auxilioViagemA + (a.salarioCLT * 0.08 + a.salarioCLT / 3 + a.salarioCLT + a.salarioCLT * 0.05) * 12 / 12 * 12,
+              totalMensal: custoMensal(a),
+              custoAnual: custoAnual(a),
             })) as unknown as Record<string, unknown>[],
           }]}
         />

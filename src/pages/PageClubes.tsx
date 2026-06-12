@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { atletas, passivosClube as passivosClubeMock, fmtData, statusColor, statusBg, type PassivoClube } from '../data/mockData'
+import { useState, useMemo, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
@@ -8,6 +8,52 @@ import { COLS_PASSIVOS_CLUBE } from '../lib/xlsx-utils'
 const font = "'Inter', system-ui, sans-serif"
 const fontLabel = "'IBM Plex Mono', 'JetBrains Mono', monospace"
 const fontData = "'JetBrains Mono', ui-monospace, monospace"
+
+type Moeda = 'BRL' | 'USD' | 'EUR'
+type StatusParcela = 'A pagar' | 'Atrasado' | 'Pago' | 'Parcial' | 'Aguardando condição'
+
+interface PassivoClube {
+  id: number
+  atletaId: number
+  contrato: string
+  despesa: string
+  credor: string
+  condicional: boolean
+  parcela: string
+  vencimento: string
+  valor: number
+  moeda: Moeda
+  parcial: number | null
+  moedaParcial: Moeda | null
+  saldoMoedaContrato: number
+  saldoBRL: number
+  condicao: string
+  vencAntecipado: boolean
+  solidariedade: boolean
+  dataLiquidacao: string | null
+  status: StatusParcela
+}
+
+type PassivoClubeRow = PassivoClube & { atletaNome: string }
+
+const fmtData = (d: string) =>
+  new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')
+
+const statusColor: Record<string, string> = {
+  'Pago': '#1a7a4a',
+  'A pagar': '#555',
+  'Atrasado': '#c0392b',
+  'Parcial': '#e67e22',
+  'Aguardando condição': '#1a6fa0',
+}
+
+const statusBg: Record<string, string> = {
+  'Pago': '#e6f9f0',
+  'A pagar': '#f5f5f5',
+  'Atrasado': '#ffeef0',
+  'Parcial': '#fff3e0',
+  'Aguardando condição': '#e8f4fd',
+}
 
 function StatusBadge({ status }: { status: string }) {
   const { t } = useApp()
@@ -58,9 +104,45 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   return <span style={{ fontSize: 9, marginLeft: 2 }}>{dir === 'asc' ? '↑' : '↓'}</span>
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPassivoClube(row: any): PassivoClubeRow {
+  return {
+    id: row.id,
+    atletaId: row.atleta_id,
+    atletaNome: row.atletas?.nome ?? '',
+    contrato: row.contrato ?? '',
+    despesa: row.despesa ?? '',
+    credor: row.credor ?? '',
+    condicional: row.condicional ?? false,
+    parcela: row.parcela ?? '',
+    vencimento: row.vencimento ?? '',
+    valor: row.valor ?? 0,
+    moeda: row.moeda ?? 'BRL',
+    parcial: row.parcial ?? null,
+    moedaParcial: row.moeda_parcial ?? null,
+    saldoMoedaContrato: row.saldo_moeda_contrato ?? 0,
+    saldoBRL: row.saldo_brl ?? 0,
+    condicao: row.condicao ?? '',
+    vencAntecipado: row.venc_antecipado ?? false,
+    solidariedade: row.solidariedade ?? false,
+    dataLiquidacao: row.data_liquidacao ?? null,
+    status: row.status ?? 'A pagar',
+  }
+}
+
 export default function PageClubes() {
   const { fmtMiC, symbol, t } = useApp()
-  const [passivosClube, setPassivosClube] = useState<PassivoClube[]>(passivosClubeMock)
+  const [passivosClube, setPassivosClube] = useState<PassivoClubeRow[]>([])
+
+  useEffect(() => {
+    supabase
+      .from('passivos_clube')
+      .select('*, atletas(nome)')
+      .then(({ data, error }) => {
+        if (error) { console.error(error); return }
+        setPassivosClube((data ?? []).map(mapPassivoClube))
+      })
+  }, [])
 
   const [sortField, setSortField] = useState<string>('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -74,26 +156,24 @@ export default function PageClubes() {
   const [condFiltro, setCondFiltro] = useState<'Todos' | 'Certo' | 'Condicional'>('Todos')
 
   const credores = useMemo(() =>
-    [t('Todos'), ...Array.from(new Set(passivosClube.map(p => p.credor))).sort()], [t])
+    [t('Todos'), ...Array.from(new Set(passivosClube.map(p => p.credor))).sort()], [passivosClube, t])
   const atletasOpts = useMemo(() =>
-    [t('Todos'), ...atletas.map(a => a.nome)], [t])
+    [t('Todos'), ...Array.from(new Set(passivosClube.map(p => p.atletaNome).filter(Boolean))).sort()], [passivosClube, t])
 
   const filtrados = useMemo(() => passivosClube.filter(p => {
     const credorVal = credorFiltro === t('Todos') ? 'Todos' : credorFiltro
     const atletaVal = atletaFiltro === t('Todos') ? 'Todos' : atletaFiltro
     const okCred = credorVal === 'Todos' || p.credor === credorVal
-    const okAtl = atletaVal === 'Todos' || atletas.find(a => a.id === p.atletaId)?.nome === atletaVal
+    const okAtl = atletaVal === 'Todos' || p.atletaNome === atletaVal
     const okCond = condFiltro === 'Todos' || (condFiltro === 'Certo' ? !p.condicional : p.condicional)
     return okCred && okAtl && okCond
-  }), [credorFiltro, atletaFiltro, condFiltro, t])
+  }), [passivosClube, credorFiltro, atletaFiltro, condFiltro, t])
 
   const sorted = useMemo(() => {
     return [...filtrados].sort((a, b) => {
-      const atletaNomeA = atletas.find(x => x.id === a.atletaId)?.nome ?? ''
-      const atletaNomeB = atletas.find(x => x.id === b.atletaId)?.nome ?? ''
       let va: string | number = 0, vb: string | number = 0
       if (sortField === 'credor') { va = a.credor; vb = b.credor }
-      else if (sortField === 'atleta') { va = atletaNomeA; vb = atletaNomeB }
+      else if (sortField === 'atleta') { va = a.atletaNome ?? ''; vb = b.atletaNome ?? '' }
       else if (sortField === 'contrato') { va = a.contrato; vb = b.contrato }
       else if (sortField === 'despesa') { va = a.despesa; vb = b.despesa }
       else if (sortField === 'vencimento') { va = a.vencimento; vb = b.vencimento }
@@ -140,6 +220,7 @@ export default function PageClubes() {
             setPassivosClube(rows.map((r, i) => ({
               id: Number(r['ID']) || i + 1,
               atletaId: Number(r['Atleta ID']) || 0,
+              atletaNome: String(r['Atleta'] ?? ''),
               contrato: r['Contrato'] ?? '',
               despesa: r['Despesa'] ?? '',
               credor: r['Credor'] ?? '',
@@ -279,28 +360,25 @@ export default function PageClubes() {
               {filtrados.length === 0 && (
                 <tr><td colSpan={15} style={{ ...td, textAlign: 'center', color: '#bbb', padding: 32 }}>{t('Nenhum registro encontrado')}</td></tr>
               )}
-              {sorted.map(p => {
-                const atletaNome = atletas.find(a => a.id === p.atletaId)?.nome ?? ''
-                return (
-                  <tr key={p.id} style={{ background: p.status === 'Atrasado' ? 'var(--row-late-bg)' : undefined }}>
-                    <td style={td}>{p.credor}</td>
-                    <td style={td}>{atletaNome}</td>
-                    <td style={td}>{p.contrato}</td>
-                    <td style={td}>{p.despesa}</td>
-                    <td style={{ ...td, textAlign: 'center' }}>{p.vencAntecipado ? t('Sim') : t('Não')}</td>
-                    <td style={td}>{p.parcela}</td>
-                    <td style={tdr}>{p.valor.toLocaleString('pt-BR')}</td>
-                    <td style={td}>{p.moeda}</td>
-                    <td style={td}>{fmtData(p.vencimento)}</td>
-                    <td style={{ ...tdr, fontWeight: 600 }}>{p.saldoBRL.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
-                    <td style={tdr}>{p.parcial?.toLocaleString('pt-BR') ?? '—'}</td>
-                    <td style={td}>{p.moedaParcial ?? '—'}</td>
-                    <td style={td}>{p.condicao || '—'}</td>
-                    <td style={td}>{p.dataLiquidacao ? fmtData(p.dataLiquidacao) : '—'}</td>
-                    <td style={td}><StatusBadge status={p.status} /></td>
-                  </tr>
-                )
-              })}
+              {sorted.map(p => (
+                <tr key={p.id} style={{ background: p.status === 'Atrasado' ? 'var(--row-late-bg)' : undefined }}>
+                  <td style={td}>{p.credor}</td>
+                  <td style={td}>{p.atletaNome}</td>
+                  <td style={td}>{p.contrato}</td>
+                  <td style={td}>{p.despesa}</td>
+                  <td style={{ ...td, textAlign: 'center' }}>{p.vencAntecipado ? t('Sim') : t('Não')}</td>
+                  <td style={td}>{p.parcela}</td>
+                  <td style={tdr}>{p.valor.toLocaleString('pt-BR')}</td>
+                  <td style={td}>{p.moeda}</td>
+                  <td style={td}>{fmtData(p.vencimento)}</td>
+                  <td style={{ ...tdr, fontWeight: 600 }}>{p.saldoBRL.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+                  <td style={tdr}>{p.parcial?.toLocaleString('pt-BR') ?? '—'}</td>
+                  <td style={td}>{p.moedaParcial ?? '—'}</td>
+                  <td style={td}>{p.condicao || '—'}</td>
+                  <td style={td}>{p.dataLiquidacao ? fmtData(p.dataLiquidacao) : '—'}</td>
+                  <td style={td}><StatusBadge status={p.status} /></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

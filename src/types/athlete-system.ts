@@ -48,6 +48,8 @@ export interface Athlete {
   passport_number: string | null
   agent_name: string | null
   agent_contact: string | null
+  intermediary_id: string | null
+  intermediaries?: { id: string; full_name: string; company_name: string | null } | null
   current_status: AthleteStatus
   profile_photo_url: string | null
   notes: string | null

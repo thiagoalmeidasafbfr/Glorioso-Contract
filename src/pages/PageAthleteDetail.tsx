@@ -5,6 +5,7 @@ import {
   fetchAthleteInstallments, fetchAthleteAlerts, markAlertRead,
   updateClause, registerInstallmentPayment,
 } from '../lib/athleteQueries'
+import { fetchAthleteChangeLog, type ChangeLogEntry } from '../lib/intermediaryQueries'
 import { fmtDate, fmtCurrencyShort, fmtCurrencyFull, fmtRelative, isOverdue, isDueSoon, CURRENCY_SYMBOLS } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClauseInstallment, Alert,
@@ -85,13 +86,14 @@ function FinancialCard({ label, value, sub, color }: { label: string; value: str
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
-type Tab = 'clausulas' | 'vinculos' | 'parcelas' | 'alertas'
+type Tab = 'clausulas' | 'vinculos' | 'parcelas' | 'alertas' | 'historico'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'clausulas', label: 'Cláusulas Ativas' },
-  { id: 'vinculos',  label: 'Vínculos / Histórico' },
+  { id: 'vinculos',  label: 'Vínculos' },
   { id: 'parcelas',  label: 'Parcelas' },
   { id: 'alertas',   label: 'Alertas' },
+  { id: 'historico', label: 'Histórico de Alterações' },
 ]
 
 // ── Clause Actions Menu ───────────────────────────────────────────────────
@@ -153,6 +155,7 @@ export default function PageAthleteDetail() {
   const [clauses, setClauses] = useState<Clause[]>([])
   const [installments, setInstallments] = useState<ClauseInstallment[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [changelog, setChangelog] = useState<ChangeLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('clausulas')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
@@ -161,18 +164,20 @@ export default function PageAthleteDetail() {
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, inst, alrt] = await Promise.all([
+    const [ath, contr, cls, inst, alrt, log] = await Promise.all([
       fetchAthlete(id),
       fetchAthleteContracts(id),
       fetchAthleteClauses(id),
       fetchAthleteInstallments(id),
       fetchAthleteAlerts(id),
+      fetchAthleteChangeLog(id),
     ])
     setAthlete(ath)
     setContracts(contr)
     setClauses(cls)
     setInstallments(inst)
     setAlerts(alrt)
+    setChangelog(log)
     setLoading(false)
   }, [id])
 
@@ -299,7 +304,11 @@ export default function PageAthleteDetail() {
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
               {athlete.nationality && <span>🌍 {athlete.nationality}</span>}
               {athlete.birth_date && <span>📅 {fmtDate(athlete.birth_date)}</span>}
-              {athlete.agent_name && <span>🤝 Agente: {athlete.agent_name}{athlete.agent_contact ? ` — ${athlete.agent_contact}` : ''}</span>}
+              {(athlete.intermediaries?.full_name || athlete.agent_name) && (
+                <span>🤝 Agente: {athlete.intermediaries?.full_name ?? athlete.agent_name}
+                  {athlete.intermediaries?.company_name ? ` — ${athlete.intermediaries.company_name}` : athlete.agent_contact ? ` — ${athlete.agent_contact}` : ''}
+                </span>
+              )}
             </div>
             {athlete.notes && (
               <div style={{ marginTop: 8, fontSize: 12, color: athlete.notes.includes('⚠️') ? 'var(--warn)' : 'var(--text-muted)', background: athlete.notes.includes('⚠️') ? 'var(--warn-tint)' : 'var(--bg-subtle)', borderRadius: 6, padding: '6px 10px', fontFamily: font }}>
@@ -566,6 +575,76 @@ export default function PageAthleteDetail() {
                     Marcar lido
                   </button>
                 )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Tab: Histórico de Alterações ── */}
+      {tab === 'historico' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {changelog.length === 0 && (
+            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhuma alteração registrada.</div>
+          )}
+          {changelog.map(entry => {
+            const opColor: Record<string, string> = {
+              INSERT: '#166534', UPDATE: '#1d4ed8', DELETE: '#b91c1c',
+            }
+            const opBg: Record<string, string> = {
+              INSERT: '#dcf0e4', UPDATE: 'rgba(59,130,246,0.10)', DELETE: 'var(--neg-tint)',
+            }
+            const changedFields = entry.operation === 'UPDATE' && entry.old_values && entry.new_values
+              ? Object.keys(entry.new_values).filter(k =>
+                  JSON.stringify((entry.old_values as Record<string, unknown>)[k]) !== JSON.stringify((entry.new_values as Record<string, unknown>)[k])
+                )
+              : []
+            return (
+              <div key={entry.id} className="card" style={{ padding: '14px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <div style={{ flexShrink: 0 }}>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 5,
+                    background: opBg[entry.operation] ?? '#eee', color: opColor[entry.operation] ?? '#333',
+                    fontSize: 9, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                  }}>
+                    {entry.operation}
+                  </span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-muted)' }}>
+                      {entry.table_name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>
+                      {entry.user_email ?? 'usuário desconhecido'}
+                    </span>
+                    <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)' }}>
+                      {new Date(entry.created_at).toLocaleString('pt-BR')}
+                    </span>
+                  </div>
+                  {changedFields.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {changedFields.map(field => {
+                        const oldVal = String((entry.old_values as Record<string, unknown>)[field] ?? '—')
+                        const newVal = String((entry.new_values as Record<string, unknown>)[field] ?? '—')
+                        return (
+                          <div key={field} style={{ background: 'var(--bg-subtle)', borderRadius: 5, padding: '4px 8px', fontSize: 11, fontFamily: fontMono }}>
+                            <span style={{ color: 'var(--text-muted)' }}>{field}: </span>
+                            <span style={{ color: 'var(--neg)', textDecoration: 'line-through' }}>{oldVal.length > 30 ? oldVal.slice(0, 30) + '…' : oldVal}</span>
+                            <span style={{ color: 'var(--text-muted)' }}> → </span>
+                            <span style={{ color: 'var(--pos)' }}>{newVal.length > 30 ? newVal.slice(0, 30) + '…' : newVal}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  {entry.operation === 'INSERT' && entry.new_values && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+                      Registro criado
+                    </div>
+                  )}
+                </div>
               </div>
             )
           })}

@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  fetchAthletes, createAthlete,
+  fetchAthletes, createAthlete, fetchAllClauses, fetchAllAlerts, fetchAllInstallments,
 } from '../lib/athleteQueries'
-import { ALERTS_MOCK } from '../data/athletesMock'
 import { fmtDate, isOverdue, isDueSoon } from '../lib/format'
-import { INSTALLMENTS_MOCK, CLAUSES_MOCK } from '../data/athletesMock'
-import type { Athlete, AthleteStatus } from '../types/athlete-system'
+import type { Athlete, AthleteStatus, Clause, ClauseInstallment, Alert } from '../types/athlete-system'
+import IntermediarySelect from '../components/IntermediarySelect'
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -59,9 +58,10 @@ interface NewAthleteModalProps {
 function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   const [f, setF] = useState({
     full_name: '', short_name: '', birth_date: '', nationality: 'Brasil',
-    cpf: '', passport_number: '', agent_name: '', agent_contact: '',
+    cpf: '', passport_number: '',
     current_status: 'ATIVO' as AthleteStatus, notes: '',
   })
+  const [intermediaryId, setIntermediaryId] = useState<string | null>(null)
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
   const inp: React.CSSProperties = {
@@ -95,8 +95,9 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
       nationality: f.nationality || null,
       cpf: f.cpf || null,
       passport_number: f.passport_number || null,
-      agent_name: f.agent_name || null,
-      agent_contact: f.agent_contact || null,
+      agent_name: null,
+      agent_contact: null,
+      intermediary_id: intermediaryId,
       current_status: f.current_status,
       profile_photo_url: null,
       notes: f.notes || null,
@@ -118,9 +119,11 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           {field('Nacionalidade', 'nationality')}
           {field('CPF', 'cpf')}
           {field('Passaporte', 'passport_number')}
-          {field('Nome do Agente', 'agent_name')}
-          {field('Contato do Agente', 'agent_contact')}
           {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={lbl}>Intermediário / Agente</label>
+            <IntermediarySelect value={intermediaryId} onChange={setIntermediaryId} />
+          </div>
         </div>
 
         <div>
@@ -143,13 +146,21 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
 export default function PageAthletesList() {
   const navigate = useNavigate()
   const [athletes, setAthletes] = useState<Athlete[]>([])
+  const [clauses, setClauses] = useState<Clause[]>([])
+  const [installments, setInstallments] = useState<ClauseInstallment[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<AthleteStatus | 'Todos'>('Todos')
   const [showNew, setShowNew] = useState(false)
 
   useEffect(() => {
-    fetchAthletes().then(data => { setAthletes(data); setLoading(false) }).catch(() => setLoading(false))
+    Promise.all([fetchAthletes(), fetchAllClauses(), fetchAllInstallments(), fetchAllAlerts()])
+      .then(([aths, cls, inst, alts]) => {
+        setAthletes(aths); setClauses(cls); setInstallments(inst); setAlerts(alts)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
 
   const filtered = useMemo(() => athletes.filter(a => {
@@ -161,23 +172,22 @@ export default function PageAthletesList() {
     return true
   }), [athletes, filterStatus, search])
 
-  // Calcular stats por atleta (a partir dos mocks)
   const getAthleteStats = (id: string) => {
-    const clauses = CLAUSES_MOCK.filter(c => c.athlete_id === id)
-    const installments = INSTALLMENTS_MOCK.filter(i => i.athlete_id === id)
+    const aClauses = clauses.filter(c => c.athlete_id === id)
+    const aInst = installments.filter(i => i.athlete_id === id)
     const overdue = [
-      ...clauses.filter(c => isOverdue(c.due_date, c.payment_status)),
-      ...installments.filter(i => isOverdue(i.due_date, i.payment_status)),
+      ...aClauses.filter(c => isOverdue(c.due_date, c.payment_status)),
+      ...aInst.filter(i => isOverdue(i.due_date, i.payment_status)),
     ].length
     const soon = [
-      ...clauses.filter(c => isDueSoon(c.due_date, c.payment_status)),
-      ...installments.filter(i => isDueSoon(i.due_date, i.payment_status)),
+      ...aClauses.filter(c => isDueSoon(c.due_date, c.payment_status)),
+      ...aInst.filter(i => isDueSoon(i.due_date, i.payment_status)),
     ].length
     const openDates = [
-      ...clauses.filter(c => c.payment_status === 'PENDENTE' && c.due_date).map(c => c.due_date!),
-      ...installments.filter(i => i.payment_status === 'PENDENTE').map(i => i.due_date),
+      ...aClauses.filter(c => c.payment_status === 'PENDENTE' && c.due_date).map(c => c.due_date!),
+      ...aInst.filter(i => i.payment_status === 'PENDENTE').map(i => i.due_date),
     ].sort()
-    const unread = ALERTS_MOCK.filter(al => al.athlete_id === id && !al.is_read && al.severity === 'RED').length
+    const unread = alerts.filter(al => al.athlete_id === id && !al.is_read && al.severity === 'RED').length
     return { overdue, soon, nextDue: openDates[0] ?? null, unread }
   }
 
@@ -253,8 +263,8 @@ export default function PageAthletesList() {
               {filtered.map(a => {
                 const stats = getAthleteStats(a.id)
                 const st = STATUS_STYLE[a.current_status]
-                const clauses = CLAUSES_MOCK.filter(c => c.athlete_id === a.id)
-                const active = clauses.filter(c => !['PAGA','CANCELADA'].includes(c.payment_status)).length
+                const aClauses = clauses.filter(c => c.athlete_id === a.id)
+                const active = aClauses.filter(c => !['PAGA','CANCELADA'].includes(c.payment_status)).length
                 return (
                   <tr key={a.id} style={{ cursor: 'pointer' }}
                     onClick={() => navigate(`/atletas/${a.id}`)}
@@ -295,7 +305,9 @@ export default function PageAthletesList() {
                         {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
                       </div>
                     </td>
-                    <td style={{ ...td, width: 140, fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.agent_name ?? '—'}</td>
+                    <td style={{ ...td, width: 140, fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {a.intermediaries?.full_name ?? a.agent_name ?? '—'}
+                    </td>
                     <td style={{ ...td, width: 90, textAlign: 'right' }}>
                       <button onClick={e => { e.stopPropagation(); navigate(`/atletas/${a.id}`) }}
                         style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>

@@ -1,10 +1,71 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import PageHero from '../components/PageHero'
-import {
-  CONTRATOS_MOCK, CLAUSULAS_MOCK,
-  type ContratoVenda, type ClausulaVenda,
-  type TipoClausula, type StatusClausula, type MoedaContrato, type TipoTransferencia,
-} from '../data/clausulasMock'
+
+// ─── Inline types (previously imported from clausulasMock) ────────────────────
+
+type TipoClausula =
+  | 'Fixed'
+  | 'Variable'
+  | 'Contingent'
+  | 'Sell-On'
+  | 'Garantia'
+  | 'Opção'
+  | 'Proteção'
+  | 'Solidarity'
+  | 'Aceleração'
+  | 'Outro'
+
+type StatusClausula =
+  | 'Ativa'
+  | 'Garantida'
+  | 'Atingida'
+  | 'Parcialmente Atingida'
+  | 'Expirada'
+  | 'Suspensa'
+
+type TipoTransferencia =
+  | 'Permanent Transfer'
+  | 'Loan'
+  | 'Cessão Definitiva'
+  | 'Cessão Temporária'
+  | 'Outro'
+
+type MoedaContrato = 'EUR' | 'USD' | 'BRL' | 'GBP'
+
+interface ClausulaVenda {
+  id: number
+  contratoId: number
+  numeroClausula: string
+  descricao: string
+  tipoClausula: TipoClausula
+  subtipo: string
+  gatilhoCondicao: string
+  valorPorEvento: number | null
+  valorTexto: string
+  moeda: MoedaContrato
+  teto: number | null
+  tetoTexto: string
+  tetoGlobalCompartilhado: boolean
+  recorrente: boolean
+  observacoes: string
+  status: StatusClausula
+  valorRealizado: number
+  dataRealizacao: string
+}
+
+interface ContratoVenda {
+  id: number
+  nomeAtleta: string
+  nomeContrato: string
+  clubeDestino: string
+  dataContrato: string
+  tipoTransferencia: TipoTransferencia
+  moedaPrincipal: MoedaContrato
+  totalFixoGarantido: number
+  observacoes: string
+  ativo: boolean
+}
 
 // ─── Styling constants ────────────────────────────────────────────────────────
 
@@ -612,12 +673,11 @@ function ContratoCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PageClausulas() {
-  const [contratos, setContratos] = useState<ContratoVenda[]>(CONTRATOS_MOCK)
-  const [clausulas, setClausulas] = useState<ClausulaVenda[]>(CLAUSULAS_MOCK)
-  const [nextContratoId, setNextContratoId] = useState(CONTRATOS_MOCK.length + 1)
-  const [nextClausulaId, setNextClausulaId] = useState(CLAUSULAS_MOCK.length + 1)
+  // ── Data state ───────────────────────────────────────────────────────────────
+  const [contratos, setContratos] = useState<ContratoVenda[]>([])
+  const [clausulas, setClausulas] = useState<ClausulaVenda[]>([])
 
-  // UI state
+  // ── UI state ─────────────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'contrato' | 'tabela'>('contrato')
   const [filtroAtleta, setFiltroAtleta] = useState('Todos')
   const [filtroTipo, setFiltroTipo] = useState<TipoClausula | 'Todos'>('Todos')
@@ -630,7 +690,72 @@ export default function PageClausulas() {
   const [editClausula, setEditClausula] = useState<ClausulaVenda | null>(null)
   const [drawerClausula, setDrawerClausula] = useState<ClausulaVenda | null>(null)
 
-  // Derived
+  // ── Load from Supabase ───────────────────────────────────────────────────────
+  useEffect(() => {
+    async function load() {
+      const { data, error } = await supabase
+        .from('contratos_venda')
+        .select('*, atletas(nome), clausulas_venda(*)')
+        .order('id')
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      const contratosMapped: ContratoVenda[] = []
+      const clausulasMapped: ClausulaVenda[] = []
+
+      for (const row of data ?? []) {
+        const nomeAtleta: string = (row.atletas as { nome: string } | null)?.nome ?? ''
+        const clubeDestino: string = row.clube_destino ?? ''
+        const nomeContrato: string = row.nome_contrato ?? (nomeAtleta && clubeDestino ? `${nomeAtleta} → ${clubeDestino}` : nomeAtleta || `Contrato #${row.id}`)
+
+        contratosMapped.push({
+          id: row.id,
+          nomeAtleta,
+          nomeContrato,
+          clubeDestino,
+          dataContrato: row.data_inicio ?? '',
+          tipoTransferencia: (row.tipo_transferencia as TipoTransferencia) ?? 'Permanent Transfer',
+          moedaPrincipal: (row.moeda_principal as MoedaContrato) ?? 'EUR',
+          totalFixoGarantido: row.total_fixo_garantido ?? 0,
+          observacoes: row.notas ?? '',
+          ativo: true,
+        })
+
+        for (const cl of row.clausulas_venda ?? []) {
+          clausulasMapped.push({
+            id: cl.id,
+            contratoId: row.id,
+            numeroClausula: cl.numero_clausula ?? '',
+            descricao: cl.descricao ?? '',
+            tipoClausula: (cl.tipo_clausula as TipoClausula) ?? 'Outro',
+            subtipo: cl.subtipo ?? '',
+            gatilhoCondicao: cl.condicao ?? '',
+            valorPorEvento: cl.valor_base !== undefined && cl.valor_base !== null ? Number(cl.valor_base) : null,
+            valorTexto: cl.valor_texto ?? '',
+            moeda: (cl.moeda as MoedaContrato) ?? 'EUR',
+            teto: cl.teto !== undefined && cl.teto !== null ? Number(cl.teto) : null,
+            tetoTexto: cl.teto_texto ?? '',
+            tetoGlobalCompartilhado: cl.teto_global_compartilhado ?? false,
+            recorrente: cl.recorrente ?? false,
+            observacoes: cl.observacoes ?? '',
+            status: (cl.status as StatusClausula) ?? 'Ativa',
+            valorRealizado: cl.valor_realizado ?? 0,
+            dataRealizacao: cl.vencimento ?? '',
+          })
+        }
+      }
+
+      setContratos(contratosMapped)
+      setClausulas(clausulasMapped)
+    }
+
+    load()
+  }, [])
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
   const atletasUnicos = useMemo(() => {
     const nomes = [...new Set(contratos.map(c => c.nomeAtleta))].sort()
     return ['Todos', ...nomes]
@@ -669,31 +794,116 @@ export default function PageClausulas() {
     return { totalFixoEUR, totalFixoUSD, nSellOn, nOpcoes, nAtencao, totalRealizado }
   }, [contratos, clausulas])
 
-  // Mutations
-  function cycleStatus(id: number) {
-    setClausulas(prev => prev.map(c => {
-      if (c.id !== id) return c
-      const idx = STATUS_CYCLE.indexOf(c.status)
-      const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length]
-      return { ...c, status: next }
-    }))
+  // ── Mutations ────────────────────────────────────────────────────────────────
+  async function cycleStatus(id: number) {
+    const clausula = clausulas.find(c => c.id === id)
+    if (!clausula) return
+    const idx = STATUS_CYCLE.indexOf(clausula.status)
+    const newStatus = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length]
+
+    // Optimistic update
+    setClausulas(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c))
+
+    const { error } = await supabase
+      .from('clausulas_venda')
+      .update({ status: newStatus })
+      .eq('id', id)
+
+    if (error) {
+      console.error(error)
+      // Revert on failure
+      setClausulas(prev => prev.map(c => c.id === id ? { ...c, status: clausula.status } : c))
+    }
   }
 
-  function addContrato(data: Omit<ContratoVenda, 'id' | 'ativo'>) {
-    setContratos(prev => [...prev, { ...data, id: nextContratoId, ativo: true }])
-    setNextContratoId(n => n + 1)
+  async function addContrato(data: Omit<ContratoVenda, 'id' | 'ativo'>) {
+    const { data: inserted, error } = await supabase
+      .from('contratos_venda')
+      .insert({
+        clube_destino: data.clubeDestino,
+        tipo_transferencia: data.tipoTransferencia,
+        data_inicio: data.dataContrato || null,
+        moeda_principal: data.moedaPrincipal,
+        total_fixo_garantido: data.totalFixoGarantido,
+        notas: data.observacoes,
+        nome_contrato: data.nomeContrato,
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error(error)
+      return
+    }
+
+    setContratos(prev => [...prev, { ...data, id: inserted.id, ativo: true }])
   }
 
-  function addClausula(data: Omit<ClausulaVenda, 'id' | 'contratoId'>, contratoId: number) {
-    setClausulas(prev => [...prev, { ...data, id: nextClausulaId, contratoId }])
-    setNextClausulaId(n => n + 1)
+  async function addClausula(data: Omit<ClausulaVenda, 'id' | 'contratoId'>, contratoId: number) {
+    const { data: inserted, error } = await supabase
+      .from('clausulas_venda')
+      .insert({
+        contrato_id: contratoId,
+        numero_clausula: data.numeroClausula || null,
+        descricao: data.descricao,
+        tipo_clausula: data.tipoClausula,
+        subtipo: data.subtipo || null,
+        condicao: data.gatilhoCondicao || null,
+        valor_base: data.valorPorEvento,
+        valor_texto: data.valorTexto || null,
+        moeda: data.moeda,
+        teto: data.teto,
+        teto_texto: data.tetoTexto || null,
+        teto_global_compartilhado: data.tetoGlobalCompartilhado,
+        recorrente: data.recorrente,
+        observacoes: data.observacoes || null,
+        status: data.status,
+        valor_realizado: data.valorRealizado || 0,
+        vencimento: data.dataRealizacao || null,
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error(error)
+      return
+    }
+
+    setClausulas(prev => [...prev, { ...data, id: inserted.id, contratoId }])
   }
 
-  function saveClausula(data: ClausulaVenda) {
+  async function saveClausula(data: ClausulaVenda) {
+    const { error } = await supabase
+      .from('clausulas_venda')
+      .update({
+        numero_clausula: data.numeroClausula || null,
+        descricao: data.descricao,
+        tipo_clausula: data.tipoClausula,
+        subtipo: data.subtipo || null,
+        condicao: data.gatilhoCondicao || null,
+        valor_base: data.valorPorEvento,
+        valor_texto: data.valorTexto || null,
+        moeda: data.moeda,
+        teto: data.teto,
+        teto_texto: data.tetoTexto || null,
+        teto_global_compartilhado: data.tetoGlobalCompartilhado,
+        recorrente: data.recorrente,
+        observacoes: data.observacoes || null,
+        status: data.status,
+        valor_realizado: data.valorRealizado || 0,
+        vencimento: data.dataRealizacao || null,
+      })
+      .eq('id', data.id)
+
+    if (error) {
+      console.error(error)
+      return
+    }
+
     setClausulas(prev => prev.map(c => c.id === data.id ? data : c))
   }
 
-  // Styles
+  // ── Styles ───────────────────────────────────────────────────────────────────
   const th: React.CSSProperties = {
     padding: '8px 10px', fontSize: 9, fontWeight: 600, textTransform: 'uppercase',
     color: 'rgba(243,238,226,0.40)', background: 'rgba(0,0,0,0.15)',

@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react'
-import { atletas, parcelasDireitoImagem as parcelasMock, fmtData, statusBg, statusColor, type ParcelaDireitoImagem } from '../data/mockData'
+import React, { useState, useMemo, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
@@ -8,6 +8,52 @@ import { COLS_PARCELAS_IMAGEM } from '../lib/xlsx-utils'
 const font = "'Inter', system-ui, sans-serif"
 const fontLabel = "'IBM Plex Mono', 'JetBrains Mono', monospace"
 const fontData = "'JetBrains Mono', ui-monospace, monospace"
+
+// ── Inline types ──────────────────────────────────────────────────────────────
+
+type StatusParcela = 'Pago' | 'A pagar' | 'Atrasado' | 'Parcial' | 'Aguardando condição'
+
+interface ParcelaDireitoImagem {
+  id: number
+  atletaId: number
+  mes: string
+  valor: number
+  status: StatusParcela
+}
+
+interface AtletaImagem {
+  id: number
+  nome: string
+  statusContrato: string
+  alocacao: string
+  inicioContrato: string
+  fimContrato: string
+  direitoImagem: number
+  fotoArquivo: string
+}
+
+// ── Inline helpers (previously from mockData) ─────────────────────────────────
+
+const fmtData = (d: string) =>
+  new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')
+
+const statusColor: Record<string, string> = {
+  'Pago': '#1a7a4a',
+  'A pagar': '#555',
+  'Atrasado': '#c0392b',
+  'Parcial': '#e67e22',
+  'Aguardando condição': '#1a6fa0',
+}
+
+const statusBg: Record<string, string> = {
+  'Pago': '#e6f9f0',
+  'A pagar': '#f5f5f5',
+  'Atrasado': '#ffeef0',
+  'Parcial': '#fff3e0',
+  'Aguardando condição': '#e8f4fd',
+}
+
+// ── Sort / KPI types ──────────────────────────────────────────────────────────
 
 type SortField = 'nome' | 'statusContrato' | 'alocacao' | 'inicioContrato' | 'fimContrato' | 'parcelas' | 'direitoImagem' | 'pagas'
 type SortDir = 'asc' | 'desc'
@@ -36,16 +82,68 @@ const contractBg: Record<string, string> = {
 const contractColor: Record<string, string> = {
   'Elenco': '#1a7a4a', 'Emprestado': '#e67e22', 'Rescindido': '#c0392b',
 }
+
 export default function PageImagem() {
   const { fmtMiC, symbol, t, navigateToAtleta } = useApp()
-  const [parcelasDireitoImagem, setParcelasDireitoImagem] = useState<ParcelaDireitoImagem[]>(parcelasMock)
 
+  // ── Data state ───────────────────────────────────────────────────────────────
+  const [atletas, setAtletas] = useState<AtletaImagem[]>([])
+  const [parcelasDireitoImagem, setParcelasDireitoImagem] = useState<ParcelaDireitoImagem[]>([])
+
+  // ── UI state ─────────────────────────────────────────────────────────────────
   const [busca, setBusca] = useState('')
   const [statusFiltro, setStatusFiltro] = useState('Todos')
   const [sortField, setSortField] = useState<SortField>('direitoImagem')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
 
+  // ── Load from Supabase ───────────────────────────────────────────────────────
+  useEffect(() => {
+    async function load() {
+      const { data, error } = await supabase
+        .from('atletas')
+        .select('id, nome, status_contrato, alocacao, inicio_contrato, fim_contrato, direito_imagem, foto_arquivo, parcelas_direito_imagem(*)')
+        .order('nome')
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      const atletasMapped: AtletaImagem[] = []
+      const parcelasMapped: ParcelaDireitoImagem[] = []
+
+      for (const row of data ?? []) {
+        atletasMapped.push({
+          id: row.id,
+          nome: row.nome,
+          statusContrato: row.status_contrato,
+          alocacao: row.alocacao,
+          inicioContrato: row.inicio_contrato,
+          fimContrato: row.fim_contrato,
+          direitoImagem: row.direito_imagem,
+          fotoArquivo: row.foto_arquivo,
+        })
+
+        for (const p of row.parcelas_direito_imagem ?? []) {
+          parcelasMapped.push({
+            id: p.id,
+            atletaId: row.id,
+            mes: p.mes,
+            valor: p.valor,
+            status: p.status as StatusParcela,
+          })
+        }
+      }
+
+      setAtletas(atletasMapped)
+      setParcelasDireitoImagem(parcelasMapped)
+    }
+
+    load()
+  }, [])
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
   const toggleExpand = (id: number) => {
     setExpandedIds(prev => {
       const next = new Set(prev)
@@ -59,18 +157,19 @@ export default function PageImagem() {
     else { setSortField(field); setSortDir('desc') }
   }
 
+  // ── Derived ──────────────────────────────────────────────────────────────────
   const filtrados = useMemo(() => atletas.filter(a => {
     const okBusca = a.nome.toLowerCase().includes(busca.toLowerCase())
     const okStatus = statusFiltro === 'Todos' || statusFiltro === t('Todos') || a.statusContrato === statusFiltro
     return okBusca && okStatus
-  }), [busca, statusFiltro, t])
+  }), [atletas, busca, statusFiltro, t])
 
   const atletasComDados = useMemo(() => filtrados.map(a => {
     const parcelas = parcelasDireitoImagem.filter(p => p.atletaId === a.id)
     const totalParcelas = parcelas.length
     const pagas = parcelas.filter(p => p.status === 'Pago').length
     return { ...a, totalParcelas, pagas }
-  }), [filtrados])
+  }), [filtrados, parcelasDireitoImagem])
 
   const sorted = useMemo(() => [...atletasComDados].sort((a, b) => {
     let va: string | number = 0, vb: string | number = 0
