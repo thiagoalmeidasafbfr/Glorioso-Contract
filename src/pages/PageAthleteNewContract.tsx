@@ -65,6 +65,8 @@ export default function PageAthleteNewContract() {
     end_date: '',
     transfer_fee_gross: null,
     transfer_currency: 'EUR',
+    base_salary: null,
+    salary_currency: 'BRL',
     description: '',
     status: 'ATIVO',
   })
@@ -277,6 +279,33 @@ export default function PageAthleteNewContract() {
                   {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
+            </div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
+              Salário Base
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
+              <div>
+                <label style={labelStyle}>Salário base (mensal)</label>
+                <input
+                  type="number" min={0} step={0.01}
+                  value={contract.base_salary ?? ''}
+                  onChange={e => setContractField('base_salary', e.target.value ? parseFloat(e.target.value) : null)}
+                  placeholder="Ex: 200000"
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Moeda</label>
+                <select value={contract.salary_currency} onChange={e => setContractField('salary_currency', e.target.value as Currency)} style={inputStyle}>
+                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 10 }}>
+              Metas de mudança salarial (ex.: "ao atingir 10 jogos → 300k") são cadastradas na aba <strong>Salário &amp; Metas</strong> do atleta após criar o vínculo.
             </div>
           </div>
 
