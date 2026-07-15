@@ -75,7 +75,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
             const found = list.find(x => x.name === name)
             onChange(name, found?.sub)
           }} style={{ ...inp, flex: 1 }}>
-            <option value="">{placeholder ?? (isClube ? '— selecione o clube —' : '— selecione o intermediário —')}</option>
+            <option value="">{placeholder ?? (isClube ? '— selecione o clube —' : '— selecione o agente —')}</option>
             {list.map(x => <option key={x.id} value={x.name}>{x.name}{x.sub ? ` (${x.sub})` : ''}</option>)}
           </select>
           <button type="button" onClick={() => { setCreating(true); setNewName('') }}
@@ -86,7 +86,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 8, border: '1px solid rgba(190,140,74,0.30)', background: 'rgba(190,140,74,0.06)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <input autoFocus style={inp} value={newName} onChange={e => setNewName(e.target.value)} placeholder={isClube ? 'Nome do clube' : 'Nome do intermediário'} />
+            <input autoFocus style={inp} value={newName} onChange={e => setNewName(e.target.value)} placeholder={isClube ? 'Nome do clube' : 'Nome do agente'} />
             <input style={inp} value={newSub} onChange={e => setNewSub(e.target.value)} placeholder={isClube ? 'País (opcional)' : 'Contato (opcional)'} />
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

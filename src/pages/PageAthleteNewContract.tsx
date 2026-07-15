@@ -72,10 +72,13 @@ export default function PageAthleteNewContract() {
     status: 'ATIVO',
   })
 
-  // Empresário / intermediário desta transação
-  const [intermediary, setIntermediary] = useState<{ name: string; amount: string; currency: Currency; direction: LiabilityDirection; notes: string }>({
-    name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR', notes: '',
-  })
+  // Agentes desta transação (um vínculo pode ter vários, com valores distintos).
+  interface AgentRow { name: string; amount: string; currency: Currency; direction: LiabilityDirection }
+  const emptyAgent: AgentRow = { name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR' }
+  const [agents, setAgents] = useState<AgentRow[]>([])
+  const addAgent = () => setAgents(prev => [...prev, { ...emptyAgent }])
+  const removeAgent = (i: number) => setAgents(prev => prev.filter((_, idx) => idx !== i))
+  const setAgent = (i: number, patch: Partial<AgentRow>) => setAgents(prev => prev.map((a, idx) => idx === i ? { ...a, ...patch } : a))
 
   // Step 2 — Clauses
   const [clauses, setClauses] = useState<Partial<NewClauseInput>[]>([])
@@ -144,20 +147,21 @@ export default function PageAthleteNewContract() {
     try {
       const savedContract = await createContract(id, contract)
 
-      // Empresário/intermediário desta transação → passivo vinculado ao atleta.
-      if (intermediary.name.trim()) {
+      // Agentes desta transação → um passivo vinculado ao atleta por agente.
+      for (const ag of agents) {
+        if (!ag.name.trim()) continue
         await createIntermediaryLiability(id, {
-          intermediary_name: intermediary.name.trim(),
-          description: `Intermediação — ${CONTRACT_TYPE_LABELS[contract.type]}${contract.counterpart_club ? ` (${contract.counterpart_club})` : ''}`,
-          direction: intermediary.direction,
-          amount: intermediary.amount ? parseFloat(intermediary.amount) : 0,
-          currency: intermediary.currency,
+          intermediary_name: ag.name.trim(),
+          description: `Agenciamento — ${CONTRACT_TYPE_LABELS[contract.type]}${contract.counterpart_club ? ` (${contract.counterpart_club})` : ''}`,
+          direction: ag.direction,
+          amount: ag.amount ? parseFloat(ag.amount) : 0,
+          currency: ag.currency,
           due_date: null,
           conditional: false,
           condition_description: '',
           penalty_terms: '',
           status: 'PENDENTE',
-          notes: intermediary.notes,
+          notes: '',
         })
       }
 
@@ -341,39 +345,54 @@ export default function PageAthleteNewContract() {
           </div>
 
           <div style={cardStyle}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
-              Empresário / Intermediário desta transação
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a' }}>
+                Agentes desta transação
+              </div>
+              <button type="button" onClick={addAgent}
+                style={{ padding: '6px 14px', borderRadius: 7, border: '1px dashed rgba(190,140,74,0.45)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                + Adicionar agente
+              </button>
             </div>
-            <EntityPicker
-              kind="intermediario"
-              label="Intermediário (opcional)"
-              value={intermediary.name}
-              onChange={name => setIntermediary(prev => ({ ...prev, name }))}
-            />
-            {intermediary.name && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 14 }}>
-                <div>
-                  <label style={labelStyle}>Comissão / valor</label>
-                  <input type="number" min={0} step={0.01} value={intermediary.amount}
-                    onChange={e => setIntermediary(prev => ({ ...prev, amount: e.target.value }))} placeholder="0.00" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Moeda</label>
-                  <select value={intermediary.currency} onChange={e => setIntermediary(prev => ({ ...prev, currency: e.target.value as Currency }))} style={inputStyle}>
-                    {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>Direção</label>
-                  <select value={intermediary.direction} onChange={e => setIntermediary(prev => ({ ...prev, direction: e.target.value as LiabilityDirection }))} style={inputStyle}>
-                    <option value="A_PAGAR">A pagar</option>
-                    <option value="A_RECEBER">A receber</option>
-                  </select>
-                </div>
+
+            {agents.length === 0 && (
+              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'rgba(26,20,16,0.45)' }}>
+                Nenhum agente nesta transação. Um vínculo pode ter vários agentes, com valores iguais ou diferentes.
               </div>
             )}
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 10 }}>
-              O intermediário fica vinculado a este atleta e aparece no cadastro de Intermediários e no relatório.
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {agents.map((ag, i) => (
+                <div key={i} style={{ padding: 14, borderRadius: 8, border: '1px solid rgba(190,140,74,0.20)', background: 'rgba(190,140,74,0.04)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)' }}>Agente {i + 1}</span>
+                    <button type="button" onClick={() => removeAgent(i)} style={{ background: 'none', border: 'none', color: 'rgba(220,38,38,0.75)', cursor: 'pointer', fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>Remover</button>
+                  </div>
+                  <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 12 }}>
+                    <div>
+                      <label style={labelStyle}>Comissão / valor</label>
+                      <input type="number" min={0} step={0.01} value={ag.amount} onChange={e => setAgent(i, { amount: e.target.value })} placeholder="0.00" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Moeda</label>
+                      <select value={ag.currency} onChange={e => setAgent(i, { currency: e.target.value as Currency })} style={inputStyle}>
+                        {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Direção</label>
+                      <select value={ag.direction} onChange={e => setAgent(i, { direction: e.target.value as LiabilityDirection })} style={inputStyle}>
+                        <option value="A_PAGAR">A pagar</option>
+                        <option value="A_RECEBER">A receber</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 12 }}>
+              Cada agente fica vinculado a este atleta e aparece no cadastro de Agentes e no relatório.
             </div>
           </div>
 

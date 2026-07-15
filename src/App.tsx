@@ -19,10 +19,10 @@ import PageCadastroDetail from './pages/PageCadastroDetail'
 // Relatórios
 import PageRelatorio from './pages/PageRelatorio'
 import PageConsolidado from './pages/PageConsolidado'
-import PageImport from './pages/PageImport'
+import PageDados from './pages/PageDados'
 
 function AppRoutes() {
-  const { session, loading, isMaster } = useAuth()
+  const { session, loading } = useAuth()
 
   if (USE_SUPABASE && loading) {
     return (
@@ -67,7 +67,8 @@ function AppRoutes() {
           <Route path="/relatorios/consolidado" element={<PageConsolidado />} />
           <Route path="/relatorios/:kind" element={<PageRelatorio />} />
 
-          {isMaster && <Route path="/import" element={<PageImport />} />}
+          {/* Importar / Exportar */}
+          <Route path="/dados" element={<PageDados />} />
 
           <Route path="*" element={<Navigate to="/atletas" replace />} />
         </Routes>

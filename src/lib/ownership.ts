@@ -22,7 +22,7 @@ export function bfrShare(rights: Pick<EconomicRight, 'holder_type' | 'percentage
 }
 
 // Ordem de exibição estável dos detentores na barra.
-const HOLDER_ORDER: Record<HolderType, number> = { BFR: 0, CLUBE: 1, TERCEIRO: 2, ATLETA: 3 }
+const HOLDER_ORDER: Record<HolderType, number> = { BFR: 0, CLUBE: 1, AGENTE: 2, ATLETA: 3, TERCEIRO: 4 }
 
 export function sortRights<T extends Pick<EconomicRight, 'holder_type'>>(rights: T[]): T[] {
   return [...rights].sort((a, b) => HOLDER_ORDER[a.holder_type] - HOLDER_ORDER[b.holder_type])

@@ -12,7 +12,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
     items: [
       { to: '/atletas',        label: 'Atletas' },
       { to: '/clubes',         label: 'Clubes' },
-      { to: '/intermediarios', label: 'Intermediários' },
+      { to: '/intermediarios', label: 'Agentes' },
     ],
   },
   {
@@ -20,10 +20,16 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
     items: [
       { to: '/relatorios/imagem',        label: 'Direito de Imagem' },
       { to: '/relatorios/luvas',         label: 'Luvas' },
-      { to: '/relatorios/intermediarios', label: 'Intermediários' },
+      { to: '/relatorios/intermediarios', label: 'Agentes' },
       { to: '/relatorios/clubes',        label: 'Clubes' },
       { to: '/relatorios/salarios',      label: 'Salários' },
       { to: '/relatorios/consolidado',   label: 'Consolidado' },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { to: '/dados', label: 'Importar / Exportar' },
     ],
   },
 ]

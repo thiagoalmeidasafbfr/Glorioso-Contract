@@ -39,7 +39,7 @@ export type AlertSeverity = 'RED' | 'YELLOW' | 'GREEN'
 export type Currency = 'BRL' | 'EUR' | 'USD' | 'GBP'
 
 // Detentor de direitos econômicos do atleta.
-export type HolderType = 'BFR' | 'CLUBE' | 'TERCEIRO' | 'ATLETA'
+export type HolderType = 'BFR' | 'CLUBE' | 'AGENTE' | 'ATLETA' | 'TERCEIRO'
 
 export interface Athlete {
   id: string
@@ -248,16 +248,18 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
 export const HOLDER_TYPE_LABELS: Record<HolderType, string> = {
   BFR:      'Botafogo',
   CLUBE:    'Clube',
-  TERCEIRO: 'Terceiro',
+  AGENTE:   'Agente',
   ATLETA:   'Atleta',
+  TERCEIRO: 'Terceiro',
 }
 
 // Cores da barra de titularidade — alinhadas ao tema (dourado = Botafogo).
 export const HOLDER_TYPE_COLORS: Record<HolderType, string> = {
   BFR:      '#be8c4a',
   CLUBE:    '#7a6244',
-  TERCEIRO: '#b9a88a',
+  AGENTE:   '#a07d3c',
   ATLETA:   '#3a2e1c',
+  TERCEIRO: '#b9a88a',
 }
 
 // ── Gatilhos de mudança salarial por meta ──────────────────────────────────
