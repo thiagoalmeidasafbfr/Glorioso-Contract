@@ -32,6 +32,7 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 4. `004_athletes_system.sql`
 5. `005_economic_rights.sql`
 6. `006_athlete_central.sql`  ← **salário base + metas de salário + passivos (clube/intermediário) + direito de imagem**
+7. `007_clubs_intermediaries.sql`  ← **cadastros de clubes e intermediários (com escudo/logo)**
 
 > Se preferir a CLI do Supabase: `supabase link --project-ref <ref>` e depois
 > `supabase db push` (aplica tudo de `supabase/migrations/` em ordem).

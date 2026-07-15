@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import ImageUpload from '../components/ImageUpload'
 import {
-  fetchAthlete, fetchAthleteContracts, fetchAthleteClauses,
+  fetchAthlete, updateAthlete, fetchAthleteContracts, fetchAthleteClauses,
   fetchAthleteInstallments, fetchAthleteAlerts, markAlertRead,
   updateClause, registerInstallmentPayment,
   fetchAthleteEconomicRights, createEconomicRight, updateEconomicRight, deleteEconomicRight,
@@ -65,21 +66,12 @@ function StatusBadge({ status, map }: { status: string; map: Record<string, { bg
   )
 }
 
-function Avatar({ athlete }: { athlete: Athlete }) {
-  const [err, setErr] = useState(false)
-  const initials = athlete.short_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-  if (athlete.profile_photo_url && !err) {
-    return <img src={athlete.profile_photo_url} alt={athlete.short_name} onError={() => setErr(true)}
-      style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(190,140,74,0.35)', flexShrink: 0 }} />
-  }
+// Rótulo em caixa-alta discreto para pares label/valor no cabeçalho.
+function LabelSpan({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg, #1a1410 0%, #3a2e1c 100%)',
-      border: '3px solid rgba(190,140,74,0.35)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: fontMono, fontSize: 24, fontWeight: 700, color: '#be8c4a',
-    }}>{initials}</div>
+    <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginRight: 2 }}>
+      {children}
+    </span>
   )
 }
 
@@ -117,42 +109,67 @@ function ClauseActions({ clause, onMarkAchieved, onPay, onCancel }: {
   onCancel: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  function toggle() {
+    const el = btnRef.current
+    if (el && !open) {
+      const r = el.getBoundingClientRect()
+      // Menu ancorado ABAIXO do botão, alinhado à direita — posição fixed para
+      // não ser cortado por overflow do card/tabela (bug relatado).
+      setPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) })
+    }
+    setOpen(o => !o)
+  }
+
+  const item: React.CSSProperties = {
+    width: '100%', padding: '9px 16px', textAlign: 'left', background: 'none',
+    border: 'none', fontSize: 12.5, fontFamily: font, cursor: 'pointer', whiteSpace: 'nowrap',
+  }
+  const canPay = clause.payment_status !== 'PAGA' && clause.payment_status !== 'CANCELADA' && !!clause.original_value
+  const canAchieve = clause.achievement_status === 'PENDENTE'
+  const canCancel = clause.payment_status !== 'CANCELADA'
+
   return (
-    <div style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(o => !o)}
-        style={{ padding: '4px 8px', borderRadius: 5, border: '1px solid var(--divider-strong)', background: 'transparent', fontSize: 11, fontFamily: font, cursor: 'pointer', color: 'var(--text-secondary)' }}>
+    <>
+      <button ref={btnRef} onClick={toggle} aria-label="Ações"
+        style={{ width: 28, height: 26, borderRadius: 6, border: '1px solid var(--divider-strong)', background: open ? 'var(--cream-inset)' : 'transparent', fontSize: 15, lineHeight: 1, fontFamily: font, cursor: 'pointer', color: 'var(--text-secondary)' }}>
         ⋯
       </button>
       {open && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setOpen(false)} />
           <div style={{
-            position: 'absolute', right: 0, top: '110%', background: 'var(--cream-card)',
-            border: '1px solid var(--divider)', borderRadius: 8, padding: '4px 0',
-            boxShadow: 'var(--shadow-panel)', zIndex: 50, minWidth: 180,
+            position: 'fixed', top: pos.top, right: pos.right,
+            background: 'var(--cream-card)', border: '1px solid var(--divider-strong)',
+            borderRadius: 8, padding: '4px 0', boxShadow: 'var(--shadow-panel)', zIndex: 1000, minWidth: 210,
           }}>
-            {clause.achievement_status === 'PENDENTE' && (
-              <button onClick={() => { onMarkAchieved(); setOpen(false) }}
-                style={{ width: '100%', padding: '8px 14px', textAlign: 'left', background: 'none', border: 'none', fontSize: 12, fontFamily: font, cursor: 'pointer', color: 'var(--ink-primary)' }}>
-                ✓ Marcar como Atingida
+            {canAchieve && (
+              <button onClick={() => { onMarkAchieved(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                Marcar como atingida
               </button>
             )}
-            {clause.payment_status !== 'PAGA' && clause.payment_status !== 'CANCELADA' && clause.original_value && (
-              <button onClick={() => { onPay(); setOpen(false) }}
-                style={{ width: '100%', padding: '8px 14px', textAlign: 'left', background: 'none', border: 'none', fontSize: 12, fontFamily: font, cursor: 'pointer', color: 'var(--ink-primary)' }}>
-                💰 Registrar Pagamento
+            {canPay && (
+              <button onClick={() => { onPay(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                Registrar pagamento
               </button>
             )}
-            {clause.payment_status !== 'CANCELADA' && (
-              <button onClick={() => { onCancel(); setOpen(false) }}
-                style={{ width: '100%', padding: '8px 14px', textAlign: 'left', background: 'none', border: 'none', fontSize: 12, fontFamily: font, cursor: 'pointer', color: 'var(--neg)' }}>
-                ✕ Cancelar Cláusula
+            {canCancel && (
+              <button onClick={() => { onCancel(); setOpen(false) }} style={{ ...item, color: 'var(--neg)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--neg-tint)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                Cancelar cláusula
               </button>
+            )}
+            {!canAchieve && !canPay && !canCancel && (
+              <div style={{ ...item, color: 'var(--text-muted)', cursor: 'default' }}>Sem ações disponíveis</div>
             )}
           </div>
         </>
       )}
-    </div>
+    </>
   )
 }
 
@@ -304,6 +321,77 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: {
   )
 }
 
+// ── Editar atleta ────────────────────────────────────────────────────────
+
+const ATHLETE_POSITIONS = ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante']
+
+function EditAthleteModal({ athlete, onClose, onSaved }: { athlete: Athlete; onClose: () => void; onSaved: (a: Athlete) => void }) {
+  const [f, setF] = useState({
+    full_name: athlete.full_name, short_name: athlete.short_name,
+    position: athlete.position ?? '', current_status: athlete.current_status,
+    nationality: athlete.nationality ?? '', birth_date: athlete.birth_date ?? '',
+    cpf: athlete.cpf ?? '', passport_number: athlete.passport_number ?? '',
+    agent_name: athlete.agent_name ?? '', agent_contact: athlete.agent_contact ?? '',
+    notes: athlete.notes ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+
+  async function save() {
+    if (!f.full_name.trim()) return
+    setSaving(true)
+    try {
+      const updated = await updateAthlete(athlete.id, {
+        full_name: f.full_name.trim(), short_name: f.short_name.trim() || f.full_name.trim().split(' ')[0],
+        position: f.position || null, current_status: f.current_status,
+        nationality: f.nationality || null, birth_date: f.birth_date || null,
+        cpf: f.cpf || null, passport_number: f.passport_number || null,
+        agent_name: f.agent_name || null, agent_contact: f.agent_contact || null,
+        notes: f.notes || null,
+      })
+      onSaved(updated)
+    } finally { setSaving(false) }
+  }
+
+  const field = (label: string, key: keyof typeof f, type = 'text', opts?: string[]) => (
+    <div>
+      <label style={lbl}>{label}</label>
+      {opts
+        ? <select style={inp} value={f[key]} onChange={e => set(key, e.target.value)}>{opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}</select>
+        : <input type={type} style={inp} value={f[key]} onChange={e => set(key, e.target.value)} />}
+    </div>
+  )
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 620, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar atleta</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {field('Nome completo *', 'full_name')}
+          {field('Nome curto', 'short_name')}
+          {field('Posição', 'position', 'text', ATHLETE_POSITIONS)}
+          {field('Status', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          {field('Nacionalidade', 'nationality')}
+          {field('Nascimento', 'birth_date', 'date')}
+          {field('CPF', 'cpf')}
+          {field('Passaporte', 'passport_number')}
+          {field('Agente', 'agent_name')}
+          {field('Contato do agente', 'agent_contact')}
+        </div>
+        <div><label style={lbl}>Observações</label><textarea style={{ ...inp, minHeight: 56, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={save} disabled={saving || !f.full_name.trim()} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────
 
 export default function PageAthleteDetail() {
@@ -326,6 +414,7 @@ export default function PageAthleteDetail() {
   const [tab, setTab] = useState<Tab>('salario')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [payInstallId, setPayInstallId] = useState<string | null>(null)
+  const [showEdit, setShowEdit] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -451,6 +540,12 @@ export default function PageAthleteDetail() {
     setTriggers(prev => prev.filter(t => t.id !== triggerId))
   }
 
+  async function handlePhoto(url: string | null) {
+    if (!id) return
+    const updated = await updateAthlete(id, { profile_photo_url: url })
+    setAthlete(updated)
+  }
+
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', fontFamily: fontMono, color: 'var(--text-muted)', fontSize: 12, letterSpacing: '0.14em' }}>
       CARREGANDO...
@@ -490,8 +585,8 @@ export default function PageAthleteDetail() {
 
       {/* ── Athlete Header ── */}
       <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <Avatar athlete={athlete} />
+        <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <ImageUpload value={athlete.profile_photo_url} onChange={handlePhoto} fallbackText={athlete.short_name} size={80} editable={canEdit} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, margin: 0 }}>{athlete.full_name}</h1>
@@ -499,23 +594,26 @@ export default function PageAthleteDetail() {
                 {st.label}
               </span>
               {unreadCrit > 0 && (
-                <span title={`${unreadCrit} alerta(s) crítico(s)`} style={{ padding: '3px 8px', borderRadius: 5, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, cursor: 'pointer' }} onClick={() => setTab('alertas')}>
-                  🔴 {unreadCrit}
+                <span title={`${unreadCrit} alerta(s) crítico(s)`} onClick={() => setTab('alertas')}
+                  style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.06em', cursor: 'pointer' }}>
+                  {unreadCrit} {unreadCrit === 1 ? 'crítico' : 'críticos'}
                 </span>
               )}
               {warnCount > 0 && (
-                <span title={`${warnCount} alerta(s) de atenção`} style={{ padding: '3px 8px', borderRadius: 5, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, cursor: 'pointer' }} onClick={() => setTab('alertas')}>
-                  🟡 {warnCount}
+                <span title={`${warnCount} alerta(s) de atenção`} onClick={() => setTab('alertas')}
+                  style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.06em', cursor: 'pointer' }}>
+                  {warnCount} atenção
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
-              {athlete.nationality && <span>🌍 {athlete.nationality}</span>}
-              {athlete.birth_date && <span>📅 {fmtDate(athlete.birth_date)}</span>}
-              {athlete.agent_name && <span>🤝 Agente: {athlete.agent_name}{athlete.agent_contact ? ` — ${athlete.agent_contact}` : ''}</span>}
+            <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
+              {athlete.position && <span><LabelSpan>Posição</LabelSpan> {athlete.position}</span>}
+              {athlete.nationality && <span><LabelSpan>Nacionalidade</LabelSpan> {athlete.nationality}</span>}
+              {athlete.birth_date && <span><LabelSpan>Nasc.</LabelSpan> {fmtDate(athlete.birth_date)}</span>}
+              {athlete.agent_name && <span><LabelSpan>Agente</LabelSpan> {athlete.agent_name}{athlete.agent_contact ? ` — ${athlete.agent_contact}` : ''}</span>}
             </div>
             {athlete.notes && (
-              <div style={{ marginTop: 8, fontSize: 12, color: athlete.notes.includes('⚠️') ? 'var(--warn)' : 'var(--text-muted)', background: athlete.notes.includes('⚠️') ? 'var(--warn-tint)' : 'var(--bg-subtle)', borderRadius: 6, padding: '6px 10px', fontFamily: font }}>
+              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', borderLeft: '2px solid var(--gold-ring)', borderRadius: 4, padding: '7px 12px', fontFamily: font }}>
                 {athlete.notes}
               </div>
             )}
@@ -523,8 +621,14 @@ export default function PageAthleteDetail() {
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {canEdit && (
+              <button onClick={() => setShowEdit(true)}
+                style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                Editar
+              </button>
+            )}
             <Link to={`/atletas/${athlete.id}/contratos/novo`}
-              style={{ padding: '8px 16px', background: '#be8c4a', border: 'none', borderRadius: 8, color: '#fff', fontFamily: font, fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>
+              style={{ padding: '8px 16px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: font, fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>
               + Novo Vínculo
             </Link>
           </div>
@@ -576,7 +680,7 @@ export default function PageAthleteDetail() {
 
         {!isOwnershipValid(rights) && rights.length > 0 && (
           <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 12, fontFamily: font }}>
-            ⚠️ A soma dos direitos econômicos é {sumOwnership(rights).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% e deveria totalizar 100%. Verifique o cadastro.
+            A soma dos direitos econômicos é {sumOwnership(rights).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% e deveria totalizar 100%. Verifique o cadastro.
           </div>
         )}
 
@@ -737,7 +841,7 @@ export default function PageAthleteDetail() {
                         {c.condition_description && (
                           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.condition_description}</div>
                         )}
-                        {c.notes?.includes('⚠️') && <span style={{ fontSize: 10, color: 'var(--warn)' }}>⚠️</span>}
+                        {c.notes?.includes('⚠️') && <span title="Observação de atenção" style={{ display: 'inline-block', fontSize: 8, fontWeight: 700, color: 'var(--warn)', border: '1px solid var(--warn)', borderRadius: 3, padding: '0 4px', fontFamily: fontMono, letterSpacing: '0.06em' }}>ATENÇÃO</span>}
                       </td>
                       <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
                       <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
@@ -963,8 +1067,7 @@ export default function PageAthleteDetail() {
             }
             const ss = sevStyle[al.severity]
             return (
-              <div key={al.id} style={{ background: ss.bg, border: `1px solid ${ss.border}`, borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, opacity: al.is_read ? 0.55 : 1 }}>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>{al.severity === 'RED' ? '🔴' : al.severity === 'YELLOW' ? '🟡' : '🟢'}</span>
+              <div key={al.id} style={{ background: ss.bg, border: `1px solid ${ss.border}`, borderLeft: `3px solid ${ss.fg}`, borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, opacity: al.is_read ? 0.55 : 1 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: al.is_read ? 400 : 600, color: ss.fg, fontFamily: font }}>{al.message}</div>
                   <div style={{ fontSize: 10, color: ss.fg, opacity: 0.65, marginTop: 3, fontFamily: fontMono }}>{fmtDate(al.created_at)}</div>
@@ -999,6 +1102,9 @@ export default function PageAthleteDetail() {
           onClose={() => setPayInstallId(null)}
           onSave={p => handleInstallmentPayment(payInstall.id, p)}
         />
+      )}
+      {showEdit && athlete && (
+        <EditAthleteModal athlete={athlete} onClose={() => setShowEdit(false)} onSaved={a => { setAthlete(a); setShowEdit(false) }} />
       )}
     </div>
   )
