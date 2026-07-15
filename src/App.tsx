@@ -6,19 +6,20 @@ import { USE_SUPABASE } from './lib/supabase'
 import Layout from './components/Layout'
 import PageLogin from './pages/PageLogin'
 
-// Páginas do sistema de atletas (novo)
+// Sistema de atletas
 import PageDashboard from './pages/PageDashboard'
 import PageAthletesList from './pages/PageAthletesList'
 import PageAthleteDetail from './pages/PageAthleteDetail'
 import PageAthleteNewContract from './pages/PageAthleteNewContract'
 
-// Páginas legadas
+// Cadastros (clubes / intermediários)
+import PageCadastros from './pages/PageCadastros'
+import PageCadastroDetail from './pages/PageCadastroDetail'
+
+// Relatórios
+import PageRelatorio from './pages/PageRelatorio'
 import PageConsolidado from './pages/PageConsolidado'
-import PageClubes from './pages/PageClubes'
-import PageIntermediarios from './pages/PageIntermediarios'
-import PageImagem from './pages/PageImagem'
 import PageImport from './pages/PageImport'
-import PageClausulas from './pages/PageClausulas'
 
 function AppRoutes() {
   const { session, loading, isMaster } = useAuth()
@@ -50,18 +51,22 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<Navigate to="/atletas" replace />} />
 
-          {/* ── Sistema de Atletas (principal) ── */}
+          {/* Atletas */}
           <Route path="/dashboard" element={<PageDashboard />} />
           <Route path="/atletas" element={<PageAthletesList />} />
           <Route path="/atletas/:id" element={<PageAthleteDetail />} />
           <Route path="/atletas/:id/contratos/novo" element={<PageAthleteNewContract />} />
 
-          {/* ── Páginas legadas ── */}
-          <Route path="/consolidado" element={<PageConsolidado />} />
-          <Route path="/clubes" element={<PageClubes />} />
-          <Route path="/intermediarios" element={<PageIntermediarios />} />
-          <Route path="/imagem" element={<PageImagem />} />
-          <Route path="/clausulas-venda" element={<PageClausulas />} />
+          {/* Cadastros */}
+          <Route path="/clubes" element={<PageCadastros kind="clube" />} />
+          <Route path="/clubes/:id" element={<PageCadastroDetail kind="clube" />} />
+          <Route path="/intermediarios" element={<PageCadastros kind="intermediario" />} />
+          <Route path="/intermediarios/:id" element={<PageCadastroDetail kind="intermediario" />} />
+
+          {/* Relatórios */}
+          <Route path="/relatorios/consolidado" element={<PageConsolidado />} />
+          <Route path="/relatorios/:kind" element={<PageRelatorio />} />
+
           {isMaster && <Route path="/import" element={<PageImport />} />}
 
           <Route path="*" element={<Navigate to="/atletas" replace />} />

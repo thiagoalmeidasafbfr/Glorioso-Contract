@@ -45,10 +45,10 @@ function AthleteAvatar({ athlete, size = 38 }: { athlete: Athlete; size?: number
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg, #1a1410 0%, #3a2e1c 100%)',
-      border: '2px solid rgba(190,140,74,0.30)',
+      background: 'var(--cream-inset)',
+      border: '1px solid var(--divider-strong)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: fontMono, fontSize: size * 0.36, fontWeight: 700, color: '#be8c4a',
+      fontFamily: fontMono, fontSize: size * 0.32, fontWeight: 600, color: 'var(--gold-deep)',
     }}>
       {getInitials(athlete.short_name)}
     </div>
@@ -340,13 +340,13 @@ export default function PageAthletesList() {
                     <td style={{ ...td, width: 100 }}>
                       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                         {stats.overdue > 0 && (
-                          <span title={`${stats.overdue} em atraso`} style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 9, fontFamily: fontMono, fontWeight: 600 }}>
-                            🔴 {stats.overdue}
+                          <span title={`${stats.overdue} em atraso`} style={{ padding: '2px 7px', borderRadius: 4, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 9, fontFamily: fontMono, fontWeight: 600, letterSpacing: '0.04em' }}>
+                            {stats.overdue} atraso
                           </span>
                         )}
                         {stats.soon > 0 && (
-                          <span title={`${stats.soon} vencendo em breve`} style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 9, fontFamily: fontMono, fontWeight: 600 }}>
-                            🟡 {stats.soon}
+                          <span title={`${stats.soon} vencendo em breve`} style={{ padding: '2px 7px', borderRadius: 4, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 9, fontFamily: fontMono, fontWeight: 600, letterSpacing: '0.04em' }}>
+                            {stats.soon} em breve
                           </span>
                         )}
                         {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { fetchAthlete, createContract, createClause, createInstallments } from '../lib/athleteQueries'
-import type { Athlete, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency } from '../types/athlete-system'
+import { fetchAthlete, createContract, createClause, createInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
+import type { Athlete, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
 import { todayISO } from '../lib/format'
+import EntityPicker from '../components/EntityPicker'
 
 // ── Step types ────────────────────────────────────────────────────────────
 
@@ -69,6 +70,11 @@ export default function PageAthleteNewContract() {
     salary_currency: 'BRL',
     description: '',
     status: 'ATIVO',
+  })
+
+  // Empresário / intermediário desta transação
+  const [intermediary, setIntermediary] = useState<{ name: string; amount: string; currency: Currency; direction: LiabilityDirection; notes: string }>({
+    name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR', notes: '',
   })
 
   // Step 2 — Clauses
@@ -137,6 +143,24 @@ export default function PageAthleteNewContract() {
     setError(null)
     try {
       const savedContract = await createContract(id, contract)
+
+      // Empresário/intermediário desta transação → passivo vinculado ao atleta.
+      if (intermediary.name.trim()) {
+        await createIntermediaryLiability(id, {
+          intermediary_name: intermediary.name.trim(),
+          description: `Intermediação — ${CONTRACT_TYPE_LABELS[contract.type]}${contract.counterpart_club ? ` (${contract.counterpart_club})` : ''}`,
+          direction: intermediary.direction,
+          amount: intermediary.amount ? parseFloat(intermediary.amount) : 0,
+          currency: intermediary.currency,
+          due_date: null,
+          conditional: false,
+          condition_description: '',
+          penalty_terms: '',
+          status: 'PENDENTE',
+          notes: intermediary.notes,
+        })
+      }
+
       for (const cl of clauses) {
         if (!cl.clause_type || !cl.description?.trim()) continue
         const full: NewClauseInput = {
@@ -240,8 +264,15 @@ export default function PageAthleteNewContract() {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Clube / Contraparte *</label>
-                <input value={contract.counterpart_club} onChange={e => setContractField('counterpart_club', e.target.value)} placeholder="Ex: Atlético de Madrid" style={inputStyle} />
+                <EntityPicker
+                  kind="clube"
+                  label="Clube / Contraparte *"
+                  value={contract.counterpart_club}
+                  onChange={(name, sub) => {
+                    setContractField('counterpart_club', name)
+                    if (sub) setContractField('counterpart_country', sub)
+                  }}
+                />
               </div>
               <div>
                 <label style={labelStyle}>País da contraparte</label>
@@ -310,6 +341,43 @@ export default function PageAthleteNewContract() {
           </div>
 
           <div style={cardStyle}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
+              Empresário / Intermediário desta transação
+            </div>
+            <EntityPicker
+              kind="intermediario"
+              label="Intermediário (opcional)"
+              value={intermediary.name}
+              onChange={name => setIntermediary(prev => ({ ...prev, name }))}
+            />
+            {intermediary.name && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 14 }}>
+                <div>
+                  <label style={labelStyle}>Comissão / valor</label>
+                  <input type="number" min={0} step={0.01} value={intermediary.amount}
+                    onChange={e => setIntermediary(prev => ({ ...prev, amount: e.target.value }))} placeholder="0.00" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Moeda</label>
+                  <select value={intermediary.currency} onChange={e => setIntermediary(prev => ({ ...prev, currency: e.target.value as Currency }))} style={inputStyle}>
+                    {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Direção</label>
+                  <select value={intermediary.direction} onChange={e => setIntermediary(prev => ({ ...prev, direction: e.target.value as LiabilityDirection }))} style={inputStyle}>
+                    <option value="A_PAGAR">A pagar</option>
+                    <option value="A_RECEBER">A receber</option>
+                  </select>
+                </div>
+              </div>
+            )}
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 10 }}>
+              O intermediário fica vinculado a este atleta e aparece no cadastro de Intermediários e no relatório.
+            </div>
+          </div>
+
+          <div style={cardStyle}>
             <div>
               <label style={labelStyle}>Descrição / observações</label>
               <textarea value={contract.description} onChange={e => setContractField('description', e.target.value)} rows={3} placeholder="Notas gerais sobre o vínculo..." style={{ ...inputStyle, resize: 'vertical' }} />
@@ -323,7 +391,6 @@ export default function PageAthleteNewContract() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {conflict && (
             <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 15 }}>⚠️</span>
               <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: '#92400e' }}>
                 <strong>Atenção — conflito Sell-On:</strong> Você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
               </div>
@@ -419,7 +486,6 @@ export default function PageAthleteNewContract() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {conflict && (
             <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10 }}>
-              <span style={{ fontSize: 15 }}>⚠️</span>
               <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: '#92400e' }}>
                 <strong>Conflito Sell-On detectado.</strong> Revise antes de salvar.
               </div>

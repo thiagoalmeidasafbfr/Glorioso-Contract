@@ -387,6 +387,42 @@ export interface NewImageRightInput {
   notes: string
 }
 
+// ── Cadastros: Clubes e Intermediários ─────────────────────────────────────
+
+export interface Club {
+  id: string
+  name: string
+  country: string | null
+  logo_url: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewClubInput {
+  name: string
+  country: string
+  logo_url: string | null
+  notes: string
+}
+
+export interface Intermediary {
+  id: string
+  name: string
+  contact: string | null
+  logo_url: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewIntermediaryInput {
+  name: string
+  contact: string
+  logo_url: string | null
+  notes: string
+}
+
 // ── UI labels ───────────────────────────────────────────────────────────────
 
 export const TRIGGER_METRIC_LABELS: Record<TriggerMetric, string> = {

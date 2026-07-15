@@ -16,6 +16,7 @@ import { local } from './localStore'
 import type {
   Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight,
+  Club, Intermediary, NewClubInput, NewIntermediaryInput,
   NewContractInput, NewClauseInput, PaymentInput, NewEconomicRightInput,
   NewSalaryTriggerInput, NewClubLiabilityInput, NewIntermediaryLiabilityInput,
   NewImageRightInput, AthleteWithStats,
@@ -34,7 +35,83 @@ const T = {
   clubLiabilities: 'club_liabilities',
   intermediaryLiabilities: 'intermediary_liabilities',
   imageRights: 'image_rights',
+  clubs: 'clubs',
+  intermediaries: 'intermediaries',
 } as const
+
+// ── Clubs (cadastro) ────────────────────────────────────────────────────────
+
+export async function fetchClubs(): Promise<Club[]> {
+  if (!USE_SUPABASE) return local.all<Club>(T.clubs).sort((a, b) => a.name.localeCompare(b.name))
+  const { data, error } = await supabase.from(T.clubs).select('*').order('name')
+  if (error) throw error
+  return data
+}
+
+export async function fetchClub(id: string): Promise<Club | null> {
+  if (!USE_SUPABASE) return local.find<Club>(T.clubs, id)
+  const { data, error } = await supabase.from(T.clubs).select('*').eq('id', id).single()
+  if (error) return null
+  return data
+}
+
+export async function createClub(input: NewClubInput): Promise<Club> {
+  const row = { name: input.name, country: input.country || null, logo_url: input.logo_url, notes: input.notes || null }
+  if (!USE_SUPABASE) return local.insert<Club>(T.clubs, row)
+  const { data, error } = await supabase.from(T.clubs).insert(row).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateClub(id: string, input: Partial<Club>): Promise<Club> {
+  if (!USE_SUPABASE) return local.update<Club>(T.clubs, id, input)
+  const { data, error } = await supabase.from(T.clubs).update({ ...input, updated_at: new Date().toISOString() }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteClub(id: string): Promise<void> {
+  if (!USE_SUPABASE) return local.remove(T.clubs, id)
+  const { error } = await supabase.from(T.clubs).delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Intermediaries (cadastro) ────────────────────────────────────────────────
+
+export async function fetchIntermediaries(): Promise<Intermediary[]> {
+  if (!USE_SUPABASE) return local.all<Intermediary>(T.intermediaries).sort((a, b) => a.name.localeCompare(b.name))
+  const { data, error } = await supabase.from(T.intermediaries).select('*').order('name')
+  if (error) throw error
+  return data
+}
+
+export async function fetchIntermediary(id: string): Promise<Intermediary | null> {
+  if (!USE_SUPABASE) return local.find<Intermediary>(T.intermediaries, id)
+  const { data, error } = await supabase.from(T.intermediaries).select('*').eq('id', id).single()
+  if (error) return null
+  return data
+}
+
+export async function createIntermediary(input: NewIntermediaryInput): Promise<Intermediary> {
+  const row = { name: input.name, contact: input.contact || null, logo_url: input.logo_url, notes: input.notes || null }
+  if (!USE_SUPABASE) return local.insert<Intermediary>(T.intermediaries, row)
+  const { data, error } = await supabase.from(T.intermediaries).insert(row).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateIntermediary(id: string, input: Partial<Intermediary>): Promise<Intermediary> {
+  if (!USE_SUPABASE) return local.update<Intermediary>(T.intermediaries, id, input)
+  const { data, error } = await supabase.from(T.intermediaries).update({ ...input, updated_at: new Date().toISOString() }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteIntermediary(id: string): Promise<void> {
+  if (!USE_SUPABASE) return local.remove(T.intermediaries, id)
+  const { error } = await supabase.from(T.intermediaries).delete().eq('id', id)
+  if (error) throw error
+}
 
 // ── Athletes ──────────────────────────────────────────────────────────────
 

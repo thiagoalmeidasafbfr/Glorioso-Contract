@@ -175,7 +175,7 @@ export default function PageDashboard() {
           { label: 'A Receber', value: fmtMiC(totalReceivable), color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.20)' },
           { label: 'A Pagar', value: fmtMiC(totalPayable), color: '#dc2626', bg: 'rgba(220,38,38,0.07)', border: 'rgba(220,38,38,0.20)' },
           { label: 'Saldo Líquido', value: fmtMiC(totalNet), color: totalNet >= 0 ? '#059669' : '#dc2626', bg: 'rgba(190,140,74,0.08)', border: 'rgba(190,140,74,0.20)' },
-          { label: 'Alertas Ativos', value: `${redAlerts.length} 🔴  ${yellowAlerts.length} 🟡`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'rgba(190,140,74,0.15)' },
+          { label: 'Alertas Ativos', value: `${redAlerts.length} críticos · ${yellowAlerts.length} atenção`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'rgba(190,140,74,0.15)' },
           { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#dc2626' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(220,38,38,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(220,38,38,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
           <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
