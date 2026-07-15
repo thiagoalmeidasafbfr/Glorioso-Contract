@@ -38,6 +38,9 @@ export type AlertSeverity = 'RED' | 'YELLOW' | 'GREEN'
 
 export type Currency = 'BRL' | 'EUR' | 'USD' | 'GBP'
 
+// Detentor de direitos econômicos do atleta.
+export type HolderType = 'BFR' | 'CLUBE' | 'TERCEIRO' | 'ATLETA'
+
 export interface Athlete {
   id: string
   full_name: string
@@ -49,10 +52,30 @@ export interface Athlete {
   agent_name: string | null
   agent_contact: string | null
   current_status: AthleteStatus
+  position: string | null
   profile_photo_url: string | null
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+// Uma parcela da titularidade econômica do atleta (1 linha por detentor).
+export interface EconomicRight {
+  id: string
+  athlete_id: string
+  holder_type: HolderType
+  holder_name: string | null
+  percentage: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewEconomicRightInput {
+  holder_type: HolderType
+  holder_name: string
+  percentage: number
+  notes: string
 }
 
 export interface Contract {
@@ -216,4 +239,19 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
   SAIDA:             'Saída',
   EMPRESTIMO_SAIDA:  'Empréstimo (saída)',
   EMPRESTIMO_ENTRADA:'Empréstimo (entrada)',
+}
+
+export const HOLDER_TYPE_LABELS: Record<HolderType, string> = {
+  BFR:      'Botafogo',
+  CLUBE:    'Clube',
+  TERCEIRO: 'Terceiro',
+  ATLETA:   'Atleta',
+}
+
+// Cores da barra de titularidade — alinhadas ao tema (dourado = Botafogo).
+export const HOLDER_TYPE_COLORS: Record<HolderType, string> = {
+  BFR:      '#be8c4a',
+  CLUBE:    '#7a6244',
+  TERCEIRO: '#b9a88a',
+  ATLETA:   '#3a2e1c',
 }

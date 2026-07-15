@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  fetchAthletes, createAthlete,
+  fetchAthletes, createAthlete, fetchAllEconomicRights,
 } from '../lib/athleteQueries'
 import { ALERTS_MOCK } from '../data/athletesMock'
 import { fmtDate, isOverdue, isDueSoon } from '../lib/format'
 import { INSTALLMENTS_MOCK, CLAUSES_MOCK } from '../data/athletesMock'
-import type { Athlete, AthleteStatus } from '../types/athlete-system'
+import type { Athlete, AthleteStatus, EconomicRight } from '../types/athlete-system'
+import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -60,7 +61,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   const [f, setF] = useState({
     full_name: '', short_name: '', birth_date: '', nationality: 'Brasil',
     cpf: '', passport_number: '', agent_name: '', agent_contact: '',
-    current_status: 'ATIVO' as AthleteStatus, notes: '',
+    current_status: 'ATIVO' as AthleteStatus, position: '', notes: '',
   })
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
@@ -98,6 +99,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
       agent_name: f.agent_name || null,
       agent_contact: f.agent_contact || null,
       current_status: f.current_status,
+      position: f.position || null,
       profile_photo_url: null,
       notes: f.notes || null,
     })
@@ -121,6 +123,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           {field('Nome do Agente', 'agent_name')}
           {field('Contato do Agente', 'agent_contact')}
           {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          {field('Posição', 'position', 'text', ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante'])}
         </div>
 
         <div>
@@ -147,9 +150,15 @@ export default function PageAthletesList() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<AthleteStatus | 'Todos'>('Todos')
   const [showNew, setShowNew] = useState(false)
+  const [rightsByAthlete, setRightsByAthlete] = useState<Record<string, EconomicRight[]>>({})
 
   useEffect(() => {
     fetchAthletes().then(data => { setAthletes(data); setLoading(false) }).catch(() => setLoading(false))
+    fetchAllEconomicRights().then(rows => {
+      const map: Record<string, EconomicRight[]> = {}
+      for (const r of rows) (map[r.athlete_id] ??= []).push(r)
+      setRightsByAthlete(map)
+    }).catch(() => {})
   }, [])
 
   const filtered = useMemo(() => athletes.filter(a => {
@@ -236,6 +245,7 @@ export default function PageAthletesList() {
                 <th style={{ ...th, width: 200, textAlign: 'left' }}>Nome</th>
                 <th style={{ ...th, width: 110 }}>Status</th>
                 <th style={{ ...th, width: 80 }}>País</th>
+                <th style={{ ...th, width: 180, textAlign: 'left' }}>Titularidade</th>
                 <th style={{ ...th, width: 80, textAlign: 'right' }}>Cláusulas</th>
                 <th style={{ ...th, width: 120, textAlign: 'right' }}>Próx. Venc.</th>
                 <th style={{ ...th, width: 100 }}>Alertas</th>
@@ -245,10 +255,10 @@ export default function PageAthletesList() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>
+                <tr><td colSpan={10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta encontrado.</td></tr>
+                <tr><td colSpan={10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta encontrado.</td></tr>
               )}
               {filtered.map(a => {
                 const stats = getAthleteStats(a.id)
@@ -273,6 +283,16 @@ export default function PageAthletesList() {
                       </span>
                     </td>
                     <td style={{ ...td, width: 80, color: 'var(--text-secondary)', fontSize: 12 }}>{a.nationality ?? '—'}</td>
+                    <td style={{ ...td, width: 180 }}>
+                      {(rightsByAthlete[a.id]?.length ?? 0) > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <OwnershipBar rights={rightsByAthlete[a.id]} compact showLegend={false} />
+                          <OwnershipBadge rights={rightsByAthlete[a.id]} />
+                        </div>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
+                      )}
+                    </td>
                     <td style={{ ...td, width: 80, textAlign: 'right', fontFamily: fontMono, fontSize: 13 }}>
                       <span style={{ fontWeight: active > 0 ? 600 : 400, color: active > 0 ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{active}</span>
                       {active > 0 && <span style={{ fontSize: 9, color: 'var(--text-muted)', marginLeft: 2 }}>ativas</span>}

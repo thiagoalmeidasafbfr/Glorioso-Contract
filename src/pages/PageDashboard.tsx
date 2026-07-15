@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { fetchAllAlerts, fetchAthletes, fetchAthleteClauses, markAlertRead } from '../lib/athleteQueries'
-import type { Alert, Athlete, Clause } from '../types/athlete-system'
+import { fetchAllAlerts, fetchAthletes, fetchAthleteClauses, markAlertRead, fetchAllEconomicRights } from '../lib/athleteQueries'
+import type { Alert, Athlete, Clause, EconomicRight } from '../types/athlete-system'
 import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO } from '../lib/format'
+import { isOwnershipValid } from '../lib/ownership'
 import { useApp } from '../context/AppContext'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -37,19 +38,29 @@ export default function PageDashboard() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [athletes, setAthletes] = useState<Athlete[]>([])
   const [allClauses, setAllClauses] = useState<Clause[]>([])
+  const [economicRights, setEconomicRights] = useState<EconomicRight[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
       fetchAllAlerts(),
       fetchAthletes(),
-    ]).then(async ([alts, aths]) => {
+      fetchAllEconomicRights(),
+    ]).then(async ([alts, aths, rights]) => {
       setAlerts(alts)
       setAthletes(aths)
+      setEconomicRights(rights)
       const clauseArrays = await Promise.all(aths.map(a => fetchAthleteClauses(a.id)))
       setAllClauses(clauseArrays.flat())
     }).finally(() => setLoading(false))
   }, [])
+
+  // Atletas com titularidade cadastrada mas soma ≠ 100%
+  const inconsistentOwnership = (() => {
+    const byAthlete: Record<string, EconomicRight[]> = {}
+    for (const r of economicRights) (byAthlete[r.athlete_id] ??= []).push(r)
+    return Object.values(byAthlete).filter(rs => !isOwnershipValid(rs)).length
+  })()
 
   // ── Derived data ───────────────────────────────────────────────────────
 
@@ -159,12 +170,13 @@ export default function PageDashboard() {
       </div>
 
       {/* KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
         {[
           { label: 'A Receber', value: fmtMiC(totalReceivable), color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.20)' },
           { label: 'A Pagar', value: fmtMiC(totalPayable), color: '#dc2626', bg: 'rgba(220,38,38,0.07)', border: 'rgba(220,38,38,0.20)' },
           { label: 'Saldo Líquido', value: fmtMiC(totalNet), color: totalNet >= 0 ? '#059669' : '#dc2626', bg: 'rgba(190,140,74,0.08)', border: 'rgba(190,140,74,0.20)' },
           { label: 'Alertas Ativos', value: `${redAlerts.length} 🔴  ${yellowAlerts.length} 🟡`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'rgba(190,140,74,0.15)' },
+          { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#dc2626' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(220,38,38,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(220,38,38,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
           <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>

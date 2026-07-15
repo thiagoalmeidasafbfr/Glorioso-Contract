@@ -3,7 +3,7 @@
 // Baseados em contratos reais analisados.
 
 import type {
-  Athlete, Contract, Clause, ClauseInstallment, Alert,
+  Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
 } from '../types/athlete-system'
 
 // ── Atletas ────────────────────────────────────────────────────────────────
@@ -20,6 +20,7 @@ export const ATHLETES_MOCK: Athlete[] = [
     agent_name: 'Jorge Mendes',
     agent_contact: 'jorge@gf.com',
     current_status: 'VENDIDO',
+    position: 'Meia',
     profile_photo_url: null,
     notes: 'Vendido ao Atlético de Madrid em julho de 2025. Sell-on de 50% com piso de €10M.',
     created_at: '2025-01-01T00:00:00Z',
@@ -36,6 +37,7 @@ export const ATHLETES_MOCK: Athlete[] = [
     agent_name: 'Fali Ramadani',
     agent_contact: null,
     current_status: 'VENDIDO',
+    position: 'Atacante',
     profile_photo_url: '/fotos/Igor Jesus.JPG',
     notes: 'Vendido ao Nottingham Forest em junho de 2025.',
     created_at: '2025-01-01T00:00:00Z',
@@ -52,6 +54,7 @@ export const ATHLETES_MOCK: Athlete[] = [
     agent_name: null,
     agent_contact: null,
     current_status: 'VENDIDO',
+    position: 'Atacante',
     profile_photo_url: null,
     notes: 'Vendido ao Zenit em janeiro de 2025. Opção de pagamento acelerado (€29,7M). Cláusula de proteção para suspensão.',
     created_at: '2025-01-01T00:00:00Z',
@@ -68,6 +71,7 @@ export const ATHLETES_MOCK: Athlete[] = [
     agent_name: null,
     agent_contact: null,
     current_status: 'VENDIDO',
+    position: 'Atacante',
     profile_photo_url: null,
     notes: '⚠️ ATENÇÃO: bônus de minutos tem TRADE-OFF — ao atingir USD 500k de bônus, Botafogo PERDE os 10% de Direitos Econômicos.',
     created_at: '2025-01-01T00:00:00Z',
@@ -84,6 +88,7 @@ export const ATHLETES_MOCK: Athlete[] = [
     agent_name: null,
     agent_contact: null,
     current_status: 'ATIVO',
+    position: 'Volante',
     profile_photo_url: '/fotos/Marlon Freitas.JPG',
     notes: 'Titular absoluto. Contrato vigente.',
     created_at: '2024-06-01T00:00:00Z',
@@ -402,4 +407,16 @@ export const ALERTS_MOCK: Alert[] = [
     is_read: false,
     created_at: '2025-06-01T00:00:00Z',
   },
+]
+
+// ── Direitos Econômicos (titularidade) ───────────────────────────────────────
+// Uma linha por detentor. A soma por atleta deve totalizar 100%.
+// Junior Santos está intencionalmente com 90% (10% podem caducar por trade-off
+// de bônus) para demonstrar a validação de inconsistência.
+export const ECONOMIC_RIGHTS_MOCK: EconomicRight[] = [
+  { id: 'er000001-0000-0000-0000-000000000001', athlete_id: 'a0000001-0000-0000-0000-000000000001', holder_type: 'BFR', holder_name: 'Botafogo', percentage: 100, notes: null, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+  { id: 'er000002-0000-0000-0000-000000000002', athlete_id: 'a0000002-0000-0000-0000-000000000002', holder_type: 'BFR', holder_name: 'Botafogo', percentage: 100, notes: null, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+  { id: 'er000003-0000-0000-0000-000000000003', athlete_id: 'a0000003-0000-0000-0000-000000000003', holder_type: 'BFR', holder_name: 'Botafogo', percentage: 100, notes: null, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+  { id: 'er000004-0000-0000-0000-000000000004', athlete_id: 'a0000004-0000-0000-0000-000000000004', holder_type: 'BFR', holder_name: 'Botafogo', percentage: 90, notes: '10% sujeitos a trade-off de bônus (Cl. 3.3.4) — conferir com o jurídico.', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+  { id: 'er000005-0000-0000-0000-000000000005', athlete_id: 'a0000005-0000-0000-0000-000000000005', holder_type: 'BFR', holder_name: 'Botafogo', percentage: 100, notes: null, created_at: '2024-06-01T00:00:00Z', updated_at: '2024-06-01T00:00:00Z' },
 ]
