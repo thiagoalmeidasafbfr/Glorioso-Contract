@@ -96,7 +96,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody }}>
-        <Link to={basePath} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{isClube ? 'Clubes' : 'Intermediários'}</Link>
+        <Link to={basePath} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{isClube ? 'Clubes' : 'Agentes'}</Link>
         <span style={{ margin: '0 6px' }}>/</span>
         <span style={{ color: 'var(--ink-primary)' }}>{name}</span>
       </div>
@@ -152,7 +152,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
               </tr>
             </thead>
             <tbody>
-              {liabs.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum passivo vinculado a este {isClube ? 'clube' : 'intermediário'}.</td></tr>}
+              {liabs.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum passivo vinculado a este {isClube ? 'clube' : 'agente'}.</td></tr>}
               {liabs.map(l => (
                 <tr key={l.id}>
                   <td style={{ ...td, fontWeight: 600 }}>{nameOf.get(l.athlete_id) ?? '—'}</td>

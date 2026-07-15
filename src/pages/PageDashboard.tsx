@@ -335,7 +335,7 @@ export default function PageDashboard() {
                 { to: '/clausulas-venda', label: 'Cláusulas de Venda' },
                 { to: '/consolidado', label: 'Relatório Consolidado' },
                 { to: '/clubes', label: 'Passivos — Clubes' },
-                { to: '/intermediarios', label: 'Passivos — Intermediários' },
+                { to: '/intermediarios', label: 'Passivos — Agentes' },
               ].map(link => (
                 <Link
                   key={link.to}

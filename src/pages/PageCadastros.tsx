@@ -29,7 +29,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
   const [showNew, setShowNew] = useState(false)
 
   const isClube = kind === 'clube'
-  const title = isClube ? 'Clubes' : 'Intermediários'
+  const title = isClube ? 'Clubes' : 'Agentes'
   const basePath = isClube ? '/clubes' : '/intermediarios'
 
   async function load() {
@@ -67,7 +67,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }} />
           <button onClick={() => setShowNew(true)}
             style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            Adicionar {isClube ? 'clube' : 'intermediário'}
+            Adicionar {isClube ? 'clube' : 'agente'}
           </button>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
         <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>Carregando...</div>
       ) : filtered.length === 0 ? (
         <div className="card" style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontBody }}>
-          Nenhum {isClube ? 'clube' : 'intermediário'} cadastrado.
+          Nenhum {isClube ? 'clube' : 'agente'} cadastrado.
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
@@ -130,7 +130,7 @@ function NewModal({ kind, onClose, onSaved }: { kind: Kind; onClose: () => void;
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 460, maxWidth: '96vw', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: fontBody }}>Novo {isClube ? 'clube' : 'intermediário'}</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: fontBody }}>Novo {isClube ? 'clube' : 'agente'}</div>
         <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
           <ImageUpload value={logo} onChange={setLogo} fallbackText={name} size={88} rounded={!isClube} maxSize={512} />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>

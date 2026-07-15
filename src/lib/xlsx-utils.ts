@@ -213,7 +213,7 @@ export const COLS_CLUB_LIABILITIES: ColDef[] = [
 export const COLS_INTERMEDIARY_LIABILITIES: ColDef[] = [
   { key: 'id',                    header: 'ID' },
   { key: 'athlete_id',            header: 'Atleta ID' },
-  { key: 'intermediary_name',     header: 'Intermediário' },
+  { key: 'intermediary_name',     header: 'Agente' },
   { key: 'description',           header: 'Descrição' },
   { key: 'direction',             header: 'Direção' },
   { key: 'amount',                header: 'Valor' },
@@ -236,6 +236,45 @@ export const COLS_IMAGE_RIGHTS: ColDef[] = [
   { key: 'status',     header: 'Status' },
   { key: 'paid_date',  header: 'Data Pagamento' },
   { key: 'notes',      header: 'Observações' },
+]
+
+export const COLS_CONTRACTS: ColDef[] = [
+  { key: 'id',                 header: 'ID' },
+  { key: 'athlete_id',         header: 'Atleta ID' },
+  { key: 'type',               header: 'Tipo' },            // ENTRADA/SAIDA/EMPRESTIMO_SAIDA/EMPRESTIMO_ENTRADA
+  { key: 'counterpart_club',   header: 'Clube/Contraparte' },
+  { key: 'counterpart_country', header: 'País' },
+  { key: 'start_date',         header: 'Início' },
+  { key: 'end_date',           header: 'Término' },
+  { key: 'status',             header: 'Status' },          // ATIVO/ENCERRADO/RESCINDIDO
+  { key: 'transfer_fee_gross', header: 'Valor Transferência' },
+  { key: 'transfer_currency',  header: 'Moeda Transf.' },
+  { key: 'base_salary',        header: 'Salário Base' },
+  { key: 'salary_currency',    header: 'Moeda Salário' },
+  { key: 'description',        header: 'Descrição' },
+]
+
+export const COLS_CLUBS: ColDef[] = [
+  { key: 'id',      header: 'ID' },
+  { key: 'name',    header: 'Nome' },
+  { key: 'country', header: 'País' },
+  { key: 'notes',   header: 'Observações' },
+]
+
+export const COLS_AGENTS: ColDef[] = [
+  { key: 'id',      header: 'ID' },
+  { key: 'name',    header: 'Nome' },
+  { key: 'contact', header: 'Contato' },
+  { key: 'notes',   header: 'Observações' },
+]
+
+export const COLS_ECONOMIC_RIGHTS: ColDef[] = [
+  { key: 'id',          header: 'ID' },
+  { key: 'athlete_id',  header: 'Atleta ID' },
+  { key: 'holder_type', header: 'Tipo Detentor' },   // BFR/CLUBE/AGENTE/ATLETA/TERCEIRO
+  { key: 'holder_name', header: 'Detentor' },
+  { key: 'percentage',  header: 'Percentual' },
+  { key: 'notes',       header: 'Observações' },
 ]
 
 // ── Export ──────────────────────────────────────────────────────────

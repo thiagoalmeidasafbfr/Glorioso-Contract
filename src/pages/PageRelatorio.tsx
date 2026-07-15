@@ -24,7 +24,7 @@ type Kind = 'imagem' | 'luvas' | 'intermediarios' | 'clubes' | 'salarios'
 const KIND_TITLE: Record<Kind, { title: string; subtitle: string }> = {
   imagem:         { title: 'Direito de Imagem', subtitle: 'Relatório de movimentações' },
   luvas:          { title: 'Luvas',             subtitle: 'Relatório de movimentações' },
-  intermediarios: { title: 'Intermediários',    subtitle: 'Relatório de passivos' },
+  intermediarios: { title: 'Agentes',           subtitle: 'Relatório de passivos' },
   clubes:         { title: 'Clubes',            subtitle: 'Relatório de passivos' },
   salarios:       { title: 'Salários',          subtitle: 'Relatório de vigências salariais' },
 }
