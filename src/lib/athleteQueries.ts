@@ -5,10 +5,11 @@
 import { supabase, USE_SUPABASE } from './supabase'
 import {
   ATHLETES_MOCK, CONTRACTS_MOCK, CLAUSES_MOCK, INSTALLMENTS_MOCK, ALERTS_MOCK,
+  ECONOMIC_RIGHTS_MOCK,
 } from '../data/athletesMock'
 import type {
-  Athlete, Contract, Clause, ClauseInstallment, Alert,
-  NewContractInput, NewClauseInput, PaymentInput,
+  Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
+  NewContractInput, NewClauseInput, PaymentInput, NewEconomicRightInput,
   AthleteWithStats,
 } from '../types/athlete-system'
 import { isOverdue, isDueSoon, addMonths, todayISO } from './format'
@@ -86,6 +87,93 @@ export async function updateAthlete(id: string, input: Partial<Athlete>): Promis
     throw error
   }
   return data
+}
+
+// ── Economic Rights (titularidade) ──────────────────────────────────────────
+
+export async function fetchAthleteEconomicRights(athleteId: string): Promise<EconomicRight[]> {
+  if (!USE_SUPABASE) return ECONOMIC_RIGHTS_MOCK.filter(r => r.athlete_id === athleteId)
+  const { data, error } = await supabase
+    .from('athlete_economic_rights')
+    .select('*')
+    .eq('athlete_id', athleteId)
+    .order('created_at')
+  if (error) {
+    if (isMissingTable(error)) return ECONOMIC_RIGHTS_MOCK.filter(r => r.athlete_id === athleteId)
+    throw error
+  }
+  return data
+}
+
+export async function fetchAllEconomicRights(): Promise<EconomicRight[]> {
+  if (!USE_SUPABASE) return [...ECONOMIC_RIGHTS_MOCK]
+  const { data, error } = await supabase
+    .from('athlete_economic_rights')
+    .select('*')
+  if (error) {
+    if (isMissingTable(error)) return [...ECONOMIC_RIGHTS_MOCK]
+    throw error
+  }
+  return data
+}
+
+export async function createEconomicRight(athleteId: string, input: NewEconomicRightInput): Promise<EconomicRight> {
+  const row = {
+    athlete_id: athleteId,
+    holder_type: input.holder_type,
+    holder_name: input.holder_name || null,
+    percentage: input.percentage,
+    notes: input.notes || null,
+  }
+  if (!USE_SUPABASE) {
+    const r: EconomicRight = { ...row, id: crypto.randomUUID(), created_at: todayISO(), updated_at: todayISO() }
+    ECONOMIC_RIGHTS_MOCK.push(r)
+    return r
+  }
+  const { data, error } = await supabase.from('athlete_economic_rights').insert(row).select().single()
+  if (error) {
+    if (isMissingTable(error)) {
+      const r: EconomicRight = { ...row, id: crypto.randomUUID(), created_at: todayISO(), updated_at: todayISO() }
+      ECONOMIC_RIGHTS_MOCK.push(r); return r
+    }
+    throw error
+  }
+  return data
+}
+
+export async function updateEconomicRight(id: string, input: Partial<EconomicRight>): Promise<EconomicRight> {
+  if (!USE_SUPABASE) {
+    const idx = ECONOMIC_RIGHTS_MOCK.findIndex(r => r.id === id)
+    if (idx === -1) throw new Error('Direito econômico não encontrado')
+    ECONOMIC_RIGHTS_MOCK[idx] = { ...ECONOMIC_RIGHTS_MOCK[idx], ...input, updated_at: todayISO() }
+    return ECONOMIC_RIGHTS_MOCK[idx]
+  }
+  const { data, error } = await supabase
+    .from('athlete_economic_rights').update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', id).select().single()
+  if (error) {
+    if (isMissingTable(error)) {
+      const idx = ECONOMIC_RIGHTS_MOCK.findIndex(r => r.id === id)
+      if (idx !== -1) { ECONOMIC_RIGHTS_MOCK[idx] = { ...ECONOMIC_RIGHTS_MOCK[idx], ...input, updated_at: todayISO() }; return ECONOMIC_RIGHTS_MOCK[idx] }
+    }
+    throw error
+  }
+  return data
+}
+
+export async function deleteEconomicRight(id: string): Promise<void> {
+  if (!USE_SUPABASE) {
+    const idx = ECONOMIC_RIGHTS_MOCK.findIndex(r => r.id === id)
+    if (idx !== -1) ECONOMIC_RIGHTS_MOCK.splice(idx, 1)
+    return
+  }
+  const { error } = await supabase.from('athlete_economic_rights').delete().eq('id', id)
+  if (error && isMissingTable(error)) {
+    const idx = ECONOMIC_RIGHTS_MOCK.findIndex(r => r.id === id)
+    if (idx !== -1) ECONOMIC_RIGHTS_MOCK.splice(idx, 1)
+  } else if (error) {
+    throw error
+  }
 }
 
 // ── Contracts ─────────────────────────────────────────────────────────────

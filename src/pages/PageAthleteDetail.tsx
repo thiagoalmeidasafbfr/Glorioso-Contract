@@ -4,13 +4,17 @@ import {
   fetchAthlete, fetchAthleteContracts, fetchAthleteClauses,
   fetchAthleteInstallments, fetchAthleteAlerts, markAlertRead,
   updateClause, registerInstallmentPayment,
+  fetchAthleteEconomicRights, createEconomicRight, updateEconomicRight, deleteEconomicRight,
 } from '../lib/athleteQueries'
 import { fmtDate, fmtCurrencyShort, fmtCurrencyFull, fmtRelative, isOverdue, isDueSoon, CURRENCY_SYMBOLS } from '../lib/format'
 import type {
-  Athlete, Contract, Clause, ClauseInstallment, Alert,
-  AthleteStatus, AchievementStatus, Currency,
+  Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
+  AthleteStatus, AchievementStatus, Currency, HolderType,
 } from '../types/athlete-system'
-import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
+import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS } from '../types/athlete-system'
+import { sumOwnership, isOwnershipValid } from '../lib/ownership'
+import { useAuth } from '../context/AuthContext'
+import OwnershipBar from '../components/OwnershipBar'
 import PaymentModal from '../components/athletes/PaymentModal'
 
 const font     = "'Inter', system-ui, sans-serif"
@@ -147,12 +151,15 @@ function ClauseActions({ clause, onMarkAchieved, onPay, onCancel }: {
 export default function PageAthleteDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { profile } = useAuth()
+  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
 
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [contracts, setContracts] = useState<Contract[]>([])
   const [clauses, setClauses] = useState<Clause[]>([])
   const [installments, setInstallments] = useState<ClauseInstallment[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [rights, setRights] = useState<EconomicRight[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('clausulas')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
@@ -161,18 +168,20 @@ export default function PageAthleteDetail() {
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, inst, alrt] = await Promise.all([
+    const [ath, contr, cls, inst, alrt, rght] = await Promise.all([
       fetchAthlete(id),
       fetchAthleteContracts(id),
       fetchAthleteClauses(id),
       fetchAthleteInstallments(id),
       fetchAthleteAlerts(id),
+      fetchAthleteEconomicRights(id),
     ])
     setAthlete(ath)
     setContracts(contr)
     setClauses(cls)
     setInstallments(inst)
     setAlerts(alrt)
+    setRights(rght)
     setLoading(false)
   }, [id])
 
@@ -236,6 +245,21 @@ export default function PageAthleteDetail() {
     })
     setClauses(prev => prev.map(c => c.id === clauseId ? updated : c))
     setPayClauseId(null)
+  }
+
+  // ── Economic rights actions ────────────────────────────────────────────
+  async function handleAddRight() {
+    if (!id) return
+    const created = await createEconomicRight(id, { holder_type: 'TERCEIRO', holder_name: '', percentage: 0, notes: '' })
+    setRights(prev => [...prev, created])
+  }
+  async function handleUpdateRight(rightId: string, patch: Partial<EconomicRight>) {
+    const updated = await updateEconomicRight(rightId, patch)
+    setRights(prev => prev.map(r => r.id === rightId ? updated : r))
+  }
+  async function handleDeleteRight(rightId: string) {
+    await deleteEconomicRight(rightId)
+    setRights(prev => prev.filter(r => r.id !== rightId))
   }
 
   if (loading) return (
@@ -337,6 +361,62 @@ export default function PageAthleteDetail() {
             ))
           }
         </div>
+      </div>
+
+      {/* ── Direitos Econômicos (titularidade) ── */}
+      <div className="card" style={{ padding: '16px 20px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            Direitos Econômicos
+          </div>
+          {canEdit && (
+            <button onClick={handleAddRight}
+              style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>
+              + Detentor
+            </button>
+          )}
+        </div>
+
+        {rights.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font, padding: '4px 0' }}>
+            Titularidade não cadastrada.{canEdit ? ' Clique em “+ Detentor” para começar.' : ''}
+          </div>
+        ) : (
+          <OwnershipBar rights={rights} />
+        )}
+
+        {!isOwnershipValid(rights) && rights.length > 0 && (
+          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 12, fontFamily: font }}>
+            ⚠️ A soma dos direitos econômicos é {sumOwnership(rights).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% e deveria totalizar 100%. Verifique o cadastro.
+          </div>
+        )}
+
+        {canEdit && rights.length > 0 && (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {rights.map(r => (
+              <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '130px 1fr 90px 1fr 32px', gap: 8, alignItems: 'center' }}>
+                <select value={r.holder_type} onChange={e => handleUpdateRight(r.id, { holder_type: e.target.value as HolderType })}
+                  style={{ padding: '6px 8px', borderRadius: 6, fontSize: 12, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: font }}>
+                  {(Object.keys(HOLDER_TYPE_LABELS) as HolderType[]).map(k => <option key={k} value={k}>{HOLDER_TYPE_LABELS[k]}</option>)}
+                </select>
+                <input placeholder="Nome do detentor" value={r.holder_name ?? ''} onChange={e => handleUpdateRight(r.id, { holder_name: e.target.value })}
+                  style={{ padding: '6px 8px', borderRadius: 6, fontSize: 12, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: font }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <input type="number" min={0} max={100} step={0.01} value={r.percentage}
+                    onChange={e => handleUpdateRight(r.id, { percentage: parseFloat(e.target.value) || 0 })}
+                    style={{ width: 64, padding: '6px 8px', borderRadius: 6, fontSize: 12, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: fontMono, textAlign: 'right' }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: fontMono }}>%</span>
+                </div>
+                <input placeholder="Observação" value={r.notes ?? ''} onChange={e => handleUpdateRight(r.id, { notes: e.target.value })}
+                  style={{ padding: '6px 8px', borderRadius: 6, fontSize: 12, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: font }} />
+                <button onClick={() => handleDeleteRight(r.id)} title="Remover"
+                  style={{ padding: '6px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Tabs ── */}
