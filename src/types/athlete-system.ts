@@ -89,6 +89,8 @@ export interface Contract {
   status: ContractStatus
   transfer_fee_gross: number | null
   transfer_currency: Currency
+  base_salary: number | null
+  salary_currency: Currency
   description: string | null
   created_by: string | null
   created_at: string
@@ -189,6 +191,8 @@ export interface NewContractInput {
   end_date: string
   transfer_fee_gross: number | null
   transfer_currency: Currency
+  base_salary: number | null
+  salary_currency: Currency
   description: string
   status: ContractStatus
 }
@@ -254,4 +258,160 @@ export const HOLDER_TYPE_COLORS: Record<HolderType, string> = {
   CLUBE:    '#7a6244',
   TERCEIRO: '#b9a88a',
   ATLETA:   '#3a2e1c',
+}
+
+// ── Gatilhos de mudança salarial por meta ──────────────────────────────────
+// Ex.: "ao atingir 10 jogos, salário passa a 300k". Quando marcado ATINGIDA
+// com uma data, o salário efetivo muda a partir daquela data.
+
+export type TriggerMetric =
+  | 'JOGOS' | 'GOLS' | 'ASSISTENCIAS' | 'MINUTOS' | 'TITULO' | 'OUTRO'
+
+export type TriggerStatus = 'PENDENTE' | 'ATINGIDA' | 'NAO_ATINGIDA'
+
+export interface SalaryTrigger {
+  id: string
+  athlete_id: string
+  contract_id: string | null
+  description: string
+  metric: TriggerMetric
+  threshold: number | null
+  new_salary: number
+  currency: Currency
+  status: TriggerStatus
+  achieved_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewSalaryTriggerInput {
+  contract_id: string | null
+  description: string
+  metric: TriggerMetric
+  threshold: number | null
+  new_salary: number
+  currency: Currency
+  notes: string
+}
+
+// ── Passivos e direito de imagem (entidades-filhas do atleta) ───────────────
+
+export type LiabilityDirection = 'A_PAGAR' | 'A_RECEBER'
+export type LiabilityStatus = 'PENDENTE' | 'PAGA' | 'EM_ATRASO' | 'CANCELADA'
+
+export interface ClubLiability {
+  id: string
+  athlete_id: string
+  club_name: string
+  description: string | null
+  direction: LiabilityDirection
+  amount: number
+  currency: Currency
+  due_date: string | null
+  conditional: boolean
+  condition_description: string | null
+  solidarity: boolean
+  status: LiabilityStatus
+  settled_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewClubLiabilityInput {
+  club_name: string
+  description: string
+  direction: LiabilityDirection
+  amount: number
+  currency: Currency
+  due_date: string | null
+  conditional: boolean
+  condition_description: string
+  solidarity: boolean
+  status: LiabilityStatus
+  notes: string
+}
+
+export interface IntermediaryLiability {
+  id: string
+  athlete_id: string
+  intermediary_name: string
+  description: string | null
+  direction: LiabilityDirection
+  amount: number
+  currency: Currency
+  due_date: string | null
+  conditional: boolean
+  condition_description: string | null
+  penalty_terms: string | null
+  status: LiabilityStatus
+  settled_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewIntermediaryLiabilityInput {
+  intermediary_name: string
+  description: string
+  direction: LiabilityDirection
+  amount: number
+  currency: Currency
+  due_date: string | null
+  conditional: boolean
+  condition_description: string
+  penalty_terms: string
+  status: LiabilityStatus
+  notes: string
+}
+
+export interface ImageRight {
+  id: string
+  athlete_id: string
+  month: string          // 'YYYY-MM'
+  amount: number
+  currency: Currency
+  status: LiabilityStatus
+  paid_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewImageRightInput {
+  month: string
+  amount: number
+  currency: Currency
+  status: LiabilityStatus
+  notes: string
+}
+
+// ── UI labels ───────────────────────────────────────────────────────────────
+
+export const TRIGGER_METRIC_LABELS: Record<TriggerMetric, string> = {
+  JOGOS:        'Jogos',
+  GOLS:         'Gols',
+  ASSISTENCIAS: 'Assistências',
+  MINUTOS:      'Minutos',
+  TITULO:       'Título',
+  OUTRO:        'Outro',
+}
+
+export const TRIGGER_STATUS_LABELS: Record<TriggerStatus, string> = {
+  PENDENTE:     'Pendente',
+  ATINGIDA:     'Atingida',
+  NAO_ATINGIDA: 'Não atingida',
+}
+
+export const LIABILITY_STATUS_LABELS: Record<LiabilityStatus, string> = {
+  PENDENTE:  'Pendente',
+  PAGA:      'Paga',
+  EM_ATRASO: 'Em atraso',
+  CANCELADA: 'Cancelada',
+}
+
+export const LIABILITY_DIRECTION_LABELS: Record<LiabilityDirection, string> = {
+  A_PAGAR:   'A pagar',
+  A_RECEBER: 'A receber',
 }

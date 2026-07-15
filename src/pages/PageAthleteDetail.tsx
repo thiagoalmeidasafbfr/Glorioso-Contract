@@ -5,14 +5,22 @@ import {
   fetchAthleteInstallments, fetchAthleteAlerts, markAlertRead,
   updateClause, registerInstallmentPayment,
   fetchAthleteEconomicRights, createEconomicRight, updateEconomicRight, deleteEconomicRight,
+  fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
+  fetchAthleteClubLiabilities, fetchAthleteIntermediaryLiabilities, fetchAthleteImageRights,
 } from '../lib/athleteQueries'
-import { fmtDate, fmtCurrencyShort, fmtCurrencyFull, fmtRelative, isOverdue, isDueSoon, CURRENCY_SYMBOLS } from '../lib/format'
+import { fmtDate, fmtCurrencyShort, fmtCurrencyFull, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
+  SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight,
   AthleteStatus, AchievementStatus, Currency, HolderType,
+  TriggerMetric, NewSalaryTriggerInput,
 } from '../types/athlete-system'
-import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS } from '../types/athlete-system'
+import {
+  CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS,
+  TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
+} from '../types/athlete-system'
 import { sumOwnership, isOwnershipValid } from '../lib/ownership'
+import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
 import OwnershipBar from '../components/OwnershipBar'
 import PaymentModal from '../components/athletes/PaymentModal'
@@ -89,12 +97,14 @@ function FinancialCard({ label, value, sub, color }: { label: string; value: str
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
-type Tab = 'clausulas' | 'vinculos' | 'parcelas' | 'alertas'
+type Tab = 'salario' | 'clausulas' | 'vinculos' | 'parcelas' | 'passivos' | 'alertas'
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'salario',   label: 'Salário & Metas' },
   { id: 'clausulas', label: 'Cláusulas Ativas' },
   { id: 'vinculos',  label: 'Vínculos / Histórico' },
   { id: 'parcelas',  label: 'Parcelas' },
+  { id: 'passivos',  label: 'Passivos & Imagem' },
   { id: 'alertas',   label: 'Alertas' },
 ]
 
@@ -146,6 +156,154 @@ function ClauseActions({ clause, onMarkAchieved, onPay, onCancel }: {
   )
 }
 
+// ── New Salary Trigger form ─────────────────────────────────────────────────
+
+function NewTriggerForm({ contracts, onAdd }: {
+  contracts: Contract[]
+  onAdd: (input: NewSalaryTriggerInput) => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const [f, setF] = useState<NewSalaryTriggerInput>({
+    contract_id: contracts[0]?.id ?? null,
+    description: '', metric: 'JOGOS', threshold: null,
+    new_salary: 0, currency: 'BRL', notes: '',
+  })
+  const set = <K extends keyof NewSalaryTriggerInput>(k: K, v: NewSalaryTriggerInput[K]) =>
+    setF(prev => ({ ...prev, [k]: v }))
+
+  const inp: React.CSSProperties = {
+    padding: '7px 9px', borderRadius: 6, fontSize: 12, width: '100%', boxSizing: 'border-box',
+    background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: font,
+  }
+  const lbl: React.CSSProperties = {
+    fontSize: 9, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase',
+    color: 'var(--text-muted)', marginBottom: 3, display: 'block',
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        style={{ padding: '8px 16px', borderRadius: 8, border: '1px dashed rgba(190,140,74,0.45)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>
+        + Nova Meta de Salário
+      </button>
+    )
+  }
+
+  async function submit() {
+    if (!f.description.trim() || !f.new_salary) return
+    await onAdd(f)
+    setF({ contract_id: contracts[0]?.id ?? null, description: '', metric: 'JOGOS', threshold: null, new_salary: 0, currency: 'BRL', notes: '' })
+    setOpen(false)
+  }
+
+  return (
+    <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid rgba(190,140,74,0.30)' }}>
+      <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', fontWeight: 600 }}>Nova Meta de Mudança Salarial</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10 }}>
+        <div>
+          <label style={lbl}>Descrição *</label>
+          <input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Ex: Ao atingir 10 jogos, salário sobe" />
+        </div>
+        <div>
+          <label style={lbl}>Métrica</label>
+          <select style={inp} value={f.metric} onChange={e => set('metric', e.target.value as TriggerMetric)}>
+            {(Object.keys(TRIGGER_METRIC_LABELS) as TriggerMetric[]).map(m => <option key={m} value={m}>{TRIGGER_METRIC_LABELS[m]}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={lbl}>Meta (nº)</label>
+          <input style={inp} type="number" value={f.threshold ?? ''} onChange={e => set('threshold', e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 10" />
+        </div>
+        <div>
+          <label style={lbl}>Novo salário *</label>
+          <input style={inp} type="number" value={f.new_salary || ''} onChange={e => set('new_salary', Number(e.target.value) || 0)} placeholder="Ex: 300000" />
+        </div>
+        <div>
+          <label style={lbl}>Moeda</label>
+          <select style={inp} value={f.currency} onChange={e => set('currency', e.target.value as Currency)}>
+            {(['BRL','EUR','USD','GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={lbl}>Vínculo (contrato)</label>
+          <select style={inp} value={f.contract_id ?? ''} onChange={e => set('contract_id', e.target.value || null)}>
+            <option value="">Todos / atleta</option>
+            {contracts.map(c => <option key={c.id} value={c.id}>{c.counterpart_club} ({fmtDate(c.start_date)})</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style={lbl}>Observações</label>
+        <input style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} />
+      </div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button onClick={() => setOpen(false)} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={submit} disabled={!f.description.trim() || !f.new_salary}
+          style={{ padding: '7px 18px', borderRadius: 7, border: 'none', background: (f.description.trim() && f.new_salary) ? '#be8c4a' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: (f.description.trim() && f.new_salary) ? 'pointer' : 'not-allowed' }}>
+          Adicionar Meta
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const TRIGGER_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
+  PENDENTE:     { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' },
+  ATINGIDA:     { bg: '#dcf0e4', fg: '#166534' },
+  NAO_ATINGIDA: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
+}
+
+function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: {
+  t: SalaryTrigger
+  canEdit: boolean
+  onMark: (date: string) => void
+  onReset: () => void
+  onDelete: () => void
+}) {
+  const [date, setDate] = useState(todayISO())
+  const achieved = t.status === 'ATINGIDA'
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+      padding: '12px 14px', borderRadius: 8,
+      background: achieved ? '#dcf0e4' : 'var(--bg-subtle)',
+      border: `1px solid ${achieved ? 'rgba(22,101,52,0.25)' : 'var(--divider-soft)'}`,
+    }}>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{t.description}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 2 }}>
+          {TRIGGER_METRIC_LABELS[t.metric]}{t.threshold != null ? ` ≥ ${t.threshold}` : ''} → {fmtCurrencyShort(t.new_salary, t.currency)}
+          {t.notes ? ` · ${t.notes}` : ''}
+        </div>
+      </div>
+      <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase', background: TRIGGER_STATUS_STYLE[t.status].bg, color: TRIGGER_STATUS_STYLE[t.status].fg }}>
+        {TRIGGER_STATUS_LABELS[t.status]}
+      </span>
+      {achieved ? (
+        <>
+          <span style={{ fontSize: 11, fontFamily: fontMono, color: '#166534' }}>desde {fmtDate(t.achieved_date)}</span>
+          {canEdit && (
+            <button onClick={onReset} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Reverter</button>
+          )}
+        </>
+      ) : canEdit ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: 6, fontSize: 12, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: fontMono }} />
+          <button onClick={() => onMark(date)}
+            style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#166534', color: '#fff', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            ✓ Meta atingida
+          </button>
+        </div>
+      ) : null}
+      {canEdit && (
+        <button onClick={onDelete} title="Remover meta"
+          style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+      )}
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────
 
 export default function PageAthleteDetail() {
@@ -160,21 +318,29 @@ export default function PageAthleteDetail() {
   const [installments, setInstallments] = useState<ClauseInstallment[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [rights, setRights] = useState<EconomicRight[]>([])
+  const [triggers, setTriggers] = useState<SalaryTrigger[]>([])
+  const [clubLiabs, setClubLiabs] = useState<ClubLiability[]>([])
+  const [intermLiabs, setIntermLiabs] = useState<IntermediaryLiability[]>([])
+  const [imageRights, setImageRights] = useState<ImageRight[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<Tab>('clausulas')
+  const [tab, setTab] = useState<Tab>('salario')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [payInstallId, setPayInstallId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, inst, alrt, rght] = await Promise.all([
+    const [ath, contr, cls, inst, alrt, rght, trg, clb, itm, img] = await Promise.all([
       fetchAthlete(id),
       fetchAthleteContracts(id),
       fetchAthleteClauses(id),
       fetchAthleteInstallments(id),
       fetchAthleteAlerts(id),
       fetchAthleteEconomicRights(id),
+      fetchAthleteSalaryTriggers(id),
+      fetchAthleteClubLiabilities(id),
+      fetchAthleteIntermediaryLiabilities(id),
+      fetchAthleteImageRights(id),
     ])
     setAthlete(ath)
     setContracts(contr)
@@ -182,6 +348,10 @@ export default function PageAthleteDetail() {
     setInstallments(inst)
     setAlerts(alrt)
     setRights(rght)
+    setTriggers(trg)
+    setClubLiabs(clb)
+    setIntermLiabs(itm)
+    setImageRights(img)
     setLoading(false)
   }, [id])
 
@@ -260,6 +430,25 @@ export default function PageAthleteDetail() {
   async function handleDeleteRight(rightId: string) {
     await deleteEconomicRight(rightId)
     setRights(prev => prev.filter(r => r.id !== rightId))
+  }
+
+  // ── Salary-trigger actions (mudança salarial por meta) ───────────────────
+  async function handleAddTrigger(input: NewSalaryTriggerInput) {
+    if (!id) return
+    const created = await createSalaryTrigger(id, input)
+    setTriggers(prev => [...prev, created])
+  }
+  async function handleMarkTrigger(triggerId: string, date: string) {
+    const updated = await markTriggerAchieved(triggerId, date)
+    setTriggers(prev => prev.map(t => t.id === triggerId ? updated : t))
+  }
+  async function handleResetTrigger(triggerId: string) {
+    const updated = await resetTrigger(triggerId)
+    setTriggers(prev => prev.map(t => t.id === triggerId ? updated : t))
+  }
+  async function handleDeleteTrigger(triggerId: string) {
+    await deleteSalaryTrigger(triggerId)
+    setTriggers(prev => prev.filter(t => t.id !== triggerId))
   }
 
   if (loading) return (
@@ -443,6 +632,72 @@ export default function PageAthleteDetail() {
         })}
       </div>
 
+      {/* ── Tab: Salário & Metas ── */}
+      {tab === 'salario' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {contracts.length === 0 ? (
+            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>
+              Nenhum vínculo cadastrado. Crie um vínculo (com salário base) para gerenciar metas salariais.
+            </div>
+          ) : (
+            contracts.map(ct => {
+              const ctTriggers = triggers.filter(t => t.contract_id === ct.id || t.contract_id === null)
+              const eff = effectiveSalary(ct, ctTriggers)
+              const changed = eff.source !== null
+              return (
+                <div key={ct.id} className="card" style={{ padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>
+                      {ct.counterpart_club}
+                      <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 8, fontFamily: fontMono }}>
+                        {fmtDate(ct.start_date)}{ct.end_date ? ` → ${fmtDate(ct.end_date)}` : ''}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+                    <div style={{ padding: '12px 16px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                      <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>Salário base</div>
+                      <div style={{ fontSize: 20, fontWeight: 600, fontFamily: fontMono, color: 'var(--ink-primary)' }}>
+                        {ct.base_salary != null ? fmtCurrencyShort(ct.base_salary, ct.salary_currency) : '—'}
+                      </div>
+                    </div>
+                    <div style={{ padding: '12px 16px', borderRadius: 8, background: changed ? '#dcf0e4' : 'var(--bg-subtle)', border: `1px solid ${changed ? 'rgba(22,101,52,0.25)' : 'var(--divider-soft)'}` }}>
+                      <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: changed ? '#166534' : 'var(--text-muted)', marginBottom: 6 }}>Salário efetivo (hoje)</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, fontFamily: fontMono, color: changed ? '#166534' : 'var(--ink-primary)' }}>
+                        {eff.amount != null ? fmtCurrencyShort(eff.amount, eff.currency) : '—'}
+                      </div>
+                      {changed && eff.source && (
+                        <div style={{ fontSize: 10, color: '#166534', marginTop: 4, fontFamily: font }}>
+                          via meta “{eff.source.description}” desde {fmtDate(eff.since)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                    {ctTriggers.length === 0 ? (
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma meta salarial cadastrada para este vínculo.</div>
+                    ) : (
+                      ctTriggers.map(t => (
+                        <TriggerRow key={t.id} t={t} canEdit={canEdit}
+                          onMark={date => handleMarkTrigger(t.id, date)}
+                          onReset={() => handleResetTrigger(t.id)}
+                          onDelete={() => handleDeleteTrigger(t.id)} />
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
+
+          {canEdit && contracts.length > 0 && (
+            <NewTriggerForm contracts={contracts} onAdd={handleAddTrigger} />
+          )}
+        </div>
+      )}
+
       {/* ── Tab: Cláusulas Ativas ── */}
       {tab === 'clausulas' && (
         <div className="card" style={{ overflow: 'hidden' }}>
@@ -616,6 +871,80 @@ export default function PageAthleteDetail() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab: Passivos & Imagem ── */}
+      {tab === 'passivos' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Passivos com clubes */}
+          <div className="card" style={{ padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Passivos com Clubes</div>
+              <Link to="/clubes" style={{ fontSize: 11, color: '#be8c4a', fontFamily: font, textDecoration: 'none' }}>Gerenciar →</Link>
+            </div>
+            {clubLiabs.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhum passivo com clube vinculado a este atleta.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {clubLiabs.map(l => (
+                  <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>{l.club_name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, flex: 1 }}>{l.description ?? ''}</span>
+                    <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</span>
+                    <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>
+                    {l.due_date && <span style={{ fontSize: 11, fontFamily: fontMono, color: isOverdue(l.due_date, l.status) ? 'var(--neg)' : 'var(--text-muted)' }}>{fmtDate(l.due_date)}</span>}
+                    <StatusBadge status={l.status} map={PAYMENT_STATUS_STYLE} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Passivos com intermediários */}
+          <div className="card" style={{ padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Passivos com Intermediários</div>
+              <Link to="/intermediarios" style={{ fontSize: 11, color: '#be8c4a', fontFamily: font, textDecoration: 'none' }}>Gerenciar →</Link>
+            </div>
+            {intermLiabs.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhum passivo com intermediário vinculado a este atleta.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {intermLiabs.map(l => (
+                  <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>{l.intermediary_name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, flex: 1 }}>{l.description ?? ''}</span>
+                    <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</span>
+                    <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>
+                    {l.due_date && <span style={{ fontSize: 11, fontFamily: fontMono, color: isOverdue(l.due_date, l.status) ? 'var(--neg)' : 'var(--text-muted)' }}>{fmtDate(l.due_date)}</span>}
+                    <StatusBadge status={l.status} map={PAYMENT_STATUS_STYLE} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Direito de imagem */}
+          <div className="card" style={{ padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Direito de Imagem</div>
+              <Link to="/imagem" style={{ fontSize: 11, color: '#be8c4a', fontFamily: font, textDecoration: 'none' }}>Gerenciar →</Link>
+            </div>
+            {imageRights.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma parcela de direito de imagem cadastrada para este atleta.</div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {imageRights.map(ir => (
+                  <div key={ir.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                    <span style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{ir.month}</span>
+                    <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(ir.amount, ir.currency)}</span>
+                    <StatusBadge status={ir.status} map={PAYMENT_STATUS_STYLE} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,29 +1,46 @@
-import { useState, useMemo } from 'react'
-import { atletas, fmtData, fmtMi, type StatusContrato } from '../data/mockData'
-import { useApp } from '../context/AppContext'
+import { useState, useMemo, useEffect } from 'react'
 import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
-import { COLS_ATLETAS } from '../lib/xlsx-utils'
-
-const STATUS_OPTS: (StatusContrato | 'Todos')[] = ['Todos', 'Elenco', 'Emprestado', 'Rescindido']
-const POSICOES = ['Todos', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante']
+import { fetchAthletes, fetchAllContracts, fetchAllSalaryTriggers } from '../lib/athleteQueries'
+import { effectiveSalary } from '../lib/salary'
+import { fmtCurrencyShort, fmtDate } from '../lib/format'
+import type { Athlete, Contract, SalaryTrigger, AthleteStatus, Currency } from '../types/athlete-system'
 
 const font = "'Inter', system-ui, sans-serif"
 const fontLabel = "'IBM Plex Mono', 'JetBrains Mono', monospace"
 const fontData = "'JetBrains Mono', ui-monospace, monospace"
 
-// Cálculos encargos
-const fgts = (clt: number) => clt * 0.08
-const inss = (clt: number) => clt * 0.05
-const feriasAnual = (clt: number) => clt / 3
-const decimoTerceiro = (clt: number) => clt
+// Conversão aproximada p/ BRL (somente exibição do total consolidado).
+const APPROX_BRL: Record<Currency, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 
-const custoMensal = (a: (typeof atletas)[number]) =>
-  a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM
-  + fgts(a.salarioCLT) + inss(a.salarioCLT)
+const STATUS_LABELS: Record<AthleteStatus, string> = {
+  ATIVO: 'Ativo',
+  EMPRESTADO: 'Emprestado',
+  VENDIDO: 'Vendido',
+  DESLIGADO: 'Desligado',
+}
 
-const custoAnual = (a: (typeof atletas)[number]) =>
-  custoMensal(a) * 12 + a.auxilioViagemA + feriasAnual(a.salarioCLT) + decimoTerceiro(a.salarioCLT)
+const STATUS_OPTS: (AthleteStatus | 'Todos')[] = ['Todos', 'ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO']
+
+// Linha consolidada por atleta (também usada como base do export).
+interface Row {
+  id: string
+  short_name: string
+  full_name: string
+  position: string | null
+  current_status: AthleteStatus
+  counterpart_club: string
+  start_date: string | null
+  end_date: string | null
+  base_salary: number | null
+  salary_currency: Currency
+  effective_salary: number | null
+  goal_kicked: boolean
+}
+
+type SortField =
+  | 'short_name' | 'position' | 'current_status' | 'counterpart_club'
+  | 'start_date' | 'end_date' | 'base_salary' | 'effective_salary'
 
 function StripKpi({ label, value, first }: { label: string; value: string; first?: boolean }) {
   return (
@@ -48,53 +65,104 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   return <span style={{ fontSize: 9, marginLeft: 2 }}>{dir === 'asc' ? '↑' : '↓'}</span>
 }
 
-export default function PageConsolidado() {
-  const { fmtMiC, t } = useApp()
+// Contrato mais relevante do atleta: o ATIVO com start_date mais recente;
+// senão, o de start_date mais recente independentemente do status.
+function pickContract(contracts: Contract[]): Contract | null {
+  if (contracts.length === 0) return null
+  const byStart = (a: Contract, b: Contract) => (b.start_date ?? '').localeCompare(a.start_date ?? '')
+  const ativos = contracts.filter(c => c.status === 'ATIVO').sort(byStart)
+  if (ativos.length > 0) return ativos[0]
+  return [...contracts].sort(byStart)[0]
+}
 
-  const [sortField, setSortField] = useState<string>('custoAnual')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
-  const handleSort = (field: string) => {
+export default function PageConsolidado() {
+  const [loading, setLoading] = useState(true)
+  const [rows, setRows] = useState<Row[]>([])
+
+  const [sortField, setSortField] = useState<SortField>('short_name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const handleSort = (field: SortField) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortField(field); setSortDir('asc') }
   }
 
-  const [statusFiltro, setStatusFiltro] = useState<StatusContrato | 'Todos'>('Elenco')
+  const [statusFiltro, setStatusFiltro] = useState<AthleteStatus | 'Todos'>('Todos')
   const [posicaoFiltro, setPosicaoFiltro] = useState('Todos')
 
-  const filtrados = useMemo(() => atletas.filter(a => {
-    const okStatus = statusFiltro === 'Todos' || a.statusContrato === statusFiltro
-    const okPos = posicaoFiltro === 'Todos' || a.posicao === posicaoFiltro
+  useEffect(() => {
+    let alive = true
+    setLoading(true)
+    Promise.all([fetchAthletes(), fetchAllContracts(), fetchAllSalaryTriggers()])
+      .then(([athletes, contracts, triggers]: [Athlete[], Contract[], SalaryTrigger[]]) => {
+        if (!alive) return
+        const built = athletes.map<Row>(a => {
+          const own = contracts.filter(c => c.athlete_id === a.id)
+          const contract = pickContract(own)
+          if (!contract) {
+            return {
+              id: a.id, short_name: a.short_name, full_name: a.full_name,
+              position: a.position, current_status: a.current_status,
+              counterpart_club: '—', start_date: null, end_date: null,
+              base_salary: null, salary_currency: 'BRL',
+              effective_salary: null, goal_kicked: false,
+            }
+          }
+          const relevant = triggers.filter(
+            t => t.athlete_id === a.id && (t.contract_id === contract.id || t.contract_id === null),
+          )
+          const eff = effectiveSalary(contract, relevant)
+          return {
+            id: a.id,
+            short_name: a.short_name,
+            full_name: a.full_name,
+            position: a.position,
+            current_status: a.current_status,
+            counterpart_club: contract.counterpart_club,
+            start_date: contract.start_date,
+            end_date: contract.end_date,
+            base_salary: contract.base_salary,
+            salary_currency: eff.currency,
+            effective_salary: eff.amount,
+            goal_kicked: eff.source !== null && eff.amount !== contract.base_salary,
+          }
+        })
+        setRows(built)
+      })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [])
+
+  const posicoes = useMemo(() => {
+    const set = new Set<string>()
+    rows.forEach(r => { if (r.position) set.add(r.position) })
+    return ['Todos', ...Array.from(set).sort()]
+  }, [rows])
+
+  const filtrados = useMemo(() => rows.filter(r => {
+    const okStatus = statusFiltro === 'Todos' || r.current_status === statusFiltro
+    const okPos = posicaoFiltro === 'Todos' || r.position === posicaoFiltro
     return okStatus && okPos
-  }), [statusFiltro, posicaoFiltro])
+  }), [rows, statusFiltro, posicaoFiltro])
 
   const sorted = useMemo(() => {
     return [...filtrados].sort((a, b) => {
-      let va: string | number = 0, vb: string | number = 0
-      if (sortField === 'nome') { va = a.nome; vb = b.nome }
-      else if (sortField === 'posicao') { va = a.posicao; vb = b.posicao }
-      else if (sortField === 'status') { va = a.statusContrato; vb = b.statusContrato }
-      else if (sortField === 'inicioContrato') { va = a.inicioContrato; vb = b.inicioContrato }
-      else if (sortField === 'fimContrato') { va = a.fimContrato; vb = b.fimContrato }
-      else if (sortField === 'salarioCLT') { va = a.salarioCLT; vb = b.salarioCLT }
-      else if (sortField === 'direitoImagem') { va = a.direitoImagem; vb = b.direitoImagem }
-      else if (sortField === 'totalMensal') { va = custoMensal(a); vb = custoMensal(b) }
-      else if (sortField === 'custoAnual') { va = custoAnual(a); vb = custoAnual(b) }
-      else return 0
-      const cmp = va < vb ? -1 : va > vb ? 1 : 0
+      const va = a[sortField]
+      const vb = b[sortField]
+      const na = va === null || va === undefined ? (typeof vb === 'number' ? -Infinity : '') : va
+      const nb = vb === null || vb === undefined ? (typeof va === 'number' ? -Infinity : '') : vb
+      const cmp = na < nb ? -1 : na > nb ? 1 : 0
       return sortDir === 'asc' ? cmp : -cmp
     })
   }, [filtrados, sortField, sortDir])
 
-  // Totais anuais do strip
-  const totalCLT     = filtrados.reduce((s, a) => s + a.salarioCLT * 12, 0)
-  const totalImagem  = filtrados.reduce((s, a) => s + a.direitoImagem * 12, 0)
-  const totalMoradia = filtrados.reduce((s, a) => s + a.auxilioMoradiaM * 12, 0)
-  const totalViagem  = filtrados.reduce((s, a) => s + a.auxilioViagemA, 0)
-  const totalFGTS    = filtrados.reduce((s, a) => s + fgts(a.salarioCLT) * 12, 0)
-  const totalFerias  = filtrados.reduce((s, a) => s + feriasAnual(a.salarioCLT), 0)
-  const total13      = filtrados.reduce((s, a) => s + decimoTerceiro(a.salarioCLT), 0)
-  const totalINSS    = filtrados.reduce((s, a) => s + inss(a.salarioCLT) * 12, 0)
-  const totalGeral   = filtrados.reduce((s, a) => s + custoAnual(a), 0)
+  // Strip: contagens + soma aproximada em BRL dos salários efetivos.
+  const nTotal = filtrados.length
+  const nAtivos = filtrados.filter(r => r.current_status === 'ATIVO').length
+  const nEmprestados = filtrados.filter(r => r.current_status === 'EMPRESTADO').length
+  const nVendidos = filtrados.filter(r => r.current_status === 'VENDIDO').length
+  const somaBRL = filtrados.reduce(
+    (s, r) => s + (r.effective_salary ?? 0) * (APPROX_BRL[r.salary_currency] ?? 1), 0,
+  )
 
   const th: React.CSSProperties = {
     padding: '9px 10px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase',
@@ -117,17 +185,29 @@ export default function PageConsolidado() {
           exportSheets={[{
             name: 'Consolidado',
             cols: [
-              ...COLS_ATLETAS.filter(c => ['id','nome','posicao','statusContrato','alocacao','inicioContrato','fimContrato',
-                'salarioCLT','direitoImagem','auxilioMoradiaM','auxilioAlimentacaoM','auxilioViagemA','outrosAuxiliosM'].includes(c.key)),
-              { key: 'totalMensal', header: 'Total Mensal' },
-              { key: 'custoAnual',  header: 'Custo Anual' },
+              { key: 'id', header: 'ID' },
+              { key: 'short_name', header: 'Nome' },
+              { key: 'position', header: 'Posição' },
+              { key: 'current_status', header: 'Status' },
+              { key: 'counterpart_club', header: 'Clube' },
+              { key: 'start_date', header: 'Início' },
+              { key: 'end_date', header: 'Fim' },
+              { key: 'base_salary', header: 'Salário Base' },
+              { key: 'salary_currency', header: 'Moeda' },
+              { key: 'effective_salary', header: 'Salário Efetivo' },
             ],
-            rows: atletas.map(a => ({
-              ...a,
-              totalMensal: a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM,
-              custoAnual: (a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM) * 12
-                + a.auxilioViagemA + (a.salarioCLT * 0.08 + a.salarioCLT / 3 + a.salarioCLT + a.salarioCLT * 0.05) * 12 / 12 * 12,
-            })) as unknown as Record<string, unknown>[],
+            rows: rows.map(r => ({
+              id: r.id,
+              short_name: r.short_name,
+              position: r.position ?? '',
+              current_status: r.current_status,
+              counterpart_club: r.counterpart_club,
+              start_date: r.start_date ?? '',
+              end_date: r.end_date ?? '',
+              base_salary: r.base_salary,
+              salary_currency: r.salary_currency,
+              effective_salary: r.effective_salary,
+            })),
           }]}
         />
       </PageHero>
@@ -140,99 +220,94 @@ export default function PageConsolidado() {
         {/* Filtros */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingRight: 20, borderRight: '1px solid rgba(255,255,255,0.12)', flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 3, fontFamily: font }}>{t('Status')}</div>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 3, fontFamily: font }}>Status</div>
             <select value={statusFiltro} onChange={e => setStatusFiltro(e.target.value as typeof statusFiltro)}
-              style={{ background: '#222', color: '#fff', border: '1px solid #444', borderRadius: 5, padding: '4px 8px', fontSize: 12, fontFamily: font, width: 110 }}>
-              {STATUS_OPTS.map(s => <option key={s} style={{ background: '#222' }}>{s}</option>)}
+              style={{ background: '#222', color: '#fff', border: '1px solid #444', borderRadius: 5, padding: '4px 8px', fontSize: 12, fontFamily: font, width: 130 }}>
+              {STATUS_OPTS.map(s => (
+                <option key={s} value={s} style={{ background: '#222' }}>
+                  {s === 'Todos' ? 'Todos' : STATUS_LABELS[s]}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 3, fontFamily: font }}>{t('Posição')}</div>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 3, fontFamily: font }}>Posição</div>
             <select value={posicaoFiltro} onChange={e => setPosicaoFiltro(e.target.value)}
-              style={{ background: '#222', color: '#fff', border: '1px solid #444', borderRadius: 5, padding: '4px 8px', fontSize: 12, fontFamily: font, width: 130 }}>
-              {POSICOES.map(p => <option key={p} style={{ background: '#222' }}>{p}</option>)}
+              style={{ background: '#222', color: '#fff', border: '1px solid #444', borderRadius: 5, padding: '4px 8px', fontSize: 12, fontFamily: font, width: 150 }}>
+              {posicoes.map(p => <option key={p} value={p} style={{ background: '#222' }}>{p}</option>)}
             </select>
           </div>
         </div>
 
         {/* KPIs */}
-        <StripKpi label={t('Custo Total Anual')} value={fmtMiC(totalGeral)} />
-        <StripKpi label={t('CLT')} value={fmtMiC(totalCLT)} />
-        <StripKpi label={t('Imagem')} value={fmtMiC(totalImagem)} />
-        <StripKpi label={t('Auxílio Moradia')} value={fmtMiC(totalMoradia)} />
-        <StripKpi label={t('Auxílio Viagem')} value={fmtMiC(totalViagem)} />
-        <StripKpi label={t('FGTS')} value={fmtMiC(totalFGTS)} />
-        <StripKpi label={t('Férias')} value={fmtMiC(totalFerias)} />
-        <StripKpi label={t('13º')} value={fmtMiC(total13)} />
-        <StripKpi label={t('INSS')} value={fmtMiC(totalINSS)} />
+        <StripKpi label="Total Atletas" value={String(nTotal)} />
+        <StripKpi label="Ativos" value={String(nAtivos)} />
+        <StripKpi label="Emprestados" value={String(nEmprestados)} />
+        <StripKpi label="Vendidos" value={String(nVendidos)} />
+        <StripKpi label="Salários Efetivos (~BRL)" value={fmtCurrencyShort(somaBRL, 'BRL')} />
 
         <div style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.6)', fontSize: 11, paddingLeft: 16, fontFamily: font, flexShrink: 0 }}>
-          {filtrados.length} {filtrados.length !== 1 ? t('atletas') : t('atleta')}
+          Total aproximado em BRL (câmbio de referência)
         </div>
       </div>
 
       {/* ── Tabela ── */}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--divider)', fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', fontFamily: font, letterSpacing: 0.1 }}>
-          {t('Consolidado Atletas')}
+          Consolidado Atletas
         </div>
-        <div style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 260px)' }}>
+        <div style={{ overflowY: 'auto', overflowX: 'auto', maxHeight: 'calc(100vh - 260px)' }}>
           <table style={{ tableLayout: 'auto', width: '100%' }}>
             <thead>
               <tr>
-                <th style={th} onClick={() => handleSort('nome')}>{t('Nome')}<SortIcon active={sortField==='nome'} dir={sortDir} /></th>
-                <th style={th} onClick={() => handleSort('posicao')}>{t('Posição')}<SortIcon active={sortField==='posicao'} dir={sortDir} /></th>
-                <th style={th} onClick={() => handleSort('status')}>{t('Status')}<SortIcon active={sortField==='status'} dir={sortDir} /></th>
-                <th style={th} onClick={() => handleSort('inicioContrato')}>{t('Data Início Contrato')}<SortIcon active={sortField==='inicioContrato'} dir={sortDir} /></th>
-                <th style={th} onClick={() => handleSort('fimContrato')}>{t('Data Fim Contrato')}<SortIcon active={sortField==='fimContrato'} dir={sortDir} /></th>
-                <th style={th}>{t('Data de Rescisão')}</th>
-                <th style={{ ...th, textAlign: 'right' }} onClick={() => handleSort('salarioCLT')}>{t('CLT')}<SortIcon active={sortField==='salarioCLT'} dir={sortDir} /></th>
-                <th style={{ ...th, textAlign: 'right' }} onClick={() => handleSort('direitoImagem')}>{t('Imagem')}<SortIcon active={sortField==='direitoImagem'} dir={sortDir} /></th>
-                <th style={{ ...th, textAlign: 'right' }}>{t('Auxílio Moradia (Mensal)')}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{t('FGTS Mensal')}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{t('INSS (Mensal)')}</th>
-                <th style={{ ...th, textAlign: 'right', background: 'rgba(190,140,74,0.12)', color: 'var(--gold-deep)' }} onClick={() => handleSort('totalMensal')}>{t('Total Mensal')}<SortIcon active={sortField==='totalMensal'} dir={sortDir} /></th>
-                <th style={{ ...th, textAlign: 'right' }}>{t('Auxílio Viagem (Anual)')}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{t('Férias Anual')}</th>
-                <th style={{ ...th, textAlign: 'right' }}>{t('13º (Anual)')}</th>
-                <th style={{ ...th, textAlign: 'right', background: 'var(--pos-tint)', color: 'var(--pos)' }} onClick={() => handleSort('custoAnual')}>{t('Custo Anual')}<SortIcon active={sortField==='custoAnual'} dir={sortDir} /></th>
+                <th style={th} onClick={() => handleSort('short_name')}>Nome<SortIcon active={sortField === 'short_name'} dir={sortDir} /></th>
+                <th style={th} onClick={() => handleSort('position')}>Posição<SortIcon active={sortField === 'position'} dir={sortDir} /></th>
+                <th style={th} onClick={() => handleSort('current_status')}>Status<SortIcon active={sortField === 'current_status'} dir={sortDir} /></th>
+                <th style={th} onClick={() => handleSort('counterpart_club')}>Clube Atual<SortIcon active={sortField === 'counterpart_club'} dir={sortDir} /></th>
+                <th style={th} onClick={() => handleSort('start_date')}>Início<SortIcon active={sortField === 'start_date'} dir={sortDir} /></th>
+                <th style={th} onClick={() => handleSort('end_date')}>Fim<SortIcon active={sortField === 'end_date'} dir={sortDir} /></th>
+                <th style={{ ...th, textAlign: 'right' }} onClick={() => handleSort('base_salary')}>Salário Base<SortIcon active={sortField === 'base_salary'} dir={sortDir} /></th>
+                <th style={{ ...th, textAlign: 'right', background: 'rgba(190,140,74,0.12)', color: 'var(--gold-deep)' }} onClick={() => handleSort('effective_salary')}>Salário Efetivo<SortIcon active={sortField === 'effective_salary'} dir={sortDir} /></th>
+                <th style={th}>Moeda</th>
               </tr>
             </thead>
             <tbody>
-              {filtrados.length === 0 && (
-                <tr><td colSpan={16} style={{ ...td, textAlign: 'center', color: '#bbb', padding: 32 }}>{t('Nenhum atleta encontrado')}</td></tr>
+              {loading && (
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: '#bbb', padding: 32 }}>Carregando…</td></tr>
               )}
-              {sorted.map(a => {
-                const totalM = a.salarioCLT + a.direitoImagem + a.auxilioMoradiaM + a.auxilioAlimentacaoM + a.outrosAuxiliosM + fgts(a.salarioCLT) + inss(a.salarioCLT)
-                const totalA = custoAnual(a)
-                return (
-                  <tr key={a.id}>
-                    <td style={{ ...td, fontWeight: 500 }}>{a.nome}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{t(a.posicao)}</td>
-                    <td style={td}>
-                      <span style={{
-                        padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 500, fontFamily: fontLabel,
-                        textTransform: 'uppercase', letterSpacing: '0.10em',
-                        background: a.statusContrato === 'Elenco' ? 'var(--pos-tint)' : a.statusContrato === 'Emprestado' ? 'var(--gold-tint)' : 'var(--neg-tint)',
-                        color: a.statusContrato === 'Elenco' ? 'var(--pos)' : a.statusContrato === 'Emprestado' ? 'var(--gold-deep)' : 'var(--neg)',
-                      }}>{t(a.statusContrato)}</span>
-                    </td>
-                    <td style={{ ...td, color: '#666' }}>{fmtData(a.inicioContrato)}</td>
-                    <td style={{ ...td, color: '#666' }}>{fmtData(a.fimContrato)}</td>
-                    <td style={{ ...td, color: '#aaa' }}>—</td>
-                    <td style={tdr}>{fmtMi(a.salarioCLT)}</td>
-                    <td style={tdr}>{fmtMi(a.direitoImagem)}</td>
-                    <td style={tdr}>{a.auxilioMoradiaM > 0 ? fmtMi(a.auxilioMoradiaM) : '—'}</td>
-                    <td style={tdr}>{fmtMi(fgts(a.salarioCLT))}</td>
-                    <td style={tdr}>{fmtMi(inss(a.salarioCLT))}</td>
-                    <td style={{ ...tdr, fontWeight: 600, background: 'rgba(190,140,74,0.07)' }}>{fmtMi(totalM)}</td>
-                    <td style={tdr}>{a.auxilioViagemA > 0 ? fmtMi(a.auxilioViagemA) : '—'}</td>
-                    <td style={tdr}>{fmtMi(feriasAnual(a.salarioCLT))}</td>
-                    <td style={tdr}>{fmtMi(decimoTerceiro(a.salarioCLT))}</td>
-                    <td style={{ ...tdr, fontWeight: 600, background: 'rgba(22,101,52,0.06)' }}>{fmtMi(totalA)}</td>
-                  </tr>
-                )
-              })}
+              {!loading && rows.length === 0 && (
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: '#bbb', padding: 32 }}>Nenhum atleta cadastrado.</td></tr>
+              )}
+              {!loading && rows.length > 0 && filtrados.length === 0 && (
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: '#bbb', padding: 32 }}>Nenhum atleta encontrado com os filtros atuais.</td></tr>
+              )}
+              {!loading && sorted.map(r => (
+                <tr key={r.id}>
+                  <td style={{ ...td, fontWeight: 500 }}>{r.short_name}</td>
+                  <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.position ?? '—'}</td>
+                  <td style={td}>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 500, fontFamily: fontLabel,
+                      textTransform: 'uppercase', letterSpacing: '0.10em',
+                      background: r.current_status === 'ATIVO' ? 'var(--pos-tint)' : r.current_status === 'EMPRESTADO' ? 'var(--gold-tint)' : 'var(--neg-tint)',
+                      color: r.current_status === 'ATIVO' ? 'var(--pos)' : r.current_status === 'EMPRESTADO' ? 'var(--gold-deep)' : 'var(--neg)',
+                    }}>{STATUS_LABELS[r.current_status]}</span>
+                  </td>
+                  <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.counterpart_club}</td>
+                  <td style={{ ...td, color: '#666' }}>{fmtDate(r.start_date)}</td>
+                  <td style={{ ...td, color: '#666' }}>{fmtDate(r.end_date)}</td>
+                  <td style={tdr}>{fmtCurrencyShort(r.base_salary, r.salary_currency)}</td>
+                  <td style={{
+                    ...tdr, fontWeight: 600,
+                    background: r.goal_kicked ? 'rgba(190,140,74,0.14)' : 'transparent',
+                    color: r.goal_kicked ? 'var(--gold-deep)' : 'var(--text-primary)',
+                  }}>
+                    {fmtCurrencyShort(r.effective_salary, r.salary_currency)}
+                    {r.goal_kicked && <span title="Salário elevado por meta atingida" style={{ marginLeft: 4, fontSize: 9 }}>▲</span>}
+                  </td>
+                  <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.salary_currency}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

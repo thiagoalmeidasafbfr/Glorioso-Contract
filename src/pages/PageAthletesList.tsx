@@ -2,12 +2,15 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   fetchAthletes, createAthlete, fetchAllEconomicRights,
+  fetchAllClauses, fetchAllInstallments, fetchAllAlerts,
 } from '../lib/athleteQueries'
-import { ALERTS_MOCK } from '../data/athletesMock'
 import { fmtDate, isOverdue, isDueSoon } from '../lib/format'
-import { INSTALLMENTS_MOCK, CLAUSES_MOCK } from '../data/athletesMock'
-import type { Athlete, AthleteStatus, EconomicRight } from '../types/athlete-system'
+import type {
+  Athlete, AthleteStatus, EconomicRight, Clause, ClauseInstallment, Alert,
+} from '../types/athlete-system'
 import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
+import SheetIO from '../components/SheetIO'
+import { COLS_ATHLETES } from '../lib/xlsx-utils'
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -151,15 +154,23 @@ export default function PageAthletesList() {
   const [filterStatus, setFilterStatus] = useState<AthleteStatus | 'Todos'>('Todos')
   const [showNew, setShowNew] = useState(false)
   const [rightsByAthlete, setRightsByAthlete] = useState<Record<string, EconomicRight[]>>({})
+  const [clauses, setClauses] = useState<Clause[]>([])
+  const [installments, setInstallments] = useState<ClauseInstallment[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
 
-  useEffect(() => {
+  function loadAll() {
     fetchAthletes().then(data => { setAthletes(data); setLoading(false) }).catch(() => setLoading(false))
     fetchAllEconomicRights().then(rows => {
       const map: Record<string, EconomicRight[]> = {}
       for (const r of rows) (map[r.athlete_id] ??= []).push(r)
       setRightsByAthlete(map)
     }).catch(() => {})
-  }, [])
+    fetchAllClauses().then(setClauses).catch(() => {})
+    fetchAllInstallments().then(setInstallments).catch(() => {})
+    fetchAllAlerts().then(setAlerts).catch(() => {})
+  }
+
+  useEffect(() => { loadAll() }, [])
 
   const filtered = useMemo(() => athletes.filter(a => {
     if (filterStatus !== 'Todos' && a.current_status !== filterStatus) return false
@@ -170,23 +181,23 @@ export default function PageAthletesList() {
     return true
   }), [athletes, filterStatus, search])
 
-  // Calcular stats por atleta (a partir dos mocks)
+  // Stats por atleta calculados a partir dos dados reais (query layer).
   const getAthleteStats = (id: string) => {
-    const clauses = CLAUSES_MOCK.filter(c => c.athlete_id === id)
-    const installments = INSTALLMENTS_MOCK.filter(i => i.athlete_id === id)
+    const cl = clauses.filter(c => c.athlete_id === id)
+    const inst = installments.filter(i => i.athlete_id === id)
     const overdue = [
-      ...clauses.filter(c => isOverdue(c.due_date, c.payment_status)),
-      ...installments.filter(i => isOverdue(i.due_date, i.payment_status)),
+      ...cl.filter(c => isOverdue(c.due_date, c.payment_status)),
+      ...inst.filter(i => isOverdue(i.due_date, i.payment_status)),
     ].length
     const soon = [
-      ...clauses.filter(c => isDueSoon(c.due_date, c.payment_status)),
-      ...installments.filter(i => isDueSoon(i.due_date, i.payment_status)),
+      ...cl.filter(c => isDueSoon(c.due_date, c.payment_status)),
+      ...inst.filter(i => isDueSoon(i.due_date, i.payment_status)),
     ].length
     const openDates = [
-      ...clauses.filter(c => c.payment_status === 'PENDENTE' && c.due_date).map(c => c.due_date!),
-      ...installments.filter(i => i.payment_status === 'PENDENTE').map(i => i.due_date),
+      ...cl.filter(c => c.payment_status === 'PENDENTE' && c.due_date).map(c => c.due_date!),
+      ...inst.filter(i => i.payment_status === 'PENDENTE').map(i => i.due_date),
     ].sort()
-    const unread = ALERTS_MOCK.filter(al => al.athlete_id === id && !al.is_read && al.severity === 'RED').length
+    const unread = alerts.filter(al => al.athlete_id === id && !al.is_read && al.severity === 'RED').length
     return { overdue, soon, nextDue: openDates[0] ?? null, unread }
   }
 
@@ -233,6 +244,32 @@ export default function PageAthletesList() {
           style={{ padding: '8px 20px', background: '#be8c4a', border: 'none', borderRadius: 8, color: '#fff', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           + Novo Atleta
         </button>
+        <SheetIO
+          exportFilename="atletas.xlsx"
+          exportSheets={[{ name: 'Atletas', cols: COLS_ATHLETES, rows: athletes as unknown as Record<string, unknown>[] }]}
+          onImport={async sheets => {
+            const rows = sheets['Atletas'] ?? sheets[Object.keys(sheets)[0]] ?? []
+            for (const r of rows) {
+              const fullName = (r['Nome Completo'] ?? '').trim()
+              if (!fullName) continue
+              await createAthlete({
+                full_name: fullName,
+                short_name: (r['Nome Curto'] ?? '').trim() || fullName.split(' ')[0],
+                position: r['Posição'] || null,
+                current_status: (r['Status'] as AthleteStatus) || 'ATIVO',
+                birth_date: r['Data Nascimento'] || null,
+                nationality: r['Nacionalidade'] || null,
+                cpf: r['CPF'] || null,
+                passport_number: r['Passaporte'] || null,
+                agent_name: r['Agente'] || null,
+                agent_contact: r['Contato Agente'] || null,
+                profile_photo_url: null,
+                notes: r['Observações'] || null,
+              })
+            }
+            loadAll()
+          }}
+        />
       </div>
 
       {/* Table */}
@@ -263,8 +300,8 @@ export default function PageAthletesList() {
               {filtered.map(a => {
                 const stats = getAthleteStats(a.id)
                 const st = STATUS_STYLE[a.current_status]
-                const clauses = CLAUSES_MOCK.filter(c => c.athlete_id === a.id)
-                const active = clauses.filter(c => !['PAGA','CANCELADA'].includes(c.payment_status)).length
+                const athleteClauses = clauses.filter(c => c.athlete_id === a.id)
+                const active = athleteClauses.filter(c => !['PAGA','CANCELADA'].includes(c.payment_status)).length
                 return (
                   <tr key={a.id} style={{ cursor: 'pointer' }}
                     onClick={() => navigate(`/atletas/${a.id}`)}
