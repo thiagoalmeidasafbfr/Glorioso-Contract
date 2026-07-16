@@ -283,7 +283,7 @@ export default function PageAthletesList() {
                 <th style={{ ...th, width: 200, textAlign: 'left' }}>Nome</th>
                 <th style={{ ...th, width: 110 }}>Status</th>
                 <th style={{ ...th, width: 80 }}>País</th>
-                <th style={{ ...th, width: 180, textAlign: 'left' }}>Titularidade</th>
+                <th style={{ ...th, width: 180, textAlign: 'left' }}>Detentores</th>
                 <th style={{ ...th, width: 80, textAlign: 'right' }}>Cláusulas</th>
                 <th style={{ ...th, width: 120, textAlign: 'right' }}>Próx. Venc.</th>
                 <th style={{ ...th, width: 100 }}>Alertas</th>
