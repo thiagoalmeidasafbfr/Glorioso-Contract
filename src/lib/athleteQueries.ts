@@ -447,6 +447,27 @@ export async function createImageRight(athleteId: string, input: NewImageRightIn
   return data
 }
 
+// Cria várias parcelas de direito de imagem de uma vez (uma por mês). Usado ao
+// criar um vínculo com valor de imagem mensal: gera 1 parcela por mês de vigência.
+export async function createImageRights(athleteId: string, inputs: NewImageRightInput[]): Promise<ImageRight[]> {
+  if (inputs.length === 0) return []
+  const rows = inputs.map(input => ({
+    athlete_id: athleteId,
+    pj_id: input.pj_id ?? null,
+    source_key: input.source_key ?? null,
+    month: input.month,
+    amount: input.amount,
+    currency: input.currency,
+    status: input.status,
+    paid_date: null,
+    notes: input.notes || null,
+  }))
+  if (!USE_SUPABASE) return local.insertMany<ImageRight>(T.imageRights, rows)
+  const { data, error } = await supabase.from(T.imageRights).insert(nn(rows)).select()
+  if (error) throw error
+  return data
+}
+
 export async function updateImageRight(id: string, input: Partial<ImageRight>): Promise<ImageRight> {
   if (!USE_SUPABASE) return local.update<ImageRight>(T.imageRights, id, input)
   const { data, error } = await supabase
@@ -706,4 +727,36 @@ export async function fetchAthleteWithStats(id: string): Promise<AthleteWithStat
 function getApproxBRL(currency: string): number {
   const rates: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
   return rates[currency] ?? 1
+}
+
+// ── Apagar toda a base ──────────────────────────────────────────────────────
+// Remove TODOS os registros de TODAS as tabelas do sistema. Ação destrutiva e
+// irreversível — a UI deve confirmar antes de chamar. A ordem respeita as
+// dependências (filhos antes dos pais) para não violar chaves estrangeiras.
+const DELETE_ORDER: string[] = [
+  T.installments,
+  T.alerts,
+  T.clauses,
+  T.imageRights,
+  T.salaryTriggers,
+  T.clubLiabilities,
+  T.intermediaryLiabilities,
+  T.economicRights,
+  T.athletePjs,
+  T.contracts,
+  T.athletes,
+  T.clubs,
+  T.intermediaries,
+]
+
+export async function deleteAllData(): Promise<void> {
+  if (!USE_SUPABASE) {
+    for (const table of DELETE_ORDER) local.replaceAll(table, [])
+    return
+  }
+  for (const table of DELETE_ORDER) {
+    // Supabase exige um filtro no delete; este casa com qualquer linha (id não nulo).
+    const { error } = await supabase.from(table).delete().not('id', 'is', null)
+    if (error) throw error
+  }
 }
