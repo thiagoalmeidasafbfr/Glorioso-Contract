@@ -5,7 +5,8 @@ import {
 } from '../lib/athleteQueries'
 import { bfrShare } from '../lib/ownership'
 import OwnershipBar from '../components/OwnershipBar'
-import type { Athlete, AthleteStatus, EconomicRight, Clause } from '../types/athlete-system'
+import type { Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause } from '../types/athlete-system'
+import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -201,7 +202,9 @@ export default function PageAlbum() {
   const [athletes, setAthletes] = useState<Athlete[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState<AthleteStatus | 'Todos'>('Todos')
+  // Por padrão, o álbum mostra apenas atletas ATIVOS (dropdown permite alternar).
+  const [filterStatus, setFilterStatus] = useState<AthleteStatus | 'Todos'>('ATIVO')
+  const [filterCategory, setFilterCategory] = useState<AthleteCategory | 'Todos'>('Todos')
   const [filterPosition, setFilterPosition] = useState('Todos')
   const [filterNationality, setFilterNationality] = useState('Todos')
   const [filterOwnership, setFilterOwnership] = useState<OwnershipFilter>('Todos')
@@ -235,6 +238,7 @@ export default function PageAlbum() {
 
   const filtered = useMemo(() => athletes.filter(a => {
     if (filterStatus !== 'Todos' && a.current_status !== filterStatus) return false
+    if (filterCategory !== 'Todos' && (a.category ?? 'PROFISSIONAL') !== filterCategory) return false
     if (filterPosition !== 'Todos' && (a.position ?? NO_POSITION) !== filterPosition) return false
     if (filterNationality !== 'Todos' && a.nationality !== filterNationality) return false
     if (filterOwnership !== 'Todos') {
@@ -247,7 +251,7 @@ export default function PageAlbum() {
       if (!a.full_name.toLowerCase().includes(q) && !a.short_name.toLowerCase().includes(q)) return false
     }
     return true
-  }), [athletes, filterStatus, filterPosition, filterNationality, filterOwnership, rightsByAthlete, search])
+  }), [athletes, filterStatus, filterCategory, filterPosition, filterNationality, filterOwnership, rightsByAthlete, search])
 
   const activeClausesByAthlete = useMemo(() => {
     const map: Record<string, number> = {}
@@ -307,6 +311,15 @@ export default function PageAlbum() {
           <div style={selLabel}>Nacionalidade</div>
           <select value={filterNationality} onChange={e => setFilterNationality(e.target.value)} style={selStyle}>
             {nationalityOptions.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div style={selWrap}>
+          <div style={selLabel}>Categoria</div>
+          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value as typeof filterCategory)} style={selStyle}>
+            <option value="Todos">Todas</option>
+            {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
+              <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
+            ))}
           </select>
         </div>
         <div style={selWrap}>

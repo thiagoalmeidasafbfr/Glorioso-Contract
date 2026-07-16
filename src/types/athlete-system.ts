@@ -3,6 +3,9 @@
 
 export type AthleteStatus = 'ATIVO' | 'EMPRESTADO' | 'VENDIDO' | 'DESLIGADO'
 
+// Categoria (dimensão) do atleta no clube.
+export type AthleteCategory = 'BASE' | 'PROFISSIONAL' | 'COMISSAO_TECNICA'
+
 export type ContractType =
   | 'ENTRADA' | 'SAIDA' | 'EMPRESTIMO_SAIDA' | 'EMPRESTIMO_ENTRADA'
 
@@ -53,11 +56,30 @@ export interface Athlete {
   agent_name: string | null
   agent_contact: string | null
   current_status: AthleteStatus
+  category: AthleteCategory
   position: string | null
   profile_photo_url: string | null
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+// PJ (pessoa jurídica) do atleta — usada para o Direito de Imagem. Um atleta
+// pode ter mais de uma (troca de PJ ao longo do tempo).
+export interface AthletePJ {
+  id: string
+  athlete_id: string
+  legal_name: string       // razão social
+  cnpj: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NewAthletePJInput {
+  legal_name: string
+  cnpj: string
+  notes: string
 }
 
 // Uma parcela da titularidade econômica do atleta (1 linha por detentor).
@@ -251,6 +273,12 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
   EMPRESTIMO_ENTRADA:'Empréstimo (entrada)',
 }
 
+export const ATHLETE_CATEGORY_LABELS: Record<AthleteCategory, string> = {
+  BASE:            'Base',
+  PROFISSIONAL:    'Profissional',
+  COMISSAO_TECNICA:'Comissão Técnica',
+}
+
 export const HOLDER_TYPE_LABELS: Record<HolderType, string> = {
   BFR:      'Botafogo',
   CLUBE:    'Clube',
@@ -384,6 +412,7 @@ export interface ImageRight {
   id: string
   source_key?: string | null
   athlete_id: string
+  pj_id: string | null      // PJ que recebe a imagem
   month: string          // 'YYYY-MM'
   amount: number
   currency: Currency
@@ -396,6 +425,7 @@ export interface ImageRight {
 
 export interface NewImageRightInput {
   source_key?: string | null
+  pj_id?: string | null
   month: string
   amount: number
   currency: Currency

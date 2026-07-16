@@ -14,17 +14,29 @@ import {
   fetchAllEconomicRights, createEconomicRight,
   fetchClubs, createClub,
   fetchIntermediaries, createIntermediary,
+  fetchAllPJs, createPJ,
 } from '../lib/athleteQueries'
 import {
   exportWorkbook, parseWorkbookFile, type ColDef,
   COLS_ATHLETES, COLS_CONTRACTS, COLS_SALARY_TRIGGERS, COLS_CLUB_LIABILITIES,
   COLS_INTERMEDIARY_LIABILITIES, COLS_IMAGE_RIGHTS, COLS_ECONOMIC_RIGHTS,
-  COLS_CLUBS, COLS_AGENTS,
+  COLS_CLUBS, COLS_AGENTS, COLS_ATHLETE_PJS,
 } from '../lib/xlsx-utils'
 import {
-  S, orNull, N, Nn, cur, bool, dupKey,
+  S, orNull, N, Nn, cur, bool, norm, dupKey,
   emptyResult, resultMessage, type ImportResult,
 } from '../lib/importHelpers'
+import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
+import type { AthleteCategory } from '../types/athlete-system'
+
+// Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
+function parseCategory(v: unknown): AthleteCategory {
+  const s = norm(v)
+  for (const [key, label] of Object.entries(ATHLETE_CATEGORY_LABELS)) {
+    if (s === norm(key) || s === norm(label)) return key as AthleteCategory
+  }
+  return 'PROFISSIONAL'
+}
 
 const fontBody = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', monospace"
@@ -57,6 +69,7 @@ const DESCRIPTORS: Descriptor[] = [
         await createAthlete({
           full_name: full, short_name: S(r['Nome Curto']) || full.split(' ')[0],
           position: orNull(r['Posição']), current_status: (S(r['Status']) || 'ATIVO') as never,
+          category: parseCategory(r['Categoria']),
           birth_date: orNull(r['Data Nascimento']), nationality: orNull(r['Nacionalidade']),
           cpf: orNull(r['CPF']), passport_number: orNull(r['Passaporte']),
           agent_name: orNull(r['Agente']), agent_contact: orNull(r['Contato Agente']),
@@ -180,19 +193,51 @@ const DESCRIPTORS: Descriptor[] = [
   },
   {
     key: 'Direito_Imagem', label: 'Direito de imagem', cols: COLS_IMAGE_RIGHTS, parent: 'Atleta ID',
-    load: () => fetchAllImageRights(),
+    load: async () => {
+      const [imgs, pjs] = await Promise.all([fetchAllImageRights(), fetchAllPJs()])
+      const nameById = new Map(pjs.map(p => [p.id, p.legal_name]))
+      return imgs.map(i => ({ ...i, pj_name: i.pj_id ? (nameById.get(i.pj_id) ?? '') : '' }))
+    },
     importRows: async rows => {
       const res = emptyResult()
-      const existing = new Set((await fetchAllImageRights()).map(i => dupKey(i.athlete_id, i.month)))
+      const [existingImgs, allPjs] = await Promise.all([fetchAllImageRights(), fetchAllPJs()])
+      const existing = new Set(existingImgs.map(i => dupKey(i.athlete_id, i.month)))
+      // Índice de PJs por (atleta, razão social) para resolver / criar sob demanda.
+      const pjByKey = new Map(allPjs.map(p => [dupKey(p.athlete_id, p.legal_name), p.id]))
       for (const r of rows) {
         const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
         const month = S(r['Mês (AAAA-MM)'])
         const key = dupKey(aid, month)
         if (existing.has(key)) { res.dupSkipped++; continue }
+        // Resolve/cria a PJ informada.
+        let pjId: string | null = null
+        const pjName = S(r['PJ (Razão Social)'])
+        if (pjName) {
+          const pk = dupKey(aid, pjName)
+          pjId = pjByKey.get(pk) ?? null
+          if (!pjId) { const np = await createPJ(aid, { legal_name: pjName, cnpj: '', notes: '' }); pjId = np.id; pjByKey.set(pk, pjId) }
+        }
         await createImageRight(aid, {
-          month, amount: N(r['Valor']), currency: cur(r['Moeda']),
+          pj_id: pjId, month, amount: N(r['Valor']), currency: cur(r['Moeda']),
           status: (S(r['Status']) || 'PENDENTE') as never, notes: S(r['Observações']),
         })
+        existing.add(key); res.created++
+      }
+      return res
+    },
+  },
+  {
+    key: 'PJs', label: 'PJs do atleta', cols: COLS_ATHLETE_PJS, parent: 'Atleta ID',
+    load: () => fetchAllPJs(),
+    importRows: async rows => {
+      const res = emptyResult()
+      const existing = new Set((await fetchAllPJs()).map(p => dupKey(p.athlete_id, p.legal_name)))
+      for (const r of rows) {
+        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const legal = S(r['Razão Social']); if (!legal) { res.invalid++; continue }
+        const key = dupKey(aid, legal)
+        if (existing.has(key)) { res.dupSkipped++; continue }
+        await createPJ(aid, { legal_name: legal, cnpj: S(r['CNPJ']), notes: S(r['Observações']) })
         existing.add(key); res.created++
       }
       return res
