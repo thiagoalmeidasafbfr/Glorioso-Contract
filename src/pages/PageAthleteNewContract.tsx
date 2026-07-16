@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { fetchAthlete, createContract, createClause, createInstallments, createIntermediaryLiability, createImageRights } from '../lib/athleteQueries'
-import type { Athlete, NewContractInput, NewClauseInput, NewImageRightInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
+import { fetchAthlete, createContract, createClause, createInstallments, createClauseInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
+import type { Athlete, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
-import { todayISO, monthsBetween, addMonths, isoToYearMonth } from '../lib/format'
+import { todayISO, monthsBetween, addMonths } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
 
 // ── Step types ────────────────────────────────────────────────────────────
@@ -15,6 +15,26 @@ type Step = 1 | 2 | 3
 const CURRENCIES: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
 const CONTRACT_TYPES: ContractType[] = ['SAIDA', 'ENTRADA', 'EMPRESTIMO_SAIDA', 'EMPRESTIMO_ENTRADA']
 const CLAUSE_TYPES = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
+
+// Vencimentos do fluxo mensal de remuneração (mês subsequente à competência).
+const SALARY_DUE_DAY = 5   // Salário CLT vence dia 5
+const IMAGE_DUE_DAY = 20   // Direito de imagem vence dia 20
+
+type TransferPeriod = 'MENSAL' | 'SEMESTRAL' | 'ANUAL'
+const PERIOD_STEP: Record<TransferPeriod, number> = { MENSAL: 1, SEMESTRAL: 6, ANUAL: 12 }
+const PERIOD_LABEL: Record<TransferPeriod, string> = { MENSAL: 'Mensal', SEMESTRAL: 'Semestral', ANUAL: 'Anual' }
+
+// Vencimento da competência (start + i meses): dia `day` do MÊS SUBSEQUENTE.
+function dueDayOf(startISO: string, i: number, day: number): string {
+  const d = new Date(startISO + 'T12:00:00Z')
+  d.setUTCMonth(d.getUTCMonth() + i + 1)
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  return `${y}-${m}-${String(day).padStart(2, '0')}`
+}
+
+function fmtNum(v: number): string { return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }
+function fmtDateBR(iso: string): string { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}` }
 
 const PAYABLE_CLAUSES: ClauseType[] = [
   'SELL_ON_FEE', 'INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA',
@@ -85,18 +105,34 @@ export default function PageAthleteNewContract() {
   // Step 2 — Clauses
   const [clauses, setClauses] = useState<Partial<NewClauseInput>[]>([])
 
-  // Gerar parcelas de direito de imagem automaticamente (1 por mês de vigência).
-  const [autoImageRights, setAutoImageRights] = useState(true)
+  // Compra / transferência em parcelas (gera cláusula TRANSFER_FEE + parcelas).
+  const [transferInst, setTransferInst] = useState(1)          // nº de parcelas
+  const [transferPeriod, setTransferPeriod] = useState<TransferPeriod>('ANUAL')
+  const [transferFirst, setTransferFirst] = useState('')       // 1ª parcela (default = início)
+
+  // Gerar fluxo mensal de remuneração (salário + imagem) pela vigência.
+  const [autoRemFlow, setAutoRemFlow] = useState(true)
 
   useEffect(() => {
     if (id) fetchAthlete(id).then(setAthlete)
   }, [id])
 
-  // Nº de parcelas de imagem que serão geradas (meses de vigência do contrato).
-  const imageMonths = (contract.start_date && contract.end_date)
+  // Vigência em meses (base do fluxo mensal de salário/imagem).
+  const vigMonths = (contract.start_date && contract.end_date)
     ? monthsBetween(contract.start_date, contract.end_date)
     : 0
-  const willGenerateImage = autoImageRights && (contract.image_value ?? 0) > 0 && imageMonths > 0
+  const salaryMonthly = contract.base_salary ?? 0
+  const imageMonthly = contract.image_value ?? 0
+  const willGenSalary = autoRemFlow && salaryMonthly > 0 && vigMonths > 0
+  const willGenImage = autoRemFlow && imageMonthly > 0 && vigMonths > 0
+
+  // Compra parcelada: prévia.
+  const transferTotal = contract.transfer_fee_gross ?? 0
+  const transferFirstDate = transferFirst || contract.start_date
+  const willGenTransfer = transferTotal > 0 && transferInst >= 1 && !!transferFirstDate
+  const transferPerParcel = willGenTransfer ? transferTotal / transferInst : 0
+  const transferLastDate = willGenTransfer
+    ? addMonths(transferFirstDate, (transferInst - 1) * PERIOD_STEP[transferPeriod]) : ''
 
   // ── Step 1 handlers ──────────────────────────────────────────────────────
 
@@ -157,24 +193,54 @@ export default function PageAthleteNewContract() {
     setError(null)
     try {
       const savedContract = await createContract(id, contract)
+      const buying = contract.type === 'ENTRADA' || contract.type === 'EMPRESTIMO_ENTRADA'
 
-      // Direito de imagem: por padrão, gera 1 parcela por mês de vigência do
-      // vínculo, cada uma com o valor mensal de imagem informado. As parcelas
-      // ficam atreladas ao atleta e cobrem a data de vigência do contrato.
-      if (autoImageRights && (contract.image_value ?? 0) > 0 && contract.start_date && contract.end_date) {
-        const n = monthsBetween(contract.start_date, contract.end_date)
-        if (n > 0) {
-          const rows: NewImageRightInput[] = Array.from({ length: n }, (_, i) => ({
-            pj_id: null,
-            month: isoToYearMonth(addMonths(contract.start_date, i)),
-            amount: contract.image_value ?? 0,
-            currency: contract.salary_currency,
-            status: 'PENDENTE',
-            notes: `Direito de imagem — ${CONTRACT_TYPE_LABELS[contract.type]}${contract.counterpart_club ? ` (${contract.counterpart_club})` : ''}`,
-          }))
-          await createImageRights(id, rows)
+      // ── Compra / transferência em parcelas ──────────────────────────────
+      // Gera uma cláusula de transferência + o cronograma de parcelas.
+      if (willGenTransfer) {
+        const clause = await createClause(savedContract.id, id, {
+          clause_type: 'TRANSFER_FEE_FIXO',
+          description: `Transferência ${buying ? '(compra)' : '(venda)'} — ${transferInst}x ${PERIOD_LABEL[transferPeriod].toLowerCase()}`,
+          creditor_party: buying ? (contract.counterpart_club || 'Contraparte') : 'Botafogo SAF',
+          debtor_party: buying ? 'Botafogo SAF' : (contract.counterpart_club || 'Contraparte'),
+          currency: contract.transfer_currency,
+          original_value: transferTotal, percentage_value: null,
+          condition_description: '', due_date: transferFirstDate,
+          installments_total: transferInst, notes: '',
+        })
+        if (transferInst > 1) {
+          const step = PERIOD_STEP[transferPeriod]
+          await createClauseInstallments(clause.id, id, Array.from({ length: transferInst }, (_, i) => ({
+            installment_number: i + 1,
+            due_date: addMonths(transferFirstDate, i * step),
+            original_value: transferPerParcel,
+            currency: contract.transfer_currency,
+          })))
         }
       }
+
+      // ── Fluxo mensal de remuneração (salário venc. dia 5; imagem dia 20) ──
+      // Uma parcela por mês de vigência, sem precisar lançar mês a mês.
+      async function genRemFlow(clauseType: ClauseType, label: string, monthly: number, day: number) {
+        const clause = await createClause(savedContract.id, id!, {
+          clause_type: clauseType,
+          description: `${label} — ${vigMonths}x mensais (venc. dia ${day})`,
+          creditor_party: athlete?.full_name || 'Atleta',
+          debtor_party: 'Botafogo SAF',
+          currency: contract.salary_currency,
+          original_value: monthly * vigMonths, percentage_value: null,
+          condition_description: '', due_date: dueDayOf(contract.start_date, 0, day),
+          installments_total: vigMonths, notes: '',
+        })
+        await createClauseInstallments(clause.id, id!, Array.from({ length: vigMonths }, (_, i) => ({
+          installment_number: i + 1,
+          due_date: dueDayOf(contract.start_date, i, day),
+          original_value: monthly,
+          currency: contract.salary_currency,
+        })))
+      }
+      if (willGenSalary) await genRemFlow('SALARIO_CETD', 'Salário CLT', salaryMonthly, SALARY_DUE_DAY)
+      if (willGenImage) await genRemFlow('DIREITO_IMAGEM', 'Direito de imagem', imageMonthly, IMAGE_DUE_DAY)
 
       // Agentes desta transação → um passivo vinculado ao atleta por agente.
       for (const ag of agents) {
@@ -325,16 +391,16 @@ export default function PageAthleteNewContract() {
 
           <div style={cardStyle}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
-              Valor da Transferência
+              Compra / Transferência em parcelas
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.7fr 0.8fr 1fr 1.2fr', gap: 12 }}>
               <div>
-                <label style={labelStyle}>Valor bruto (opcional)</label>
+                <label style={labelStyle}>Valor total</label>
                 <input
                   type="number" min={0} step={0.01}
                   value={contract.transfer_fee_gross ?? ''}
                   onChange={e => setContractField('transfer_fee_gross', e.target.value ? parseFloat(e.target.value) : null)}
-                  placeholder="0.00"
+                  placeholder="Ex: 30000000"
                   style={inputStyle}
                 />
               </div>
@@ -344,7 +410,34 @@ export default function PageAthleteNewContract() {
                   {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
+              <div>
+                <label style={labelStyle}>Nº parcelas</label>
+                <input type="number" min={1} max={120} value={transferInst}
+                  onChange={e => setTransferInst(Math.max(1, parseInt(e.target.value) || 1))} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Periodicidade</label>
+                <select value={transferPeriod} onChange={e => setTransferPeriod(e.target.value as TransferPeriod)} style={inputStyle}>
+                  {(Object.keys(PERIOD_LABEL) as TransferPeriod[]).map(p => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>1ª parcela</label>
+                <input type="date" value={transferFirstDate} onChange={e => setTransferFirst(e.target.value)} style={inputStyle} />
+              </div>
             </div>
+            {willGenTransfer ? (
+              <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34', display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+                <span><strong>{transferInst}×</strong> {contract.transfer_currency} {fmtNum(transferPerParcel)}</span>
+                <span>Total {contract.transfer_currency} {fmtNum(transferTotal)}</span>
+                <span>1º venc. {fmtDateBR(transferFirstDate)}</span>
+                {transferInst > 1 && <span>último {fmtDateBR(transferLastDate)}</span>}
+              </div>
+            ) : (
+              <div style={{ marginTop: 10, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)' }}>
+                Informe o valor total para gerar o cronograma de parcelas da compra. Deixe em branco se não houver taxa de transferência.
+              </div>
+            )}
           </div>
 
           <div style={cardStyle}>
@@ -388,27 +481,33 @@ export default function PageAthleteNewContract() {
                 Total: {(( (contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0) )).toLocaleString('pt-BR')} {contract.salary_currency}/mês
               </span>
             </div>
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 10 }}>
-              A remuneração (salário + imagem + outros) anda junta. Metas de aumento salarial (ex.: "ao atingir 10 jogos → 300k") são cadastradas na aba <strong>Salários &amp; Imagem</strong> após criar o vínculo.
-            </div>
-
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(190,140,74,0.18)' }}>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
-                <input type="checkbox" checked={autoImageRights} onChange={e => setAutoImageRights(e.target.checked)} style={{ marginTop: 2, accentColor: '#be8c4a', width: 16, height: 16 }} />
+                <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: '#be8c4a', width: 16, height: 16 }} />
                 <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'rgba(26,20,16,0.70)' }}>
-                  <strong>Gerar parcelas de direito de imagem automaticamente</strong> — uma parcela por mês de vigência do vínculo,
-                  cada uma com o valor de imagem informado acima.
-                  {willGenerateImage ? (
-                    <span style={{ display: 'block', marginTop: 4, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#be8c4a' }}>
-                      Serão geradas {imageMonths} parcela{imageMonths === 1 ? '' : 's'} de {contract.salary_currency} {(contract.image_value ?? 0).toLocaleString('pt-BR')} (total {contract.salary_currency} {((contract.image_value ?? 0) * imageMonths).toLocaleString('pt-BR')}).
-                    </span>
-                  ) : autoImageRights ? (
-                    <span style={{ display: 'block', marginTop: 4, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)' }}>
-                      Preencha <strong>Direito de imagem</strong>, <strong>Data de início</strong> e <strong>Data de término</strong> para gerar as parcelas.
-                    </span>
-                  ) : null}
+                  <strong>Gerar o fluxo mensal automaticamente</strong> pela vigência do contrato — uma parcela por mês, sem lançar mês a mês.
+                  Salário CLT vence <strong>dia {SALARY_DUE_DAY}</strong> e imagem vence <strong>dia {IMAGE_DUE_DAY}</strong> do mês subsequente.
                 </span>
               </label>
+
+              {autoRemFlow && vigMonths > 0 && (salaryMonthly > 0 || imageMonthly > 0) ? (
+                <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {willGenSalary && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34' }}>
+                      Salário: {vigMonths}× {contract.salary_currency} {fmtNum(salaryMonthly)} · venc. dia {SALARY_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, SALARY_DUE_DAY))}
+                    </div>
+                  )}
+                  {willGenImage && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34' }}>
+                      Imagem: {vigMonths}× {contract.salary_currency} {fmtNum(imageMonthly)} · venc. dia {IMAGE_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, IMAGE_DUE_DAY))}
+                    </div>
+                  )}
+                </div>
+              ) : autoRemFlow ? (
+                <div style={{ marginTop: 8, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)' }}>
+                  Preencha salário e/ou imagem e as <strong>datas de início e término</strong> para gerar o fluxo.
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -598,15 +697,22 @@ export default function PageAthleteNewContract() {
             </dl>
           </div>
 
-          {willGenerateImage && (
+          {(willGenTransfer || willGenSalary || willGenImage) && (
             <div style={cardStyle}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 10 }}>
-                Direito de Imagem
+                Fluxos que serão gerados
               </div>
-              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#1a1410' }}>
-                {imageMonths} parcela{imageMonths === 1 ? '' : 's'} mensais de <strong>{contract.salary_currency} {(contract.image_value ?? 0).toLocaleString('pt-BR')}</strong>
-                {' '}(total {contract.salary_currency} {((contract.image_value ?? 0) * imageMonths).toLocaleString('pt-BR')}) serão geradas e atreladas ao atleta ao salvar.
-              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#1a1410', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {willGenTransfer && (
+                  <li>Compra: <strong>{transferInst}× {contract.transfer_currency} {fmtNum(transferPerParcel)}</strong> ({PERIOD_LABEL[transferPeriod].toLowerCase()}, total {contract.transfer_currency} {fmtNum(transferTotal)}), 1º venc. {fmtDateBR(transferFirstDate)}.</li>
+                )}
+                {willGenSalary && (
+                  <li>Salário CLT: <strong>{vigMonths}× {contract.salary_currency} {fmtNum(salaryMonthly)}/mês</strong>, vencimento dia {SALARY_DUE_DAY} (total {contract.salary_currency} {fmtNum(salaryMonthly * vigMonths)}).</li>
+                )}
+                {willGenImage && (
+                  <li>Direito de imagem: <strong>{vigMonths}× {contract.salary_currency} {fmtNum(imageMonthly)}/mês</strong>, vencimento dia {IMAGE_DUE_DAY} (total {contract.salary_currency} {fmtNum(imageMonthly * vigMonths)}).</li>
+                )}
+              </ul>
             </div>
           )}
 

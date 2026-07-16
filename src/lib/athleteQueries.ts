@@ -21,7 +21,7 @@ import type {
   Club, Intermediary, NewClubInput, NewIntermediaryInput,
   NewContractInput, NewClauseInput, PaymentInput, NewEconomicRightInput,
   NewSalaryTriggerInput, NewClubLiabilityInput, NewIntermediaryLiabilityInput,
-  NewImageRightInput, AthleteWithStats, AthletePJ, NewAthletePJInput,
+  NewImageRightInput, AthleteWithStats, AthletePJ, NewAthletePJInput, Currency,
 } from '../types/athlete-system'
 import { isOverdue, isDueSoon, addMonths } from './format'
 
@@ -817,6 +817,28 @@ export async function createInstallments(clauseId: string, athleteId: string, in
       notes: null,
     })
   }
+  if (!USE_SUPABASE) return local.insertMany<ClauseInstallment>(T.installments, installments)
+  const { data, error } = await supabase.from(AC.installments).insert(nn(installments.map(toAcFK))).select()
+  if (error) throw error
+  return data.map(r => fromAcFK<ClauseInstallment>(r))
+}
+
+// Cria parcelas com datas e valores EXPLÍCITOS (diferente de createInstallments,
+// que divide o valor total em N parcelas mensais). Usado por fluxos com
+// vencimentos específicos: transferência parcelada, salário (dia 5) e imagem
+// (dia 20) mês a mês pela vigência do contrato.
+export async function createClauseInstallments(
+  clauseId: string, athleteId: string,
+  rows: { installment_number: number; due_date: string; original_value: number; currency: Currency }[],
+): Promise<ClauseInstallment[]> {
+  if (rows.length === 0) return []
+  const installments: Omit<ClauseInstallment, 'id' | 'created_at' | 'updated_at'>[] = rows.map(r => ({
+    clause_id: clauseId, athlete_id: athleteId,
+    installment_number: r.installment_number, due_date: r.due_date,
+    original_value: r.original_value, currency: r.currency,
+    payment_status: 'PENDENTE', payment_date: null,
+    amount_paid_brl: null, exchange_rate: null, notes: null,
+  }))
   if (!USE_SUPABASE) return local.insertMany<ClauseInstallment>(T.installments, installments)
   const { data, error } = await supabase.from(AC.installments).insert(nn(installments.map(toAcFK))).select()
   if (error) throw error
