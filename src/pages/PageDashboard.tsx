@@ -332,8 +332,8 @@ export default function PageDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
                 { to: '/atletas', label: 'Lista de Atletas' },
-                { to: '/clausulas-venda', label: 'Cláusulas de Venda' },
-                { to: '/consolidado', label: 'Relatório Consolidado' },
+                { to: '/album', label: 'Álbum de Figurinhas' },
+                { to: '/relatorios/consolidado', label: 'Relatório Consolidado' },
                 { to: '/clubes', label: 'Passivos — Clubes' },
                 { to: '/intermediarios', label: 'Passivos — Agentes' },
               ].map(link => (

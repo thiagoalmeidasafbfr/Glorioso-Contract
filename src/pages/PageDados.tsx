@@ -21,18 +21,13 @@ import {
   COLS_INTERMEDIARY_LIABILITIES, COLS_IMAGE_RIGHTS, COLS_ECONOMIC_RIGHTS,
   COLS_CLUBS, COLS_AGENTS,
 } from '../lib/xlsx-utils'
-import type { Currency } from '../types/athlete-system'
+import {
+  S, orNull, N, Nn, cur, bool, dupKey,
+  emptyResult, resultMessage, type ImportResult,
+} from '../lib/importHelpers'
 
 const fontBody = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', monospace"
-
-// Helpers de parsing
-const S = (v: unknown) => String(v ?? '').trim()
-const orNull = (v: unknown) => { const s = S(v); return s === '' ? null : s }
-const N = (v: unknown): number => { const n = Number(S(v).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '')); return isNaN(n) ? 0 : n }
-const Nn = (v: unknown): number | null => { const s = S(v); if (s === '') return null; return N(v) }
-const cur = (v: unknown): Currency => { const s = S(v).toUpperCase(); return (['BRL', 'EUR', 'USD', 'GBP'].includes(s) ? s : 'BRL') as Currency }
-const bool = (v: unknown) => ['TRUE', '1', 'SIM', 'S'].includes(S(v).toUpperCase())
 
 interface Descriptor {
   key: string
@@ -41,7 +36,7 @@ interface Descriptor {
   parent?: string          // texto de ajuda quando precisa de Atleta ID
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   load: () => Promise<any[]>
-  importRows: (rows: Record<string, string>[]) => Promise<number>
+  importRows: (rows: Record<string, string>[]) => Promise<ImportResult>
 }
 
 const DESCRIPTORS: Descriptor[] = [
@@ -49,10 +44,16 @@ const DESCRIPTORS: Descriptor[] = [
     key: 'Atletas', label: 'Atletas', cols: COLS_ATHLETES,
     load: () => fetchAthletes(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      // Dedup por CPF/passaporte quando houver; senão pelo nome completo.
+      const existing = await fetchAthletes()
+      const byName = new Set(existing.map(a => dupKey(a.full_name)))
+      const byDoc = new Set(existing.map(a => a.cpf || a.passport_number).filter(Boolean).map(d => dupKey(d)))
       for (const r of rows) {
         const full = S(r['Nome Completo'])
-        if (!full) continue
+        if (!full) { res.invalid++; continue }
+        const doc = S(r['CPF']) || S(r['Passaporte'])
+        if (byName.has(dupKey(full)) || (doc && byDoc.has(dupKey(doc)))) { res.dupSkipped++; continue }
         await createAthlete({
           full_name: full, short_name: S(r['Nome Curto']) || full.split(' ')[0],
           position: orNull(r['Posição']), current_status: (S(r['Status']) || 'ATIVO') as never,
@@ -61,142 +62,170 @@ const DESCRIPTORS: Descriptor[] = [
           agent_name: orNull(r['Agente']), agent_contact: orNull(r['Contato Agente']),
           profile_photo_url: null, notes: orNull(r['Observações']),
         })
-        n++
+        byName.add(dupKey(full)); if (doc) byDoc.add(dupKey(doc)); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Vinculos', label: 'Vínculos (contratos)', cols: COLS_CONTRACTS, parent: 'Atleta ID',
     load: () => fetchAllContracts(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchAllContracts()).map(c => dupKey(c.athlete_id, c.counterpart_club, c.start_date)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) continue
+        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const club = S(r['Clube/Contraparte'])
+        const start = S(r['Início']) || new Date().toISOString().slice(0, 10)
+        const key = dupKey(aid, club, start)
+        if (existing.has(key)) { res.dupSkipped++; continue }
         await createContract(aid, {
           type: (S(r['Tipo']) || 'ENTRADA') as never,
-          counterpart_club: S(r['Clube/Contraparte']), counterpart_country: S(r['País']),
-          start_date: S(r['Início']) || new Date().toISOString().slice(0, 10),
-          end_date: S(r['Término']), status: (S(r['Status']) || 'ATIVO') as never,
+          counterpart_club: club, counterpart_country: S(r['País']),
+          start_date: start, end_date: S(r['Término']), status: (S(r['Status']) || 'ATIVO') as never,
           transfer_fee_gross: Nn(r['Valor Transferência']), transfer_currency: cur(r['Moeda Transf.']),
           base_salary: Nn(r['Salário Base']), salary_currency: cur(r['Moeda Salário']),
           image_value: Nn(r['Imagem']), other_value: Nn(r['Outros']),
           description: S(r['Descrição']),
         })
-        n++
+        existing.add(key); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Titularidade', label: 'Detentores (titularidade)', cols: COLS_ECONOMIC_RIGHTS, parent: 'Atleta ID',
     load: () => fetchAllEconomicRights(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchAllEconomicRights()).map(e => dupKey(e.athlete_id, e.holder_type, e.holder_name, e.percentage)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) continue
+        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const ht = S(r['Tipo Detentor']) || 'TERCEIRO'
+        const hn = S(r['Detentor']); const pct = N(r['Percentual'])
+        const key = dupKey(aid, ht, hn, pct)
+        if (existing.has(key)) { res.dupSkipped++; continue }
         await createEconomicRight(aid, {
-          holder_type: (S(r['Tipo Detentor']) || 'TERCEIRO') as never,
-          holder_name: S(r['Detentor']), percentage: N(r['Percentual']), notes: S(r['Observações']),
+          holder_type: ht as never, holder_name: hn, percentage: pct, notes: S(r['Observações']),
         })
-        n++
+        existing.add(key); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Metas_Salario', label: 'Metas de salário', cols: COLS_SALARY_TRIGGERS, parent: 'Atleta ID',
     load: () => fetchAllSalaryTriggers(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchAllSalaryTriggers()).map(t => dupKey(t.athlete_id, t.description, t.new_salary)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) continue
+        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const desc = S(r['Descrição']); const sal = N(r['Novo Salário'])
+        const key = dupKey(aid, desc, sal)
+        if (existing.has(key)) { res.dupSkipped++; continue }
         await createSalaryTrigger(aid, {
-          contract_id: orNull(r['Contrato ID']), description: S(r['Descrição']),
+          contract_id: orNull(r['Contrato ID']), description: desc,
           metric: (S(r['Métrica']) || 'JOGOS') as never, threshold: Nn(r['Meta (nº)']),
-          new_salary: N(r['Novo Salário']), currency: cur(r['Moeda']), notes: S(r['Observações']),
+          new_salary: sal, currency: cur(r['Moeda']), notes: S(r['Observações']),
         })
-        n++
+        existing.add(key); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Passivos_Clubes', label: 'Passivos de clube', cols: COLS_CLUB_LIABILITIES, parent: 'Atleta ID',
     load: () => fetchAllClubLiabilities(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchAllClubLiabilities()).map(l => dupKey(l.athlete_id, l.club_name, l.description, l.amount)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) continue
+        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const club = S(r['Clube']); const desc = S(r['Descrição']); const amount = N(r['Valor'])
+        const key = dupKey(aid, club, desc, amount)
+        if (existing.has(key)) { res.dupSkipped++; continue }
         await createClubLiability(aid, {
-          club_name: S(r['Clube']), description: S(r['Descrição']),
-          direction: (S(r['Direção']) || 'A_PAGAR') as never, amount: N(r['Valor']), currency: cur(r['Moeda']),
+          club_name: club, description: desc,
+          direction: (S(r['Direção']) || 'A_PAGAR') as never, amount, currency: cur(r['Moeda']),
           due_date: orNull(r['Vencimento']), conditional: bool(r['Condicional']), condition_description: S(r['Condição']),
           solidarity: bool(r['Solidariedade']), status: (S(r['Status']) || 'PENDENTE') as never, notes: S(r['Observações']),
         })
-        n++
+        existing.add(key); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Passivos_Agentes', label: 'Passivos de agentes', cols: COLS_INTERMEDIARY_LIABILITIES, parent: 'Atleta ID',
     load: () => fetchAllIntermediaryLiabilities(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchAllIntermediaryLiabilities()).map(l => dupKey(l.athlete_id, l.intermediary_name, l.description, l.amount)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) continue
+        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const ag = S(r['Agente']); const desc = S(r['Descrição']); const amount = N(r['Valor'])
+        const key = dupKey(aid, ag, desc, amount)
+        if (existing.has(key)) { res.dupSkipped++; continue }
         await createIntermediaryLiability(aid, {
-          intermediary_name: S(r['Agente']), description: S(r['Descrição']),
-          direction: (S(r['Direção']) || 'A_PAGAR') as never, amount: N(r['Valor']), currency: cur(r['Moeda']),
+          intermediary_name: ag, description: desc,
+          direction: (S(r['Direção']) || 'A_PAGAR') as never, amount, currency: cur(r['Moeda']),
           due_date: orNull(r['Vencimento']), conditional: bool(r['Condicional']), condition_description: S(r['Condição']),
           penalty_terms: S(r['Teor Multa']), status: (S(r['Status']) || 'PENDENTE') as never, notes: S(r['Observações']),
         })
-        n++
+        existing.add(key); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Direito_Imagem', label: 'Direito de imagem', cols: COLS_IMAGE_RIGHTS, parent: 'Atleta ID',
     load: () => fetchAllImageRights(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchAllImageRights()).map(i => dupKey(i.athlete_id, i.month)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) continue
+        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const month = S(r['Mês (AAAA-MM)'])
+        const key = dupKey(aid, month)
+        if (existing.has(key)) { res.dupSkipped++; continue }
         await createImageRight(aid, {
-          month: S(r['Mês (AAAA-MM)']), amount: N(r['Valor']), currency: cur(r['Moeda']),
+          month, amount: N(r['Valor']), currency: cur(r['Moeda']),
           status: (S(r['Status']) || 'PENDENTE') as never, notes: S(r['Observações']),
         })
-        n++
+        existing.add(key); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Clubes', label: 'Clubes (cadastro)', cols: COLS_CLUBS,
     load: () => fetchClubs(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchClubs()).map(c => dupKey(c.name)))
       for (const r of rows) {
-        const name = S(r['Nome']); if (!name) continue
+        const name = S(r['Nome']); if (!name) { res.invalid++; continue }
+        if (existing.has(dupKey(name))) { res.dupSkipped++; continue }
         await createClub({ name, country: S(r['País']), logo_url: null, notes: S(r['Observações']) })
-        n++
+        existing.add(dupKey(name)); res.created++
       }
-      return n
+      return res
     },
   },
   {
     key: 'Agentes', label: 'Agentes (cadastro)', cols: COLS_AGENTS,
     load: () => fetchIntermediaries(),
     importRows: async rows => {
-      let n = 0
+      const res = emptyResult()
+      const existing = new Set((await fetchIntermediaries()).map(i => dupKey(i.name)))
       for (const r of rows) {
-        const name = S(r['Nome']); if (!name) continue
+        const name = S(r['Nome']); if (!name) { res.invalid++; continue }
+        if (existing.has(dupKey(name))) { res.dupSkipped++; continue }
         await createIntermediary({ name, contact: S(r['Contato']), logo_url: null, notes: S(r['Observações']) })
-        n++
+        existing.add(dupKey(name)); res.created++
       }
-      return n
+      return res
     },
   },
 ]
@@ -268,8 +297,8 @@ function ImportButton({ d, onDone }: { d: Descriptor; onDone: (text: string, ok:
     try {
       const sheets = await parseWorkbookFile(file)
       const rows = sheets[d.key] ?? sheets[Object.keys(sheets)[0]] ?? []
-      const n = await d.importRows(rows)
-      onDone(`${n} registro(s) importado(s).`, true)
+      const res = await d.importRows(rows)
+      onDone(resultMessage(res), true)
     } catch (err) {
       onDone(`Erro: ${(err as Error).message}`, false)
     } finally { setBusy(false) }
