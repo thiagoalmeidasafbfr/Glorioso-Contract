@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { fetchAthlete, createContract, createClause, createInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
-import type { Athlete, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
+import { fetchAthlete, createContract, createClause, createInstallments, createIntermediaryLiability, createImageRights } from '../lib/athleteQueries'
+import type { Athlete, NewContractInput, NewClauseInput, NewImageRightInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
-import { todayISO } from '../lib/format'
+import { todayISO, monthsBetween, addMonths, isoToYearMonth } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
 
 // ── Step types ────────────────────────────────────────────────────────────
@@ -85,9 +85,18 @@ export default function PageAthleteNewContract() {
   // Step 2 — Clauses
   const [clauses, setClauses] = useState<Partial<NewClauseInput>[]>([])
 
+  // Gerar parcelas de direito de imagem automaticamente (1 por mês de vigência).
+  const [autoImageRights, setAutoImageRights] = useState(true)
+
   useEffect(() => {
     if (id) fetchAthlete(id).then(setAthlete)
   }, [id])
+
+  // Nº de parcelas de imagem que serão geradas (meses de vigência do contrato).
+  const imageMonths = (contract.start_date && contract.end_date)
+    ? monthsBetween(contract.start_date, contract.end_date)
+    : 0
+  const willGenerateImage = autoImageRights && (contract.image_value ?? 0) > 0 && imageMonths > 0
 
   // ── Step 1 handlers ──────────────────────────────────────────────────────
 
@@ -148,6 +157,24 @@ export default function PageAthleteNewContract() {
     setError(null)
     try {
       const savedContract = await createContract(id, contract)
+
+      // Direito de imagem: por padrão, gera 1 parcela por mês de vigência do
+      // vínculo, cada uma com o valor mensal de imagem informado. As parcelas
+      // ficam atreladas ao atleta e cobrem a data de vigência do contrato.
+      if (autoImageRights && (contract.image_value ?? 0) > 0 && contract.start_date && contract.end_date) {
+        const n = monthsBetween(contract.start_date, contract.end_date)
+        if (n > 0) {
+          const rows: NewImageRightInput[] = Array.from({ length: n }, (_, i) => ({
+            pj_id: null,
+            month: isoToYearMonth(addMonths(contract.start_date, i)),
+            amount: contract.image_value ?? 0,
+            currency: contract.salary_currency,
+            status: 'PENDENTE',
+            notes: `Direito de imagem — ${CONTRACT_TYPE_LABELS[contract.type]}${contract.counterpart_club ? ` (${contract.counterpart_club})` : ''}`,
+          }))
+          await createImageRights(id, rows)
+        }
+      }
 
       // Agentes desta transação → um passivo vinculado ao atleta por agente.
       for (const ag of agents) {
@@ -364,6 +391,25 @@ export default function PageAthleteNewContract() {
             <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 10 }}>
               A remuneração (salário + imagem + outros) anda junta. Metas de aumento salarial (ex.: "ao atingir 10 jogos → 300k") são cadastradas na aba <strong>Salários &amp; Imagem</strong> após criar o vínculo.
             </div>
+
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(190,140,74,0.18)' }}>
+              <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                <input type="checkbox" checked={autoImageRights} onChange={e => setAutoImageRights(e.target.checked)} style={{ marginTop: 2, accentColor: '#be8c4a', width: 16, height: 16 }} />
+                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'rgba(26,20,16,0.70)' }}>
+                  <strong>Gerar parcelas de direito de imagem automaticamente</strong> — uma parcela por mês de vigência do vínculo,
+                  cada uma com o valor de imagem informado acima.
+                  {willGenerateImage ? (
+                    <span style={{ display: 'block', marginTop: 4, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#be8c4a' }}>
+                      Serão geradas {imageMonths} parcela{imageMonths === 1 ? '' : 's'} de {contract.salary_currency} {(contract.image_value ?? 0).toLocaleString('pt-BR')} (total {contract.salary_currency} {((contract.image_value ?? 0) * imageMonths).toLocaleString('pt-BR')}).
+                    </span>
+                  ) : autoImageRights ? (
+                    <span style={{ display: 'block', marginTop: 4, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)' }}>
+                      Preencha <strong>Direito de imagem</strong>, <strong>Data de início</strong> e <strong>Data de término</strong> para gerar as parcelas.
+                    </span>
+                  ) : null}
+                </span>
+              </label>
+            </div>
           </div>
 
           <div style={cardStyle}>
@@ -551,6 +597,18 @@ export default function PageAthleteNewContract() {
               )}
             </dl>
           </div>
+
+          {willGenerateImage && (
+            <div style={cardStyle}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 10 }}>
+                Direito de Imagem
+              </div>
+              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#1a1410' }}>
+                {imageMonths} parcela{imageMonths === 1 ? '' : 's'} mensais de <strong>{contract.salary_currency} {(contract.image_value ?? 0).toLocaleString('pt-BR')}</strong>
+                {' '}(total {contract.salary_currency} {((contract.image_value ?? 0) * imageMonths).toLocaleString('pt-BR')}) serão geradas e atreladas ao atleta ao salvar.
+              </div>
+            </div>
+          )}
 
           {clauses.length > 0 && (
             <div style={cardStyle}>

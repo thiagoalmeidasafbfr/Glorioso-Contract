@@ -15,6 +15,7 @@ import {
   fetchClubs, createClub,
   fetchIntermediaries, createIntermediary,
   fetchAllPJs, createPJ,
+  deleteAllData,
 } from '../lib/athleteQueries'
 import {
   exportWorkbook, parseWorkbookFile, type ColDef,
@@ -277,6 +278,10 @@ const DESCRIPTORS: Descriptor[] = [
 
 export default function PageDados() {
   const [msg, setMsg] = useState<{ key: string; text: string; ok: boolean } | null>(null)
+  const [exportingAll, setExportingAll] = useState(false)
+  const [confirmWipe, setConfirmWipe] = useState(false)
+  const [wipeText, setWipeText] = useState('')
+  const [wiping, setWiping] = useState(false)
 
   function downloadTemplate(d: Descriptor) {
     exportWorkbook([{ name: d.key.slice(0, 28), cols: d.cols, rows: [] }], `modelo-${d.key.toLowerCase()}.xlsx`)
@@ -286,9 +291,28 @@ export default function PageDados() {
     exportWorkbook([{ name: d.key.slice(0, 28), cols: d.cols, rows }], `${d.key.toLowerCase()}.xlsx`)
   }
 
-  function exportAll() {
-    Promise.all(DESCRIPTORS.map(async d => ({ name: d.key.slice(0, 28), cols: d.cols, rows: await d.load() })))
-      .then(sheets => exportWorkbook(sheets, 'glorioso-tudo.xlsx'))
+  async function exportAll() {
+    setExportingAll(true)
+    try {
+      const sheets = await Promise.all(DESCRIPTORS.map(async d => ({ name: d.key.slice(0, 28), cols: d.cols, rows: await d.load() })))
+      exportWorkbook(sheets, 'glorioso-tudo.xlsx')
+    } finally {
+      setExportingAll(false)
+    }
+  }
+
+  async function handleWipe() {
+    setWiping(true)
+    try {
+      await deleteAllData()
+      setConfirmWipe(false)
+      setWipeText('')
+      setMsg({ key: '__wipe__', text: 'Base apagada. Toda a base foi removida com sucesso.', ok: true })
+    } catch (err) {
+      setMsg({ key: '__wipe__', text: `Erro ao apagar a base: ${(err as Error).message}`, ok: false })
+    } finally {
+      setWiping(false)
+    }
   }
 
   return (
@@ -299,11 +323,47 @@ export default function PageDados() {
           <h1 style={{ fontFamily: fontBody, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>Dados & Modelos</h1>
           <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
         </div>
-        <button onClick={exportAll}
-          style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          Exportar tudo (1 arquivo)
-        </button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={exportAll} disabled={exportingAll}
+            style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: exportingAll ? 'default' : 'pointer', opacity: exportingAll ? 0.6 : 1 }}>
+            {exportingAll ? 'Exportando...' : 'Exportar toda a base'}
+          </button>
+          <button onClick={() => { setConfirmWipe(true); setMsg(null) }}
+            style={{ padding: '9px 18px', background: 'transparent', border: '1px solid rgba(220,38,38,0.55)', borderRadius: 8, color: '#dc2626', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            Apagar toda a base
+          </button>
+        </div>
       </div>
+
+      {confirmWipe && (
+        <div style={{ border: '1px solid rgba(220,38,38,0.35)', background: 'rgba(220,38,38,0.06)', borderRadius: 10, padding: 18, marginBottom: 22 }}>
+          <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 700, color: '#b91c1c', marginBottom: 6 }}>Apagar toda a base?</div>
+          <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
+            Isto remove <strong>permanentemente</strong> todos os atletas, vínculos, cláusulas, parcelas, titularidade,
+            metas de salário, passivos, direito de imagem, PJs, clubes e agentes. Esta ação <strong>não pode ser desfeita</strong>.
+            Recomendamos <strong>Exportar toda a base</strong> antes de continuar.
+            Para confirmar, digite <span style={{ fontFamily: fontMono, fontWeight: 700 }}>APAGAR</span> abaixo.
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              autoFocus value={wipeText} onChange={e => setWipeText(e.target.value)} placeholder="APAGAR"
+              style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--divider-strong)', fontFamily: fontMono, fontSize: 13, width: 160, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}
+            />
+            <button onClick={handleWipe} disabled={wipeText.trim().toUpperCase() !== 'APAGAR' || wiping}
+              style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: '#dc2626', color: '#fff', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: (wipeText.trim().toUpperCase() !== 'APAGAR' || wiping) ? 'default' : 'pointer', opacity: (wipeText.trim().toUpperCase() !== 'APAGAR' || wiping) ? 0.5 : 1 }}>
+              {wiping ? 'Apagando...' : 'Apagar definitivamente'}
+            </button>
+            <button onClick={() => { setConfirmWipe(false); setWipeText('') }} disabled={wiping}
+              style={{ padding: '8px 16px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {msg?.key === '__wipe__' && (
+        <div style={{ marginBottom: 22, fontSize: 13, fontFamily: fontBody, fontWeight: 600, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</div>
+      )}
 
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 18, maxWidth: 760 }}>
         Cada bloco tem um <strong>modelo</strong> (planilha em branco com as colunas), <strong>exportar</strong> (dados atuais) e <strong>importar</strong>. Onde há

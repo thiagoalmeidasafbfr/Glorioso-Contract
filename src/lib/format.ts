@@ -94,3 +94,17 @@ export function addMonths(iso: string, n: number): string {
   d.setMonth(d.getMonth() + n)
   return d.toISOString().split('T')[0]
 }
+
+// Quantidade de meses de vigência entre início e término (ex.: contrato de 36
+// meses → 36). Funciona tanto quando o término é a data-limite exata
+// (início + 36 meses, ex.: 01/01/2026 → 01/01/2029) quanto quando é o último
+// dia do período (ex.: 01/01/2026 → 31/12/2028): ambos resultam em 36.
+export function monthsBetween(startISO: string, endISO: string): number {
+  const s = new Date(startISO + 'T12:00:00Z')
+  const e = new Date(endISO + 'T12:00:00Z')
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0
+  let months = (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth())
+  // Dia do término após o dia do início ⇒ mês parcial final conta como cheio.
+  if (e.getUTCDate() > s.getUTCDate()) months += 1
+  return Math.max(0, months)
+}
