@@ -68,6 +68,8 @@ export default function PageAthleteNewContract() {
     transfer_currency: 'EUR',
     base_salary: null,
     salary_currency: 'BRL',
+    image_value: null,
+    other_value: null,
     description: '',
     status: 'ATIVO',
   })
@@ -151,6 +153,7 @@ export default function PageAthleteNewContract() {
       for (const ag of agents) {
         if (!ag.name.trim()) continue
         await createIntermediaryLiability(id, {
+          contract_id: savedContract.id,
           intermediary_name: ag.name.trim(),
           description: `Agenciamento — ${CONTRACT_TYPE_LABELS[contract.type]}${contract.counterpart_club ? ` (${contract.counterpart_club})` : ''}`,
           direction: ag.direction,
@@ -319,18 +322,23 @@ export default function PageAthleteNewContract() {
 
           <div style={cardStyle}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
-              Salário Base
+              Remuneração mensal (paga pelo Botafogo)
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 0.8fr', gap: 12 }}>
               <div>
-                <label style={labelStyle}>Salário base (mensal)</label>
-                <input
-                  type="number" min={0} step={0.01}
-                  value={contract.base_salary ?? ''}
-                  onChange={e => setContractField('base_salary', e.target.value ? parseFloat(e.target.value) : null)}
-                  placeholder="Ex: 200000"
-                  style={inputStyle}
-                />
+                <label style={labelStyle}>Salário CLT</label>
+                <input type="number" min={0} step={0.01} value={contract.base_salary ?? ''}
+                  onChange={e => setContractField('base_salary', e.target.value ? parseFloat(e.target.value) : null)} placeholder="Ex: 200000" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Direito de imagem</label>
+                <input type="number" min={0} step={0.01} value={contract.image_value ?? ''}
+                  onChange={e => setContractField('image_value', e.target.value ? parseFloat(e.target.value) : null)} placeholder="Ex: 200000" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Outros (moradia/aux.)</label>
+                <input type="number" min={0} step={0.01} value={contract.other_value ?? ''}
+                  onChange={e => setContractField('other_value', e.target.value ? parseFloat(e.target.value) : null)} placeholder="0.00" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Moeda</label>
@@ -339,8 +347,22 @@ export default function PageAthleteNewContract() {
                 </select>
               </div>
             </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button type="button"
+                onClick={() => {
+                  const total = (contract.base_salary ?? 0) + (contract.image_value ?? 0)
+                  const base = total || (contract.base_salary ?? 0)
+                  if (base > 0) { setContractField('base_salary', base / 2); setContractField('image_value', base / 2) }
+                }}
+                style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.40)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                Dividir 50% CLT / 50% imagem
+              </button>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.55)' }}>
+                Total: {(( (contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0) )).toLocaleString('pt-BR')} {contract.salary_currency}/mês
+              </span>
+            </div>
             <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 10 }}>
-              Metas de mudança salarial (ex.: "ao atingir 10 jogos → 300k") são cadastradas na aba <strong>Salário &amp; Metas</strong> do atleta após criar o vínculo.
+              A remuneração (salário + imagem + outros) anda junta. Metas de aumento salarial (ex.: "ao atingir 10 jogos → 300k") são cadastradas na aba <strong>Salários &amp; Imagem</strong> após criar o vínculo.
             </div>
           </div>
 

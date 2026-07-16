@@ -34,6 +34,7 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 6. `006_athlete_central.sql`  ← **salário base + metas de salário + passivos (clube/intermediário) + direito de imagem**
 7. `007_clubs_intermediaries.sql`  ← **cadastros de clubes e agentes (com escudo/logo)**
 8. `008_economic_holder_agente.sql`  ← **permite "Agente" como detentor de titularidade econômica**
+9. `009_remuneracao_agente_vinculo.sql`  ← **remuneração (imagem/outros) no contrato + agente ligado ao vínculo**
 
 > Se preferir a CLI do Supabase: `supabase link --project-ref <ref>` e depois
 > `supabase db push` (aplica tudo de `supabase/migrations/` em ordem).

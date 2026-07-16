@@ -80,6 +80,7 @@ const DESCRIPTORS: Descriptor[] = [
           end_date: S(r['Término']), status: (S(r['Status']) || 'ATIVO') as never,
           transfer_fee_gross: Nn(r['Valor Transferência']), transfer_currency: cur(r['Moeda Transf.']),
           base_salary: Nn(r['Salário Base']), salary_currency: cur(r['Moeda Salário']),
+          image_value: Nn(r['Imagem']), other_value: Nn(r['Outros']),
           description: S(r['Descrição']),
         })
         n++
