@@ -8,6 +8,7 @@ import PageLogin from './pages/PageLogin'
 
 // Sistema de atletas
 import PageDashboard from './pages/PageDashboard'
+import PageAlbum from './pages/PageAlbum'
 import PageAthletesList from './pages/PageAthletesList'
 import PageAthleteDetail from './pages/PageAthleteDetail'
 import PageAthleteNewContract from './pages/PageAthleteNewContract'
@@ -54,6 +55,7 @@ function AppRoutes() {
 
           {/* Atletas */}
           <Route path="/dashboard" element={<PageDashboard />} />
+          <Route path="/album" element={<PageAlbum />} />
           <Route path="/atletas" element={<PageAthletesList />} />
           <Route path="/atletas/:id" element={<PageAthleteDetail />} />
           <Route path="/atletas/:id/contratos/novo" element={<PageAthleteNewContract />} />
