@@ -11,6 +11,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
     label: null,
     items: [
       { to: '/atletas',        label: 'Atletas' },
+      { to: '/album',          label: 'Álbum de Figurinhas' },
       { to: '/clubes',         label: 'Clubes' },
       { to: '/intermediarios', label: 'Agentes' },
     ],
