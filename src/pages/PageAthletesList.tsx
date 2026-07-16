@@ -6,14 +6,24 @@ import {
 } from '../lib/athleteQueries'
 import { fmtDate, isOverdue, isDueSoon } from '../lib/format'
 import type {
-  Athlete, AthleteStatus, EconomicRight, Clause, ClauseInstallment, Alert,
+  Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause, ClauseInstallment, Alert,
 } from '../types/athlete-system'
+import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
 import SheetIO from '../components/SheetIO'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
+
+// Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
+function parseImportCategory(v: unknown): AthleteCategory {
+  const s = String(v ?? '').trim().toLowerCase()
+  for (const [key, label] of Object.entries(ATHLETE_CATEGORY_LABELS)) {
+    if (s === key.toLowerCase() || s === label.toLowerCase()) return key as AthleteCategory
+  }
+  return 'PROFISSIONAL'
+}
 
 const STATUS_LABELS: Record<AthleteStatus, string> = {
   ATIVO:      'Ativo',
@@ -64,7 +74,8 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   const [f, setF] = useState({
     full_name: '', short_name: '', birth_date: '', nationality: 'Brasil',
     cpf: '', passport_number: '',
-    current_status: 'ATIVO' as AthleteStatus, position: '', notes: '',
+    current_status: 'ATIVO' as AthleteStatus, category: 'PROFISSIONAL' as AthleteCategory,
+    position: '', notes: '',
   })
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
@@ -102,6 +113,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
       agent_name: null,
       agent_contact: null,
       current_status: f.current_status,
+      category: f.category,
       position: f.position || null,
       profile_photo_url: null,
       notes: f.notes || null,
@@ -125,6 +137,14 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           {field('Passaporte', 'passport_number')}
           {field('Posição', 'position', 'text', ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante'])}
           {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          <div>
+            <label style={lbl}>Categoria</label>
+            <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
+              {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
+                <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
           Agentes são vinculados a cada transferência/vínculo, não ao atleta. Cadastre-os ao criar um vínculo.
@@ -258,6 +278,7 @@ export default function PageAthletesList() {
                 short_name: (r['Nome Curto'] ?? '').trim() || fullName.split(' ')[0],
                 position: r['Posição'] || null,
                 current_status: (r['Status'] as AthleteStatus) || 'ATIVO',
+                category: parseImportCategory(r['Categoria']),
                 birth_date: r['Data Nascimento'] || null,
                 nationality: r['Nacionalidade'] || null,
                 cpf: r['CPF'] || null,

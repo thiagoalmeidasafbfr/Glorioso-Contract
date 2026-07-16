@@ -169,6 +169,7 @@ export const COLS_ATHLETES: ColDef[] = [
   { key: 'full_name',       header: 'Nome Completo' },
   { key: 'short_name',      header: 'Nome Curto' },
   { key: 'position',        header: 'Posição' },
+  { key: 'category',        header: 'Categoria' },     // BASE/PROFISSIONAL/COMISSAO_TECNICA
   { key: 'current_status',  header: 'Status' },
   { key: 'birth_date',      header: 'Data Nascimento' },
   { key: 'nationality',     header: 'Nacionalidade' },
@@ -230,11 +231,20 @@ export const COLS_INTERMEDIARY_LIABILITIES: ColDef[] = [
 export const COLS_IMAGE_RIGHTS: ColDef[] = [
   { key: 'id',         header: 'ID' },
   { key: 'athlete_id', header: 'Atleta ID' },
+  { key: 'pj_name',    header: 'PJ (Razão Social)' },  // resolvida p/ pj_id na importação
   { key: 'month',      header: 'Mês (AAAA-MM)' },
   { key: 'amount',     header: 'Valor' },
   { key: 'currency',   header: 'Moeda' },
   { key: 'status',     header: 'Status' },
   { key: 'paid_date',  header: 'Data Pagamento' },
+  { key: 'notes',      header: 'Observações' },
+]
+
+export const COLS_ATHLETE_PJS: ColDef[] = [
+  { key: 'id',         header: 'ID' },
+  { key: 'athlete_id', header: 'Atleta ID' },
+  { key: 'legal_name', header: 'Razão Social' },
+  { key: 'cnpj',       header: 'CNPJ' },
   { key: 'notes',      header: 'Observações' },
 ]
 

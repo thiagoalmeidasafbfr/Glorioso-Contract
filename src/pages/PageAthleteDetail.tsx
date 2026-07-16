@@ -11,18 +11,21 @@ import {
   fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
   fetchAthleteClubLiabilities, fetchAthleteIntermediaryLiabilities,
   fetchClubs, fetchIntermediaries,
+  fetchAthletePJs, createPJ, updatePJ, deletePJ,
+  fetchAthleteImageRights, createImageRight, updateImageRight, deleteImageRight,
 } from '../lib/athleteQueries'
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
 import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS } from '../lib/format'
 import type {
   Athlete, Contract, Clause, Alert, EconomicRight,
-  SalaryTrigger, ClubLiability, IntermediaryLiability,
-  AthleteStatus, AchievementStatus, Currency, HolderType,
-  TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput,
+  SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
+  AthleteStatus, AthleteCategory, AchievementStatus, Currency, HolderType,
+  TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput, NewAthletePJInput,
 } from '../types/athlete-system'
 import {
   CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS,
+  ATHLETE_CATEGORY_LABELS, LIABILITY_STATUS_LABELS,
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
@@ -32,6 +35,7 @@ import {
   exportWorkbook, type ColDef,
   COLS_ATHLETES, COLS_CONTRACTS, COLS_SALARY_TRIGGERS,
   COLS_CLUB_LIABILITIES, COLS_INTERMEDIARY_LIABILITIES, COLS_ECONOMIC_RIGHTS,
+  COLS_ATHLETE_PJS, COLS_IMAGE_RIGHTS,
 } from '../lib/xlsx-utils'
 
 const COLS_CLAUSES_EXPORT: ColDef[] = [
@@ -194,7 +198,8 @@ interface RightRow { id?: string; holder_type: HolderType; holder_name: string; 
 function EditAthleteModal({ athlete, rights, onClose, onSaved }: { athlete: Athlete; rights: EconomicRight[]; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState({
     full_name: athlete.full_name, short_name: athlete.short_name, position: athlete.position ?? '',
-    current_status: athlete.current_status, nationality: athlete.nationality ?? '', birth_date: athlete.birth_date ?? '',
+    current_status: athlete.current_status, category: (athlete.category ?? 'PROFISSIONAL') as AthleteCategory,
+    nationality: athlete.nationality ?? '', birth_date: athlete.birth_date ?? '',
     cpf: athlete.cpf ?? '', passport_number: athlete.passport_number ?? '', notes: athlete.notes ?? '',
   })
   const [rows, setRows] = useState<RightRow[]>(rights.map(r => ({ id: r.id, holder_type: r.holder_type, holder_name: r.holder_name ?? '', percentage: String(r.percentage), notes: r.notes ?? '' })))
@@ -214,7 +219,7 @@ function EditAthleteModal({ athlete, rights, onClose, onSaved }: { athlete: Athl
     try {
       await updateAthlete(athlete.id, {
         full_name: f.full_name.trim(), short_name: f.short_name.trim() || f.full_name.trim().split(' ')[0],
-        position: f.position || null, current_status: f.current_status,
+        position: f.position || null, current_status: f.current_status, category: f.category,
         nationality: f.nationality || null, birth_date: f.birth_date || null,
         cpf: f.cpf || null, passport_number: f.passport_number || null, notes: f.notes || null,
       })
@@ -242,6 +247,14 @@ function EditAthleteModal({ athlete, rights, onClose, onSaved }: { athlete: Athl
           {field('Nome curto', 'short_name')}
           {field('Posição', 'position', 'text', ATHLETE_POSITIONS)}
           {field('Status', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          <div>
+            <label style={lbl}>Categoria</label>
+            <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
+              {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
+                <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
+              ))}
+            </select>
+          </div>
           {field('Nacionalidade', 'nationality')}
           {field('Nascimento', 'birth_date', 'date')}
           {field('CPF', 'cpf')}
@@ -293,9 +306,10 @@ function employmentContract(contracts: Contract[]): Contract | null {
   return [...arr].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
 }
 
-type Tab = 'salario' | 'clausulas' | 'historico' | 'passivos' | 'alertas'
+type Tab = 'salario' | 'imagem' | 'clausulas' | 'historico' | 'passivos' | 'alertas'
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'salario',   label: 'Salários & Imagem' },
+  { id: 'salario',   label: 'Salário' },
+  { id: 'imagem',    label: 'PJ & Imagem' },
   { id: 'clausulas', label: 'Cláusulas Ativas' },
   { id: 'historico', label: 'Histórico' },
   { id: 'passivos',  label: 'Passivos' },
@@ -316,6 +330,8 @@ export default function PageAthleteDetail() {
   const [triggers, setTriggers] = useState<SalaryTrigger[]>([])
   const [clubLiabs, setClubLiabs] = useState<ClubLiability[]>([])
   const [intermLiabs, setIntermLiabs] = useState<IntermediaryLiability[]>([])
+  const [pjs, setPjs] = useState<AthletePJ[]>([])
+  const [imageRights, setImageRights] = useState<ImageRight[]>([])
   const [loading, setLoading] = useState(true)
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
@@ -326,15 +342,17 @@ export default function PageAthleteDetail() {
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, inters] = await Promise.all([
+    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, inters, pjList, imgs] = await Promise.all([
       fetchAthlete(id), fetchAthleteContracts(id), fetchAthleteClauses(id), fetchAthleteAlerts(id),
       fetchAthleteEconomicRights(id), fetchAthleteSalaryTriggers(id),
       fetchAthleteClubLiabilities(id), fetchAthleteIntermediaryLiabilities(id),
       fetchClubs(), fetchIntermediaries(),
+      fetchAthletePJs(id), fetchAthleteImageRights(id),
     ])
     setAthlete(ath); setContracts(contr); setClauses(cls); setAlerts(alrt)
     setRights(rght); setTriggers(trg); setClubLiabs(clb); setIntermLiabs(itm)
     setClubIdx(buildNameIndex(clubs)); setInterIdx(buildNameIndex(inters))
+    setPjs(pjList); setImageRights(imgs)
     setLoading(false)
   }, [id])
   useEffect(() => { loadData() }, [loadData])
@@ -362,6 +380,20 @@ export default function PageAthleteDetail() {
   async function handleDeleteTrigger(tid: string) { await deleteSalaryTrigger(tid); setTriggers(prev => prev.filter(t => t.id !== tid)) }
   async function handlePhoto(url: string | null) { if (!id) return; const u = await updateAthlete(id, { profile_photo_url: url }); setAthlete(u) }
 
+  // ── PJs ──
+  async function handleAddPJ(input: NewAthletePJInput) { if (!id) return; const p = await createPJ(id, input); setPjs(prev => [...prev, p]) }
+  async function handleUpdatePJ(pjId: string, patch: Partial<AthletePJ>) { const u = await updatePJ(pjId, patch); setPjs(prev => prev.map(p => p.id === pjId ? u : p)) }
+  async function handleDeletePJ(pjId: string) { await deletePJ(pjId); setPjs(prev => prev.filter(p => p.id !== pjId)); setImageRights(prev => prev.map(ir => ir.pj_id === pjId ? { ...ir, pj_id: null } : ir)) }
+
+  // ── Direito de imagem (por PJ) ──
+  async function handleAddImage(input: { pj_id: string | null; month: string; amount: number; currency: Currency; status: ImageRight['status']; notes: string }) {
+    if (!id) return
+    const ir = await createImageRight(id, { pj_id: input.pj_id, month: input.month, amount: input.amount, currency: input.currency, status: input.status, notes: input.notes })
+    setImageRights(prev => [...prev, ir])
+  }
+  async function handleUpdateImage(irId: string, patch: Partial<ImageRight>) { const u = await updateImageRight(irId, patch); setImageRights(prev => prev.map(ir => ir.id === irId ? u : ir)) }
+  async function handleDeleteImage(irId: string) { await deleteImageRight(irId); setImageRights(prev => prev.filter(ir => ir.id !== irId)) }
+
   function exportAthlete() {
     if (!athlete) return
     const asRows = (arr: unknown[]) => arr as Record<string, unknown>[]
@@ -373,6 +405,8 @@ export default function PageAthleteDetail() {
       { name: 'Passivos_Clubes', cols: COLS_CLUB_LIABILITIES, rows: asRows(clubLiabs) },
       { name: 'Passivos_Agentes', cols: COLS_INTERMEDIARY_LIABILITIES, rows: asRows(intermLiabs) },
       { name: 'Detentores', cols: COLS_ECONOMIC_RIGHTS, rows: asRows(rights) },
+      { name: 'PJs', cols: COLS_ATHLETE_PJS, rows: asRows(pjs) },
+      { name: 'Direito_Imagem', cols: COLS_IMAGE_RIGHTS, rows: asRows(imageRights.map(ir => ({ ...ir, pj_name: pjs.find(p => p.id === ir.pj_id)?.legal_name ?? '' }))) },
     ], `atleta-${athlete.short_name.toLowerCase().replace(/\s+/g, '-')}.xlsx`)
   }
 
@@ -412,6 +446,7 @@ export default function PageAthleteDetail() {
               {warnCount > 0 && <span onClick={() => setTab('alertas')} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, cursor: 'pointer' }}>{warnCount} atenção</span>}
             </div>
             <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
+              <span><LabelSpan>Categoria</LabelSpan> {ATHLETE_CATEGORY_LABELS[athlete.category ?? 'PROFISSIONAL']}</span>
               {athlete.position && <span><LabelSpan>Posição</LabelSpan> {athlete.position}</span>}
               {athlete.nationality && <span><LabelSpan>Nacionalidade</LabelSpan> {athlete.nationality}</span>}
               {athlete.birth_date && <span><LabelSpan>Nasc.</LabelSpan> {fmtDate(athlete.birth_date)}</span>}
@@ -529,6 +564,14 @@ export default function PageAthleteDetail() {
               </div>
             )
           })()}
+        </div>
+      )}
+
+      {/* PJ & Direito de Imagem */}
+      {tab === 'imagem' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <PjSection pjs={pjs} canEdit={canEdit} onAdd={handleAddPJ} onUpdate={handleUpdatePJ} onDelete={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} />
+          <ImageSection imageRights={imageRights} pjs={pjs} canEdit={canEdit} onAdd={handleAddImage} onUpdate={handleUpdateImage} onDelete={handleDeleteImage} />
         </div>
       )}
 
@@ -678,6 +721,198 @@ export default function PageAthleteDetail() {
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
       {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
+    </div>
+  )
+}
+
+// ── PJs do atleta ───────────────────────────────────────────────────────────
+
+const pjInp: React.CSSProperties = { padding: '7px 9px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+const pjLbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+
+function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: {
+  pjs: AthletePJ[]; canEdit: boolean
+  onAdd: (i: NewAthletePJInput) => void
+  onUpdate: (id: string, patch: Partial<AthletePJ>) => void
+  onDelete: (id: string) => void
+  imageCountByPj: Record<string, number>
+}) {
+  const [adding, setAdding] = useState(false)
+  const [f, setF] = useState({ legal_name: '', cnpj: '', notes: '' })
+  const [editId, setEditId] = useState<string | null>(null)
+  const [ef, setEf] = useState({ legal_name: '', cnpj: '', notes: '' })
+
+  function submitNew() {
+    if (!f.legal_name.trim()) return
+    onAdd({ legal_name: f.legal_name.trim(), cnpj: f.cnpj.trim(), notes: f.notes.trim() })
+    setF({ legal_name: '', cnpj: '', notes: '' }); setAdding(false)
+  }
+  function startEdit(p: AthletePJ) { setEditId(p.id); setEf({ legal_name: p.legal_name, cnpj: p.cnpj ?? '', notes: p.notes ?? '' }) }
+  function submitEdit() {
+    if (!editId || !ef.legal_name.trim()) return
+    onUpdate(editId, { legal_name: ef.legal_name.trim(), cnpj: ef.cnpj.trim() || null, notes: ef.notes.trim() || null })
+    setEditId(null)
+  }
+
+  return (
+    <div className="card" style={{ padding: '16px 20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>PJs do atleta</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 2 }}>Pessoas jurídicas que recebem o direito de imagem. O atleta pode ter mais de uma.</div>
+        </div>
+        {canEdit && !adding && <button onClick={() => setAdding(true)} style={{ padding: '7px 14px', borderRadius: 7, border: '1px dashed rgba(190,140,74,0.45)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>+ Nova PJ</button>}
+      </div>
+
+      {adding && (
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end', marginBottom: 12, padding: 12, borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+          <div><label style={pjLbl}>Razão social *</label><input style={{ ...pjInp, width: '100%' }} value={f.legal_name} onChange={e => setF(p => ({ ...p, legal_name: e.target.value }))} placeholder="Ex: Fulano Sports LTDA" /></div>
+          <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={f.cnpj} onChange={e => setF(p => ({ ...p, cnpj: e.target.value }))} /></div>
+          <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={submitNew} disabled={!f.legal_name.trim()} style={{ padding: '7px 14px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+            <button onClick={() => setAdding(false)} style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>✕</button>
+          </div>
+        </div>
+      )}
+
+      {pjs.length === 0 && !adding ? (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma PJ cadastrada.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {pjs.map(p => editId === p.id ? (
+            <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end', padding: 12, borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+              <div><label style={pjLbl}>Razão social *</label><input style={{ ...pjInp, width: '100%' }} value={ef.legal_name} onChange={e => setEf(s => ({ ...s, legal_name: e.target.value }))} /></div>
+              <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={ef.cnpj} onChange={e => setEf(s => ({ ...s, cnpj: e.target.value }))} /></div>
+              <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={ef.notes} onChange={e => setEf(s => ({ ...s, notes: e.target.value }))} /></div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={submitEdit} style={{ padding: '7px 14px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+                <button onClick={() => setEditId(null)} style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>✕</button>
+              </div>
+            </div>
+          ) : (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 600, fontFamily: font, fontSize: 14, color: 'var(--ink-primary)' }}>{p.legal_name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 2 }}>
+                  {p.cnpj ? `CNPJ ${p.cnpj}` : 'CNPJ não informado'}{p.notes ? ` · ${p.notes}` : ''}
+                </div>
+              </div>
+              <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                {imageCountByPj[p.id] ?? 0} lanç. de imagem
+              </span>
+              {canEdit && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => startEdit(p)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => { if (window.confirm(`Excluir a PJ "${p.legal_name}"? Os lançamentos de imagem ficarão sem PJ.`)) onDelete(p.id) }} title="Excluir" style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Direito de imagem (lançamentos mensais, atrelados à PJ) ──────────────────
+
+function ImageSection({ imageRights, pjs, canEdit, onAdd, onUpdate, onDelete }: {
+  imageRights: ImageRight[]; pjs: AthletePJ[]; canEdit: boolean
+  onAdd: (i: { pj_id: string | null; month: string; amount: number; currency: Currency; status: ImageRight['status']; notes: string }) => void
+  onUpdate: (id: string, patch: Partial<ImageRight>) => void
+  onDelete: (id: string) => void
+}) {
+  const [f, setF] = useState<{ pj_id: string; month: string; amount: string; currency: Currency; status: ImageRight['status'] }>(
+    { pj_id: '', month: '', amount: '', currency: 'BRL', status: 'PENDENTE' },
+  )
+  const pjName = (pjId: string | null) => pjs.find(p => p.id === pjId)?.legal_name ?? '—'
+  const sorted = [...imageRights].sort((a, b) => b.month.localeCompare(a.month))
+  const statuses: ImageRight['status'][] = ['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA']
+
+  function submit() {
+    if (!f.month) return
+    onAdd({ pj_id: f.pj_id || null, month: f.month, amount: Number(f.amount.replace(',', '.')) || 0, currency: f.currency, status: f.status, notes: '' })
+    setF({ pj_id: f.pj_id, month: '', amount: '', currency: f.currency, status: 'PENDENTE' })
+  }
+
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const cellSel: React.CSSProperties = { padding: '4px 6px', borderRadius: 6, fontSize: 12, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font }
+
+  return (
+    <div className="card" style={{ overflow: 'hidden' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--divider-soft)' }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Direito de imagem</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 2 }}>Cada lançamento mensal fica atrelado a uma PJ do atleta.</div>
+      </div>
+
+      {canEdit && (
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1fr 0.9fr 1.2fr auto', gap: 8, alignItems: 'end', padding: '12px 20px', background: 'var(--bg-subtle)', borderBottom: '1px solid var(--divider-soft)' }}>
+          <div><label style={pjLbl}>PJ</label>
+            <select style={{ ...pjInp, width: '100%' }} value={f.pj_id} onChange={e => setF(p => ({ ...p, pj_id: e.target.value }))}>
+              <option value="">— Sem PJ —</option>
+              {pjs.map(p => <option key={p.id} value={p.id}>{p.legal_name}</option>)}
+            </select>
+          </div>
+          <div><label style={pjLbl}>Competência *</label><input type="month" style={{ ...pjInp, width: '100%' }} value={f.month} onChange={e => setF(p => ({ ...p, month: e.target.value }))} /></div>
+          <div><label style={pjLbl}>Valor</label><input inputMode="decimal" style={{ ...pjInp, width: '100%', textAlign: 'right', fontFamily: fontMono }} value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value.replace(/[^\d.,]/g, '') }))} placeholder="0" /></div>
+          <div><label style={pjLbl}>Moeda</label>
+            <select style={{ ...pjInp, width: '100%' }} value={f.currency} onChange={e => setF(p => ({ ...p, currency: e.target.value as Currency }))}>
+              {(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div><label style={pjLbl}>Status</label>
+            <select style={{ ...pjInp, width: '100%' }} value={f.status} onChange={e => setF(p => ({ ...p, status: e.target.value as ImageRight['status'] }))}>
+              {statuses.map(s => <option key={s} value={s}>{LIABILITY_STATUS_LABELS[s]}</option>)}
+            </select>
+          </div>
+          <button onClick={submit} disabled={!f.month} style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: f.month ? 'var(--ink-primary)' : '#ccc', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.month ? 'pointer' : 'not-allowed' }}>+ Lançar</button>
+        </div>
+      )}
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
+          <thead>
+            <tr>
+              <th style={th}>Competência</th>
+              <th style={th}>PJ</th>
+              <th style={{ ...th, textAlign: 'right' }}>Valor</th>
+              <th style={th}>Status</th>
+              {canEdit && <th style={{ ...th, textAlign: 'right' }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 && <tr><td colSpan={canEdit ? 5 : 4} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>Nenhum lançamento de imagem.</td></tr>}
+            {sorted.map(ir => (
+              <tr key={ir.id}>
+                <td style={{ ...td, fontFamily: fontMono }}>{ir.month}</td>
+                <td style={td}>
+                  {canEdit ? (
+                    <select style={cellSel} value={ir.pj_id ?? ''} onChange={e => onUpdate(ir.id, { pj_id: e.target.value || null })}>
+                      <option value="">— Sem PJ —</option>
+                      {pjs.map(p => <option key={p.id} value={p.id}>{p.legal_name}</option>)}
+                    </select>
+                  ) : pjName(ir.pj_id)}
+                </td>
+                <td style={{ ...td, textAlign: 'right', fontFamily: fontMono }}>{fmtCurrencyShort(ir.amount, ir.currency)}</td>
+                <td style={td}>
+                  {canEdit ? (
+                    <select style={cellSel} value={ir.status} onChange={e => onUpdate(ir.id, { status: e.target.value as ImageRight['status'] })}>
+                      {statuses.map(s => <option key={s} value={s}>{LIABILITY_STATUS_LABELS[s]}</option>)}
+                    </select>
+                  ) : <StatusBadge status={ir.status} map={PAYMENT_STATUS_STYLE} />}
+                </td>
+                {canEdit && (
+                  <td style={{ ...td, textAlign: 'right' }}>
+                    <button onClick={() => { if (window.confirm('Excluir este lançamento de imagem?')) onDelete(ir.id) }} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

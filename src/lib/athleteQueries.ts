@@ -19,7 +19,7 @@ import type {
   Club, Intermediary, NewClubInput, NewIntermediaryInput,
   NewContractInput, NewClauseInput, PaymentInput, NewEconomicRightInput,
   NewSalaryTriggerInput, NewClubLiabilityInput, NewIntermediaryLiabilityInput,
-  NewImageRightInput, AthleteWithStats,
+  NewImageRightInput, AthleteWithStats, AthletePJ, NewAthletePJInput,
 } from '../types/athlete-system'
 import { isOverdue, isDueSoon, addMonths } from './format'
 
@@ -35,6 +35,7 @@ const T = {
   clubLiabilities: 'club_liabilities',
   intermediaryLiabilities: 'intermediary_liabilities',
   imageRights: 'image_rights',
+  athletePjs: 'athlete_pjs',
   clubs: 'clubs',
   intermediaries: 'intermediaries',
 } as const
@@ -141,9 +142,14 @@ export async function fetchAthlete(id: string): Promise<Athlete | null> {
   return data
 }
 
-export async function createAthlete(input: Omit<Athlete, 'id' | 'created_at' | 'updated_at'>): Promise<Athlete> {
-  if (!USE_SUPABASE) return local.insert<Athlete>(T.athletes, input)
-  const { data, error } = await supabase.from(T.athletes).insert(nn(input)).select().single()
+// category é opcional na entrada (default 'PROFISSIONAL') para não quebrar os
+// importadores legados; a UI sempre informa o valor escolhido.
+export async function createAthlete(
+  input: Omit<Athlete, 'id' | 'created_at' | 'updated_at' | 'category'> & { category?: Athlete['category'] },
+): Promise<Athlete> {
+  const row = { ...input, category: input.category ?? 'PROFISSIONAL' }
+  if (!USE_SUPABASE) return local.insert<Athlete>(T.athletes, row)
+  const { data, error } = await supabase.from(T.athletes).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
@@ -426,6 +432,7 @@ export async function fetchAllImageRights(): Promise<ImageRight[]> {
 export async function createImageRight(athleteId: string, input: NewImageRightInput): Promise<ImageRight> {
   const row = {
     athlete_id: athleteId,
+    pj_id: input.pj_id ?? null,
     source_key: input.source_key ?? null,
     month: input.month,
     amount: input.amount,
@@ -452,6 +459,51 @@ export async function updateImageRight(id: string, input: Partial<ImageRight>): 
 export async function deleteImageRight(id: string): Promise<void> {
   if (!USE_SUPABASE) return local.remove(T.imageRights, id)
   const { error } = await supabase.from(T.imageRights).delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Athlete PJs (pessoa jurídica; recebem o direito de imagem) ──────────────
+
+export async function fetchAthletePJs(athleteId: string): Promise<AthletePJ[]> {
+  if (!USE_SUPABASE) return local.where<AthletePJ>(T.athletePjs, 'athlete_id', athleteId)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+  const { data, error } = await supabase.from(T.athletePjs).select('*').eq('athlete_id', athleteId).order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function fetchAllPJs(): Promise<AthletePJ[]> {
+  if (!USE_SUPABASE) return local.all<AthletePJ>(T.athletePjs)
+  const { data, error } = await supabase.from(T.athletePjs).select('*')
+  if (error) throw error
+  return data
+}
+
+export async function createPJ(athleteId: string, input: NewAthletePJInput): Promise<AthletePJ> {
+  const row = {
+    athlete_id: athleteId,
+    legal_name: input.legal_name,
+    cnpj: input.cnpj || null,
+    notes: input.notes || null,
+  }
+  if (!USE_SUPABASE) return local.insert<AthletePJ>(T.athletePjs, row)
+  const { data, error } = await supabase.from(T.athletePjs).insert(nn(row)).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updatePJ(id: string, input: Partial<AthletePJ>): Promise<AthletePJ> {
+  if (!USE_SUPABASE) return local.update<AthletePJ>(T.athletePjs, id, input)
+  const { data, error } = await supabase
+    .from(T.athletePjs).update(nn({ ...input, updated_at: new Date().toISOString() }))
+    .eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deletePJ(id: string): Promise<void> {
+  if (!USE_SUPABASE) return local.remove(T.athletePjs, id)
+  const { error } = await supabase.from(T.athletePjs).delete().eq('id', id)
   if (error) throw error
 }
 
