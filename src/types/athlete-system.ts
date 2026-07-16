@@ -43,6 +43,7 @@ export type HolderType = 'BFR' | 'CLUBE' | 'AGENTE' | 'ATLETA' | 'TERCEIRO'
 
 export interface Athlete {
   id: string
+  external_ref?: string | null   // CPF/passaporte (chave natural externa)
   full_name: string
   short_name: string
   birth_date: string | null
@@ -101,6 +102,7 @@ export interface Contract {
 
 export interface Clause {
   id: string
+  source_key?: string | null
   contract_id: string
   athlete_id: string
   clause_type: ClauseType
@@ -308,6 +310,7 @@ export type LiabilityStatus = 'PENDENTE' | 'PAGA' | 'EM_ATRASO' | 'CANCELADA'
 
 export interface ClubLiability {
   id: string
+  source_key?: string | null
   athlete_id: string
   club_name: string
   description: string | null
@@ -326,6 +329,7 @@ export interface ClubLiability {
 }
 
 export interface NewClubLiabilityInput {
+  source_key?: string | null
   club_name: string
   description: string
   direction: LiabilityDirection
@@ -341,6 +345,7 @@ export interface NewClubLiabilityInput {
 
 export interface IntermediaryLiability {
   id: string
+  source_key?: string | null
   athlete_id: string
   contract_id: string | null
   intermediary_name: string
@@ -360,6 +365,7 @@ export interface IntermediaryLiability {
 }
 
 export interface NewIntermediaryLiabilityInput {
+  source_key?: string | null
   contract_id?: string | null
   intermediary_name: string
   description: string
@@ -376,6 +382,7 @@ export interface NewIntermediaryLiabilityInput {
 
 export interface ImageRight {
   id: string
+  source_key?: string | null
   athlete_id: string
   month: string          // 'YYYY-MM'
   amount: number
@@ -388,6 +395,7 @@ export interface ImageRight {
 }
 
 export interface NewImageRightInput {
+  source_key?: string | null
   month: string
   amount: number
   currency: Currency
@@ -399,6 +407,7 @@ export interface NewImageRightInput {
 
 export interface Club {
   id: string
+  external_ref?: string | null
   name: string
   country: string | null
   logo_url: string | null
@@ -412,10 +421,12 @@ export interface NewClubInput {
   country: string
   logo_url: string | null
   notes: string
+  external_ref?: string | null
 }
 
 export interface Intermediary {
   id: string
+  external_ref?: string | null
   name: string
   contact: string | null
   logo_url: string | null
@@ -429,6 +440,7 @@ export interface NewIntermediaryInput {
   contact: string
   logo_url: string | null
   notes: string
+  external_ref?: string | null
 }
 
 // ── UI labels ───────────────────────────────────────────────────────────────
