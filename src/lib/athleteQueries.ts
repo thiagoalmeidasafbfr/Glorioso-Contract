@@ -707,3 +707,24 @@ function getApproxBRL(currency: string): number {
   const rates: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
   return rates[currency] ?? 1
 }
+
+// ── Apagar toda a base ──────────────────────────────────────────────────────
+// Remove TODOS os registros de todas as tabelas geridas pelo app. Filhos antes
+// dos pais (respeita as FKs no Supabase). Operação destrutiva e irreversível.
+const WIPE_ORDER: string[] = [
+  T.alerts, T.installments, T.clauses, T.salaryTriggers,
+  T.imageRights, T.athletePjs, T.clubLiabilities, T.intermediaryLiabilities,
+  T.economicRights, T.contracts, T.athletes, T.clubs, T.intermediaries,
+]
+
+export async function wipeAllData(): Promise<void> {
+  if (!USE_SUPABASE) {
+    for (const t of WIPE_ORDER) local.replaceAll(t, [])
+    return
+  }
+  // Supabase exige um filtro no delete; usa um filtro que casa todas as linhas.
+  for (const t of WIPE_ORDER) {
+    const { error } = await supabase.from(t).delete().not('id', 'is', null)
+    if (error) throw error
+  }
+}

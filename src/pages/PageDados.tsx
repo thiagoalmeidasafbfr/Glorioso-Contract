@@ -5,7 +5,7 @@
 
 import { useRef, useState } from 'react'
 import {
-  fetchAthletes, createAthlete,
+  fetchAthletes, createAthlete, updateAthlete, wipeAllData,
   fetchAllContracts, createContract,
   fetchAllSalaryTriggers, createSalaryTrigger,
   fetchAllClubLiabilities, createClubLiability,
@@ -278,6 +278,22 @@ const DESCRIPTORS: Descriptor[] = [
 
 export default function PageDados() {
   const [msg, setMsg] = useState<{ key: string; text: string; ok: boolean } | null>(null)
+  const [wiping, setWiping] = useState(false)
+  const [banner, setBanner] = useState<{ text: string; ok: boolean } | null>(null)
+
+  async function wipeAll() {
+    // Dupla confirmação — operação destrutiva e irreversível.
+    if (!window.confirm('APAGAR TODA A BASE?\n\nIsto remove TODOS os atletas, vínculos, cláusulas, passivos, imagem, PJs, clubes e agentes. Não há como desfazer.\n\nRecomendado exportar a base antes.')) return
+    const typed = window.prompt('Para confirmar, digite APAGAR (em maiúsculas):')
+    if (typed !== 'APAGAR') { setBanner({ text: 'Cancelado — nada foi apagado.', ok: true }); return }
+    setWiping(true); setBanner(null)
+    try {
+      await wipeAllData()
+      setBanner({ text: 'Base apagada com sucesso.', ok: true })
+    } catch (err) {
+      setBanner({ text: `Erro ao apagar: ${(err as Error).message}`, ok: false })
+    } finally { setWiping(false) }
+  }
 
   // Preenche a coluna "Nome do Atleta" nas abas-filhas, para o arquivo já sair
   // editável por nome (sem precisar mexer nos UUIDs).
@@ -308,11 +324,23 @@ export default function PageDados() {
           <h1 style={{ fontFamily: fontBody, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>Dados & Modelos</h1>
           <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
         </div>
-        <button onClick={exportAll}
-          style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          Exportar tudo (1 arquivo)
-        </button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={exportAll}
+            style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            ↓ Exportar toda a base
+          </button>
+          <button onClick={wipeAll} disabled={wiping}
+            style={{ padding: '9px 18px', background: 'transparent', border: '1px solid var(--neg)', borderRadius: 8, color: 'var(--neg)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: wiping ? 'wait' : 'pointer' }}>
+            {wiping ? 'Apagando...' : '🗑 Apagar toda a base'}
+          </button>
+        </div>
       </div>
+
+      {banner && (
+        <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 13, fontFamily: fontBody, background: banner.ok ? 'var(--pos-tint)' : 'var(--neg-tint)', color: banner.ok ? 'var(--pos)' : 'var(--neg)', border: `1px solid ${banner.ok ? 'var(--pos)' : 'var(--neg)'}` }}>
+          {banner.text}
+        </div>
+      )}
 
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 18, maxWidth: 820 }}>
         Cada bloco tem um <strong>modelo</strong> (planilha em branco com as colunas), <strong>exportar</strong> (dados atuais) e <strong>importar</strong>. Nas abas-filhas basta preencher a coluna
@@ -337,6 +365,57 @@ export default function PageDados() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* Importar fotos por nome (aceita JSON exportado do painel: name/fullName + foto) */}
+      <PhotoImportCard />
+    </div>
+  )
+}
+
+function PhotoImportCard() {
+  const ref = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
+
+  async function handle(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (e.target) e.target.value = ''
+    if (!file) return
+    setBusy(true); setMsg(null)
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text)
+      const list: { name?: string; fullName?: string; foto?: string }[] = Array.isArray(parsed) ? parsed : (parsed.athletes ?? [])
+      const resolver = buildAthleteResolver(await fetchAthletes())
+      let updated = 0, notFound = 0, noPhoto = 0
+      for (const it of list) {
+        const foto = S(it.foto)
+        if (!foto) { noPhoto++; continue }
+        const id = resolver.byName.get(norm(it.fullName)) ?? resolver.byName.get(norm(it.name))
+        if (!id) { notFound++; continue }
+        await updateAthlete(id, { profile_photo_url: foto })
+        updated++
+      }
+      const parts = [`${updated} foto(s) aplicada(s)`]
+      if (notFound) parts.push(`${notFound} sem atleta correspondente`)
+      if (noPhoto) parts.push(`${noPhoto} sem foto`)
+      setMsg({ text: parts.join(' · '), ok: true })
+    } catch (err) {
+      setMsg({ text: `Erro: ${(err as Error).message}`, ok: false })
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="card" style={{ padding: 18, marginTop: 14 }}>
+      <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', marginBottom: 2 }}>Fotos dos atletas (por nome)</div>
+      <div style={{ fontFamily: fontBody, fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
+        Importe um arquivo <span style={{ fontFamily: fontMono, fontSize: 11 }}>.json</span> com <span style={{ fontFamily: fontMono, fontSize: 11 }}>{'[{ "fullName": "...", "foto": "URL ou base64" }]'}</span>.
+        As fotos são casadas pelo nome do atleta e aplicadas aos já cadastrados (aceita URL ou imagem embutida).
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button onClick={() => ref.current?.click()} disabled={busy} style={btn('solid')}>{busy ? 'Aplicando...' : 'Importar fotos (.json)'}</button>
+        <input ref={ref} type="file" accept=".json,application/json" onChange={handle} style={{ display: 'none' }} />
+        {msg && <span style={{ fontSize: 12, fontFamily: fontBody, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</span>}
       </div>
     </div>
   )
