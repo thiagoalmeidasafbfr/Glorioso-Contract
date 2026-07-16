@@ -10,6 +10,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
   {
     label: null,
     items: [
+      { to: '/criar',          label: '+ Criar (Assistente)' },
       { to: '/atletas',        label: 'Atletas' },
       { to: '/album',          label: 'Álbum de Figurinhas' },
       { to: '/clubes',         label: 'Clubes' },

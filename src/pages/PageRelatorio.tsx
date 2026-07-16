@@ -277,7 +277,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   if (kind === 'clubes') {
     const list = await fetchAllClubLiabilities()
     return list.map(l => ({
-      id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Passivo clube',
+      id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Obrigação clube',
       parte: l.club_name, parteKind: 'clube' as ParteKind, descricao: l.description ?? '',
       valor: l.amount, moeda: l.currency, vencimento: l.due_date,
       pagamento: l.settled_date, status: STATUS_LABEL[l.status] ?? l.status, tone: STATUS_TONE[l.status] ?? 'neutral',

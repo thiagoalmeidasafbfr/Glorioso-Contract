@@ -129,15 +129,15 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
           )}
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Passivos vinculados</div>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Obrigações vinculadas</div>
           <div style={{ fontSize: 22, fontWeight: 600, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{liabs.length}</div>
         </div>
       </div>
 
-      {/* Passivos vinculados */}
+      {/* Obrigações vinculadas */}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-primary)', fontFamily: fontBody }}>Passivos vinculados</span>
+          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-primary)', fontFamily: fontBody }}>Obrigações vinculadas</span>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>Total: {fmtCurrencyShort(total)}</span>
         </div>
         <div style={{ overflowX: 'auto' }}>

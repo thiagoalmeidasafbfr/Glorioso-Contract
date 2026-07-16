@@ -149,7 +149,7 @@ const DESCRIPTORS: Descriptor[] = [
     },
   },
   {
-    key: 'Passivos_Clubes', label: 'Passivos de clube', cols: COLS_CLUB_LIABILITIES, parent: 'Atleta ID',
+    key: 'Passivos_Clubes', label: 'Obrigações de clube', cols: COLS_CLUB_LIABILITIES, parent: 'Atleta ID',
     load: () => fetchAllClubLiabilities(),
     importRows: async rows => {
       const res = emptyResult()
@@ -171,7 +171,7 @@ const DESCRIPTORS: Descriptor[] = [
     },
   },
   {
-    key: 'Passivos_Agentes', label: 'Passivos de agentes', cols: COLS_INTERMEDIARY_LIABILITIES, parent: 'Atleta ID',
+    key: 'Passivos_Agentes', label: 'Obrigações de agentes', cols: COLS_INTERMEDIARY_LIABILITIES, parent: 'Atleta ID',
     load: () => fetchAllIntermediaryLiabilities(),
     importRows: async rows => {
       const res = emptyResult()

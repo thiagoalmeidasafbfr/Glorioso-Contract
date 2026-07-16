@@ -312,7 +312,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'imagem',    label: 'PJ & Imagem' },
   { id: 'clausulas', label: 'Cláusulas Ativas' },
   { id: 'historico', label: 'Histórico' },
-  { id: 'passivos',  label: 'Passivos' },
+  { id: 'passivos',  label: 'Obrigações' },
   { id: 'alertas',   label: 'Alertas' },
 ]
 
@@ -654,10 +654,10 @@ export default function PageAthleteDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card" style={{ padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Passivos com Clubes</div>
+              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Obrigações com Clubes</div>
               <Link to="/clubes" style={{ fontSize: 11, color: '#be8c4a', fontFamily: font, textDecoration: 'none' }}>Gerenciar →</Link>
             </div>
-            {clubLiabs.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhum passivo com clube.</div> : (
+            {clubLiabs.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma obrigação com clube.</div> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {clubLiabs.map(l => (
                   <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
@@ -679,7 +679,7 @@ export default function PageAthleteDetail() {
               <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes</div>
               <Link to="/intermediarios" style={{ fontSize: 11, color: '#be8c4a', fontFamily: font, textDecoration: 'none' }}>Gerenciar →</Link>
             </div>
-            {intermLiabs.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhum passivo com agente.</div> : (
+            {intermLiabs.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma obrigação com agente.</div> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {intermLiabs.map(l => (
                   <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>

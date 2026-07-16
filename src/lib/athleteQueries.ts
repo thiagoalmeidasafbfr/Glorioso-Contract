@@ -741,7 +741,7 @@ export async function fetchContractClauses(contractId: string): Promise<Clause[]
   return data.map(fromAcClause)
 }
 
-export async function createClause(contractId: string, athleteId: string, input: NewClauseInput): Promise<Clause> {
+export async function createClause(contractId: string | null, athleteId: string, input: NewClauseInput): Promise<Clause> {
   const row = {
     ...input, contract_id: contractId, athlete_id: athleteId,
     source_key: (input as { source_key?: string | null }).source_key ?? null,
