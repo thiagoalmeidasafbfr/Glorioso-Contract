@@ -20,6 +20,7 @@ import PageCadastroDetail from './pages/PageCadastroDetail'
 import PageRelatorio from './pages/PageRelatorio'
 import PageConsolidado from './pages/PageConsolidado'
 import PageDados from './pages/PageDados'
+import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
 
 function AppRoutes() {
   const { session, loading } = useAuth()
@@ -69,6 +70,7 @@ function AppRoutes() {
 
           {/* Importar / Exportar */}
           <Route path="/dados" element={<PageDados />} />
+          <Route path="/dados/planilhas" element={<PageImportarPlanilhas />} />
 
           <Route path="*" element={<Navigate to="/atletas" replace />} />
         </Routes>

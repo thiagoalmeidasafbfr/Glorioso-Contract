@@ -56,7 +56,7 @@ export async function fetchClub(id: string): Promise<Club | null> {
 }
 
 export async function createClub(input: NewClubInput): Promise<Club> {
-  const row = { name: input.name, country: input.country || null, logo_url: input.logo_url, notes: input.notes || null }
+  const row = { name: input.name, country: input.country || null, logo_url: input.logo_url, notes: input.notes || null, external_ref: input.external_ref ?? null }
   if (!USE_SUPABASE) return local.insert<Club>(T.clubs, row)
   const { data, error } = await supabase.from(T.clubs).insert(row).select().single()
   if (error) throw error
@@ -93,7 +93,7 @@ export async function fetchIntermediary(id: string): Promise<Intermediary | null
 }
 
 export async function createIntermediary(input: NewIntermediaryInput): Promise<Intermediary> {
-  const row = { name: input.name, contact: input.contact || null, logo_url: input.logo_url, notes: input.notes || null }
+  const row = { name: input.name, contact: input.contact || null, logo_url: input.logo_url, notes: input.notes || null, external_ref: input.external_ref ?? null }
   if (!USE_SUPABASE) return local.insert<Intermediary>(T.intermediaries, row)
   const { data, error } = await supabase.from(T.intermediaries).insert(row).select().single()
   if (error) throw error
@@ -304,6 +304,7 @@ export async function fetchAllClubLiabilities(): Promise<ClubLiability[]> {
 export async function createClubLiability(athleteId: string, input: NewClubLiabilityInput): Promise<ClubLiability> {
   const row = {
     athlete_id: athleteId,
+    source_key: input.source_key ?? null,
     club_name: input.club_name,
     description: input.description || null,
     direction: input.direction,
@@ -358,6 +359,7 @@ export async function createIntermediaryLiability(athleteId: string, input: NewI
   const row = {
     athlete_id: athleteId,
     contract_id: input.contract_id ?? null,
+    source_key: input.source_key ?? null,
     intermediary_name: input.intermediary_name,
     description: input.description || null,
     direction: input.direction,
@@ -412,6 +414,7 @@ export async function fetchAllImageRights(): Promise<ImageRight[]> {
 export async function createImageRight(athleteId: string, input: NewImageRightInput): Promise<ImageRight> {
   const row = {
     athlete_id: athleteId,
+    source_key: input.source_key ?? null,
     month: input.month,
     amount: input.amount,
     currency: input.currency,
@@ -466,6 +469,7 @@ export async function fetchContractClauses(contractId: string): Promise<Clause[]
 export async function createClause(contractId: string, athleteId: string, input: NewClauseInput): Promise<Clause> {
   const row = {
     ...input, contract_id: contractId, athlete_id: athleteId,
+    source_key: (input as { source_key?: string | null }).source_key ?? null,
     installments_paid: 0, achievement_status: 'PENDENTE' as const,
     achievement_date: null, payment_status: 'PENDENTE' as const,
     payment_date: null, amount_paid_currency: null, amount_paid_brl: null,

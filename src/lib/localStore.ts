@@ -1,115 +1,79 @@
 // src/lib/localStore.ts
 // Armazenamento local (localStorage) usado quando o Supabase NÃO está
-// configurado (VITE_USE_SUPABASE !== 'true').
+// configurado. Começa VAZIO (sem dados fabricados).
 //
-// Diferente do antigo modo "mock", NÃO existe nenhum dado fabricado aqui: as
-// coleções começam VAZIAS e só passam a existir dados que o usuário cadastrar
-// (na UI) ou importar (XLSX). Isso encerra de vez os "mock datas" mantendo o
-// app 100% funcional e verificável antes de plugar o banco.
-//
-// Cada "tabela" é uma coleção de linhas com id string. A API espelha o subset
-// do Supabase que usamos (select/insert/update/delete), para que a camada de
-// queries troque de backend sem mudar as chamadas.
+// Implementação com CACHE em memória + escrita coalescida:
+//   • cada tabela é carregada do localStorage uma vez e mantida em memória;
+//   • gravações vão para o cache e são persistidas (JSON.stringify) na hora,
+//     EXCETO dentro de um bloco defer()/flush() — usado por importações em massa
+//     para evitar custo O(n²) de reserializar a coleção a cada linha.
 
 const PREFIX = 'glorioso.v1.'
 
 type WithId = { id: string }
 
 function hasStorage(): boolean {
-  try {
-    return typeof localStorage !== 'undefined'
-  } catch {
-    return false
-  }
+  try { return typeof localStorage !== 'undefined' } catch { return false }
 }
 
-function read<T extends WithId>(table: string): T[] {
-  if (!hasStorage()) return []
-  try {
-    const raw = localStorage.getItem(PREFIX + table)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as T[]) : []
-  } catch {
-    return []
+const cache = new Map<string, WithId[]>()
+let deferred = false
+const dirty = new Set<string>()
+
+function load<T extends WithId>(table: string): T[] {
+  let arr = cache.get(table) as T[] | undefined
+  if (arr) return arr
+  arr = []
+  if (hasStorage()) {
+    try {
+      const raw = localStorage.getItem(PREFIX + table)
+      if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) arr = p as T[] }
+    } catch { /* ignore */ }
   }
+  cache.set(table, arr)
+  return arr
 }
 
-function write<T extends WithId>(table: string, rows: T[]): void {
+function persist(table: string): void {
+  if (deferred) { dirty.add(table); return }
   if (!hasStorage()) return
-  try {
-    localStorage.setItem(PREFIX + table, JSON.stringify(rows))
-  } catch {
-    // Silencioso: quota cheia / modo privado. Não deve derrubar a UI.
-  }
+  try { localStorage.setItem(PREFIX + table, JSON.stringify(cache.get(table) ?? [])) } catch { /* quota */ }
 }
 
-function nowISO(): string {
-  return new Date().toISOString()
-}
-
+function nowISO(): string { return new Date().toISOString() }
 function stamp(row: Record<string, unknown>): Record<string, unknown> {
-  return {
-    created_at: nowISO(),
-    updated_at: nowISO(),
-    ...row,
-    id: (row.id as string | undefined) ?? crypto.randomUUID(),
-  }
+  return { created_at: nowISO(), updated_at: nowISO(), ...row, id: (row.id as string | undefined) ?? crypto.randomUUID() }
 }
 
 export const local = {
-  /** Todas as linhas de uma tabela. */
-  all<T extends WithId>(table: string): T[] {
-    return read<T>(table)
-  },
-
-  /** Linhas cujo campo === valor. */
+  all<T extends WithId>(table: string): T[] { return [...load<T>(table)] },
   where<T extends WithId>(table: string, field: string, value: unknown): T[] {
-    return read<T>(table).filter(r => (r as Record<string, unknown>)[field] === value)
+    return load<T>(table).filter(r => (r as Record<string, unknown>)[field] === value)
   },
-
-  /** Uma linha por id (ou null). */
-  find<T extends WithId>(table: string, id: string): T | null {
-    return read<T>(table).find(r => r.id === id) ?? null
-  },
-
-  /** Insere uma linha, preenchendo id/created_at/updated_at se ausentes. */
+  find<T extends WithId>(table: string, id: string): T | null { return load<T>(table).find(r => r.id === id) ?? null },
   insert<T extends WithId>(table: string, row: Record<string, unknown>): T {
-    const rows = read<T>(table)
-    const full = stamp(row) as unknown as T
-    rows.push(full)
-    write(table, rows)
-    return full
+    const arr = load<T>(table); const full = stamp(row) as unknown as T; arr.push(full); persist(table); return full
   },
-
-  /** Insere várias linhas de uma vez. */
-  insertMany<T extends WithId>(table: string, newRows: Record<string, unknown>[]): T[] {
-    const rows = read<T>(table)
-    const created = newRows.map(r => stamp(r) as unknown as T)
-    rows.push(...created)
-    write(table, rows)
-    return created
+  insertMany<T extends WithId>(table: string, rows: Record<string, unknown>[]): T[] {
+    const arr = load<T>(table); const created = rows.map(r => stamp(r) as unknown as T); arr.push(...created); persist(table); return created
   },
-
-  /** Atualiza uma linha por id; lança se não encontrada. */
   update<T extends WithId>(table: string, id: string, patch: Partial<T>): T {
-    const rows = read<T>(table)
-    const idx = rows.findIndex(r => r.id === id)
-    if (idx === -1) throw new Error(`Registro não encontrado em ${table}: ${id}`)
-    rows[idx] = { ...rows[idx], ...patch, updated_at: nowISO() }
-    write(table, rows)
-    return rows[idx]
+    const arr = load<T>(table); const i = arr.findIndex(r => r.id === id)
+    if (i === -1) throw new Error(`Registro não encontrado em ${table}: ${id}`)
+    arr[i] = { ...arr[i], ...patch, updated_at: nowISO() }; persist(table); return arr[i]
   },
-
-  /** Remove uma linha por id. */
   remove(table: string, id: string): void {
-    const rows = read<WithId>(table)
-    const next = rows.filter(r => r.id !== id)
-    if (next.length !== rows.length) write(table, next)
+    const arr = load<WithId>(table); const i = arr.findIndex(r => r.id === id)
+    if (i !== -1) { arr.splice(i, 1); persist(table) }
   },
+  replaceAll<T extends WithId>(table: string, rows: T[]): void { cache.set(table, rows); persist(table) },
 
-  /** Substitui TODAS as linhas de uma tabela (usado por importação XLSX). */
-  replaceAll<T extends WithId>(table: string, rows: T[]): void {
-    write(table, rows)
+  /** Coalesce writes: use around bulk imports. */
+  defer(): void { deferred = true },
+  flush(): void {
+    deferred = false
+    if (!hasStorage()) { dirty.clear(); return }
+    for (const t of dirty) { try { localStorage.setItem(PREFIX + t, JSON.stringify(cache.get(t) ?? [])) } catch { /* quota */ } }
+    dirty.clear()
   },
 }

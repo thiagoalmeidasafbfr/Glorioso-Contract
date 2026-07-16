@@ -30,6 +30,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
     label: null,
     items: [
       { to: '/dados', label: 'Importar / Exportar' },
+      { to: '/dados/planilhas', label: 'Importar Ativos/Passivos' },
     ],
   },
 ]
