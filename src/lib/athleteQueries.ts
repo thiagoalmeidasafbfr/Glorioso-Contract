@@ -357,6 +357,7 @@ export async function fetchAllIntermediaryLiabilities(): Promise<IntermediaryLia
 export async function createIntermediaryLiability(athleteId: string, input: NewIntermediaryLiabilityInput): Promise<IntermediaryLiability> {
   const row = {
     athlete_id: athleteId,
+    contract_id: input.contract_id ?? null,
     intermediary_name: input.intermediary_name,
     description: input.description || null,
     direction: input.direction,

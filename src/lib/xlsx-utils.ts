@@ -250,6 +250,8 @@ export const COLS_CONTRACTS: ColDef[] = [
   { key: 'transfer_fee_gross', header: 'Valor Transferência' },
   { key: 'transfer_currency',  header: 'Moeda Transf.' },
   { key: 'base_salary',        header: 'Salário Base' },
+  { key: 'image_value',        header: 'Imagem' },
+  { key: 'other_value',        header: 'Outros' },
   { key: 'salary_currency',    header: 'Moeda Salário' },
   { key: 'description',        header: 'Descrição' },
 ]

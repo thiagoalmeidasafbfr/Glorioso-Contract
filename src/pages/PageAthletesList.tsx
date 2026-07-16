@@ -63,7 +63,7 @@ interface NewAthleteModalProps {
 function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   const [f, setF] = useState({
     full_name: '', short_name: '', birth_date: '', nationality: 'Brasil',
-    cpf: '', passport_number: '', agent_name: '', agent_contact: '',
+    cpf: '', passport_number: '',
     current_status: 'ATIVO' as AthleteStatus, position: '', notes: '',
   })
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
@@ -99,8 +99,8 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
       nationality: f.nationality || null,
       cpf: f.cpf || null,
       passport_number: f.passport_number || null,
-      agent_name: f.agent_name || null,
-      agent_contact: f.agent_contact || null,
+      agent_name: null,
+      agent_contact: null,
       current_status: f.current_status,
       position: f.position || null,
       profile_photo_url: null,
@@ -123,10 +123,11 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           {field('Nacionalidade', 'nationality')}
           {field('CPF', 'cpf')}
           {field('Passaporte', 'passport_number')}
-          {field('Nome do Agente', 'agent_name')}
-          {field('Contato do Agente', 'agent_contact')}
-          {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
           {field('Posição', 'position', 'text', ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante'])}
+          {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+          Agentes são vinculados a cada transferência/vínculo, não ao atleta. Cadastre-os ao criar um vínculo.
         </div>
 
         <div>
@@ -286,16 +287,15 @@ export default function PageAthletesList() {
                 <th style={{ ...th, width: 80, textAlign: 'right' }}>Cláusulas</th>
                 <th style={{ ...th, width: 120, textAlign: 'right' }}>Próx. Venc.</th>
                 <th style={{ ...th, width: 100 }}>Alertas</th>
-                <th style={{ ...th, width: 140 }}>Agente</th>
                 <th style={{ ...th, width: 90, textAlign: 'right' }}></th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta encontrado.</td></tr>
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta encontrado.</td></tr>
               )}
               {filtered.map(a => {
                 const stats = getAthleteStats(a.id)
@@ -352,7 +352,6 @@ export default function PageAthletesList() {
                         {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
                       </div>
                     </td>
-                    <td style={{ ...td, width: 140, fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.agent_name ?? '—'}</td>
                     <td style={{ ...td, width: 90, textAlign: 'right' }}>
                       <button onClick={e => { e.stopPropagation(); navigate(`/atletas/${a.id}`) }}
                         style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>

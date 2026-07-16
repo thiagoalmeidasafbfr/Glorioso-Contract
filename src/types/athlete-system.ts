@@ -91,6 +91,8 @@ export interface Contract {
   transfer_currency: Currency
   base_salary: number | null
   salary_currency: Currency
+  image_value: number | null    // imagem mensal
+  other_value: number | null    // outros mensais (moradia, auxílios)
   description: string | null
   created_by: string | null
   created_at: string
@@ -193,6 +195,8 @@ export interface NewContractInput {
   transfer_currency: Currency
   base_salary: number | null
   salary_currency: Currency
+  image_value: number | null
+  other_value: number | null
   description: string
   status: ContractStatus
 }
@@ -338,6 +342,7 @@ export interface NewClubLiabilityInput {
 export interface IntermediaryLiability {
   id: string
   athlete_id: string
+  contract_id: string | null
   intermediary_name: string
   description: string | null
   direction: LiabilityDirection
@@ -355,6 +360,7 @@ export interface IntermediaryLiability {
 }
 
 export interface NewIntermediaryLiabilityInput {
+  contract_id?: string | null
   intermediary_name: string
   description: string
   direction: LiabilityDirection
