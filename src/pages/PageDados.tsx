@@ -25,6 +25,7 @@ import {
 import {
   S, orNull, N, Nn, cur, bool, norm, dupKey,
   emptyResult, resultMessage, type ImportResult,
+  buildAthleteResolver, resolveAthleteId, type AthleteResolver,
 } from '../lib/importHelpers'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import type { AthleteCategory } from '../types/athlete-system'
@@ -48,7 +49,7 @@ interface Descriptor {
   parent?: string          // texto de ajuda quando precisa de Atleta ID
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   load: () => Promise<any[]>
-  importRows: (rows: Record<string, string>[]) => Promise<ImportResult>
+  importRows: (rows: Record<string, string>[], ath: AthleteResolver) => Promise<ImportResult>
 }
 
 const DESCRIPTORS: Descriptor[] = [
@@ -83,11 +84,11 @@ const DESCRIPTORS: Descriptor[] = [
   {
     key: 'Vinculos', label: 'Vínculos (contratos)', cols: COLS_CONTRACTS, parent: 'Atleta ID',
     load: () => fetchAllContracts(),
-    importRows: async rows => {
+    importRows: async (rows, ath) => {
       const res = emptyResult()
       const existing = new Set((await fetchAllContracts()).map(c => dupKey(c.athlete_id, c.counterpart_club, c.start_date)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const aid = resolveAthleteId(r, ath); if (!aid) { res.noAthlete++; continue }
         const club = S(r['Clube/Contraparte'])
         const start = S(r['Início']) || new Date().toISOString().slice(0, 10)
         const key = dupKey(aid, club, start)
@@ -109,11 +110,11 @@ const DESCRIPTORS: Descriptor[] = [
   {
     key: 'Titularidade', label: 'Detentores (titularidade)', cols: COLS_ECONOMIC_RIGHTS, parent: 'Atleta ID',
     load: () => fetchAllEconomicRights(),
-    importRows: async rows => {
+    importRows: async (rows, ath) => {
       const res = emptyResult()
       const existing = new Set((await fetchAllEconomicRights()).map(e => dupKey(e.athlete_id, e.holder_type, e.holder_name, e.percentage)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const aid = resolveAthleteId(r, ath); if (!aid) { res.noAthlete++; continue }
         const ht = S(r['Tipo Detentor']) || 'TERCEIRO'
         const hn = S(r['Detentor']); const pct = N(r['Percentual'])
         const key = dupKey(aid, ht, hn, pct)
@@ -129,11 +130,11 @@ const DESCRIPTORS: Descriptor[] = [
   {
     key: 'Metas_Salario', label: 'Metas de salário', cols: COLS_SALARY_TRIGGERS, parent: 'Atleta ID',
     load: () => fetchAllSalaryTriggers(),
-    importRows: async rows => {
+    importRows: async (rows, ath) => {
       const res = emptyResult()
       const existing = new Set((await fetchAllSalaryTriggers()).map(t => dupKey(t.athlete_id, t.description, t.new_salary)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const aid = resolveAthleteId(r, ath); if (!aid) { res.noAthlete++; continue }
         const desc = S(r['Descrição']); const sal = N(r['Novo Salário'])
         const key = dupKey(aid, desc, sal)
         if (existing.has(key)) { res.dupSkipped++; continue }
@@ -150,11 +151,11 @@ const DESCRIPTORS: Descriptor[] = [
   {
     key: 'Passivos_Clubes', label: 'Passivos de clube', cols: COLS_CLUB_LIABILITIES, parent: 'Atleta ID',
     load: () => fetchAllClubLiabilities(),
-    importRows: async rows => {
+    importRows: async (rows, ath) => {
       const res = emptyResult()
       const existing = new Set((await fetchAllClubLiabilities()).map(l => dupKey(l.athlete_id, l.club_name, l.description, l.amount)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const aid = resolveAthleteId(r, ath); if (!aid) { res.noAthlete++; continue }
         const club = S(r['Clube']); const desc = S(r['Descrição']); const amount = N(r['Valor'])
         const key = dupKey(aid, club, desc, amount)
         if (existing.has(key)) { res.dupSkipped++; continue }
@@ -172,11 +173,11 @@ const DESCRIPTORS: Descriptor[] = [
   {
     key: 'Passivos_Agentes', label: 'Passivos de agentes', cols: COLS_INTERMEDIARY_LIABILITIES, parent: 'Atleta ID',
     load: () => fetchAllIntermediaryLiabilities(),
-    importRows: async rows => {
+    importRows: async (rows, ath) => {
       const res = emptyResult()
       const existing = new Set((await fetchAllIntermediaryLiabilities()).map(l => dupKey(l.athlete_id, l.intermediary_name, l.description, l.amount)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const aid = resolveAthleteId(r, ath); if (!aid) { res.noAthlete++; continue }
         const ag = S(r['Agente']); const desc = S(r['Descrição']); const amount = N(r['Valor'])
         const key = dupKey(aid, ag, desc, amount)
         if (existing.has(key)) { res.dupSkipped++; continue }
@@ -198,14 +199,14 @@ const DESCRIPTORS: Descriptor[] = [
       const nameById = new Map(pjs.map(p => [p.id, p.legal_name]))
       return imgs.map(i => ({ ...i, pj_name: i.pj_id ? (nameById.get(i.pj_id) ?? '') : '' }))
     },
-    importRows: async rows => {
+    importRows: async (rows, ath) => {
       const res = emptyResult()
       const [existingImgs, allPjs] = await Promise.all([fetchAllImageRights(), fetchAllPJs()])
       const existing = new Set(existingImgs.map(i => dupKey(i.athlete_id, i.month)))
       // Índice de PJs por (atleta, razão social) para resolver / criar sob demanda.
       const pjByKey = new Map(allPjs.map(p => [dupKey(p.athlete_id, p.legal_name), p.id]))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const aid = resolveAthleteId(r, ath); if (!aid) { res.noAthlete++; continue }
         const month = S(r['Mês (AAAA-MM)'])
         const key = dupKey(aid, month)
         if (existing.has(key)) { res.dupSkipped++; continue }
@@ -229,11 +230,11 @@ const DESCRIPTORS: Descriptor[] = [
   {
     key: 'PJs', label: 'PJs do atleta', cols: COLS_ATHLETE_PJS, parent: 'Atleta ID',
     load: () => fetchAllPJs(),
-    importRows: async rows => {
+    importRows: async (rows, ath) => {
       const res = emptyResult()
       const existing = new Set((await fetchAllPJs()).map(p => dupKey(p.athlete_id, p.legal_name)))
       for (const r of rows) {
-        const aid = S(r['Atleta ID']); if (!aid) { res.invalid++; continue }
+        const aid = resolveAthleteId(r, ath); if (!aid) { res.noAthlete++; continue }
         const legal = S(r['Razão Social']); if (!legal) { res.invalid++; continue }
         const key = dupKey(aid, legal)
         if (existing.has(key)) { res.dupSkipped++; continue }
@@ -278,16 +279,24 @@ const DESCRIPTORS: Descriptor[] = [
 export default function PageDados() {
   const [msg, setMsg] = useState<{ key: string; text: string; ok: boolean } | null>(null)
 
+  // Preenche a coluna "Nome do Atleta" nas abas-filhas, para o arquivo já sair
+  // editável por nome (sem precisar mexer nos UUIDs).
+  async function enrich(d: Descriptor, rows: Record<string, unknown>[]): Promise<Record<string, unknown>[]> {
+    if (!d.cols.some(c => c.key === 'athlete_name')) return rows
+    const nameById = new Map((await fetchAthletes()).map(a => [a.id, a.full_name || a.short_name]))
+    return rows.map(r => ({ ...r, athlete_name: nameById.get(String((r as { athlete_id?: string }).athlete_id ?? '')) ?? '' }))
+  }
+
   function downloadTemplate(d: Descriptor) {
     exportWorkbook([{ name: d.key.slice(0, 28), cols: d.cols, rows: [] }], `modelo-${d.key.toLowerCase()}.xlsx`)
   }
   async function exportData(d: Descriptor) {
-    const rows = await d.load()
+    const rows = await enrich(d, await d.load())
     exportWorkbook([{ name: d.key.slice(0, 28), cols: d.cols, rows }], `${d.key.toLowerCase()}.xlsx`)
   }
 
   function exportAll() {
-    Promise.all(DESCRIPTORS.map(async d => ({ name: d.key.slice(0, 28), cols: d.cols, rows: await d.load() })))
+    Promise.all(DESCRIPTORS.map(async d => ({ name: d.key.slice(0, 28), cols: d.cols, rows: await enrich(d, await d.load()) })))
       .then(sheets => exportWorkbook(sheets, 'glorioso-tudo.xlsx'))
   }
 
@@ -305,9 +314,10 @@ export default function PageDados() {
         </button>
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 18, maxWidth: 760 }}>
-        Cada bloco tem um <strong>modelo</strong> (planilha em branco com as colunas), <strong>exportar</strong> (dados atuais) e <strong>importar</strong>. Onde há
-        <span style={{ fontFamily: fontMono, fontSize: 11 }}> Atleta ID</span>, preencha com o ID do atleta (exporte a aba Atletas para obter os IDs).
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 18, maxWidth: 820 }}>
+        Cada bloco tem um <strong>modelo</strong> (planilha em branco com as colunas), <strong>exportar</strong> (dados atuais) e <strong>importar</strong>. Nas abas-filhas basta preencher a coluna
+        <span style={{ fontFamily: fontMono, fontSize: 11 }}> Nome do Atleta</span> com o nome completo — não precisa do ID. O
+        <span style={{ fontFamily: fontMono, fontSize: 11 }}> Atleta ID</span> é opcional (tem prioridade quando informado). Clubes e credores também são por nome. A importação ignora duplicados.
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
@@ -342,7 +352,8 @@ function ImportButton({ d, onDone }: { d: Descriptor; onDone: (text: string, ok:
     try {
       const sheets = await parseWorkbookFile(file)
       const rows = sheets[d.key] ?? sheets[Object.keys(sheets)[0]] ?? []
-      const res = await d.importRows(rows)
+      const resolver = buildAthleteResolver(await fetchAthletes())
+      const res = await d.importRows(rows, resolver)
       onDone(resultMessage(res), true)
     } catch (err) {
       onDone(`Erro: ${(err as Error).message}`, false)

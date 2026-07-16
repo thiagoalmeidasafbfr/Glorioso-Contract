@@ -183,6 +183,7 @@ export const COLS_ATHLETES: ColDef[] = [
 export const COLS_SALARY_TRIGGERS: ColDef[] = [
   { key: 'id',            header: 'ID' },
   { key: 'athlete_id',    header: 'Atleta ID' },
+  { key: 'athlete_name', header: 'Nome do Atleta' },
   { key: 'contract_id',   header: 'Contrato ID' },
   { key: 'description',   header: 'Descrição' },
   { key: 'metric',        header: 'Métrica' },
@@ -197,6 +198,7 @@ export const COLS_SALARY_TRIGGERS: ColDef[] = [
 export const COLS_CLUB_LIABILITIES: ColDef[] = [
   { key: 'id',                    header: 'ID' },
   { key: 'athlete_id',            header: 'Atleta ID' },
+  { key: 'athlete_name', header: 'Nome do Atleta' },
   { key: 'club_name',             header: 'Clube' },
   { key: 'description',           header: 'Descrição' },
   { key: 'direction',             header: 'Direção' },
@@ -214,6 +216,7 @@ export const COLS_CLUB_LIABILITIES: ColDef[] = [
 export const COLS_INTERMEDIARY_LIABILITIES: ColDef[] = [
   { key: 'id',                    header: 'ID' },
   { key: 'athlete_id',            header: 'Atleta ID' },
+  { key: 'athlete_name', header: 'Nome do Atleta' },
   { key: 'intermediary_name',     header: 'Agente' },
   { key: 'description',           header: 'Descrição' },
   { key: 'direction',             header: 'Direção' },
@@ -231,6 +234,7 @@ export const COLS_INTERMEDIARY_LIABILITIES: ColDef[] = [
 export const COLS_IMAGE_RIGHTS: ColDef[] = [
   { key: 'id',         header: 'ID' },
   { key: 'athlete_id', header: 'Atleta ID' },
+  { key: 'athlete_name', header: 'Nome do Atleta' },
   { key: 'pj_name',    header: 'PJ (Razão Social)' },  // resolvida p/ pj_id na importação
   { key: 'month',      header: 'Mês (AAAA-MM)' },
   { key: 'amount',     header: 'Valor' },
@@ -243,6 +247,7 @@ export const COLS_IMAGE_RIGHTS: ColDef[] = [
 export const COLS_ATHLETE_PJS: ColDef[] = [
   { key: 'id',         header: 'ID' },
   { key: 'athlete_id', header: 'Atleta ID' },
+  { key: 'athlete_name', header: 'Nome do Atleta' },
   { key: 'legal_name', header: 'Razão Social' },
   { key: 'cnpj',       header: 'CNPJ' },
   { key: 'notes',      header: 'Observações' },
@@ -251,6 +256,7 @@ export const COLS_ATHLETE_PJS: ColDef[] = [
 export const COLS_CONTRACTS: ColDef[] = [
   { key: 'id',                 header: 'ID' },
   { key: 'athlete_id',         header: 'Atleta ID' },
+  { key: 'athlete_name', header: 'Nome do Atleta' },
   { key: 'type',               header: 'Tipo' },            // ENTRADA/SAIDA/EMPRESTIMO_SAIDA/EMPRESTIMO_ENTRADA
   { key: 'counterpart_club',   header: 'Clube/Contraparte' },
   { key: 'counterpart_country', header: 'País' },
@@ -283,6 +289,7 @@ export const COLS_AGENTS: ColDef[] = [
 export const COLS_ECONOMIC_RIGHTS: ColDef[] = [
   { key: 'id',          header: 'ID' },
   { key: 'athlete_id',  header: 'Atleta ID' },
+  { key: 'athlete_name', header: 'Nome do Atleta' },
   { key: 'holder_type', header: 'Tipo Detentor' },   // BFR/CLUBE/AGENTE/ATLETA/TERCEIRO
   { key: 'holder_name', header: 'Detentor' },
   { key: 'percentage',  header: 'Percentual' },

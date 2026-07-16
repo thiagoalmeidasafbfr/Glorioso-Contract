@@ -60,6 +60,31 @@ export function buildNameIndex(list: { id: string; name: string }[]): Map<string
   return m
 }
 
+// Resolvedor de atleta por nome OU id — permite importar sem colar UUIDs.
+export interface AthleteResolver {
+  ids: Set<string>
+  byName: Map<string, string>
+  nameById: Map<string, string>
+}
+
+export function buildAthleteResolver(athletes: Athlete[]): AthleteResolver {
+  return {
+    ids: new Set(athletes.map(a => a.id)),
+    byName: buildAthleteIndex(athletes),
+    nameById: new Map(athletes.map(a => [a.id, a.full_name || a.short_name])),
+  }
+}
+
+// Resolve o athlete_id de uma linha: usa o ID se válido; senão o nome
+// (colunas "Nome do Atleta" / "Nome Completo" / "Atleta"); por fim o ID cru.
+export function resolveAthleteId(row: Record<string, unknown>, r: AthleteResolver): string | null {
+  const rawId = S(row['Atleta ID'])
+  if (rawId && r.ids.has(rawId)) return rawId
+  const name = S(row['Nome do Atleta']) || S(row['Nome Completo']) || S(row['Atleta'])
+  if (name) { const id = r.byName.get(norm(name)); if (id) return id }
+  return rawId || null
+}
+
 // ── Deduplicação ──────────────────────────────────────────────────────────
 
 /** Chave natural composta, normalizada, para detectar duplicatas. */
