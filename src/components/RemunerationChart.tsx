@@ -37,8 +37,8 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
   const todayT = clampT(today < start ? start : today)
   const maxTotal = Math.max(...points.map(p => p.total), 1) * 1.2
 
-  // Geometria
-  const W = 720, H = 220, padL = 8, padR = 8, padT = 16, padB = 28
+  // Geometria — compacto, apenas como highlight
+  const W = 480, H = 116, padL = 6, padR = 6, padT = 10, padB = 20
   const iw = W - padL - padR, ih = H - padT - padB
   const X = (t: number) => padL + t * iw
   const Y = (v: number) => padT + ih - (v / maxTotal) * ih
@@ -68,7 +68,7 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
   const currentTotal = totalAt(todayT)
 
   return (
-    <div>
+    <div style={{ maxWidth: 520 }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
         {/* grade horizontal */}
         {[0, 0.5, 1].map(g => (

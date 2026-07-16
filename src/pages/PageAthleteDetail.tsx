@@ -19,12 +19,26 @@ import type {
   TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput,
 } from '../types/athlete-system'
 import {
-  CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS,
+  CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS,
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
+import {
+  exportWorkbook, type ColDef,
+  COLS_ATHLETES, COLS_CONTRACTS, COLS_SALARY_TRIGGERS,
+  COLS_CLUB_LIABILITIES, COLS_INTERMEDIARY_LIABILITIES, COLS_ECONOMIC_RIGHTS,
+} from '../lib/xlsx-utils'
+
+const COLS_CLAUSES_EXPORT: ColDef[] = [
+  { key: 'id', header: 'ID' }, { key: 'clause_type', header: 'Tipo' }, { key: 'description', header: 'Descrição' },
+  { key: 'creditor_party', header: 'Credor' }, { key: 'debtor_party', header: 'Devedor' },
+  { key: 'currency', header: 'Moeda' }, { key: 'original_value', header: 'Valor' }, { key: 'percentage_value', header: '%' },
+  { key: 'condition_description', header: 'Condição' }, { key: 'due_date', header: 'Vencimento' },
+  { key: 'achievement_status', header: 'Atingimento' }, { key: 'payment_status', header: 'Pagamento' },
+  { key: 'payment_date', header: 'Data Pagamento' }, { key: 'notes', header: 'Observações' },
+]
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -235,7 +249,7 @@ function EditAthleteModal({ athlete, rights, onClose, onSaved }: { athlete: Athl
         {/* Titularidade econômica */}
         <div style={{ borderTop: '1px solid var(--divider)', paddingTop: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>Titularidade econômica</div>
+            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>Detentores</div>
             <span style={{ fontSize: 11, fontFamily: fontMono, color: Math.abs(sum - 100) < 0.1 ? 'var(--pos)' : 'var(--neg)' }}>Soma: {sum.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -341,6 +355,20 @@ export default function PageAthleteDetail() {
   async function handleDeleteTrigger(tid: string) { await deleteSalaryTrigger(tid); setTriggers(prev => prev.filter(t => t.id !== tid)) }
   async function handlePhoto(url: string | null) { if (!id) return; const u = await updateAthlete(id, { profile_photo_url: url }); setAthlete(u) }
 
+  function exportAthlete() {
+    if (!athlete) return
+    const asRows = (arr: unknown[]) => arr as Record<string, unknown>[]
+    exportWorkbook([
+      { name: 'Atleta', cols: COLS_ATHLETES, rows: asRows([athlete]) },
+      { name: 'Vinculos', cols: COLS_CONTRACTS, rows: asRows(contracts) },
+      { name: 'Clausulas', cols: COLS_CLAUSES_EXPORT, rows: asRows(clauses) },
+      { name: 'Metas_Salario', cols: COLS_SALARY_TRIGGERS, rows: asRows(triggers) },
+      { name: 'Passivos_Clubes', cols: COLS_CLUB_LIABILITIES, rows: asRows(clubLiabs) },
+      { name: 'Passivos_Agentes', cols: COLS_INTERMEDIARY_LIABILITIES, rows: asRows(intermLiabs) },
+      { name: 'Detentores', cols: COLS_ECONOMIC_RIGHTS, rows: asRows(rights) },
+    ], `atleta-${athlete.short_name.toLowerCase().replace(/\s+/g, '-')}.xlsx`)
+  }
+
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', fontFamily: fontMono, color: 'var(--text-muted)', fontSize: 12, letterSpacing: '0.14em' }}>CARREGANDO...</div>
   if (!athlete) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
@@ -383,10 +411,10 @@ export default function PageAthleteDetail() {
             </div>
             {athlete.notes && <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', borderLeft: '2px solid var(--gold-ring)', borderRadius: 4, padding: '7px 12px', fontFamily: font }}>{athlete.notes}</div>}
 
-            {/* Titularidade compacta */}
-            <div style={{ marginTop: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Titularidade econômica</span>
+            {/* Detentores — compacto, largura ajustada ao conteúdo */}
+            <div style={{ marginTop: 14, width: 'fit-content', maxWidth: '100%', minWidth: 260 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
+                <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Detentores</span>
                 {rights.length > 0 && (
                   <span style={{ fontFamily: fontMono, fontSize: 10, color: isOwnershipValid(rights) ? 'var(--pos)' : 'var(--neg)' }}>
                     {isOwnershipValid(rights) ? 'Total 100%' : `⚠ ${sumOwnership(rights).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`}
@@ -394,12 +422,13 @@ export default function PageAthleteDetail() {
                 )}
               </div>
               {rights.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>Não cadastrada{canEdit ? ' — use “Editar”.' : '.'}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>Não cadastrado{canEdit ? ' — use “Editar”.' : '.'}</div>
               ) : (
                 <>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 5 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginBottom: 6 }}>
                     {sortedRights.map(r => (
-                      <span key={r.id} style={{ fontSize: 11, fontFamily: font, color: 'var(--text-secondary)' }}>
+                      <span key={r.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontFamily: font, color: 'var(--text-secondary)' }}>
+                        <span style={{ width: 9, height: 9, borderRadius: 2, background: HOLDER_TYPE_COLORS[r.holder_type], flexShrink: 0 }} />
                         <strong style={{ color: 'var(--ink-primary)' }}>{r.holder_name || HOLDER_TYPE_LABELS[r.holder_type]}</strong> {r.percentage}%
                       </span>
                     ))}
@@ -411,6 +440,7 @@ export default function PageAthleteDetail() {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={exportAthlete} title="Exportar dados deste atleta (XLSX)" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↓ Exportar</button>
             {canEdit && <button onClick={() => setShowEdit(true)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Editar</button>}
             <Link to={`/atletas/${athlete.id}/contratos/novo`} style={{ padding: '8px 16px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: font, fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>+ Novo Vínculo</Link>
           </div>

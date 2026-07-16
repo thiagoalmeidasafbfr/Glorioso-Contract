@@ -89,7 +89,7 @@ const DESCRIPTORS: Descriptor[] = [
     },
   },
   {
-    key: 'Titularidade', label: 'Titularidade econômica', cols: COLS_ECONOMIC_RIGHTS, parent: 'Atleta ID',
+    key: 'Titularidade', label: 'Detentores (titularidade)', cols: COLS_ECONOMIC_RIGHTS, parent: 'Atleta ID',
     load: () => fetchAllEconomicRights(),
     importRows: async rows => {
       let n = 0
