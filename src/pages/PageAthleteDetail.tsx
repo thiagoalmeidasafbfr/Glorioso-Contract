@@ -10,7 +10,10 @@ import {
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
   fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
   fetchAthleteClubLiabilities, fetchAthleteIntermediaryLiabilities,
+  fetchClubs, fetchIntermediaries,
 } from '../lib/athleteQueries'
+import { buildNameIndex, norm } from '../lib/importHelpers'
+import RefLink from '../components/RefLink'
 import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS } from '../lib/format'
 import type {
   Athlete, Contract, Clause, Alert, EconomicRight,
@@ -314,6 +317,8 @@ export default function PageAthleteDetail() {
   const [clubLiabs, setClubLiabs] = useState<ClubLiability[]>([])
   const [intermLiabs, setIntermLiabs] = useState<IntermediaryLiability[]>([])
   const [loading, setLoading] = useState(true)
+  const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
+  const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
   const [tab, setTab] = useState<Tab>('salario')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [showEdit, setShowEdit] = useState(false)
@@ -321,13 +326,15 @@ export default function PageAthleteDetail() {
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, alrt, rght, trg, clb, itm] = await Promise.all([
+    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, inters] = await Promise.all([
       fetchAthlete(id), fetchAthleteContracts(id), fetchAthleteClauses(id), fetchAthleteAlerts(id),
       fetchAthleteEconomicRights(id), fetchAthleteSalaryTriggers(id),
       fetchAthleteClubLiabilities(id), fetchAthleteIntermediaryLiabilities(id),
+      fetchClubs(), fetchIntermediaries(),
     ])
     setAthlete(ath); setContracts(contr); setClauses(cls); setAlerts(alrt)
     setRights(rght); setTriggers(trg); setClubLiabs(clb); setIntermLiabs(itm)
+    setClubIdx(buildNameIndex(clubs)); setInterIdx(buildNameIndex(inters))
     setLoading(false)
   }, [id])
   useEffect(() => { loadData() }, [loadData])
@@ -580,7 +587,9 @@ export default function PageAthleteDetail() {
               <div key={ct.id} className="card" style={{ padding: '18px 22px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
                   <span style={{ padding: '3px 8px', borderRadius: 5, background: ts.bg, color: ts.fg, fontSize: 9, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase' }}>{CONTRACT_TYPE_LABELS[ct.type]}</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{ct.counterpart_club}</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>
+                    {(() => { const cid = clubIdx.get(norm(ct.counterpart_club)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${ct.counterpart_club}`}>{ct.counterpart_club}</RefLink> : ct.counterpart_club })()}
+                  </span>
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ct.counterpart_country}</span>}
                   <StatusBadge status={ct.status} map={{ ATIVO: { bg: '#dcf0e4', fg: '#166534' }, ENCERRADO: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' }, RESCINDIDO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' } }} />
                 </div>
@@ -609,7 +618,9 @@ export default function PageAthleteDetail() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {clubLiabs.map(l => (
                   <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>{l.club_name}</span>
+                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>
+                      {(() => { const cid = clubIdx.get(norm(l.club_name)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${l.club_name}`}>{l.club_name}</RefLink> : l.club_name })()}
+                    </span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, flex: 1 }}>{l.description ?? ''}</span>
                     <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</span>
                     <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>
@@ -629,7 +640,9 @@ export default function PageAthleteDetail() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {intermLiabs.map(l => (
                   <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>{l.intermediary_name}</span>
+                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>
+                      {(() => { const iid = interIdx.get(norm(l.intermediary_name)); return iid ? <RefLink to={`/intermediarios/${iid}`} title={`Abrir ${l.intermediary_name}`}>{l.intermediary_name}</RefLink> : l.intermediary_name })()}
+                    </span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, flex: 1 }}>{l.description ?? ''}</span>
                     <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</span>
                     <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>

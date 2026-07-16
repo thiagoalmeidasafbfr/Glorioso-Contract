@@ -187,12 +187,24 @@ const pill: React.CSSProperties = {
   color: 'var(--text-secondary)', letterSpacing: '0.03em', whiteSpace: 'nowrap',
 }
 
+// Ordem de exibição das posições (agrupamento do álbum).
+const POSITION_ORDER = [
+  'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo',
+  'Volante', 'Meia', 'Meia-atacante', 'Atacante',
+]
+const NO_POSITION = 'Sem posição'
+
+type OwnershipFilter = 'Todos' | 'COM_BFR' | 'SEM_BFR'
+
 export default function PageAlbum() {
   const navigate = useNavigate()
   const [athletes, setAthletes] = useState<Athlete[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<AthleteStatus | 'Todos'>('Todos')
+  const [filterPosition, setFilterPosition] = useState('Todos')
+  const [filterNationality, setFilterNationality] = useState('Todos')
+  const [filterOwnership, setFilterOwnership] = useState<OwnershipFilter>('Todos')
   const [rightsByAthlete, setRightsByAthlete] = useState<Record<string, EconomicRight[]>>({})
   const [clauses, setClauses] = useState<Clause[]>([])
 
@@ -206,14 +218,36 @@ export default function PageAlbum() {
     fetchAllClauses().then(setClauses).catch(() => {})
   }, [])
 
+  // Opções dinâmicas de posição e nacionalidade a partir dos dados.
+  const positionOptions = useMemo(() => {
+    const set = new Set<string>()
+    athletes.forEach(a => { if (a.position) set.add(a.position) })
+    const known = POSITION_ORDER.filter(p => set.has(p))
+    const extra = Array.from(set).filter(p => !POSITION_ORDER.includes(p)).sort()
+    return ['Todos', ...known, ...extra]
+  }, [athletes])
+
+  const nationalityOptions = useMemo(() => {
+    const set = new Set<string>()
+    athletes.forEach(a => { if (a.nationality) set.add(a.nationality) })
+    return ['Todos', ...Array.from(set).sort()]
+  }, [athletes])
+
   const filtered = useMemo(() => athletes.filter(a => {
     if (filterStatus !== 'Todos' && a.current_status !== filterStatus) return false
+    if (filterPosition !== 'Todos' && (a.position ?? NO_POSITION) !== filterPosition) return false
+    if (filterNationality !== 'Todos' && a.nationality !== filterNationality) return false
+    if (filterOwnership !== 'Todos') {
+      const share = bfrShare(rightsByAthlete[a.id] ?? [])
+      if (filterOwnership === 'COM_BFR' && share <= 0) return false
+      if (filterOwnership === 'SEM_BFR' && share > 0) return false
+    }
     if (search) {
       const q = search.toLowerCase()
       if (!a.full_name.toLowerCase().includes(q) && !a.short_name.toLowerCase().includes(q)) return false
     }
     return true
-  }), [athletes, filterStatus, search])
+  }), [athletes, filterStatus, filterPosition, filterNationality, filterOwnership, rightsByAthlete, search])
 
   const activeClausesByAthlete = useMemo(() => {
     const map: Record<string, number> = {}
@@ -223,6 +257,24 @@ export default function PageAlbum() {
     }
     return map
   }, [clauses])
+
+  // Agrupa os atletas filtrados por posição, na ordem tática.
+  const groups = useMemo(() => {
+    const byPos = new Map<string, Athlete[]>()
+    for (const a of filtered) {
+      const pos = a.position || NO_POSITION
+      const arr = byPos.get(pos) ?? []
+      arr.push(a); byPos.set(pos, arr)
+    }
+    const order = [...POSITION_ORDER, ...Array.from(byPos.keys()).filter(p => !POSITION_ORDER.includes(p) && p !== NO_POSITION).sort(), NO_POSITION]
+    return order
+      .filter(p => byPos.has(p))
+      .map(pos => ({ pos, athletes: byPos.get(pos)!.sort((a, b) => a.short_name.localeCompare(b.short_name)) }))
+  }, [filtered])
+
+  const selWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column' }
+  const selLabel: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
+  const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
@@ -238,54 +290,84 @@ export default function PageAlbum() {
         </div>
       </div>
 
-      {/* Toolbar */}
+      {/* Toolbar de filtros */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={selLabel}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
-        <div>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
-            style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }}>
+        <div style={selWrap}>
+          <div style={selLabel}>Posição</div>
+          <select value={filterPosition} onChange={e => setFilterPosition(e.target.value)} style={selStyle}>
+            {positionOptions.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div style={selWrap}>
+          <div style={selLabel}>Nacionalidade</div>
+          <select value={filterNationality} onChange={e => setFilterNationality(e.target.value)} style={selStyle}>
+            {nationalityOptions.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div style={selWrap}>
+          <div style={selLabel}>Status</div>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)} style={selStyle}>
             <option value="Todos">Todos</option>
             {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
             ))}
           </select>
         </div>
+        <div style={selWrap}>
+          <div style={selLabel}>Titularidade</div>
+          <select value={filterOwnership} onChange={e => setFilterOwnership(e.target.value as OwnershipFilter)} style={selStyle}>
+            <option value="Todos">Todas</option>
+            <option value="COM_BFR">Com participação do Botafogo</option>
+            <option value="SEM_BFR">Sem participação do Botafogo</option>
+          </select>
+        </div>
       </div>
 
-      {/* Grid de figurinhas */}
+      {/* Figurinhas agrupadas por posição */}
       {loading ? (
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12, padding: 60 }}>
           Carregando...
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: font, fontSize: 13, padding: 60 }}>
-          Nenhum atleta encontrado.
+          Nenhum atleta encontrado com os filtros atuais.
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: 18,
-        }}>
-          {filtered.map(a => (
-            <AthleteSticker
-              key={a.id}
-              athlete={a}
-              rights={rightsByAthlete[a.id] ?? []}
-              activeClauses={activeClausesByAthlete[a.id] ?? 0}
-              onOpen={() => navigate(`/atletas/${a.id}`)}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          {groups.map(g => (
+            <section key={g.pos}>
+              {/* Cabeçalho da posição */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: '#be8c4a', flexShrink: 0 }} />
+                <h2 style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
+                <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em' }}>
+                  {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'var(--divider-soft)' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 18 }}>
+                {g.athletes.map(a => (
+                  <AthleteSticker
+                    key={a.id}
+                    athlete={a}
+                    rights={rightsByAthlete[a.id] ?? []}
+                    activeClauses={activeClausesByAthlete[a.id] ?? 0}
+                    onOpen={() => navigate(`/atletas/${a.id}`)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}
 
-      <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
-        {filtered.length} {filtered.length !== 1 ? 'figurinhas' : 'figurinha'}
+      <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+        {filtered.length} {filtered.length !== 1 ? 'figurinhas' : 'figurinha'} · {groups.length} {groups.length === 1 ? 'posição' : 'posições'}
       </div>
     </div>
   )

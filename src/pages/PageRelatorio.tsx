@@ -4,16 +4,19 @@
 // status, vencimento, data de pagamento, valor e a parte (credor).
 // Todas as movimentações são derivadas do atleta (figura central).
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllImageRights, fetchAllIntermediaryLiabilities,
   fetchAllClubLiabilities, fetchAllClauses, fetchAllInstallments,
-  fetchAllContracts, fetchAllSalaryTriggers,
+  fetchAllContracts, fetchAllSalaryTriggers, fetchClubs, fetchIntermediaries,
 } from '../lib/athleteQueries'
 import type { Athlete, Currency } from '../types/athlete-system'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import SheetIO from '../components/SheetIO'
+import RefLink from '../components/RefLink'
+import { buildNameIndex, norm, resultMessage } from '../lib/importHelpers'
+import { importReport } from '../lib/reportPorters'
 import type { ColDef } from '../lib/xlsx-utils'
 
 const fontBody = "'Inter', system-ui, sans-serif"
@@ -32,11 +35,16 @@ const KIND_TITLE: Record<Kind, { title: string; subtitle: string }> = {
 // Estado normalizado para o "tom" do status.
 type Tone = 'pos' | 'neg' | 'warn' | 'neutral'
 
+// Natureza da "parte" — define para onde o nome aponta ao ser clicado.
+type ParteKind = 'atleta' | 'clube' | 'intermediario' | 'clube_ou_agente' | null
+
 interface Row {
   id: string
   atleta: string
+  athleteId: string
   natureza: string
   parte: string       // credor / clube / intermediário / contraparte
+  parteKind: ParteKind
   descricao: string
   valor: number | null
   moeda: Currency
@@ -72,18 +80,49 @@ export default function PageRelatorio() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Todos')
+  const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
+  const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
+  const [importMsg, setImportMsg] = useState<string | null>(null)
 
-  useEffect(() => {
-    let alive = true
+  const load = useCallback(async () => {
     setLoading(true)
-    ;(async () => {
-      const athletes = await fetchAthletes()
-      const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
-      const built = await buildRows(k, nameOf)
-      if (alive) { setRows(built); setLoading(false) }
-    })()
-    return () => { alive = false }
+    const [athletes, clubs, inters] = await Promise.all([
+      fetchAthletes(), fetchClubs(), fetchIntermediaries(),
+    ])
+    setClubIdx(buildNameIndex(clubs))
+    setInterIdx(buildNameIndex(inters))
+    const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
+    const built = await buildRows(k, nameOf)
+    setRows(built)
+    setLoading(false)
   }, [k])
+
+  useEffect(() => { let alive = true; load().catch(() => { if (alive) setLoading(false) }); return () => { alive = false } }, [load])
+
+  // Resolve o destino do link da coluna "Parte".
+  function parteTarget(r: Row): string | null {
+    if (r.parteKind === 'atleta') return `/atletas/${r.athleteId}`
+    const n = norm(r.parte)
+    if (r.parteKind === 'clube') { const id = clubIdx.get(n); return id ? `/clubes/${id}` : null }
+    if (r.parteKind === 'intermediario') { const id = interIdx.get(n); return id ? `/intermediarios/${id}` : null }
+    if (r.parteKind === 'clube_ou_agente') {
+      const c = clubIdx.get(n); if (c) return `/clubes/${c}`
+      const i = interIdx.get(n); if (i) return `/intermediarios/${i}`
+    }
+    return null
+  }
+
+  async function handleImport(sheets: Record<string, Record<string, string>[]>) {
+    const rowsIn = sheets[Object.keys(sheets)[0]] ?? []
+    setImportMsg('Importando...')
+    try {
+      const res = await importReport(k, rowsIn)
+      setImportMsg(resultMessage(res))
+      await load()
+    } catch (err) {
+      setImportMsg(`Erro: ${(err as Error).message}`)
+    }
+  }
 
   const statuses = useMemo(() => ['Todos', ...Array.from(new Set(rows.map(r => r.status)))], [rows])
 
@@ -128,7 +167,16 @@ export default function PageRelatorio() {
           <h1 style={{ fontFamily: fontBody, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{meta.title}</h1>
           <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
         </div>
-        <SheetIO exportFilename={`relatorio-${k}.xlsx`} exportSheets={[{ name: meta.title.slice(0, 28), cols: exportCols, rows: filtered as unknown as Record<string, unknown>[] }]} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <SheetIO
+            exportFilename={`relatorio-${k}.xlsx`}
+            exportSheets={[{ name: meta.title.slice(0, 28), cols: exportCols, rows: filtered as unknown as Record<string, unknown>[] }]}
+            onImport={handleImport}
+          />
+          {importMsg && (
+            <div style={{ fontSize: 11, fontFamily: fontMono, color: importMsg.startsWith('Erro') ? 'var(--neg)' : 'var(--gold-deep)' }}>{importMsg}</div>
+          )}
+        </div>
       </div>
 
       {/* Filtros + total */}
@@ -175,9 +223,11 @@ export default function PageRelatorio() {
                 const tone = TONE_STYLE[r.tone]
                 return (
                   <tr key={r.id}>
-                    <td style={{ ...td, fontWeight: 600 }}>{r.atleta}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>
+                      {r.athleteId ? <RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink> : r.atleta}
+                    </td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.natureza}</td>
-                    <td style={td}>{r.parte || '—'}</td>
+                    <td style={td}>{r.parte ? <RefLink to={parteTarget(r)} title={`Abrir ${r.parte}`}>{r.parte}</RefLink> : '—'}</td>
                     <td style={{ ...td, maxWidth: 320, color: 'var(--text-secondary)' }}>{r.descricao || '—'}</td>
                     <td style={tdNum}>{r.valor != null ? fmtCurrencyShort(r.valor, r.moeda) : '—'}</td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: overdue ? 'var(--neg)' : 'var(--text-secondary)' }}>{r.vencimento ? fmtDate(r.vencimento) : '—'}</td>
@@ -207,8 +257,8 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   if (kind === 'imagem') {
     const list = await fetchAllImageRights()
     return list.map(ir => ({
-      id: ir.id, atleta: name(ir.athlete_id), natureza: 'Direito de Imagem',
-      parte: name(ir.athlete_id), descricao: `Competência ${ir.month}`,
+      id: ir.id, atleta: name(ir.athlete_id), athleteId: ir.athlete_id, natureza: 'Direito de Imagem',
+      parte: name(ir.athlete_id), parteKind: 'atleta' as ParteKind, descricao: `Competência ${ir.month}`,
       valor: ir.amount, moeda: ir.currency, vencimento: `${ir.month}-01`,
       pagamento: ir.paid_date, status: STATUS_LABEL[ir.status] ?? ir.status, tone: STATUS_TONE[ir.status] ?? 'neutral',
     }))
@@ -217,8 +267,8 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   if (kind === 'intermediarios') {
     const list = await fetchAllIntermediaryLiabilities()
     return list.map(l => ({
-      id: l.id, atleta: name(l.athlete_id), natureza: 'Intermediação',
-      parte: l.intermediary_name, descricao: l.description ?? '',
+      id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Intermediação',
+      parte: l.intermediary_name, parteKind: 'intermediario' as ParteKind, descricao: l.description ?? '',
       valor: l.amount, moeda: l.currency, vencimento: l.due_date,
       pagamento: l.settled_date, status: STATUS_LABEL[l.status] ?? l.status, tone: STATUS_TONE[l.status] ?? 'neutral',
     }))
@@ -227,8 +277,8 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   if (kind === 'clubes') {
     const list = await fetchAllClubLiabilities()
     return list.map(l => ({
-      id: l.id, atleta: name(l.athlete_id), natureza: 'Passivo clube',
-      parte: l.club_name, descricao: l.description ?? '',
+      id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Passivo clube',
+      parte: l.club_name, parteKind: 'clube' as ParteKind, descricao: l.description ?? '',
       valor: l.amount, moeda: l.currency, vencimento: l.due_date,
       pagamento: l.settled_date, status: STATUS_LABEL[l.status] ?? l.status, tone: STATUS_TONE[l.status] ?? 'neutral',
     }))
@@ -244,16 +294,16 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
       if (parcelas.length > 0) {
         for (const p of parcelas) {
           rows.push({
-            id: p.id, atleta: name(c.athlete_id), natureza: 'Luvas',
-            parte: c.creditor_party, descricao: `${c.description} — parcela ${p.installment_number}`,
+            id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Luvas',
+            parte: c.creditor_party, parteKind: 'clube_ou_agente', descricao: `${c.description} — parcela ${p.installment_number}`,
             valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
             pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
           })
         }
       } else {
         rows.push({
-          id: c.id, atleta: name(c.athlete_id), natureza: 'Luvas',
-          parte: c.creditor_party, descricao: c.description,
+          id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Luvas',
+          parte: c.creditor_party, parteKind: 'clube_ou_agente', descricao: c.description,
           valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
           pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',
         })
@@ -269,8 +319,8 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   for (const ct of contracts) {
     if (ct.base_salary != null) {
       rows.push({
-        id: `${ct.id}-base`, atleta: name(ct.athlete_id), natureza: 'Salário base',
-        parte: ct.counterpart_club, descricao: `Vínculo ${ct.counterpart_club}`,
+        id: `${ct.id}-base`, atleta: name(ct.athlete_id), athleteId: ct.athlete_id, natureza: 'Salário base',
+        parte: ct.counterpart_club, parteKind: 'clube', descricao: `Vínculo ${ct.counterpart_club}`,
         valor: ct.base_salary, moeda: ct.salary_currency, vencimento: ct.start_date,
         pagamento: null, status: 'Vigente', tone: 'pos',
       })
@@ -278,8 +328,8 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   }
   for (const t of triggers) {
     rows.push({
-      id: t.id, atleta: name(t.athlete_id), natureza: 'Meta salarial',
-      parte: '—', descricao: t.description,
+      id: t.id, atleta: name(t.athlete_id), athleteId: t.athlete_id, natureza: 'Meta salarial',
+      parte: '—', parteKind: null, descricao: t.description,
       valor: t.new_salary, moeda: t.currency,
       vencimento: t.achieved_date, pagamento: t.status === 'ATINGIDA' ? t.achieved_date : null,
       status: STATUS_LABEL[t.status] ?? t.status, tone: STATUS_TONE[t.status] ?? 'neutral',

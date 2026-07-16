@@ -11,6 +11,7 @@ import {
 import type { ClubLiability, IntermediaryLiability, Athlete } from '../types/athlete-system'
 import { LIABILITY_STATUS_LABELS, LIABILITY_DIRECTION_LABELS } from '../types/athlete-system'
 import ImageUpload from '../components/ImageUpload'
+import RefLink from '../components/RefLink'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 
@@ -155,7 +156,9 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
               {liabs.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum passivo vinculado a este {isClube ? 'clube' : 'agente'}.</td></tr>}
               {liabs.map(l => (
                 <tr key={l.id}>
-                  <td style={{ ...td, fontWeight: 600 }}>{nameOf.get(l.athlete_id) ?? '—'}</td>
+                  <td style={{ ...td, fontWeight: 600 }}>
+                    <RefLink to={`/atletas/${l.athlete_id}`} title="Abrir atleta">{nameOf.get(l.athlete_id) ?? '—'}</RefLink>
+                  </td>
                   <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{l.description ?? '—'}</td>
                   <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: fontMono }}>{fmtCurrencyShort(l.amount, l.currency)}</td>

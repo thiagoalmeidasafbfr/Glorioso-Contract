@@ -1,10 +1,13 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
-import { fetchAthletes, fetchAllContracts, fetchAllSalaryTriggers } from '../lib/athleteQueries'
+import RefLink from '../components/RefLink'
+import { fetchAthletes, fetchAllContracts, fetchAllSalaryTriggers, fetchClubs } from '../lib/athleteQueries'
 import { effectiveSalary } from '../lib/salary'
 import { fmtCurrencyShort, fmtDate } from '../lib/format'
-import type { Athlete, Contract, SalaryTrigger, AthleteStatus, Currency } from '../types/athlete-system'
+import { buildNameIndex, norm, resultMessage } from '../lib/importHelpers'
+import { importConsolidado } from '../lib/reportPorters'
+import type { Contract, AthleteStatus, Currency } from '../types/athlete-system'
 
 const font = "'Inter', system-ui, sans-serif"
 const fontLabel = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -88,14 +91,16 @@ export default function PageConsolidado() {
 
   const [statusFiltro, setStatusFiltro] = useState<AthleteStatus | 'Todos'>('Todos')
   const [posicaoFiltro, setPosicaoFiltro] = useState('Todos')
+  const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
+  const [importMsg, setImportMsg] = useState<string | null>(null)
 
-  useEffect(() => {
-    let alive = true
+  const load = useCallback(async () => {
     setLoading(true)
-    Promise.all([fetchAthletes(), fetchAllContracts(), fetchAllSalaryTriggers()])
-      .then(([athletes, contracts, triggers]: [Athlete[], Contract[], SalaryTrigger[]]) => {
-        if (!alive) return
-        const built = athletes.map<Row>(a => {
+    const [athletes, contracts, triggers, clubs] = await Promise.all([
+      fetchAthletes(), fetchAllContracts(), fetchAllSalaryTriggers(), fetchClubs(),
+    ])
+    setClubIdx(buildNameIndex(clubs))
+    const built = athletes.map<Row>(a => {
           const own = contracts.filter(c => c.athlete_id === a.id)
           const contract = pickContract(own)
           if (!contract) {
@@ -127,10 +132,22 @@ export default function PageConsolidado() {
           }
         })
         setRows(built)
-      })
-      .finally(() => { if (alive) setLoading(false) })
-    return () => { alive = false }
+        setLoading(false)
   }, [])
+
+  useEffect(() => { let alive = true; load().catch(() => { if (alive) setLoading(false) }); return () => { alive = false } }, [load])
+
+  async function handleImport(sheets: Record<string, Record<string, string>[]>) {
+    const rowsIn = sheets[Object.keys(sheets)[0]] ?? []
+    setImportMsg('Importando...')
+    try {
+      const res = await importConsolidado(rowsIn)
+      setImportMsg(resultMessage(res))
+      await load()
+    } catch (err) {
+      setImportMsg(`Erro: ${(err as Error).message}`)
+    }
+  }
 
   const posicoes = useMemo(() => {
     const set = new Set<string>()
@@ -209,8 +226,12 @@ export default function PageConsolidado() {
               effective_salary: r.effective_salary,
             })),
           }]}
+          onImport={handleImport}
         />
       </PageHero>
+      {importMsg && (
+        <div style={{ fontSize: 11, fontFamily: fontLabel, color: importMsg.startsWith('Erro') ? 'var(--neg)' : 'var(--gold-deep)', marginBottom: 10 }}>{importMsg}</div>
+      )}
 
       {/* ── Filtros + Strip KPIs ── */}
       <div style={{
@@ -283,7 +304,9 @@ export default function PageConsolidado() {
               )}
               {!loading && sorted.map(r => (
                 <tr key={r.id}>
-                  <td style={{ ...td, fontWeight: 500 }}>{r.short_name}</td>
+                  <td style={{ ...td, fontWeight: 500 }}>
+                    <RefLink to={`/atletas/${r.id}`} title={`Abrir ${r.short_name}`}>{r.short_name}</RefLink>
+                  </td>
                   <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.position ?? '—'}</td>
                   <td style={td}>
                     <span style={{
@@ -293,7 +316,9 @@ export default function PageConsolidado() {
                       color: r.current_status === 'ATIVO' ? 'var(--pos)' : r.current_status === 'EMPRESTADO' ? 'var(--gold-deep)' : 'var(--neg)',
                     }}>{STATUS_LABELS[r.current_status]}</span>
                   </td>
-                  <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.counterpart_club}</td>
+                  <td style={{ ...td, color: 'var(--text-secondary)' }}>
+                    {(() => { const cid = clubIdx.get(norm(r.counterpart_club)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${r.counterpart_club}`}>{r.counterpart_club}</RefLink> : r.counterpart_club })()}
+                  </td>
                   <td style={{ ...td, color: '#666' }}>{fmtDate(r.start_date)}</td>
                   <td style={{ ...td, color: '#666' }}>{fmtDate(r.end_date)}</td>
                   <td style={tdr}>{fmtCurrencyShort(r.base_salary, r.salary_currency)}</td>
