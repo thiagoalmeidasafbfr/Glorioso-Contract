@@ -39,6 +39,18 @@ const T = {
   intermediaries: 'intermediaries',
 } as const
 
+// Supabase rejeita string vazia em colunas date/numeric. Converte '' → null em
+// todo payload de escrita (o modo local aceita ambos). Recursivo p/ arrays.
+function nn<T>(v: T): T {
+  if (Array.isArray(v)) return v.map(x => nn(x)) as unknown as T
+  if (v && typeof v === 'object') {
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, val === '' ? null : val]),
+    ) as T
+  }
+  return v
+}
+
 // ── Clubs (cadastro) ────────────────────────────────────────────────────────
 
 export async function fetchClubs(): Promise<Club[]> {
@@ -58,14 +70,14 @@ export async function fetchClub(id: string): Promise<Club | null> {
 export async function createClub(input: NewClubInput): Promise<Club> {
   const row = { name: input.name, country: input.country || null, logo_url: input.logo_url, notes: input.notes || null, external_ref: input.external_ref ?? null }
   if (!USE_SUPABASE) return local.insert<Club>(T.clubs, row)
-  const { data, error } = await supabase.from(T.clubs).insert(row).select().single()
+  const { data, error } = await supabase.from(T.clubs).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
 
 export async function updateClub(id: string, input: Partial<Club>): Promise<Club> {
   if (!USE_SUPABASE) return local.update<Club>(T.clubs, id, input)
-  const { data, error } = await supabase.from(T.clubs).update({ ...input, updated_at: new Date().toISOString() }).eq('id', id).select().single()
+  const { data, error } = await supabase.from(T.clubs).update(nn({ ...input, updated_at: new Date().toISOString() })).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -95,14 +107,14 @@ export async function fetchIntermediary(id: string): Promise<Intermediary | null
 export async function createIntermediary(input: NewIntermediaryInput): Promise<Intermediary> {
   const row = { name: input.name, contact: input.contact || null, logo_url: input.logo_url, notes: input.notes || null, external_ref: input.external_ref ?? null }
   if (!USE_SUPABASE) return local.insert<Intermediary>(T.intermediaries, row)
-  const { data, error } = await supabase.from(T.intermediaries).insert(row).select().single()
+  const { data, error } = await supabase.from(T.intermediaries).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
 
 export async function updateIntermediary(id: string, input: Partial<Intermediary>): Promise<Intermediary> {
   if (!USE_SUPABASE) return local.update<Intermediary>(T.intermediaries, id, input)
-  const { data, error } = await supabase.from(T.intermediaries).update({ ...input, updated_at: new Date().toISOString() }).eq('id', id).select().single()
+  const { data, error } = await supabase.from(T.intermediaries).update(nn({ ...input, updated_at: new Date().toISOString() })).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -131,7 +143,7 @@ export async function fetchAthlete(id: string): Promise<Athlete | null> {
 
 export async function createAthlete(input: Omit<Athlete, 'id' | 'created_at' | 'updated_at'>): Promise<Athlete> {
   if (!USE_SUPABASE) return local.insert<Athlete>(T.athletes, input)
-  const { data, error } = await supabase.from(T.athletes).insert(input).select().single()
+  const { data, error } = await supabase.from(T.athletes).insert(nn(input)).select().single()
   if (error) throw error
   return data
 }
@@ -139,7 +151,7 @@ export async function createAthlete(input: Omit<Athlete, 'id' | 'created_at' | '
 export async function updateAthlete(id: string, input: Partial<Athlete>): Promise<Athlete> {
   if (!USE_SUPABASE) return local.update<Athlete>(T.athletes, id, input)
   const { data, error } = await supabase
-    .from(T.athletes).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.athletes).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -170,7 +182,7 @@ export async function createEconomicRight(athleteId: string, input: NewEconomicR
     notes: input.notes || null,
   }
   if (!USE_SUPABASE) return local.insert<EconomicRight>(T.economicRights, row)
-  const { data, error } = await supabase.from(T.economicRights).insert(row).select().single()
+  const { data, error } = await supabase.from(T.economicRights).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
@@ -178,7 +190,7 @@ export async function createEconomicRight(athleteId: string, input: NewEconomicR
 export async function updateEconomicRight(id: string, input: Partial<EconomicRight>): Promise<EconomicRight> {
   if (!USE_SUPABASE) return local.update<EconomicRight>(T.economicRights, id, input)
   const { data, error } = await supabase
-    .from(T.economicRights).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.economicRights).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -210,7 +222,7 @@ export async function fetchAllContracts(): Promise<Contract[]> {
 export async function createContract(athleteId: string, input: NewContractInput): Promise<Contract> {
   const row = { ...input, athlete_id: athleteId, created_by: 'usuario' }
   if (!USE_SUPABASE) return local.insert<Contract>(T.contracts, row)
-  const { data, error } = await supabase.from(T.contracts).insert({ ...input, athlete_id: athleteId }).select().single()
+  const { data, error } = await supabase.from(T.contracts).insert(nn({ ...input, athlete_id: athleteId })).select().single()
   if (error) throw error
   return data
 }
@@ -218,7 +230,7 @@ export async function createContract(athleteId: string, input: NewContractInput)
 export async function updateContract(id: string, input: Partial<Contract>): Promise<Contract> {
   if (!USE_SUPABASE) return local.update<Contract>(T.contracts, id, input)
   const { data, error } = await supabase
-    .from(T.contracts).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.contracts).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -255,7 +267,7 @@ export async function createSalaryTrigger(athleteId: string, input: NewSalaryTri
     notes: input.notes || null,
   }
   if (!USE_SUPABASE) return local.insert<SalaryTrigger>(T.salaryTriggers, row)
-  const { data, error } = await supabase.from(T.salaryTriggers).insert(row).select().single()
+  const { data, error } = await supabase.from(T.salaryTriggers).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
@@ -263,7 +275,7 @@ export async function createSalaryTrigger(athleteId: string, input: NewSalaryTri
 export async function updateSalaryTrigger(id: string, input: Partial<SalaryTrigger>): Promise<SalaryTrigger> {
   if (!USE_SUPABASE) return local.update<SalaryTrigger>(T.salaryTriggers, id, input)
   const { data, error } = await supabase
-    .from(T.salaryTriggers).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.salaryTriggers).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -319,7 +331,7 @@ export async function createClubLiability(athleteId: string, input: NewClubLiabi
     notes: input.notes || null,
   }
   if (!USE_SUPABASE) return local.insert<ClubLiability>(T.clubLiabilities, row)
-  const { data, error } = await supabase.from(T.clubLiabilities).insert(row).select().single()
+  const { data, error } = await supabase.from(T.clubLiabilities).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
@@ -327,7 +339,7 @@ export async function createClubLiability(athleteId: string, input: NewClubLiabi
 export async function updateClubLiability(id: string, input: Partial<ClubLiability>): Promise<ClubLiability> {
   if (!USE_SUPABASE) return local.update<ClubLiability>(T.clubLiabilities, id, input)
   const { data, error } = await supabase
-    .from(T.clubLiabilities).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.clubLiabilities).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -374,7 +386,7 @@ export async function createIntermediaryLiability(athleteId: string, input: NewI
     notes: input.notes || null,
   }
   if (!USE_SUPABASE) return local.insert<IntermediaryLiability>(T.intermediaryLiabilities, row)
-  const { data, error } = await supabase.from(T.intermediaryLiabilities).insert(row).select().single()
+  const { data, error } = await supabase.from(T.intermediaryLiabilities).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
@@ -382,7 +394,7 @@ export async function createIntermediaryLiability(athleteId: string, input: NewI
 export async function updateIntermediaryLiability(id: string, input: Partial<IntermediaryLiability>): Promise<IntermediaryLiability> {
   if (!USE_SUPABASE) return local.update<IntermediaryLiability>(T.intermediaryLiabilities, id, input)
   const { data, error } = await supabase
-    .from(T.intermediaryLiabilities).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.intermediaryLiabilities).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -423,7 +435,7 @@ export async function createImageRight(athleteId: string, input: NewImageRightIn
     notes: input.notes || null,
   }
   if (!USE_SUPABASE) return local.insert<ImageRight>(T.imageRights, row)
-  const { data, error } = await supabase.from(T.imageRights).insert(row).select().single()
+  const { data, error } = await supabase.from(T.imageRights).insert(nn(row)).select().single()
   if (error) throw error
   return data
 }
@@ -431,7 +443,7 @@ export async function createImageRight(athleteId: string, input: NewImageRightIn
 export async function updateImageRight(id: string, input: Partial<ImageRight>): Promise<ImageRight> {
   if (!USE_SUPABASE) return local.update<ImageRight>(T.imageRights, id, input)
   const { data, error } = await supabase
-    .from(T.imageRights).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.imageRights).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -476,7 +488,7 @@ export async function createClause(contractId: string, athleteId: string, input:
     exchange_rate: null, created_by: 'usuario',
   }
   if (!USE_SUPABASE) return local.insert<Clause>(T.clauses, row)
-  const { data, error } = await supabase.from(T.clauses).insert({ ...input, contract_id: contractId, athlete_id: athleteId }).select().single()
+  const { data, error } = await supabase.from(T.clauses).insert(nn({ ...input, contract_id: contractId, athlete_id: athleteId })).select().single()
   if (error) throw error
   return data
 }
@@ -484,7 +496,7 @@ export async function createClause(contractId: string, athleteId: string, input:
 export async function updateClause(id: string, input: Partial<Clause>): Promise<Clause> {
   if (!USE_SUPABASE) return local.update<Clause>(T.clauses, id, input)
   const { data, error } = await supabase
-    .from(T.clauses).update({ ...input, updated_at: new Date().toISOString() })
+    .from(T.clauses).update(nn({ ...input, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data
@@ -545,7 +557,7 @@ export async function createInstallments(clauseId: string, athleteId: string, in
     })
   }
   if (!USE_SUPABASE) return local.insertMany<ClauseInstallment>(T.installments, installments)
-  const { data, error } = await supabase.from(T.installments).insert(installments).select()
+  const { data, error } = await supabase.from(T.installments).insert(nn(installments)).select()
   if (error) throw error
   return data
 }
@@ -560,7 +572,7 @@ export async function registerInstallmentPayment(id: string, payment: PaymentInp
   }
   if (!USE_SUPABASE) return local.update<ClauseInstallment>(T.installments, id, patch)
   const { data, error } = await supabase
-    .from(T.installments).update({ ...patch, updated_at: new Date().toISOString() })
+    .from(T.installments).update(nn({ ...patch, updated_at: new Date().toISOString() }))
     .eq('id', id).select().single()
   if (error) throw error
   return data

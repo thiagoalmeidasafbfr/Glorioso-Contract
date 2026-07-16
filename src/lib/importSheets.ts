@@ -35,7 +35,7 @@ export interface ImportReport {
   athletes: { created: number; existing: number }
   clubs: { created: number; existing: number }
   agents: { created: number; existing: number }
-  obligations: Record<string, { created: number; skipped: number; orphan: number }>
+  obligations: Record<string, { created: number; skipped: number; orphan: number; error: number }>
   pending: Record<string, number>
 }
 
@@ -126,8 +126,13 @@ async function runImport(rawSheets: Sheets): Promise<ImportReport> {
     workByAthlete.set(a.id, c); return c
   }
 
-  const bump = (k: string, f: 'created' | 'skipped' | 'orphan') => {
-    report.obligations[k] ??= { created: 0, skipped: 0, orphan: 0 }; report.obligations[k][f]++
+  const bump = (k: string, f: 'created' | 'skipped' | 'orphan' | 'error') => {
+    report.obligations[k] ??= { created: 0, skipped: 0, orphan: 0, error: 0 }; report.obligations[k][f]++
+  }
+  // Executa a criação de uma linha com tolerância a falha (não aborta o lote).
+  async function commit(k: string, key: string, run: () => Promise<void>) {
+    try { await run(); seenKeys.add(key); bump(k, 'created') }
+    catch { bump(k, 'error') }
   }
 
   // ── ATIVOS → club_liabilities (A_RECEBER) ──
@@ -137,14 +142,15 @@ async function runImport(rawSheets: Sheets): Promise<ImportReport> {
     const parc = parseParcela(r['Parcela(s)']); const venc = parseVenc(r['Vencimento'])
     const key = sourceKey('AT', a.external_ref ?? a.id, r['Despesa'], r['Devedor'], parc.label, venc.date ?? venc.text, num(r['Valor do Contrato']))
     if (seenKeys.has(key)) { bump('Ativos (a receber)', 'skipped'); continue }
-    await resolveClub(r['Devedor'])
-    await createClubLiability(a.id, {
-      source_key: key, club_name: clean(r['Devedor']) ?? '—', description: `${clean(r['Despesa']) ?? 'Obrigação'} · ${parc.label}`,
-      direction: DIR_RECEBER, amount: num(r['Valor do Contrato']) ?? 0, currency: canonCurrency(r['Moeda do Contrato']),
-      due_date: venc.date, conditional: conditional(r['Pgto Certo ou Condicional?']), condition_description: [clean(r['Detalhes da Condição']), venc.text].filter(Boolean).join(' · '),
-      solidarity: false, status: canonLiabStatus(r['Status2']), notes: `Origem: Ativos · status: ${rawStatusLabel(r['Status2'])}`,
+    await commit('Ativos (a receber)', key, async () => {
+      await resolveClub(r['Devedor'])
+      await createClubLiability(a.id, {
+        source_key: key, club_name: clean(r['Devedor']) ?? '—', description: `${clean(r['Despesa']) ?? 'Obrigação'} · ${parc.label}`,
+        direction: DIR_RECEBER, amount: num(r['Valor do Contrato']) ?? 0, currency: canonCurrency(r['Moeda do Contrato']),
+        due_date: venc.date, conditional: conditional(r['Pgto Certo ou Condicional?']), condition_description: [clean(r['Detalhes da Condição']), venc.text].filter(Boolean).join(' · '),
+        solidarity: false, status: canonLiabStatus(r['Status2']), notes: `Origem: Ativos · status: ${rawStatusLabel(r['Status2'])}`,
+      })
     })
-    seenKeys.add(key); bump('Ativos (a receber)', 'created')
   }
 
   // ── FEDERATIVOS → club_liabilities (A_PAGAR) ──
@@ -154,14 +160,15 @@ async function runImport(rawSheets: Sheets): Promise<ImportReport> {
     const parc = parseParcela(r['Parcela']); const venc = parseVenc(r['Vencimento'])
     const key = sourceKey('FED', a.external_ref ?? a.id, r['Despesa'], r['Credor'], parc.label, venc.date ?? venc.text, num(r['Valor de contrato']))
     if (seenKeys.has(key)) { bump('Federativos (a pagar)', 'skipped'); continue }
-    await resolveClub(r['Credor'])
-    await createClubLiability(a.id, {
-      source_key: key, club_name: clean(r['Credor']) ?? '—', description: `${clean(r['Despesa']) ?? 'Obrigação'} · ${parc.label}`,
-      direction: DIR_PAGAR, amount: num(r['Valor de contrato']) ?? 0, currency: canonCurrency(r['Moeda do Contrato']),
-      due_date: venc.date, conditional: conditional(r['Pgto Certo ou Condicional?']), condition_description: [clean(r['Detalhes da Condição']), venc.text].filter(Boolean).join(' · '),
-      solidarity: false, status: canonLiabStatus(r['Status2']), notes: `Origem: Federativos · status: ${rawStatusLabel(r['Status2'])}`,
+    await commit('Federativos (a pagar)', key, async () => {
+      await resolveClub(r['Credor'])
+      await createClubLiability(a.id, {
+        source_key: key, club_name: clean(r['Credor']) ?? '—', description: `${clean(r['Despesa']) ?? 'Obrigação'} · ${parc.label}`,
+        direction: DIR_PAGAR, amount: num(r['Valor de contrato']) ?? 0, currency: canonCurrency(r['Moeda do Contrato']),
+        due_date: venc.date, conditional: conditional(r['Pgto Certo ou Condicional?']), condition_description: [clean(r['Detalhes da Condição']), venc.text].filter(Boolean).join(' · '),
+        solidarity: false, status: canonLiabStatus(r['Status2']), notes: `Origem: Federativos · status: ${rawStatusLabel(r['Status2'])}`,
+      })
     })
-    seenKeys.add(key); bump('Federativos (a pagar)', 'created')
   }
 
   // ── INTERMEDIÁRIOS → intermediary_liabilities ──
@@ -171,14 +178,15 @@ async function runImport(rawSheets: Sheets): Promise<ImportReport> {
     const parc = parseParcela(r['Parcela']); const venc = parseVenc(r['Vencimento'])
     const key = sourceKey('INT', a.external_ref ?? a.id, r['Intermediário'], r['Despesa'], parc.label, venc.date ?? venc.text, num(r['Valor de Contrato']))
     if (seenKeys.has(key)) { bump('Agentes (comissões)', 'skipped'); continue }
-    await resolveAgent(r['Intermediário'], r['ID Intermediário'])
-    await createIntermediaryLiability(a.id, {
-      source_key: key, intermediary_name: clean(r['Intermediário']) ?? '—', description: `${clean(r['Despesa']) ?? 'Comissão'} · ${parc.label}`,
-      direction: DIR_PAGAR, amount: num(r['Valor de Contrato']) ?? 0, currency: canonCurrency(r['Moeda do Contrato']),
-      due_date: venc.date, conditional: false, condition_description: '', penalty_terms: clean(r['Teor da Multa']) ?? '',
-      status: canonLiabStatus(r['Status']), notes: `Origem: Intermediários · status: ${rawStatusLabel(r['Status'])}`,
+    await commit('Agentes (comissões)', key, async () => {
+      await resolveAgent(r['Intermediário'], r['ID Intermediário'])
+      await createIntermediaryLiability(a.id, {
+        source_key: key, intermediary_name: clean(r['Intermediário']) ?? '—', description: `${clean(r['Despesa']) ?? 'Comissão'} · ${parc.label}`,
+        direction: DIR_PAGAR, amount: num(r['Valor de Contrato']) ?? 0, currency: canonCurrency(r['Moeda do Contrato']),
+        due_date: venc.date, conditional: false, condition_description: '', penalty_terms: clean(r['Teor da Multa']) ?? '',
+        status: canonLiabStatus(r['Status']), notes: `Origem: Intermediários · status: ${rawStatusLabel(r['Status'])}`,
+      })
     })
-    seenKeys.add(key); bump('Agentes (comissões)', 'created')
   }
 
   // ── LUVAS E PRÊMIOS → clauses (sob vínculo de trabalho sintético) ──
@@ -189,20 +197,21 @@ async function runImport(rawSheets: Sheets): Promise<ImportReport> {
     const despesa = clean(r['Despesa']) ?? 'Luvas'
     const key = sourceKey('LUV', a.external_ref ?? a.id, despesa, r['Credor'], parc.label, venc.date ?? venc.text, num(r['Valor de Contrato']))
     if (seenKeys.has(key)) { bump('Luvas e Prêmios', 'skipped'); continue }
-    const wc = await workContract(a)
     const isPremio = /pr[êe]mio/i.test(despesa)
-    const created = await createClause(wc.id, a.id, {
-      clause_type: isPremio ? 'BONUS_PERFORMANCE_ATLETA' : 'LUVAS',
-      description: `${despesa} · ${parc.label}`,
-      creditor_party: clean(r['Credor']) ?? a.full_name, debtor_party: 'Botafogo SAF',
-      currency: canonCurrency(r['Moeda do Contrato']), original_value: num(r['Valor de Contrato']),
-      percentage_value: null, condition_description: [clean(r['Detalhes da Condição']), venc.text].filter(Boolean).join(' · '),
-      due_date: venc.date ?? '', installments_total: parc.total, notes: `Origem: Luvas e Prêmios · status: ${rawStatusLabel(r['Status2'])}`,
-      source_key: key,
-    } as Parameters<typeof createClause>[2])
-    const ps = LIAB_TO_PAYMENT[canonLiabStatus(r['Status2'])]
-    if (ps !== 'PENDENTE') await updateClause(created.id, { payment_status: ps })
-    seenKeys.add(key); bump('Luvas e Prêmios', 'created')
+    await commit('Luvas e Prêmios', key, async () => {
+      const wc = await workContract(a)
+      const created = await createClause(wc.id, a.id, {
+        clause_type: isPremio ? 'BONUS_PERFORMANCE_ATLETA' : 'LUVAS',
+        description: `${despesa} · ${parc.label}`,
+        creditor_party: clean(r['Credor']) ?? a.full_name, debtor_party: 'Botafogo SAF',
+        currency: canonCurrency(r['Moeda do Contrato']), original_value: num(r['Valor de Contrato']),
+        percentage_value: null, condition_description: [clean(r['Detalhes da Condição']), venc.text].filter(Boolean).join(' · '),
+        due_date: venc.date ?? '', installments_total: parc.total, notes: `Origem: Luvas e Prêmios · status: ${rawStatusLabel(r['Status2'])}`,
+        source_key: key,
+      } as Parameters<typeof createClause>[2])
+      const ps = LIAB_TO_PAYMENT[canonLiabStatus(r['Status2'])]
+      if (ps !== 'PENDENTE') await updateClause(created.id, { payment_status: ps })
+    })
   }
 
   // ── CONTROLE DE IMAGEM (2025/2026) → image_rights (por competência) ──
@@ -219,11 +228,12 @@ async function runImport(rawSheets: Sheets): Promise<ImportReport> {
       if (seenKeys.has(key)) { bump('Direito de imagem (mensal)', 'skipped'); continue }
       const pagoRaw = UP(clean(pick(r, 'Pago?', 'Pago', 'Status 2')))
       const status = pagoRaw.startsWith('SIM') || pagoRaw.includes('PAGO') ? 'PAGA' : pagoRaw.includes('ATRAS') ? 'EM_ATRASO' : 'PENDENTE'
-      await createImageRight(a.id, {
-        source_key: key, month, amount, currency: 'BRL', status,
-        notes: `Origem: ${sheetName}${clean(pick(r, 'RAZÃO SOCIAL')) ? ' · ' + clean(pick(r, 'RAZÃO SOCIAL')) : ''}`,
+      await commit('Direito de imagem (mensal)', key, async () => {
+        await createImageRight(a.id, {
+          source_key: key, month, amount, currency: 'BRL', status,
+          notes: `Origem: ${sheetName}${clean(pick(r, 'RAZÃO SOCIAL')) ? ' · ' + clean(pick(r, 'RAZÃO SOCIAL')) : ''}`,
+        })
       })
-      seenKeys.add(key); bump('Direito de imagem (mensal)', 'created')
     }
   }
 

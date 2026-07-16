@@ -107,7 +107,7 @@ export default function PageImportarPlanilhas() {
             <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-soft)', fontWeight: 600, fontSize: 14, fontFamily: fontBody, color: 'var(--ink-primary)' }}>Obrigações importadas</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr>
-                {['Natureza', 'Criadas', 'Já existiam', 'Sem atleta'].map((h, i) => (
+                {['Natureza', 'Criadas', 'Já existiam', 'Sem atleta', 'Erros'].map((h, i) => (
                   <th key={h} style={{ padding: '8px 14px', textAlign: i === 0 ? 'left' : 'right', fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)', background: 'var(--tbl-head)', borderBottom: '1px solid var(--divider-strong)' }}>{h}</th>
                 ))}
               </tr></thead>
@@ -118,6 +118,7 @@ export default function PageImportarPlanilhas() {
                     <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: 'var(--pos)', borderBottom: '1px solid var(--divider-soft)' }}>{v.created}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-soft)' }}>{v.skipped}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: v.orphan ? 'var(--neg)' : 'var(--text-muted)', borderBottom: '1px solid var(--divider-soft)' }}>{v.orphan}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: v.error ? 'var(--neg)' : 'var(--text-muted)', borderBottom: '1px solid var(--divider-soft)' }}>{v.error}</td>
                   </tr>
                 ))}
               </tbody>
