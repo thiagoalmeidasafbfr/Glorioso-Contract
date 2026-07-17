@@ -44,6 +44,10 @@ export default function PageConsolidado() {
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('Todos')
+  const [atletaF, setAtletaF] = useState('Todos')
+  const [naturezaF, setNaturezaF] = useState('Todos')
+  const [posF, setPosF] = useState('Todos')
+  const [posByAth, setPosByAth] = useState<Map<string, string>>(new Map())
 
   useEffect(() => {
     (async () => {
@@ -53,6 +57,7 @@ export default function PageConsolidado() {
         fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
       ])
       const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
+      setPosByAth(new Map(athletes.map(a => [a.id, a.position ?? '—'])))
       const clauseById = new Map(clauses.map(c => [c.id, c]))
       const withInst = new Set(installments.map(i => i.clause_id))
       const list: Mov[] = []
@@ -98,14 +103,21 @@ export default function PageConsolidado() {
     })()
   }, [])
 
+  const atletas = useMemo(() => ['Todos', ...Array.from(new Set(movs.map(m => m.atleta))).sort()], [movs])
+  const naturezas = useMemo(() => ['Todos', ...Array.from(new Set(movs.map(m => m.natureza))).sort()], [movs])
+  const posicoes = useMemo(() => ['Todos', ...Array.from(new Set(movs.map(m => posByAth.get(m.athleteId) ?? '—'))).sort()], [movs, posByAth])
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
     return movs.filter(m => {
       if (status !== 'Todos' && m.status !== status) return false
+      if (atletaF !== 'Todos' && m.atleta !== atletaF) return false
+      if (naturezaF !== 'Todos' && m.natureza !== naturezaF) return false
+      if (posF !== 'Todos' && (posByAth.get(m.athleteId) ?? '—') !== posF) return false
       if (!needle) return true
       return [m.atleta, m.natureza, m.contraparte, m.descricao].some(v => v.toLowerCase().includes(needle))
     })
-  }, [movs, q, status])
+  }, [movs, q, status, atletaF, naturezaF, posF, posByAth])
 
   // Totais por direção (em aberto), aproximados em BRL.
   const totals = useMemo(() => {
@@ -146,6 +158,24 @@ export default function PageConsolidado() {
         <div style={{ flex: 1, minWidth: 240 }}>
           <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+        </div>
+        <div>
+          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
+          <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+            {atletas.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
+          <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+            {posicoes.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
+          <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+            {naturezas.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>

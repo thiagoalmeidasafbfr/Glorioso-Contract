@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllImageRights, fetchAllIntermediaryLiabilities,
   fetchAllClubLiabilities, fetchAllClauses, fetchAllInstallments,
-  fetchAllContracts, fetchClubs, fetchIntermediaries,
+  fetchClubs, fetchIntermediaries,
 } from '../lib/athleteQueries'
 import type { Athlete, Currency } from '../types/athlete-system'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
@@ -80,6 +80,10 @@ export default function PageRelatorio() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Todos')
+  const [atletaFilter, setAtletaFilter] = useState('Todos')
+  const [naturezaFilter, setNaturezaFilter] = useState('Todos')
+  const [posFilter, setPosFilter] = useState('Todos')
+  const [posByAth, setPosByAth] = useState<Map<string, string>>(new Map())
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -91,6 +95,7 @@ export default function PageRelatorio() {
     ])
     setClubIdx(buildNameIndex(clubs))
     setInterIdx(buildNameIndex(inters))
+    setPosByAth(new Map(athletes.map((a: Athlete) => [a.id, a.position ?? '—'])))
     const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
     const built = await buildRows(k, nameOf)
     setRows(built)
@@ -126,15 +131,21 @@ export default function PageRelatorio() {
   }
 
   const statuses = useMemo(() => ['Todos', ...Array.from(new Set(rows.map(r => r.status)))], [rows])
+  const atletas = useMemo(() => ['Todos', ...Array.from(new Set(rows.map(r => r.atleta))).sort()], [rows])
+  const naturezas = useMemo(() => ['Todos', ...Array.from(new Set(rows.map(r => r.natureza))).sort()], [rows])
+  const posicoes = useMemo(() => ['Todos', ...Array.from(new Set(rows.map(r => posByAth.get(r.athleteId) ?? '—'))).sort()], [rows, posByAth])
 
   const filtered = useMemo(() => rows.filter(r => {
     if (statusFilter !== 'Todos' && r.status !== statusFilter) return false
+    if (atletaFilter !== 'Todos' && r.atleta !== atletaFilter) return false
+    if (naturezaFilter !== 'Todos' && r.natureza !== naturezaFilter) return false
+    if (posFilter !== 'Todos' && (posByAth.get(r.athleteId) ?? '—') !== posFilter) return false
     if (search) {
       const q = search.toLowerCase()
       if (![r.atleta, r.parte, r.descricao, r.natureza].some(v => v.toLowerCase().includes(q))) return false
     }
     return true
-  }), [rows, statusFilter, search])
+  }), [rows, statusFilter, atletaFilter, naturezaFilter, posFilter, posByAth, search])
 
   const totalBRL = filtered.reduce((s, r) => s + (r.valor ?? 0) * (APPROX_BRL[r.moeda] ?? 1), 0)
 
@@ -186,6 +197,27 @@ export default function PageRelatorio() {
           <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, parte, descrição..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Atleta</div>
+          <select value={atletaFilter} onChange={e => setAtletaFilter(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)', maxWidth: 180 }}>
+            {atletas.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Posição</div>
+          <select value={posFilter} onChange={e => setPosFilter(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }}>
+            {posicoes.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Natureza</div>
+          <select value={naturezaFilter} onChange={e => setNaturezaFilter(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)', maxWidth: 180 }}>
+            {naturezas.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
         <div>
           <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
@@ -342,12 +374,13 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   }
 
   // salarios — parcela por parcela (cláusula SALARIO_CETD + parcelas, com pro-rata).
-  const [clauses, installments, contracts] = await Promise.all([fetchAllClauses(), fetchAllInstallments(), fetchAllContracts()])
-  const clubByContract = new Map(contracts.map(ct => [ct.id, ct.counterpart_club]))
+  // Salário CLT é pago ao ATLETA (pessoa física) — a parte é o credor da cláusula
+  // (o próprio atleta), nunca o clube da transferência.
+  const [clauses, installments] = await Promise.all([fetchAllClauses(), fetchAllInstallments()])
   const sal = clauses.filter(c => c.clause_type === 'SALARIO_CETD')
   const rows: Row[] = []
   for (const c of sal) {
-    const parte = c.contract_id ? (clubByContract.get(c.contract_id) ?? c.creditor_party) : c.creditor_party
+    const parte = c.creditor_party
     const parcelas = installments.filter(i => i.clause_id === c.id)
     if (parcelas.length > 0) {
       for (const p of parcelas) {

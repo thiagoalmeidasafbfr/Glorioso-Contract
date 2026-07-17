@@ -554,7 +554,7 @@ export default function PageAthleteDetail() {
             </div>
           ) : (
             <>
-              <SalaryImageEditor contract={emp} triggers={empTriggers} clauses={clauses} athleteName={athlete?.full_name ?? 'Atleta'} canEdit={canEdit} onSaved={loadData} />
+              <SalaryImageEditor contract={emp} triggers={empTriggers} clauses={clauses} pjs={pjs} athleteName={athlete?.full_name ?? 'Atleta'} canEdit={canEdit} onSaved={loadData} />
               <div className="card" style={{ padding: '18px 20px' }}>
                 <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Metas de aumento salarial</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
@@ -923,8 +923,8 @@ function ImageSection({ imageRights, pjs, canEdit, onAdd, onUpdate, onDelete }: 
 }
 
 // ── SalaryImageEditor — salário + imagem editáveis, com o gráfico ────────────
-function SalaryImageEditor({ contract, triggers, clauses, athleteName, canEdit, onSaved }: {
-  contract: Contract; triggers: SalaryTrigger[]; clauses: Clause[]; athleteName: string; canEdit: boolean; onSaved: () => void
+function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canEdit, onSaved }: {
+  contract: Contract; triggers: SalaryTrigger[]; clauses: Clause[]; pjs: AthletePJ[]; athleteName: string; canEdit: boolean; onSaved: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -938,13 +938,19 @@ function SalaryImageEditor({ contract, triggers, clauses, athleteName, canEdit, 
     if (!contract.end_date) { window.alert('Defina a data de término do vínculo para gerar o fluxo mensal.'); return }
     if (vig < 1) { window.alert('Vigência inválida (término deve ser depois do início).'); return }
     if (flowCount > 0 && !window.confirm('Isto substitui o fluxo mensal de salário/imagem já existente deste vínculo. Continuar?')) return
+    // Regra: salário CLT é pago ao ATLETA (pessoa física); imagem é paga à PJ
+    // atrelada ao atleta (credor final). Sem PJ, não há como vincular a imagem.
+    const pjName = pjs[0]?.legal_name ?? ''
+    if ((contract.image_value ?? 0) > 0 && !pjName) {
+      window.alert('Cadastre a PJ do atleta (no cadastro do atleta → PJ) para vincular o Direito de Imagem. O fluxo de imagem não será gerado sem PJ.')
+    }
     setGenning(true)
     try {
       // Remove fluxo anterior (salário/imagem) deste vínculo.
       for (const c of clauses) {
         if (c.contract_id === contract.id && (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM')) await deleteClause(c.id)
       }
-      const gen = async (type: Clause['clause_type'], label: string, monthly: number, day: number) => {
+      const gen = async (type: Clause['clause_type'], label: string, monthly: number, day: number, creditor: string) => {
         if (!(monthly > 0)) return
         // Fluxo com pro-rata nos meses quebrados, vencimento no mês subsequente.
         const flow = buildRemunerationFlow(contract.start_date, contract.end_date!, monthly, day)
@@ -952,7 +958,7 @@ function SalaryImageEditor({ contract, triggers, clauses, athleteName, canEdit, 
         const totalValue = flow.reduce((s, l) => s + l.value, 0)
         const clause = await createClause(contract.id, contract.athlete_id, {
           clause_type: type, description: `${label} — ${flow.length}x mensais (venc. dia ${day}, pro-rata)`,
-          creditor_party: athleteName, debtor_party: 'Botafogo SAF',
+          creditor_party: creditor, debtor_party: 'Botafogo SAF',
           currency: contract.salary_currency, original_value: totalValue, percentage_value: null,
           condition_description: '', due_date: flow[0].due_date, installments_total: flow.length, notes: '',
         })
@@ -960,8 +966,9 @@ function SalaryImageEditor({ contract, triggers, clauses, athleteName, canEdit, 
           installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: contract.salary_currency,
         })))
       }
-      await gen('SALARIO_CETD', 'Salário CLT', contract.base_salary ?? 0, SALARY_DUE_DAY)
-      await gen('DIREITO_IMAGEM', 'Direito de imagem', contract.image_value ?? 0, IMAGE_DUE_DAY)
+      // Salário → atleta (PF); Imagem → PJ do atleta (só gera se houver PJ).
+      await gen('SALARIO_CETD', 'Salário CLT', contract.base_salary ?? 0, SALARY_DUE_DAY, athleteName)
+      if (pjName) await gen('DIREITO_IMAGEM', 'Direito de imagem', contract.image_value ?? 0, IMAGE_DUE_DAY, pjName)
       onSaved()
     } finally { setGenning(false) }
   }
