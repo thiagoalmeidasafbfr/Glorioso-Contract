@@ -400,6 +400,28 @@ export async function updateContract(id: string, input: Partial<Contract>): Prom
   return fromAcContract(data)
 }
 
+// Propaga a moeda do vínculo para os fluxos gerados: salário/imagem seguem a
+// salary_currency; transfer fee segue a transfer_currency. Atualiza a cláusula
+// e todas as suas parcelas. Idempotente (só mexe onde a moeda difere).
+export async function updateContractFlowsCurrency(
+  contractId: string, salaryCurrency: Currency, transferCurrency: Currency,
+): Promise<void> {
+  const clauses = await fetchContractClauses(contractId)
+  for (const c of clauses) {
+    let cur: Currency | null = null
+    if (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM') cur = salaryCurrency
+    else if (c.clause_type === 'TRANSFER_FEE_FIXO' || c.clause_type === 'TRANSFER_FEE_VARIAVEL' || c.clause_type === 'EMPRESTIMO_TAXA') cur = transferCurrency
+    if (!cur || cur === c.currency) continue
+    await updateClause(c.id, { currency: cur })
+    if (!USE_SUPABASE) {
+      for (const inst of local.where<ClauseInstallment>(T.installments, 'clause_id', c.id)) local.update<ClauseInstallment>(T.installments, inst.id, { currency: cur })
+    } else {
+      const { error } = await supabase.from(AC.installments).update({ currency: cur, updated_at: new Date().toISOString() }).eq('clausula_fin_id', c.id)
+      if (error) throw error
+    }
+  }
+}
+
 export async function deleteContract(id: string): Promise<void> {
   if (!USE_SUPABASE) {
     // Remove o contrato e suas cláusulas/parcelas dependentes.

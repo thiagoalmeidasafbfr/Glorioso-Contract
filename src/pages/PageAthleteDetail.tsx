@@ -5,7 +5,7 @@ import RemunerationChart from '../components/RemunerationChart'
 import OwnershipBar from '../components/OwnershipBar'
 import PaymentModal from '../components/athletes/PaymentModal'
 import {
-  fetchAthlete, updateAthlete, updateContract, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
+  fetchAthlete, updateAthlete, updateContract, updateContractFlowsCurrency, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
   fetchAthleteInstallments, createClause, createClauseInstallments, deleteClause,
   fetchAthleteAlerts, markAlertRead, updateClause,
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
@@ -355,6 +355,8 @@ export default function PageAthleteDetail() {
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [showEdit, setShowEdit] = useState(false)
   const [editContractId, setEditContractId] = useState<string | null>(null)
+  const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set())
+  const toggleExpand = (cid: string) => setExpandedContracts(prev => { const n = new Set(prev); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -637,13 +639,52 @@ export default function PageAthleteDetail() {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span>Início: {fmtDate(ct.start_date)}</span>
                   {ct.end_date && <span>Fim: {fmtDate(ct.end_date)}</span>}
                   {ct.transfer_fee_gross && <span style={{ fontWeight: 600, color: 'var(--ink-primary)' }}>{CURRENCY_SYMBOLS[ct.transfer_currency]} {ct.transfer_fee_gross.toLocaleString('pt-BR')}</span>}
-                  <span style={{ color: 'var(--text-muted)' }}>{ctClauses.length} cláusula{ctClauses.length !== 1 ? 's' : ''}</span>
+                  {ctClauses.length > 0 && (
+                    <button onClick={() => toggleExpand(ct.id)} style={{ background: 'none', border: 'none', padding: 0, color: '#be8c4a', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                      {expandedContracts.has(ct.id) ? '▾' : '▸'} {ctClauses.length} cláusula{ctClauses.length !== 1 ? 's' : ''} — ver vencimentos
+                    </button>
+                  )}
+                  {ctClauses.length === 0 && <span style={{ color: 'var(--text-muted)' }}>0 cláusulas</span>}
                 </div>
                 {ct.description && <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>{ct.description}</div>}
+
+                {expandedContracts.has(ct.id) && (
+                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {ctClauses.map(cl => {
+                      const parc = installments.filter(i => i.clause_id === cl.id).sort((a, b) => a.due_date.localeCompare(b.due_date))
+                      const totalCl = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (cl.original_value ?? 0)
+                      return (
+                        <div key={cl.id} style={{ border: '1px solid var(--divider-soft)', borderRadius: 8, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-subtle)' }}>
+                            <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)' }}>
+                              {CLAUSE_TYPE_LABELS[cl.clause_type]} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>· {cl.description}</span>
+                            </span>
+                            <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(totalCl, cl.currency)}{parc.length ? ` · ${parc.length}x` : ''}</span>
+                          </div>
+                          {parc.length > 0 && (
+                            <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                              {parc.map(p => {
+                                const late = isOverdue(p.due_date, p.payment_status)
+                                return (
+                                  <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '40px 110px 1fr 90px', gap: 8, alignItems: 'center', padding: '5px 12px', borderTop: '1px solid var(--divider-soft)' }}>
+                                    <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>{p.installment_number}</span>
+                                    <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
+                                    <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
+                                    <span style={{ textAlign: 'right' }}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )
           })}
@@ -993,6 +1034,8 @@ function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canE
         other_value: f.other_value ? parseFloat(f.other_value) : null,
         salary_currency: f.salary_currency as Currency,
       })
+      // Propaga a moeda para as parcelas de salário/imagem já geradas.
+      await updateContractFlowsCurrency(contract.id, f.salary_currency as Currency, contract.transfer_currency)
       setEditing(false)
       onSaved()
     } finally { setSaving(false) }
@@ -1218,6 +1261,8 @@ function ContractEditModal({ contract, onClose, onSaved }: {
         salary_currency: f.salary_currency as Currency,
         description: f.description || null,
       })
+      // Propaga a moeda do vínculo para as parcelas do fluxo (salário/imagem/transf.).
+      await updateContractFlowsCurrency(contract.id, f.salary_currency as Currency, f.transfer_currency as Currency)
       onSaved()
     } finally { setSaving(false) }
   }
