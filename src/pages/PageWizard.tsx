@@ -13,7 +13,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  fetchAthletes, fetchAthleteContracts, createContract, createClause, createClauseInstallments,
+  fetchAthletes, fetchAthleteContracts, createAthlete, createContract, createClause, createClauseInstallments,
 } from '../lib/athleteQueries'
 import type {
   Athlete, Contract, Currency, ClauseType, ContractType, ContractStatus,
@@ -84,6 +84,9 @@ export default function PageWizard() {
   const [athleteId, setAthleteId] = useState('')
   const [athleteQuery, setAthleteQuery] = useState('')
   const [contracts, setContracts] = useState<Contract[]>([])
+  const [creatingAth, setCreatingAth] = useState(false)
+  const [newAth, setNewAth] = useState({ full_name: '', position: '' })
+  const [savingAth, setSavingAth] = useState(false)
 
   const [natureKey, setNatureKey] = useState('')
   const nature = NATURES.find(n => n.key === natureKey) || null
@@ -120,6 +123,23 @@ export default function PageWizard() {
     setAthleteId(a.id)
     if (nature?.benef === 'atleta') setBeneficiary(a.full_name)
     fetchAthleteContracts(a.id).then(setContracts)
+  }
+
+  async function createNewAthlete() {
+    const full = newAth.full_name.trim()
+    if (!full) return
+    setSavingAth(true)
+    try {
+      const a = await createAthlete({
+        full_name: full, short_name: full.split(' ')[0],
+        position: newAth.position || null, current_status: 'ATIVO',
+        birth_date: null, nationality: null, cpf: null, passport_number: null,
+        agent_name: null, agent_contact: null, profile_photo_url: null, notes: null,
+      })
+      setAthletes(prev => [...prev, a].sort((x, y) => x.full_name.localeCompare(y.full_name)))
+      setCreatingAth(false); setNewAth({ full_name: '', position: '' })
+      pickAthlete(a)
+    } finally { setSavingAth(false) }
   }
 
   const total = lines.reduce((s, l) => s + (l.value || 0), 0)
@@ -243,7 +263,36 @@ export default function PageWizard() {
       {/* II — Atleta */}
       {step === 1 && (
         <div style={card}>
-          <label style={lbl}>Atleta</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <label style={{ ...lbl, marginBottom: 0 }}>Atleta</label>
+            <button onClick={() => setCreatingAth(v => !v)}
+              style={{ padding: '5px 12px', borderRadius: 7, border: '1px dashed rgba(190,140,74,0.45)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              {creatingAth ? '× Cancelar' : '+ Novo atleta'}
+            </button>
+          </div>
+
+          {creatingAth && (
+            <div style={{ padding: 14, borderRadius: 9, border: '1px solid rgba(190,140,74,0.3)', background: 'var(--gold-tint, rgba(190,140,74,0.06))', marginBottom: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={lbl}>Nome completo *</label>
+                  <input style={input} autoFocus value={newAth.full_name} onChange={e => setNewAth(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: João da Silva Santos" />
+                </div>
+                <div>
+                  <label style={lbl}>Posição</label>
+                  <input style={input} value={newAth.position} onChange={e => setNewAth(p => ({ ...p, position: e.target.value }))} placeholder="Ex: Atacante" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
+                <button onClick={createNewAthlete} disabled={!newAth.full_name.trim() || savingAth}
+                  style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: '#be8c4a', color: '#fff', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (!newAth.full_name.trim() || savingAth) ? 0.5 : 1 }}>
+                  {savingAth ? 'Criando...' : 'Criar e selecionar'}
+                </button>
+                <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)' }}>Você completa os demais dados depois no cadastro do atleta.</span>
+              </div>
+            </div>
+          )}
+
           <input style={{ ...input, marginBottom: 10 }} placeholder="Buscar atleta..." value={athleteQuery} onChange={e => setAthleteQuery(e.target.value)} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 340, overflowY: 'auto' }}>
             {filteredAthletes.map(a => (
@@ -257,7 +306,7 @@ export default function PageWizard() {
                 {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)' }}>· {a.position || '—'}</span>
               </button>
             ))}
-            {filteredAthletes.length === 0 && <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>Nenhum atleta encontrado.</div>}
+            {filteredAthletes.length === 0 && <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>Nenhum atleta encontrado. Use "+ Novo atleta" acima.</div>}
           </div>
         </div>
       )}
