@@ -5,7 +5,8 @@ import RemunerationChart from '../components/RemunerationChart'
 import OwnershipBar from '../components/OwnershipBar'
 import PaymentModal from '../components/athletes/PaymentModal'
 import {
-  fetchAthlete, updateAthlete, fetchAthleteContracts, fetchAthleteClauses,
+  fetchAthlete, updateAthlete, updateContract, fetchAthleteContracts, fetchAthleteClauses,
+  fetchAthleteInstallments,
   fetchAthleteAlerts, markAlertRead, updateClause,
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
   fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
@@ -18,7 +19,7 @@ import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
 import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS } from '../lib/format'
 import type {
-  Athlete, Contract, Clause, Alert, EconomicRight,
+  Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
   AthleteStatus, AthleteCategory, AchievementStatus, Currency, HolderType,
   TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput, NewAthletePJInput,
@@ -195,7 +196,15 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: { t: SalaryTrigge
 // ── Modal de edição do atleta (dados + titularidade econômica) ──────────────
 interface RightRow { id?: string; holder_type: HolderType; holder_name: string; percentage: string; notes: string }
 
-function EditAthleteModal({ athlete, rights, onClose, onSaved }: { athlete: Athlete; rights: EconomicRight[]; onClose: () => void; onSaved: () => void }) {
+function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, onDeletePJ, imageCountByPj, onClose, onSaved }: {
+  athlete: Athlete; rights: EconomicRight[]
+  pjs: AthletePJ[]; canEdit: boolean
+  onAddPJ: (i: NewAthletePJInput) => void
+  onUpdatePJ: (id: string, patch: Partial<AthletePJ>) => void
+  onDeletePJ: (id: string) => void
+  imageCountByPj: Record<string, number>
+  onClose: () => void; onSaved: () => void
+}) {
   const [f, setF] = useState({
     full_name: athlete.full_name, short_name: athlete.short_name, position: athlete.position ?? '',
     current_status: athlete.current_status, category: (athlete.category ?? 'PROFISSIONAL') as AthleteCategory,
@@ -287,6 +296,11 @@ function EditAthleteModal({ athlete, rights, onClose, onSaved }: { athlete: Athl
           <button onClick={addRow} style={{ marginTop: 10, padding: '6px 14px', borderRadius: 6, border: '1px dashed rgba(190,140,74,0.45)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>+ Detentor</button>
         </div>
 
+        {/* PJ do atleta — parte do cadastro */}
+        <div style={{ borderTop: '1px solid var(--divider)', paddingTop: 14 }}>
+          <PjSection pjs={pjs} canEdit={canEdit} onAdd={onAddPJ} onUpdate={onUpdatePJ} onDelete={onDeletePJ} imageCountByPj={imageCountByPj} />
+        </div>
+
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={save} disabled={saving || !f.full_name.trim()} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
@@ -306,14 +320,14 @@ function employmentContract(contracts: Contract[]): Contract | null {
   return [...arr].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
 }
 
-type Tab = 'salario' | 'imagem' | 'clausulas' | 'historico' | 'passivos' | 'alertas'
+type Tab = 'consolidado' | 'clt_imagem' | 'clausulas' | 'historico' | 'passivos' | 'alertas'
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'salario',   label: 'Salário' },
-  { id: 'imagem',    label: 'PJ & Imagem' },
-  { id: 'clausulas', label: 'Cláusulas Ativas' },
-  { id: 'historico', label: 'Histórico' },
-  { id: 'passivos',  label: 'Obrigações' },
-  { id: 'alertas',   label: 'Alertas' },
+  { id: 'consolidado', label: 'Consolidado' },
+  { id: 'clt_imagem',  label: 'CLT + Imagem' },
+  { id: 'clausulas',   label: 'Cláusulas Ativas' },
+  { id: 'historico',   label: 'Histórico' },
+  { id: 'passivos',    label: 'Obrigações' },
+  { id: 'alertas',     label: 'Alertas' },
 ]
 
 export default function PageAthleteDetail() {
@@ -332,29 +346,31 @@ export default function PageAthleteDetail() {
   const [intermLiabs, setIntermLiabs] = useState<IntermediaryLiability[]>([])
   const [pjs, setPjs] = useState<AthletePJ[]>([])
   const [imageRights, setImageRights] = useState<ImageRight[]>([])
+  const [installments, setInstallments] = useState<ClauseInstallment[]>([])
   const [loading, setLoading] = useState(true)
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
-  const [tab, setTab] = useState<Tab>('salario')
+  const [tab, setTab] = useState<Tab>('consolidado')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [showEdit, setShowEdit] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, inters, pjList, imgs] = await Promise.all([
+    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, inters, pjList, imgs, inst] = await Promise.all([
       fetchAthlete(id), fetchAthleteContracts(id), fetchAthleteClauses(id), fetchAthleteAlerts(id),
       fetchAthleteEconomicRights(id), fetchAthleteSalaryTriggers(id),
       fetchAthleteClubLiabilities(id), fetchAthleteIntermediaryLiabilities(id),
       fetchClubs(), fetchIntermediaries(),
-      fetchAthletePJs(id), fetchAthleteImageRights(id),
+      fetchAthletePJs(id), fetchAthleteImageRights(id), fetchAthleteInstallments(id),
     ])
     setAthlete(ath); setContracts(contr); setClauses(cls); setAlerts(alrt)
     setRights(rght); setTriggers(trg); setClubLiabs(clb); setIntermLiabs(itm)
     setClubIdx(buildNameIndex(clubs)); setInterIdx(buildNameIndex(inters))
-    setPjs(pjList); setImageRights(imgs)
+    setPjs(pjList); setImageRights(imgs); setInstallments(inst)
     setLoading(false)
   }, [id])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de dados no mount
   useEffect(() => { loadData() }, [loadData])
 
   const openStatuses = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO']
@@ -518,59 +534,32 @@ export default function PageAthleteDetail() {
         })}
       </div>
 
-      {/* Salários & Imagem */}
-      {tab === 'salario' && (
+      {/* Consolidado — todo o fluxo financeiro do atleta */}
+      {tab === 'consolidado' && (
+        <ConsolidadoTab clauses={clauses} installments={installments} clubLiabs={clubLiabs} intermLiabs={intermLiabs} />
+      )}
+
+      {/* CLT + Imagem — remuneração (salário + imagem), fluxo e gráfico */}
+      {tab === 'clt_imagem' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!emp ? (
             <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>
-              Nenhum vínculo de trabalho com remuneração cadastrado. Crie um vínculo (ENTRADA) com salário base para gerenciar a remuneração.
+              Nenhum vínculo de trabalho com remuneração cadastrado. Use o assistente (+ Criar) ou crie um vínculo com salário base.
             </div>
-          ) : (() => {
-            const eff = effectiveSalary(emp, empTriggers)
-            const salaryNow = eff.amount ?? 0
-            const image = emp.image_value ?? 0
-            const other = emp.other_value ?? 0
-            const total = salaryNow + image + other
-            const card = (label: string, val: string, hi?: boolean) => (
-              <div style={{ padding: '12px 16px', borderRadius: 8, background: hi ? '#dcf0e4' : 'var(--bg-subtle)', border: `1px solid ${hi ? 'rgba(22,101,52,0.25)' : 'var(--divider-soft)'}` }}>
-                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: hi ? '#166534' : 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
-                <div style={{ fontSize: 19, fontWeight: 700, fontFamily: fontMono, color: hi ? '#166534' : 'var(--ink-primary)' }}>{val}</div>
-              </div>
-            )
-            return (
+          ) : (
+            <>
+              <SalaryImageEditor contract={emp} triggers={empTriggers} canEdit={canEdit} onSaved={loadData} />
               <div className="card" style={{ padding: '18px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Remuneração — paga pelo Botafogo</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
-                    Vínculo {fmtDate(emp.start_date)}{emp.end_date ? ` → ${fmtDate(emp.end_date)}` : ''} · origem: {emp.counterpart_club}
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 18 }}>
-                  {card('Salário CLT (hoje)', fmtCurrencyShort(salaryNow, emp.salary_currency), eff.source !== null)}
-                  {card('Direito de imagem', fmtCurrencyShort(image, emp.salary_currency))}
-                  {card('Outros (moradia/aux.)', fmtCurrencyShort(other, emp.salary_currency))}
-                  {card('Remuneração total/mês', fmtCurrencyShort(total, emp.salary_currency), true)}
-                </div>
-
-                <div style={{ marginBottom: 8, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Evolução da remuneração</div>
-                <RemunerationChart contract={emp} triggers={empTriggers} />
-
-                <div style={{ margin: '20px 0 10px', fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Metas de aumento salarial</div>
+                <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Metas de aumento salarial</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
                   {empTriggers.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma meta cadastrada.</div>
                     : empTriggers.map(t => <TriggerRow key={t.id} t={t} canEdit={canEdit} onMark={d => handleMarkTrigger(t.id, d)} onReset={() => handleResetTrigger(t.id)} onDelete={() => handleDeleteTrigger(t.id)} />)}
                 </div>
                 {canEdit && <NewTriggerForm contract={emp} onAdd={handleAddTrigger} />}
               </div>
-            )
-          })()}
-        </div>
-      )}
-
-      {/* PJ & Direito de Imagem */}
-      {tab === 'imagem' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <PjSection pjs={pjs} canEdit={canEdit} onAdd={handleAddPJ} onUpdate={handleUpdatePJ} onDelete={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} />
+            </>
+          )}
+          <FlowList title="Fluxo mensal — Salário CLT + Imagem" installments={installments} clauses={clauses} types={['SALARIO_CETD', 'DIREITO_IMAGEM']} />
           <ImageSection imageRights={imageRights} pjs={pjs} canEdit={canEdit} onAdd={handleAddImage} onUpdate={handleUpdateImage} onDelete={handleDeleteImage} />
         </div>
       )}
@@ -720,7 +709,7 @@ export default function PageAthleteDetail() {
       )}
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
-      {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
+      {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} pjs={pjs} canEdit={canEdit} onAddPJ={handleAddPJ} onUpdatePJ={handleUpdatePJ} onDeletePJ={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
     </div>
   )
 }
@@ -912,6 +901,213 @@ function ImageSection({ imageRights, pjs, canEdit, onAdd, onUpdate, onDelete }: 
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+// ── SalaryImageEditor — salário + imagem editáveis, com o gráfico ────────────
+function SalaryImageEditor({ contract, triggers, canEdit, onSaved }: {
+  contract: Contract; triggers: SalaryTrigger[]; canEdit: boolean; onSaved: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [f, setF] = useState({
+    base_salary: contract.base_salary != null ? String(contract.base_salary) : '',
+    image_value: contract.image_value != null ? String(contract.image_value) : '',
+    other_value: contract.other_value != null ? String(contract.other_value) : '',
+    salary_currency: contract.salary_currency,
+  })
+  const eff = effectiveSalary(contract, triggers)
+  const salaryNow = eff.amount ?? 0
+  const image = contract.image_value ?? 0
+  const other = contract.other_value ?? 0
+  const total = salaryNow + image + other
+
+  async function save() {
+    setSaving(true)
+    try {
+      await updateContract(contract.id, {
+        base_salary: f.base_salary ? parseFloat(f.base_salary) : null,
+        image_value: f.image_value ? parseFloat(f.image_value) : null,
+        other_value: f.other_value ? parseFloat(f.other_value) : null,
+        salary_currency: f.salary_currency as Currency,
+      })
+      setEditing(false)
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: fontMono, boxSizing: 'border-box' }
+  const lbl2: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, display: 'block' }
+  const kcard = (label: string, val: string, hi?: boolean) => (
+    <div style={{ padding: '12px 16px', borderRadius: 8, background: hi ? '#dcf0e4' : 'var(--bg-subtle)', border: `1px solid ${hi ? 'rgba(22,101,52,0.25)' : 'var(--divider-soft)'}` }}>
+      <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: hi ? '#166534' : 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 19, fontWeight: 700, fontFamily: fontMono, color: hi ? '#166534' : 'var(--ink-primary)' }}>{val}</div>
+    </div>
+  )
+
+  return (
+    <div className="card" style={{ padding: '18px 20px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Remuneração — paga pelo Botafogo</div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+            Vínculo {fmtDate(contract.start_date)}{contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ''} · origem: {contract.counterpart_club}
+          </div>
+          {canEdit && !editing && (
+            <button onClick={() => setEditing(true)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar</button>
+          )}
+        </div>
+      </div>
+
+      {editing ? (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+            <div><label style={lbl2}>Salário CLT</label><input style={inp} type="number" min={0} step={0.01} value={f.base_salary} onChange={e => setF(p => ({ ...p, base_salary: e.target.value }))} /></div>
+            <div><label style={lbl2}>Direito de imagem</label><input style={inp} type="number" min={0} step={0.01} value={f.image_value} onChange={e => setF(p => ({ ...p, image_value: e.target.value }))} /></div>
+            <div><label style={lbl2}>Outros (moradia/aux.)</label><input style={inp} type="number" min={0} step={0.01} value={f.other_value} onChange={e => setF(p => ({ ...p, other_value: e.target.value }))} /></div>
+            <div><label style={lbl2}>Moeda</label>
+              <select style={inp} value={f.salary_currency} onChange={e => setF(p => ({ ...p, salary_currency: e.target.value as Currency }))}>
+                {(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button onClick={save} disabled={saving} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', background: '#be8c4a', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+            <button onClick={() => setEditing(false)} style={{ padding: '7px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 18 }}>
+          {kcard('Salário CLT (hoje)', fmtCurrencyShort(salaryNow, contract.salary_currency), eff.source !== null)}
+          {kcard('Direito de imagem', fmtCurrencyShort(image, contract.salary_currency))}
+          {kcard('Outros (moradia/aux.)', fmtCurrencyShort(other, contract.salary_currency))}
+          {kcard('Remuneração total/mês', fmtCurrencyShort(total, contract.salary_currency), true)}
+        </div>
+      )}
+
+      <div style={{ marginBottom: 8, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Evolução da remuneração</div>
+      <RemunerationChart contract={contract} triggers={triggers} />
+    </div>
+  )
+}
+
+// ── FlowList — parcelas de cláusulas de tipos específicos (fluxo mensal) ──────
+function FlowList({ title, installments, clauses, types }: {
+  title: string; installments: ClauseInstallment[]; clauses: Clause[]; types: string[]
+}) {
+  const typeById = new Map(clauses.map(c => [c.id, c.clause_type as string]))
+  const rows = installments
+    .filter(i => { const t = typeById.get(i.clause_id); return !!t && types.includes(t) })
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))
+  const total = rows.reduce((s, r) => s + (r.original_value || 0), 0)
+  const cur = rows[0]?.currency ?? 'BRL'
+  return (
+    <div className="card" style={{ padding: '16px 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+        <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{title}</div>
+        <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{rows.length} parcela(s) · {fmtCurrencyShort(total, cur)}</div>
+      </div>
+      {rows.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma parcela gerada. Use o assistente (+ Criar) ou o novo vínculo para gerar o fluxo.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 340, overflowY: 'auto' }}>
+          {rows.map(r => {
+            const late = isOverdue(r.due_date, r.payment_status)
+            const tipo = typeById.get(r.clause_id)
+            return (
+              <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 120px 90px', gap: 10, alignItems: 'center', padding: '6px 10px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(r.due_date)}</span>
+                <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-muted)' }}>{tipo === 'SALARIO_CETD' ? 'Salário CLT' : tipo === 'DIREITO_IMAGEM' ? 'Imagem' : (tipo ? CLAUSE_TYPE_LABELS[tipo as keyof typeof CLAUSE_TYPE_LABELS] : '')}</span>
+                <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13, textAlign: 'right' }}>{fmtCurrencyShort(r.original_value, r.currency)}</span>
+                <span style={{ textAlign: 'right' }}><StatusBadge status={r.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── ConsolidadoTab — todo o fluxo financeiro do atleta ───────────────────────
+function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs }: {
+  clauses: Clause[]; installments: ClauseInstallment[]; clubLiabs: ClubLiability[]; intermLiabs: IntermediaryLiability[]
+}) {
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const clauseById = new Map(clauses.map(c => [c.id, c]))
+  type Item = { date: string | null; nat: string; parte: string; dir: 'A_PAGAR' | 'A_RECEBER'; valor: number; moeda: Currency; status: string }
+  const items: Item[] = []
+  const isBFR = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
+
+  for (const it of installments) {
+    const c = clauseById.get(it.clause_id)
+    const dir: Item['dir'] = c && isBFR(c.debtor_party) ? 'A_PAGAR' : c ? 'A_RECEBER' : 'A_PAGAR'
+    items.push({ date: it.due_date, nat: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela', parte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—', dir, valor: it.original_value, moeda: it.currency, status: it.payment_status })
+  }
+  for (const c of clauses) {
+    if ((c.installments_total ?? 1) > 1) continue
+    if (c.original_value == null) continue
+    const dir: Item['dir'] = isBFR(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
+    items.push({ date: c.due_date, nat: CLAUSE_TYPE_LABELS[c.clause_type], parte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status })
+  }
+  for (const l of clubLiabs) items.push({ date: l.due_date, nat: 'Obrigação clube', parte: l.club_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status })
+  for (const l of intermLiabs) items.push({ date: l.due_date, nat: 'Obrigação agente', parte: l.intermediary_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status })
+
+  items.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
+
+  const open = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO']
+  const tot: Record<string, number> = {}
+  for (const it of items) if (open.includes(it.status)) { const k = `${it.dir}|${it.moeda}`; tot[k] = (tot[k] ?? 0) + it.valor }
+  const totEntries = Object.entries(tot)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {totEntries.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {totEntries.sort().map(([k, v]) => {
+            const [dir, moeda] = k.split('|')
+            const pay = dir === 'A_PAGAR'
+            return (
+              <div key={k} style={{ padding: '10px 14px', borderRadius: 8, background: pay ? 'var(--neg-tint)' : '#dcf0e4', border: `1px solid ${pay ? 'rgba(220,38,38,0.25)' : 'rgba(22,101,52,0.25)'}` }}>
+                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: pay ? 'var(--neg)' : '#166534', marginBottom: 4 }}>{pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)</div>
+                <div style={{ fontSize: 17, fontWeight: 700, fontFamily: fontMono, color: pay ? 'var(--neg)' : '#166534' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              <th style={{ ...th, textAlign: 'left', minWidth: 90 }}>Vencimento</th>
+              <th style={{ ...th, textAlign: 'left', minWidth: 150 }}>Natureza</th>
+              <th style={{ ...th, textAlign: 'left', minWidth: 150 }}>Contraparte</th>
+              <th style={{ ...th, minWidth: 80 }}>Direção</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
+              <th style={{ ...th, minWidth: 90 }}>Status</th>
+            </tr></thead>
+            <tbody>
+              {items.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum fluxo financeiro para este atleta.</td></tr>}
+              {items.map((it, i) => {
+                const late = isOverdue(it.date, it.status)
+                return (
+                  <tr key={i} style={{ background: late ? 'var(--row-late-bg)' : 'transparent' }}>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
+                    <td style={{ ...td, fontSize: 12 }}>{it.nat}</td>
+                    <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>{it.parte}</td>
+                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: fontMono, color: it.dir === 'A_PAGAR' ? 'var(--neg)' : '#166534' }}>{it.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(it.valor, it.moeda)}</td>
+                    <td style={td}><StatusBadge status={it.status} map={PAYMENT_STATUS_STYLE} /></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
