@@ -9,7 +9,7 @@ import { useParams } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllImageRights, fetchAllIntermediaryLiabilities,
   fetchAllClubLiabilities, fetchAllClauses, fetchAllInstallments,
-  fetchAllContracts, fetchAllSalaryTriggers, fetchClubs, fetchIntermediaries,
+  fetchAllContracts, fetchClubs, fetchIntermediaries,
 } from '../lib/athleteQueries'
 import type { Athlete, Currency } from '../types/athlete-system'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
@@ -97,6 +97,7 @@ export default function PageRelatorio() {
     setLoading(false)
   }, [k])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de dados no mount
   useEffect(() => { let alive = true; load().catch(() => { if (alive) setLoading(false) }); return () => { alive = false } }, [load])
 
   // Resolve o destino do link da coluna "Parte".
@@ -255,13 +256,40 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   const name = (id: string) => nameOf.get(id) ?? '—'
 
   if (kind === 'imagem') {
-    const list = await fetchAllImageRights()
-    return list.map(ir => ({
-      id: ir.id, atleta: name(ir.athlete_id), athleteId: ir.athlete_id, natureza: 'Direito de Imagem',
-      parte: name(ir.athlete_id), parteKind: 'atleta' as ParteKind, descricao: `Competência ${ir.month}`,
-      valor: ir.amount, moeda: ir.currency, vencimento: `${ir.month}-01`,
-      pagamento: ir.paid_date, status: STATUS_LABEL[ir.status] ?? ir.status, tone: STATUS_TONE[ir.status] ?? 'neutral',
-    }))
+    // Imagem agora é fluxo de parcelas (cláusula DIREITO_IMAGEM) — parcela por parcela.
+    const [clauses, installments, legacy] = await Promise.all([fetchAllClauses(), fetchAllInstallments(), fetchAllImageRights()])
+    const img = clauses.filter(c => c.clause_type === 'DIREITO_IMAGEM')
+    const rows: Row[] = []
+    for (const c of img) {
+      const parcelas = installments.filter(i => i.clause_id === c.id)
+      if (parcelas.length > 0) {
+        for (const p of parcelas) {
+          rows.push({
+            id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Direito de Imagem',
+            parte: c.creditor_party, parteKind: 'atleta', descricao: `${c.description} — parcela ${p.installment_number}`,
+            valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
+            pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
+          })
+        }
+      } else {
+        rows.push({
+          id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Direito de Imagem',
+          parte: c.creditor_party, parteKind: 'atleta', descricao: c.description,
+          valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
+          pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',
+        })
+      }
+    }
+    // Compatibilidade: lançamentos antigos da tabela image_rights (se houver).
+    for (const ir of legacy) {
+      rows.push({
+        id: ir.id, atleta: name(ir.athlete_id), athleteId: ir.athlete_id, natureza: 'Direito de Imagem',
+        parte: name(ir.athlete_id), parteKind: 'atleta' as ParteKind, descricao: `Competência ${ir.month} (legado)`,
+        valor: ir.amount, moeda: ir.currency, vencimento: `${ir.month}-01`,
+        pagamento: ir.paid_date, status: STATUS_LABEL[ir.status] ?? ir.status, tone: STATUS_TONE[ir.status] ?? 'neutral',
+      })
+    }
+    return rows
   }
 
   if (kind === 'intermediarios') {
@@ -313,27 +341,31 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
     return rows
   }
 
-  // salarios
-  const [contracts, triggers] = await Promise.all([fetchAllContracts(), fetchAllSalaryTriggers()])
+  // salarios — parcela por parcela (cláusula SALARIO_CETD + parcelas, com pro-rata).
+  const [clauses, installments, contracts] = await Promise.all([fetchAllClauses(), fetchAllInstallments(), fetchAllContracts()])
+  const clubByContract = new Map(contracts.map(ct => [ct.id, ct.counterpart_club]))
+  const sal = clauses.filter(c => c.clause_type === 'SALARIO_CETD')
   const rows: Row[] = []
-  for (const ct of contracts) {
-    if (ct.base_salary != null) {
+  for (const c of sal) {
+    const parte = c.contract_id ? (clubByContract.get(c.contract_id) ?? c.creditor_party) : c.creditor_party
+    const parcelas = installments.filter(i => i.clause_id === c.id)
+    if (parcelas.length > 0) {
+      for (const p of parcelas) {
+        rows.push({
+          id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Salário CLT',
+          parte, parteKind: 'atleta', descricao: `${c.description} — parcela ${p.installment_number}`,
+          valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
+          pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
+        })
+      }
+    } else {
       rows.push({
-        id: `${ct.id}-base`, atleta: name(ct.athlete_id), athleteId: ct.athlete_id, natureza: 'Salário base',
-        parte: ct.counterpart_club, parteKind: 'clube', descricao: `Vínculo ${ct.counterpart_club}`,
-        valor: ct.base_salary, moeda: ct.salary_currency, vencimento: ct.start_date,
-        pagamento: null, status: 'Vigente', tone: 'pos',
+        id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Salário CLT',
+        parte, parteKind: 'atleta', descricao: c.description,
+        valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
+        pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',
       })
     }
-  }
-  for (const t of triggers) {
-    rows.push({
-      id: t.id, atleta: name(t.athlete_id), athleteId: t.athlete_id, natureza: 'Meta salarial',
-      parte: '—', parteKind: null, descricao: t.description,
-      valor: t.new_salary, moeda: t.currency,
-      vencimento: t.achieved_date, pagamento: t.status === 'ATINGIDA' ? t.achieved_date : null,
-      status: STATUS_LABEL[t.status] ?? t.status, tone: STATUS_TONE[t.status] ?? 'neutral',
-    })
   }
   return rows
 }
