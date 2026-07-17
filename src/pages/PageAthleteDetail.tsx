@@ -21,7 +21,7 @@ import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO,
 import type {
   Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
-  AthleteStatus, AthleteCategory, AchievementStatus, Currency, HolderType,
+  AthleteStatus, AthleteCategory, Currency, HolderType,
   TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput, NewAthletePJInput,
 } from '../types/athlete-system'
 import {
@@ -65,12 +65,6 @@ const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   EM_ATRASO:         { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
   CANCELADA:         { bg: 'rgba(156,163,175,0.12)', fg: '#6b7280' },
 }
-const ACHIEVEMENT_STATUS_STYLE: Record<AchievementStatus, { bg: string; fg: string }> = {
-  PENDENTE:      { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' },
-  ATINGIDA:      { bg: '#dcf0e4', fg: '#166534' },
-  NAO_ATINGIDA:  { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
-  NAO_APLICAVEL: { bg: 'rgba(156,163,175,0.12)', fg: '#6b7280' },
-}
 const TRIGGER_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDENTE:     { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' },
   ATINGIDA:     { bg: '#dcf0e4', fg: '#166534' },
@@ -84,6 +78,20 @@ function StatusBadge({ status, map }: { status: string; map: Record<string, { bg
     <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase', background: s.bg, color: s.fg, whiteSpace: 'nowrap' }}>
       {status.replace(/_/g, ' ')}
     </span>
+  )
+}
+
+// % financeiro já pago (barra + rótulo) — usado na coluna Atingimento.
+function PctBadge({ pct }: { pct: number }) {
+  const done = pct >= 100
+  const col = done ? '#166534' : pct > 0 ? '#be8c4a' : 'var(--text-muted)'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 64 }}>
+      <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(26,20,16,0.10)', overflow: 'hidden' }}>
+        <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: col, borderRadius: 3 }} />
+      </div>
+      <span style={{ fontFamily: fontMono, fontSize: 10, fontWeight: 600, color: col }}>{pct}%</span>
+    </div>
   )
 }
 
@@ -587,6 +595,12 @@ export default function PageAthleteDetail() {
                   const overdue = isOverdue(c.due_date, c.payment_status); const soon = isDueSoon(c.due_date, c.payment_status)
                   const parc = installments.filter(i => i.clause_id === c.id).sort((a, b) => a.due_date.localeCompare(b.due_date))
                   const open = expandedClauses.has(c.id)
+                  // Atingimento financeiro = % já pago do total (pago/total).
+                  const totCl = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
+                  const paidCl = parc.length
+                    ? parc.filter(p => p.payment_status === 'PAGA').reduce((s, p) => s + p.original_value, 0)
+                    : (c.payment_status === 'PAGA' ? (c.original_value ?? 0) : (c.amount_paid_brl ?? 0))
+                  const pctCl = totCl > 0 ? Math.round((paidCl / totCl) * 100) : 0
                   return (
                     <Fragment key={c.id}>
                     <tr style={{ background: overdue ? 'var(--row-late-bg)' : soon ? 'var(--warn-tint)' : 'transparent' }}>
@@ -602,7 +616,7 @@ export default function PageAthleteDetail() {
                       <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
                       <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
                       <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{c.original_value ? fmtCurrencyShort(c.original_value, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}{parc.length > 0 && <span style={{ fontSize: 9, color: 'var(--text-muted)' }}> · {parc.length}x</span>}</td>
-                      <td style={td}><StatusBadge status={c.achievement_status} map={ACHIEVEMENT_STATUS_STYLE} /></td>
+                      <td style={td}><PctBadge pct={pctCl} /></td>
                       <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                       <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
                       <td style={td}><ClauseActions clause={c} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
@@ -611,12 +625,12 @@ export default function PageAthleteDetail() {
                       const late = isOverdue(p.due_date, p.payment_status)
                       return (
                         <tr key={p.id} style={{ background: 'var(--bg-subtle)' }}>
-                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', textAlign: 'right', paddingLeft: 24 }}>#{p.installment_number}</td>
+                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', textAlign: 'left', paddingLeft: 20 }}>#{p.installment_number}</td>
                           <td style={{ ...td, fontSize: 11, color: 'var(--text-muted)' }}>Parcela {p.installment_number}</td>
-                          <td style={td}></td>
-                          <td style={td}></td>
+                          <td style={{ ...td, fontSize: 11, color: 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
+                          <td style={{ ...td, fontSize: 11, color: 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
                           <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
-                          <td style={td}></td>
+                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)' }}>{p.payment_status === 'PAGA' ? '100%' : '0%'}</td>
                           <td style={td}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                           <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
                           <td style={td}></td>
