@@ -11,8 +11,14 @@ import {
   fetchAllClubLiabilities, fetchAllClauses, fetchAllInstallments,
   fetchClubs, fetchIntermediaries,
 } from '../lib/athleteQueries'
-import type { Athlete, Currency } from '../types/athlete-system'
+import type { Athlete, Currency, Clause, ClauseInstallment } from '../types/athlete-system'
+import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
+
+// Tipos de cláusula voltados a CLUBES (contraparte = clube) e a AGENTES.
+const CLUB_CLAUSE_TYPES = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
+const AGENT_CLAUSE_TYPES = ['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA']
+const isBFRparty = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
 import SheetIO from '../components/SheetIO'
 import RefLink from '../components/RefLink'
 import { buildNameIndex, norm, resultMessage } from '../lib/importHelpers'
@@ -284,6 +290,33 @@ export default function PageRelatorio() {
 
 // ── Construção das linhas por tipo de relatório ─────────────────────────────
 
+// Expande cláusulas (voltadas a clube/agente) em linhas parcela por parcela.
+// A "parte" é a contraparte (o lado que não é o Botafogo).
+function clauseRows(clauses: Clause[], installments: ClauseInstallment[], parteKind: ParteKind, name: (id: string) => string): Row[] {
+  const rows: Row[] = []
+  for (const c of clauses) {
+    const contraparte = isBFRparty(c.debtor_party) ? c.creditor_party : c.debtor_party
+    const natureza = CLAUSE_TYPE_LABELS[c.clause_type]
+    const parcelas = installments.filter(i => i.clause_id === c.id)
+    if (parcelas.length > 0) {
+      for (const p of parcelas) rows.push({
+        id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza,
+        parte: contraparte, parteKind, descricao: `${c.description} — parcela ${p.installment_number}`,
+        valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
+        pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
+      })
+    } else {
+      rows.push({
+        id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza,
+        parte: contraparte, parteKind, descricao: c.description,
+        valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
+        pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',
+      })
+    }
+  }
+  return rows
+}
+
 async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]> {
   const name = (id: string) => nameOf.get(id) ?? '—'
 
@@ -325,23 +358,27 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   }
 
   if (kind === 'intermediarios') {
-    const list = await fetchAllIntermediaryLiabilities()
-    return list.map(l => ({
+    const [list, clauses, installments] = await Promise.all([fetchAllIntermediaryLiabilities(), fetchAllClauses(), fetchAllInstallments()])
+    const rows: Row[] = list.map(l => ({
       id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Intermediação',
       parte: l.intermediary_name, parteKind: 'intermediario' as ParteKind, descricao: l.description ?? '',
       valor: l.amount, moeda: l.currency, vencimento: l.due_date,
       pagamento: l.settled_date, status: STATUS_LABEL[l.status] ?? l.status, tone: STATUS_TONE[l.status] ?? 'neutral',
     }))
+    rows.push(...clauseRows(clauses.filter(c => AGENT_CLAUSE_TYPES.includes(c.clause_type)), installments, 'intermediario', name))
+    return rows
   }
 
   if (kind === 'clubes') {
-    const list = await fetchAllClubLiabilities()
-    return list.map(l => ({
+    const [list, clauses, installments] = await Promise.all([fetchAllClubLiabilities(), fetchAllClauses(), fetchAllInstallments()])
+    const rows: Row[] = list.map(l => ({
       id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Obrigação clube',
       parte: l.club_name, parteKind: 'clube' as ParteKind, descricao: l.description ?? '',
       valor: l.amount, moeda: l.currency, vencimento: l.due_date,
       pagamento: l.settled_date, status: STATUS_LABEL[l.status] ?? l.status, tone: STATUS_TONE[l.status] ?? 'neutral',
     }))
+    rows.push(...clauseRows(clauses.filter(c => CLUB_CLAUSE_TYPES.includes(c.clause_type)), installments, 'clube', name))
+    return rows
   }
 
   if (kind === 'luvas') {
