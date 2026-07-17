@@ -7,19 +7,34 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   fetchClub, updateClub, fetchIntermediary, updateIntermediary,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities, fetchAthletes,
+  fetchAllClauses, fetchAllInstallments,
 } from '../lib/athleteQueries'
-import type { ClubLiability, IntermediaryLiability, Athlete } from '../types/athlete-system'
-import { LIABILITY_STATUS_LABELS, LIABILITY_DIRECTION_LABELS } from '../types/athlete-system'
+import type { Athlete, Currency } from '../types/athlete-system'
+
+// Tipos de cláusula voltados a clube / agente (contraparte = a entidade).
+const CLUB_CLAUSE_TYPES = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
+const AGENT_CLAUSE_TYPES = ['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA']
+const isBFRparty = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
+const norm2 = (s: string) => s.trim().toLowerCase()
+const PST: Record<string, { l: string; t: 'pos' | 'neg' | 'neutral' }> = {
+  PENDENTE: { l: 'Pendente', t: 'neutral' }, PAGA: { l: 'Paga', t: 'pos' },
+  PARCIALMENTE_PAGA: { l: 'Parcial', t: 'neutral' }, EM_ATRASO: { l: 'Em atraso', t: 'neg' },
+  VENCIDA: { l: 'Vencida', t: 'neg' }, CANCELADA: { l: 'Cancelada', t: 'neutral' },
+}
 import ImageUpload from '../components/ImageUpload'
 import RefLink from '../components/RefLink'
-import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
+import { fmtCurrencyShort, fmtDate } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 
 const fontBody = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', monospace"
 
 type Kind = 'clube' | 'intermediario'
-type Liab = ClubLiability | IntermediaryLiability
+interface OblRow {
+  id: string; athlete_id: string; description: string
+  dirLabel: string; amount: number; currency: Currency
+  due_date: string | null; statusLabel: string; tone: 'pos' | 'neg' | 'neutral'
+}
 
 export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const { id } = useParams<{ id: string }>()
@@ -33,7 +48,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const [sub, setSub] = useState<string | null>(null)
   const [logo, setLogo] = useState<string | null>(null)
   const [notes, setNotes] = useState<string | null>(null)
-  const [liabs, setLiabs] = useState<Liab[]>([])
+  const [liabs, setLiabs] = useState<OblRow[]>([])
   const [nameOf, setNameOf] = useState<Map<string, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -43,24 +58,62 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const load = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const athletes = await fetchAthletes()
+    const [athletes, clauses, installments] = await Promise.all([fetchAthletes(), fetchAllClauses(), fetchAllInstallments()])
     setNameOf(new Map(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name])))
+
+    // Cláusulas voltadas à entidade cujo contraparte casa com o nome dela,
+    // expandidas parcela por parcela.
+    const clauseObls = (entityName: string, types: string[]): OblRow[] => {
+      const out: OblRow[] = []
+      for (const c of clauses) {
+        if (!types.includes(c.clause_type)) continue
+        const pagar = isBFRparty(c.debtor_party)
+        const contraparte = pagar ? c.creditor_party : c.debtor_party
+        if (norm2(contraparte) !== norm2(entityName)) continue
+        const dirLabel = pagar ? 'A pagar' : 'A receber'
+        const parcelas = installments.filter(i => i.clause_id === c.id)
+        if (parcelas.length > 0) {
+          for (const p of parcelas) out.push({
+            id: p.id, athlete_id: c.athlete_id, description: `${c.description} — parcela ${p.installment_number}`,
+            dirLabel, amount: p.original_value, currency: p.currency, due_date: p.due_date,
+            statusLabel: PST[p.payment_status]?.l ?? p.payment_status, tone: PST[p.payment_status]?.t ?? 'neutral',
+          })
+        } else {
+          out.push({
+            id: c.id, athlete_id: c.athlete_id, description: c.description,
+            dirLabel, amount: c.original_value ?? 0, currency: c.currency, due_date: c.due_date,
+            statusLabel: PST[c.payment_status]?.l ?? c.payment_status, tone: PST[c.payment_status]?.t ?? 'neutral',
+          })
+        }
+      }
+      return out
+    }
+
     if (isClube) {
       const c = await fetchClub(id)
       if (!c) { setNotFound(true); setLoading(false); return }
       setName(c.name); setSub(c.country); setLogo(c.logo_url); setNotes(c.notes)
-      const all = await fetchAllClubLiabilities()
-      setLiabs(all.filter(l => l.club_name === c.name))
+      const liabRows: OblRow[] = (await fetchAllClubLiabilities()).filter(l => norm2(l.club_name) === norm2(c.name)).map(l => ({
+        id: l.id, athlete_id: l.athlete_id, description: l.description ?? '—',
+        dirLabel: l.direction === 'A_PAGAR' ? 'A pagar' : 'A receber', amount: l.amount, currency: l.currency,
+        due_date: l.due_date, statusLabel: PST[l.status]?.l ?? l.status, tone: PST[l.status]?.t ?? 'neutral',
+      }))
+      setLiabs([...liabRows, ...clauseObls(c.name, CLUB_CLAUSE_TYPES)])
     } else {
       const it = await fetchIntermediary(id)
       if (!it) { setNotFound(true); setLoading(false); return }
       setName(it.name); setSub(it.contact); setLogo(it.logo_url); setNotes(it.notes)
-      const all = await fetchAllIntermediaryLiabilities()
-      setLiabs(all.filter(l => l.intermediary_name === it.name))
+      const liabRows: OblRow[] = (await fetchAllIntermediaryLiabilities()).filter(l => norm2(l.intermediary_name) === norm2(it.name)).map(l => ({
+        id: l.id, athlete_id: l.athlete_id, description: l.description ?? '—',
+        dirLabel: l.direction === 'A_PAGAR' ? 'A pagar' : 'A receber', amount: l.amount, currency: l.currency,
+        due_date: l.due_date, statusLabel: PST[l.status]?.l ?? l.status, tone: PST[l.status]?.t ?? 'neutral',
+      }))
+      setLiabs([...liabRows, ...clauseObls(it.name, AGENT_CLAUSE_TYPES)])
     }
     setLoading(false)
   }, [id, isClube])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de dados no mount
   useEffect(() => { load() }, [load])
 
   async function saveLogo(url: string | null) {
@@ -159,13 +212,13 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                   <td style={{ ...td, fontWeight: 600 }}>
                     <RefLink to={`/atletas/${l.athlete_id}`} title="Abrir atleta">{nameOf.get(l.athlete_id) ?? '—'}</RefLink>
                   </td>
-                  <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{l.description ?? '—'}</td>
-                  <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</td>
+                  <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{l.description}</td>
+                  <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>{l.dirLabel}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: fontMono }}>{fmtCurrencyShort(l.amount, l.currency)}</td>
-                  <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: l.due_date && isOverdue(l.due_date, l.status) ? 'var(--neg)' : 'var(--text-secondary)' }}>{l.due_date ? fmtDate(l.due_date) : '—'}</td>
+                  <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: l.tone === 'neg' ? 'var(--neg)' : 'var(--text-secondary)' }}>{l.due_date ? fmtDate(l.due_date) : '—'}</td>
                   <td style={td}>
-                    <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: l.status === 'PAGA' ? 'var(--pos-tint)' : l.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)', color: l.status === 'PAGA' ? 'var(--pos)' : l.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)' }}>
-                      {LIABILITY_STATUS_LABELS[l.status]}
+                    <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: l.tone === 'pos' ? 'var(--pos-tint)' : l.tone === 'neg' ? 'var(--neg-tint)' : 'var(--cream-inset)', color: l.tone === 'pos' ? 'var(--pos)' : l.tone === 'neg' ? 'var(--neg)' : 'var(--ink-secondary)' }}>
+                      {l.statusLabel}
                     </span>
                   </td>
                 </tr>
