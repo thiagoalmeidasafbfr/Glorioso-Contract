@@ -400,6 +400,21 @@ export async function updateContract(id: string, input: Partial<Contract>): Prom
   return fromAcContract(data)
 }
 
+export async function deleteContract(id: string): Promise<void> {
+  if (!USE_SUPABASE) {
+    // Remove o contrato e suas cláusulas/parcelas dependentes.
+    const cls = local.where<Clause>(T.clauses, 'contract_id', id)
+    for (const c of cls) {
+      for (const inst of local.where<ClauseInstallment>(T.installments, 'clause_id', c.id)) local.remove(T.installments, inst.id)
+      local.remove(T.clauses, c.id)
+    }
+    return local.remove(T.contracts, id)
+  }
+  // Supabase: FK on delete cascade em ac_clausulas_fin/ac_parcelas_fin cobre o resto.
+  const { error } = await supabase.from(AC.contracts).delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Salary Triggers (mudança salarial por meta) ─────────────────────────────
 
 export async function fetchAthleteSalaryTriggers(athleteId: string): Promise<SalaryTrigger[]> {
@@ -761,6 +776,16 @@ export async function updateClause(id: string, input: Partial<Clause>): Promise<
   const { data, error } = await supabase.from(AC.clauses).update(nn(toAcFK(input))).eq('id', id).select().single()
   if (error) throw error
   return fromAcClause(data)
+}
+
+export async function deleteClause(id: string): Promise<void> {
+  if (!USE_SUPABASE) {
+    for (const inst of local.where<ClauseInstallment>(T.installments, 'clause_id', id)) local.remove(T.installments, inst.id)
+    return local.remove(T.clauses, id)
+  }
+  // Supabase: FK on delete cascade em ac_parcelas_fin cobre as parcelas.
+  const { error } = await supabase.from(AC.clauses).delete().eq('id', id)
+  if (error) throw error
 }
 
 export async function registerClausePayment(id: string, payment: PaymentInput): Promise<Clause> {

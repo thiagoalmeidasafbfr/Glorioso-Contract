@@ -5,8 +5,8 @@ import RemunerationChart from '../components/RemunerationChart'
 import OwnershipBar from '../components/OwnershipBar'
 import PaymentModal from '../components/athletes/PaymentModal'
 import {
-  fetchAthlete, updateAthlete, updateContract, fetchAthleteContracts, fetchAthleteClauses,
-  fetchAthleteInstallments,
+  fetchAthlete, updateAthlete, updateContract, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
+  fetchAthleteInstallments, createClause, createClauseInstallments, deleteClause,
   fetchAthleteAlerts, markAlertRead, updateClause,
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
   fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
@@ -17,7 +17,7 @@ import {
 } from '../lib/athleteQueries'
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
-import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS } from '../lib/format'
+import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
@@ -353,6 +353,7 @@ export default function PageAthleteDetail() {
   const [tab, setTab] = useState<Tab>('consolidado')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [showEdit, setShowEdit] = useState(false)
+  const [editContractId, setEditContractId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -384,6 +385,10 @@ export default function PageAthleteDetail() {
   const warnCount = alerts.filter(a => a.alert_type === 'VENCIMENTO_PROXIMO' && !a.is_read).length
   const unreadCrit = alerts.filter(a => a.severity === 'RED' && !a.is_read).length
 
+  async function handleDeleteContract(cid: string) {
+    if (!window.confirm('Excluir este vínculo e todo o seu fluxo (cláusulas e parcelas)? Esta ação não pode ser desfeita.')) return
+    await deleteContract(cid); loadData()
+  }
   async function handleMarkAchieved(clauseId: string) { const u = await updateClause(clauseId, { achievement_status: 'ATINGIDA', achievement_date: todayISO() }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) }
   async function handleCancelClause(clauseId: string) { const u = await updateClause(clauseId, { payment_status: 'CANCELADA' }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) }
   async function handleClausePayment(clauseId: string, p: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
@@ -548,7 +553,7 @@ export default function PageAthleteDetail() {
             </div>
           ) : (
             <>
-              <SalaryImageEditor contract={emp} triggers={empTriggers} canEdit={canEdit} onSaved={loadData} />
+              <SalaryImageEditor contract={emp} triggers={empTriggers} clauses={clauses} athleteName={athlete?.full_name ?? 'Atleta'} canEdit={canEdit} onSaved={loadData} />
               <div className="card" style={{ padding: '18px 20px' }}>
                 <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Metas de aumento salarial</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
@@ -624,6 +629,12 @@ export default function PageAthleteDetail() {
                   </span>
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ct.counterpart_country}</span>}
                   <StatusBadge status={ct.status} map={{ ATIVO: { bg: '#dcf0e4', fg: '#166534' }, ENCERRADO: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' }, RESCINDIDO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' } }} />
+                  {canEdit && (
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                      <button onClick={() => setEditContractId(ct.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar</button>
+                      <button onClick={() => handleDeleteContract(ct.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.4)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, flexWrap: 'wrap' }}>
                   <span>Início: {fmtDate(ct.start_date)}</span>
@@ -710,6 +721,10 @@ export default function PageAthleteDetail() {
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
       {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} pjs={pjs} canEdit={canEdit} onAddPJ={handleAddPJ} onUpdatePJ={handleUpdatePJ} onDeletePJ={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
+      {editContractId && (() => {
+        const ct = contracts.find(c => c.id === editContractId)
+        return ct ? <ContractEditModal contract={ct} onClose={() => setEditContractId(null)} onSaved={() => { setEditContractId(null); loadData() }} /> : null
+      })()}
     </div>
   )
 }
@@ -906,12 +921,54 @@ function ImageSection({ imageRights, pjs, canEdit, onAdd, onUpdate, onDelete }: 
   )
 }
 
+// Vencimento da competência (início + i meses): dia `day` do mês SUBSEQUENTE.
+function dueDayOf(startISO: string, i: number, day: number): string {
+  const d = new Date(startISO + 'T12:00:00Z')
+  d.setUTCMonth(d.getUTCMonth() + i + 1)
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  return `${y}-${m}-${String(day).padStart(2, '0')}`
+}
+
 // ── SalaryImageEditor — salário + imagem editáveis, com o gráfico ────────────
-function SalaryImageEditor({ contract, triggers, canEdit, onSaved }: {
-  contract: Contract; triggers: SalaryTrigger[]; canEdit: boolean; onSaved: () => void
+function SalaryImageEditor({ contract, triggers, clauses, athleteName, canEdit, onSaved }: {
+  contract: Contract; triggers: SalaryTrigger[]; clauses: Clause[]; athleteName: string; canEdit: boolean; onSaved: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [genning, setGenning] = useState(false)
+
+  const SALARY_DUE_DAY = 5, IMAGE_DUE_DAY = 20
+  const vig = (contract.start_date && contract.end_date) ? monthsBetween(contract.start_date, contract.end_date) : 0
+  const flowCount = clauses.filter(c => c.contract_id === contract.id && (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM')).length
+
+  async function genFlow() {
+    if (!contract.end_date) { window.alert('Defina a data de término do vínculo para gerar o fluxo mensal.'); return }
+    if (vig < 1) { window.alert('Vigência inválida (término deve ser depois do início).'); return }
+    if (flowCount > 0 && !window.confirm('Isto substitui o fluxo mensal de salário/imagem já existente deste vínculo. Continuar?')) return
+    setGenning(true)
+    try {
+      // Remove fluxo anterior (salário/imagem) deste vínculo.
+      for (const c of clauses) {
+        if (c.contract_id === contract.id && (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM')) await deleteClause(c.id)
+      }
+      const gen = async (type: Clause['clause_type'], label: string, monthly: number, day: number) => {
+        if (!(monthly > 0)) return
+        const clause = await createClause(contract.id, contract.athlete_id, {
+          clause_type: type, description: `${label} — ${vig}x mensais (venc. dia ${day})`,
+          creditor_party: athleteName, debtor_party: 'Botafogo SAF',
+          currency: contract.salary_currency, original_value: monthly * vig, percentage_value: null,
+          condition_description: '', due_date: dueDayOf(contract.start_date, 0, day), installments_total: vig, notes: '',
+        })
+        await createClauseInstallments(clause.id, contract.athlete_id, Array.from({ length: vig }, (_, i) => ({
+          installment_number: i + 1, due_date: dueDayOf(contract.start_date, i, day), original_value: monthly, currency: contract.salary_currency,
+        })))
+      }
+      await gen('SALARIO_CETD', 'Salário CLT', contract.base_salary ?? 0, SALARY_DUE_DAY)
+      await gen('DIREITO_IMAGEM', 'Direito de imagem', contract.image_value ?? 0, IMAGE_DUE_DAY)
+      onSaved()
+    } finally { setGenning(false) }
+  }
   const [f, setF] = useState({
     base_salary: contract.base_salary != null ? String(contract.base_salary) : '',
     image_value: contract.image_value != null ? String(contract.image_value) : '',
@@ -956,7 +1013,12 @@ function SalaryImageEditor({ contract, triggers, canEdit, onSaved }: {
             Vínculo {fmtDate(contract.start_date)}{contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ''} · origem: {contract.counterpart_club}
           </div>
           {canEdit && !editing && (
-            <button onClick={() => setEditing(true)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar</button>
+            <>
+              <button onClick={genFlow} disabled={genning} title="Gera as parcelas mensais de salário (dia 5) e imagem (dia 20) por toda a vigência" style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: '#be8c4a', color: '#fff', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>
+                {genning ? 'Gerando...' : flowCount > 0 ? 'Atualizar fluxo mensal' : 'Gerar fluxo mensal'}
+              </button>
+              <button onClick={() => setEditing(true)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar</button>
+            </>
           )}
         </div>
       </div>
@@ -1107,6 +1169,89 @@ function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs }: {
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ContractEditModal — editar vínculo (histórico) ───────────────────────────
+function ContractEditModal({ contract, onClose, onSaved }: {
+  contract: Contract; onClose: () => void; onSaved: () => void
+}) {
+  const [f, setF] = useState({
+    type: contract.type,
+    status: contract.status,
+    counterpart_club: contract.counterpart_club ?? '',
+    counterpart_country: contract.counterpart_country ?? '',
+    start_date: contract.start_date ?? '',
+    end_date: contract.end_date ?? '',
+    transfer_fee_gross: contract.transfer_fee_gross != null ? String(contract.transfer_fee_gross) : '',
+    transfer_currency: contract.transfer_currency,
+    base_salary: contract.base_salary != null ? String(contract.base_salary) : '',
+    image_value: contract.image_value != null ? String(contract.image_value) : '',
+    other_value: contract.other_value != null ? String(contract.other_value) : '',
+    salary_currency: contract.salary_currency,
+    description: contract.description ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+  const cur: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
+
+  async function save() {
+    setSaving(true)
+    try {
+      await updateContract(contract.id, {
+        type: f.type, status: f.status,
+        counterpart_club: f.counterpart_club, counterpart_country: f.counterpart_country || null,
+        start_date: f.start_date, end_date: f.end_date || null,
+        transfer_fee_gross: f.transfer_fee_gross ? parseFloat(f.transfer_fee_gross) : null,
+        transfer_currency: f.transfer_currency as Currency,
+        base_salary: f.base_salary ? parseFloat(f.base_salary) : null,
+        image_value: f.image_value ? parseFloat(f.image_value) : null,
+        other_value: f.other_value ? parseFloat(f.other_value) : null,
+        salary_currency: f.salary_currency as Currency,
+        description: f.description || null,
+      })
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar vínculo</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div><label style={lbl}>Tipo</label>
+            <select style={inp} value={f.type} onChange={e => set('type', e.target.value)}>
+              {(['ENTRADA', 'SAIDA', 'EMPRESTIMO_ENTRADA', 'EMPRESTIMO_SAIDA'] as Contract['type'][]).map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+            </select>
+          </div>
+          <div><label style={lbl}>Status</label>
+            <select style={inp} value={f.status} onChange={e => set('status', e.target.value)}>
+              <option value="ATIVO">Ativo</option><option value="ENCERRADO">Encerrado</option><option value="RESCINDIDO">Rescindido</option>
+            </select>
+          </div>
+          <div><label style={lbl}>Clube / Contraparte</label><input style={inp} value={f.counterpart_club} onChange={e => set('counterpart_club', e.target.value)} /></div>
+          <div><label style={lbl}>País</label><input style={inp} value={f.counterpart_country} onChange={e => set('counterpart_country', e.target.value)} /></div>
+          <div><label style={lbl}>Início</label><input style={inp} type="date" value={f.start_date} onChange={e => set('start_date', e.target.value)} /></div>
+          <div><label style={lbl}>Término</label><input style={inp} type="date" value={f.end_date} onChange={e => set('end_date', e.target.value)} /></div>
+          <div><label style={lbl}>Valor transferência</label><input style={inp} type="number" min={0} step={0.01} value={f.transfer_fee_gross} onChange={e => set('transfer_fee_gross', e.target.value)} /></div>
+          <div><label style={lbl}>Moeda transf.</label><select style={inp} value={f.transfer_currency} onChange={e => set('transfer_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label style={lbl}>Salário CLT/mês</label><input style={inp} type="number" min={0} step={0.01} value={f.base_salary} onChange={e => set('base_salary', e.target.value)} /></div>
+          <div><label style={lbl}>Imagem/mês</label><input style={inp} type="number" min={0} step={0.01} value={f.image_value} onChange={e => set('image_value', e.target.value)} /></div>
+          <div><label style={lbl}>Outros/mês</label><input style={inp} type="number" min={0} step={0.01} value={f.other_value} onChange={e => set('other_value', e.target.value)} /></div>
+          <div><label style={lbl}>Moeda salário</label><select style={inp} value={f.salary_currency} onChange={e => set('salary_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+        </div>
+        <div><label style={lbl}>Descrição</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+          Alterar salário/imagem aqui muda os valores do vínculo. Para regerar as parcelas mensais, use "Atualizar fluxo mensal" na aba CLT + Imagem.
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={save} disabled={saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
         </div>
       </div>
     </div>
