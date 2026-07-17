@@ -1,10 +1,10 @@
 // src/components/RemunerationChart.tsx
 // Gráfico de degraus (SVG, sem dependências) da remuneração mensal do atleta —
-// salário CLT + imagem + outros — ao longo do vínculo. Trecho realizado (até
-// hoje) é linha cheia; a projeção (do próximo mês até o fim) é pontilhada.
-// Os degraus vêm das metas salariais atingidas. Mostra também o total acumulado
-// até o fim do contrato.
+// salário CLT + imagem + outros — ao longo do vínculo. Interativo: ao passar o
+// mouse, mostra um tooltip com o mês e o valor daquele mês. Trecho realizado
+// (até hoje) é linha cheia; a projeção é pontilhada. Mostra o total até o fim.
 
+import { useRef, useState } from 'react'
 import type { Contract, SalaryTrigger } from '../types/athlete-system'
 import { salarySteps } from '../lib/salary'
 import { fmtCurrencyShort, fmtDate, todayISO } from '../lib/format'
@@ -23,16 +23,17 @@ function addMonthsISO(iso: string, n: number): string {
 }
 
 export default function RemunerationChart({ contract, triggers }: { contract: Contract; triggers: SalaryTrigger[] }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [hover, setHover] = useState<number | null>(null)
+
   const start = contract.start_date
-  const end = contract.end_date ??
-    addMonthsISO(start, 24) // sem término: projeta 24 meses
+  const end = contract.end_date ?? addMonthsISO(start, 24)
   const today = todayISO()
   const extra = (contract.image_value ?? 0) + (contract.other_value ?? 0)
 
   const totalMonths = Math.max(1, monthsBetween(start, end))
   const clampT = (d: string) => Math.min(1, Math.max(0, monthsBetween(start, d) / totalMonths))
 
-  // Degraus de salário (base + metas atingidas), ordenados por data.
   const steps = salarySteps(contract, triggers).filter(s => (s.amount ?? 0) >= 0)
     .slice().sort((a, b) => a.from.localeCompare(b.from))
   const points = steps.map(s => ({ t: clampT(s.from < start ? start : s.from), total: (s.amount ?? 0) + extra }))
@@ -41,7 +42,6 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
   const todayT = clampT(today < start ? start : today)
   const maxTotal = Math.max(...points.map(p => p.total), 1) * 1.15
 
-  // Geometria — com margem para não sobrepor rótulos.
   const W = 560, H = 168, padL = 10, padR = 10, padT = 22, padB = 34
   const iw = W - padL - padR, ih = H - padT - padB
   const X = (t: number) => padL + t * iw
@@ -53,7 +53,16 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
     return v
   }
 
-  // Segmentos em degrau de 0..1, cheios até hoje e pontilhados na projeção.
+  // Pontos mensais (para tooltip / total acumulado).
+  const nMonths = Math.max(1, Math.round(monthsBetween(start, end)))
+  const months = Array.from({ length: nMonths }, (_, i) => {
+    const iso = addMonthsISO(start, i)
+    const t = clampT(iso)
+    return { i, iso, t, total: totalAt(t) }
+  })
+  const totalAteFim = months.reduce((s, m) => s + m.total, 0)
+
+  // Segmentos em degrau.
   type Seg = { x1: number; y1: number; x2: number; y2: number; dashed: boolean }
   const segs: Seg[] = []
   const stops = Array.from(new Set([0, ...points.map(p => p.t), todayT, 1])).sort((a, b) => a - b)
@@ -67,19 +76,22 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
   }
 
   const currentTotal = totalAt(todayT)
-
-  // Total acumulado até o fim do contrato (soma da remuneração mês a mês).
-  const nMonths = Math.max(1, Math.round(monthsBetween(start, end)))
-  let totalAteFim = 0
-  for (let i = 0; i < nMonths; i++) totalAteFim += totalAt(clampT(addMonthsISO(start, i)))
-
-  // Rótulo "hoje" só quando não está colado nas bordas (evita sobrepor as datas).
   const showTodayLabel = todayT > 0.06 && todayT < 0.94
 
+  function onMove(e: React.MouseEvent<SVGSVGElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relX = (e.clientX - rect.left) / rect.width           // 0..1 do SVG
+    const plotFrac = Math.min(1, Math.max(0, (relX * W - padL) / iw))
+    const idx = Math.min(nMonths - 1, Math.max(0, Math.round(plotFrac * (nMonths - 1))))
+    setHover(idx)
+  }
+
+  const hv = hover != null ? months[hover] : null
+
   return (
-    <div style={{ maxWidth: 620 }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
-        {/* grade + rótulos do eixo Y (0 e máximo) */}
+    <div ref={wrapRef} style={{ maxWidth: 620, position: 'relative' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}
+        onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         {[0, 0.5, 1].map(g => (
           <line key={g} x1={padL} x2={W - padR} y1={padT + ih - g * ih} y2={padT + ih - g * ih} stroke="var(--divider)" strokeWidth="1" />
         ))}
@@ -87,25 +99,39 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
           {fmtCurrencyShort(maxTotal, contract.salary_currency)}
         </text>
 
-        {/* marcador HOJE (rótulo no topo, para não colidir com as datas embaixo) */}
         <line x1={X(todayT)} x2={X(todayT)} y1={padT} y2={padT + ih} stroke="var(--divider-strong)" strokeWidth="1" strokeDasharray="2 3" />
-        {showTodayLabel && (
-          <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">hoje</text>
-        )}
+        {showTodayLabel && <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">hoje</text>}
 
-        {/* datas de início/fim */}
         <text x={padL} y={H - 8} textAnchor="start" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">{fmtDate(start)}</text>
         <text x={W - padR} y={H - 8} textAnchor="end" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">{fmtDate(end)}</text>
 
-        {/* linha em degraus */}
         {segs.map((s, i) => (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
             stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round"
             strokeDasharray={s.dashed ? '4 4' : undefined} opacity={s.dashed ? 0.6 : 1} />
         ))}
-        {/* ponto atual */}
-        <circle cx={X(todayT)} cy={Y(currentTotal)} r="4" fill="var(--gold)" />
+
+        {/* guia + ponto do hover */}
+        {hv && (
+          <>
+            <line x1={X(hv.t)} x2={X(hv.t)} y1={padT} y2={padT + ih} stroke="var(--gold)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+            <circle cx={X(hv.t)} cy={Y(hv.total)} r="4.5" fill="var(--gold)" stroke="#fff" strokeWidth="1.5" />
+          </>
+        )}
+        <circle cx={X(todayT)} cy={Y(currentTotal)} r="4" fill="var(--gold)" opacity={hv ? 0.4 : 1} />
       </svg>
+
+      {/* tooltip */}
+      {hv && (
+        <div style={{
+          position: 'absolute', top: 2, left: `${(X(hv.t) / W) * 100}%`, transform: 'translateX(-50%)',
+          background: 'var(--ink-primary, #1a1410)', color: '#fff', padding: '5px 9px', borderRadius: 6,
+          fontFamily: fontMono, fontSize: 10, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+        }}>
+          <div style={{ opacity: 0.7 }}>{fmtDate(hv.iso)}{hv.t > todayT ? ' · projeção' : ''}</div>
+          <div style={{ fontWeight: 700 }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 11, color: 'var(--text-muted)' }}>
         <span><span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--gold)', verticalAlign: 'middle', marginRight: 6 }} />Remuneração total/mês</span>

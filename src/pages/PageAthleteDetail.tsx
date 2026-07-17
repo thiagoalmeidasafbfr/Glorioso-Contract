@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import ImageUpload from '../components/ImageUpload'
 import RemunerationChart from '../components/RemunerationChart'
@@ -13,7 +13,7 @@ import {
   fetchAthleteClubLiabilities, fetchAthleteIntermediaryLiabilities,
   fetchClubs, fetchIntermediaries,
   fetchAthletePJs, createPJ, updatePJ, deletePJ,
-  fetchAthleteImageRights, createImageRight, updateImageRight, deleteImageRight,
+  fetchAthleteImageRights,
 } from '../lib/athleteQueries'
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
@@ -26,7 +26,7 @@ import type {
 } from '../types/athlete-system'
 import {
   CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS,
-  ATHLETE_CATEGORY_LABELS, LIABILITY_STATUS_LABELS,
+  ATHLETE_CATEGORY_LABELS,
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
 import { buildRemunerationFlow } from '../lib/remflow'
@@ -357,6 +357,8 @@ export default function PageAthleteDetail() {
   const [editContractId, setEditContractId] = useState<string | null>(null)
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set())
   const toggleExpand = (cid: string) => setExpandedContracts(prev => { const n = new Set(prev); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
+  const [expandedClauses, setExpandedClauses] = useState<Set<string>>(new Set())
+  const toggleClause = (cid: string) => setExpandedClauses(prev => { const n = new Set(prev); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -409,14 +411,6 @@ export default function PageAthleteDetail() {
   async function handleUpdatePJ(pjId: string, patch: Partial<AthletePJ>) { const u = await updatePJ(pjId, patch); setPjs(prev => prev.map(p => p.id === pjId ? u : p)) }
   async function handleDeletePJ(pjId: string) { await deletePJ(pjId); setPjs(prev => prev.filter(p => p.id !== pjId)); setImageRights(prev => prev.map(ir => ir.pj_id === pjId ? { ...ir, pj_id: null } : ir)) }
 
-  // ── Direito de imagem (por PJ) ──
-  async function handleAddImage(input: { pj_id: string | null; month: string; amount: number; currency: Currency; status: ImageRight['status']; notes: string }) {
-    if (!id) return
-    const ir = await createImageRight(id, { pj_id: input.pj_id, month: input.month, amount: input.amount, currency: input.currency, status: input.status, notes: input.notes })
-    setImageRights(prev => [...prev, ir])
-  }
-  async function handleUpdateImage(irId: string, patch: Partial<ImageRight>) { const u = await updateImageRight(irId, patch); setImageRights(prev => prev.map(ir => ir.id === irId ? u : ir)) }
-  async function handleDeleteImage(irId: string) { await deleteImageRight(irId); setImageRights(prev => prev.filter(ir => ir.id !== irId)) }
 
   function exportAthlete() {
     if (!athlete) return
@@ -568,7 +562,6 @@ export default function PageAthleteDetail() {
             </>
           )}
           <FlowList title="Fluxo mensal — Salário CLT + Imagem" installments={installments} clauses={clauses} types={['SALARIO_CETD', 'DIREITO_IMAGEM']} />
-          <ImageSection imageRights={imageRights} pjs={pjs} canEdit={canEdit} onAdd={handleAddImage} onUpdate={handleUpdateImage} onDelete={handleDeleteImage} />
         </div>
       )}
 
@@ -592,21 +585,48 @@ export default function PageAthleteDetail() {
                 {clauses.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma cláusula cadastrada.</td></tr>}
                 {clauses.map(c => {
                   const overdue = isOverdue(c.due_date, c.payment_status); const soon = isDueSoon(c.due_date, c.payment_status)
+                  const parc = installments.filter(i => i.clause_id === c.id).sort((a, b) => a.due_date.localeCompare(b.due_date))
+                  const open = expandedClauses.has(c.id)
                   return (
-                    <tr key={c.id} style={{ background: overdue ? 'var(--row-late-bg)' : soon ? 'var(--warn-tint)' : 'transparent' }}>
-                      <td style={td}><span style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: 'var(--text-muted)' }}>{CLAUSE_TYPE_LABELS[c.clause_type]}</span></td>
+                    <Fragment key={c.id}>
+                    <tr style={{ background: overdue ? 'var(--row-late-bg)' : soon ? 'var(--warn-tint)' : 'transparent' }}>
+                      <td style={td}>
+                        {parc.length > 0
+                          ? <button onClick={() => toggleClause(c.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: '#be8c4a' }}>{open ? '▾' : '▸'} {CLAUSE_TYPE_LABELS[c.clause_type]}</button>
+                          : <span style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: 'var(--text-muted)' }}>{CLAUSE_TYPE_LABELS[c.clause_type]}</span>}
+                      </td>
                       <td style={{ ...td, maxWidth: 280 }}>
                         <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description}</div>
                         {c.condition_description && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.condition_description}</div>}
                       </td>
                       <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
                       <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
-                      <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{c.original_value ? fmtCurrencyShort(c.original_value, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}</td>
+                      <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{c.original_value ? fmtCurrencyShort(c.original_value, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}{parc.length > 0 && <span style={{ fontSize: 9, color: 'var(--text-muted)' }}> · {parc.length}x</span>}</td>
                       <td style={td}><StatusBadge status={c.achievement_status} map={ACHIEVEMENT_STATUS_STYLE} /></td>
                       <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                       <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
                       <td style={td}><ClauseActions clause={c} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
                     </tr>
+                    {open && parc.length > 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ ...td, background: 'var(--bg-subtle)', padding: '4px 12px 10px' }}>
+                          <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                            {parc.map(p => {
+                              const late = isOverdue(p.due_date, p.payment_status)
+                              return (
+                                <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '40px 120px 1fr 100px', gap: 8, alignItems: 'center', padding: '4px 0', borderTop: '1px solid var(--divider-soft)' }}>
+                                  <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>{p.installment_number}</span>
+                                  <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
+                                  <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
+                                  <span style={{ textAlign: 'right' }}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   )
                 })}
               </tbody>
@@ -620,7 +640,10 @@ export default function PageAthleteDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {contracts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhum vínculo cadastrado.</div>}
           {contracts.map(ct => {
-            const ctClauses = clauses.filter(c => c.contract_id === ct.id)
+            // O vínculo (clube) só mostra transfer fee, cláusulas e gatilhos.
+            // Salário (Botafogo×atleta PF) e imagem (Botafogo×PJ) NÃO entram aqui —
+            // vivem na aba CLT + Imagem.
+            const ctClauses = clauses.filter(c => c.contract_id === ct.id && c.clause_type !== 'SALARIO_CETD' && c.clause_type !== 'DIREITO_IMAGEM')
             const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#dcf0e4', fg: '#166534' }, SAIDA: { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(168,85,247,0.12)', fg: '#7c3aed' } }
             const ts = typeStyle[ct.type] ?? { bg: '#eee', fg: '#333' }
             return (
@@ -861,107 +884,6 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
   )
 }
 
-// ── Direito de imagem (lançamentos mensais, atrelados à PJ) ──────────────────
-
-function ImageSection({ imageRights, pjs, canEdit, onAdd, onUpdate, onDelete }: {
-  imageRights: ImageRight[]; pjs: AthletePJ[]; canEdit: boolean
-  onAdd: (i: { pj_id: string | null; month: string; amount: number; currency: Currency; status: ImageRight['status']; notes: string }) => void
-  onUpdate: (id: string, patch: Partial<ImageRight>) => void
-  onDelete: (id: string) => void
-}) {
-  const [f, setF] = useState<{ pj_id: string; month: string; amount: string; currency: Currency; status: ImageRight['status'] }>(
-    { pj_id: '', month: '', amount: '', currency: 'BRL', status: 'PENDENTE' },
-  )
-  const pjName = (pjId: string | null) => pjs.find(p => p.id === pjId)?.legal_name ?? '—'
-  const sorted = [...imageRights].sort((a, b) => b.month.localeCompare(a.month))
-  const statuses: ImageRight['status'][] = ['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA']
-
-  function submit() {
-    if (!f.month) return
-    onAdd({ pj_id: f.pj_id || null, month: f.month, amount: Number(f.amount.replace(',', '.')) || 0, currency: f.currency, status: f.status, notes: '' })
-    setF({ pj_id: f.pj_id, month: '', amount: '', currency: f.currency, status: 'PENDENTE' })
-  }
-
-  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
-  const cellSel: React.CSSProperties = { padding: '4px 6px', borderRadius: 6, fontSize: 12, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font }
-
-  return (
-    <div className="card" style={{ overflow: 'hidden' }}>
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--divider-soft)' }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Direito de imagem</div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 2 }}>Cada lançamento mensal fica atrelado a uma PJ do atleta.</div>
-      </div>
-
-      {canEdit && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.4fr 1fr 0.9fr 1.2fr auto', gap: 8, alignItems: 'end', padding: '12px 20px', background: 'var(--bg-subtle)', borderBottom: '1px solid var(--divider-soft)' }}>
-          <div><label style={pjLbl}>PJ</label>
-            <select style={{ ...pjInp, width: '100%' }} value={f.pj_id} onChange={e => setF(p => ({ ...p, pj_id: e.target.value }))}>
-              <option value="">— Sem PJ —</option>
-              {pjs.map(p => <option key={p.id} value={p.id}>{p.legal_name}</option>)}
-            </select>
-          </div>
-          <div><label style={pjLbl}>Competência *</label><input type="month" style={{ ...pjInp, width: '100%' }} value={f.month} onChange={e => setF(p => ({ ...p, month: e.target.value }))} /></div>
-          <div><label style={pjLbl}>Valor</label><input inputMode="decimal" style={{ ...pjInp, width: '100%', textAlign: 'right', fontFamily: fontMono }} value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value.replace(/[^\d.,]/g, '') }))} placeholder="0" /></div>
-          <div><label style={pjLbl}>Moeda</label>
-            <select style={{ ...pjInp, width: '100%' }} value={f.currency} onChange={e => setF(p => ({ ...p, currency: e.target.value as Currency }))}>
-              {(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div><label style={pjLbl}>Status</label>
-            <select style={{ ...pjInp, width: '100%' }} value={f.status} onChange={e => setF(p => ({ ...p, status: e.target.value as ImageRight['status'] }))}>
-              {statuses.map(s => <option key={s} value={s}>{LIABILITY_STATUS_LABELS[s]}</option>)}
-            </select>
-          </div>
-          <button onClick={submit} disabled={!f.month} style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: f.month ? 'var(--ink-primary)' : '#ccc', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.month ? 'pointer' : 'not-allowed' }}>+ Lançar</button>
-        </div>
-      )}
-
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
-          <thead>
-            <tr>
-              <th style={th}>Competência</th>
-              <th style={th}>PJ</th>
-              <th style={{ ...th, textAlign: 'right' }}>Valor</th>
-              <th style={th}>Status</th>
-              {canEdit && <th style={{ ...th, textAlign: 'right' }}></th>}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.length === 0 && <tr><td colSpan={canEdit ? 5 : 4} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>Nenhum lançamento de imagem.</td></tr>}
-            {sorted.map(ir => (
-              <tr key={ir.id}>
-                <td style={{ ...td, fontFamily: fontMono }}>{ir.month}</td>
-                <td style={td}>
-                  {canEdit ? (
-                    <select style={cellSel} value={ir.pj_id ?? ''} onChange={e => onUpdate(ir.id, { pj_id: e.target.value || null })}>
-                      <option value="">— Sem PJ —</option>
-                      {pjs.map(p => <option key={p.id} value={p.id}>{p.legal_name}</option>)}
-                    </select>
-                  ) : pjName(ir.pj_id)}
-                </td>
-                <td style={{ ...td, textAlign: 'right', fontFamily: fontMono }}>{fmtCurrencyShort(ir.amount, ir.currency)}</td>
-                <td style={td}>
-                  {canEdit ? (
-                    <select style={cellSel} value={ir.status} onChange={e => onUpdate(ir.id, { status: e.target.value as ImageRight['status'] })}>
-                      {statuses.map(s => <option key={s} value={s}>{LIABILITY_STATUS_LABELS[s]}</option>)}
-                    </select>
-                  ) : <StatusBadge status={ir.status} map={PAYMENT_STATUS_STYLE} />}
-                </td>
-                {canEdit && (
-                  <td style={{ ...td, textAlign: 'right' }}>
-                    <button onClick={() => { if (window.confirm('Excluir este lançamento de imagem?')) onDelete(ir.id) }} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
 
 // ── SalaryImageEditor — salário + imagem editáveis, com o gráfico ────────────
 function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canEdit, onSaved }: {
