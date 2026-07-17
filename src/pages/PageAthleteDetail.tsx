@@ -29,6 +29,7 @@ import {
   ATHLETE_CATEGORY_LABELS, LIABILITY_STATUS_LABELS,
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
+import { buildRemunerationFlow } from '../lib/remflow'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
@@ -921,15 +922,6 @@ function ImageSection({ imageRights, pjs, canEdit, onAdd, onUpdate, onDelete }: 
   )
 }
 
-// Vencimento da competência (início + i meses): dia `day` do mês SUBSEQUENTE.
-function dueDayOf(startISO: string, i: number, day: number): string {
-  const d = new Date(startISO + 'T12:00:00Z')
-  d.setUTCMonth(d.getUTCMonth() + i + 1)
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  return `${y}-${m}-${String(day).padStart(2, '0')}`
-}
-
 // ── SalaryImageEditor — salário + imagem editáveis, com o gráfico ────────────
 function SalaryImageEditor({ contract, triggers, clauses, athleteName, canEdit, onSaved }: {
   contract: Contract; triggers: SalaryTrigger[]; clauses: Clause[]; athleteName: string; canEdit: boolean; onSaved: () => void
@@ -954,14 +946,18 @@ function SalaryImageEditor({ contract, triggers, clauses, athleteName, canEdit, 
       }
       const gen = async (type: Clause['clause_type'], label: string, monthly: number, day: number) => {
         if (!(monthly > 0)) return
+        // Fluxo com pro-rata nos meses quebrados, vencimento no mês subsequente.
+        const flow = buildRemunerationFlow(contract.start_date, contract.end_date!, monthly, day)
+        if (flow.length === 0) return
+        const totalValue = flow.reduce((s, l) => s + l.value, 0)
         const clause = await createClause(contract.id, contract.athlete_id, {
-          clause_type: type, description: `${label} — ${vig}x mensais (venc. dia ${day})`,
+          clause_type: type, description: `${label} — ${flow.length}x mensais (venc. dia ${day}, pro-rata)`,
           creditor_party: athleteName, debtor_party: 'Botafogo SAF',
-          currency: contract.salary_currency, original_value: monthly * vig, percentage_value: null,
-          condition_description: '', due_date: dueDayOf(contract.start_date, 0, day), installments_total: vig, notes: '',
+          currency: contract.salary_currency, original_value: totalValue, percentage_value: null,
+          condition_description: '', due_date: flow[0].due_date, installments_total: flow.length, notes: '',
         })
-        await createClauseInstallments(clause.id, contract.athlete_id, Array.from({ length: vig }, (_, i) => ({
-          installment_number: i + 1, due_date: dueDayOf(contract.start_date, i, day), original_value: monthly, currency: contract.salary_currency,
+        await createClauseInstallments(clause.id, contract.athlete_id, flow.map((l, i) => ({
+          installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: contract.salary_currency,
         })))
       }
       await gen('SALARIO_CETD', 'Salário CLT', contract.base_salary ?? 0, SALARY_DUE_DAY)
