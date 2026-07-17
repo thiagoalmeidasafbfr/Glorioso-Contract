@@ -607,25 +607,22 @@ export default function PageAthleteDetail() {
                       <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
                       <td style={td}><ClauseActions clause={c} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
                     </tr>
-                    {open && parc.length > 0 && (
-                      <tr>
-                        <td colSpan={9} style={{ ...td, background: 'var(--bg-subtle)', padding: '4px 12px 10px' }}>
-                          <div style={{ maxHeight: 260, overflowY: 'auto' }}>
-                            {parc.map(p => {
-                              const late = isOverdue(p.due_date, p.payment_status)
-                              return (
-                                <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '40px 120px 1fr 100px', gap: 8, alignItems: 'center', padding: '4px 0', borderTop: '1px solid var(--divider-soft)' }}>
-                                  <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>{p.installment_number}</span>
-                                  <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
-                                  <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
-                                  <span style={{ textAlign: 'right' }}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                    {open && parc.map(p => {
+                      const late = isOverdue(p.due_date, p.payment_status)
+                      return (
+                        <tr key={p.id} style={{ background: 'var(--bg-subtle)' }}>
+                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', textAlign: 'right', paddingLeft: 24 }}>#{p.installment_number}</td>
+                          <td style={{ ...td, fontSize: 11, color: 'var(--text-muted)' }}>Parcela {p.installment_number}</td>
+                          <td style={td}></td>
+                          <td style={td}></td>
+                          <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
+                          <td style={td}></td>
+                          <td style={td}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
+                          <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
+                          <td style={td}></td>
+                        </tr>
+                      )
+                    })}
                     </Fragment>
                   )
                 })}
