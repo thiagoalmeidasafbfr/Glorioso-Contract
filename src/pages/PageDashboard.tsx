@@ -334,8 +334,8 @@ export default function PageDashboard() {
                 { to: '/atletas', label: 'Lista de Atletas' },
                 { to: '/album', label: 'Álbum de Figurinhas' },
                 { to: '/relatorios/consolidado', label: 'Relatório Consolidado' },
-                { to: '/clubes', label: 'Passivos — Clubes' },
-                { to: '/intermediarios', label: 'Passivos — Agentes' },
+                { to: '/clubes', label: 'Obrigações — Clubes' },
+                { to: '/intermediarios', label: 'Obrigações — Agentes' },
               ].map(link => (
                 <Link
                   key={link.to}

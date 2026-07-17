@@ -11,6 +11,7 @@ import PageDashboard from './pages/PageDashboard'
 import PageAlbum from './pages/PageAlbum'
 import PageAthletesList from './pages/PageAthletesList'
 import PageAthleteDetail from './pages/PageAthleteDetail'
+import PageWizard from './pages/PageWizard'
 import PageAthleteNewContract from './pages/PageAthleteNewContract'
 
 // Cadastros (clubes / intermediários)
@@ -52,6 +53,7 @@ function AppRoutes() {
       <Layout>
         <Routes>
           <Route path="/" element={<Navigate to="/atletas" replace />} />
+          <Route path="/criar" element={<PageWizard />} />
 
           {/* Atletas */}
           <Route path="/dashboard" element={<PageDashboard />} />
