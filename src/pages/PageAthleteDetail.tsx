@@ -32,7 +32,7 @@ import {
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
 import { buildRemunerationFlow } from '../lib/remflow'
-import { createRenegotiation, decodeAcordo, isAcordo, type AcordoSource, type RenegotiationInput } from '../lib/renegotiation'
+import { createRenegotiation, decodeAcordo, isAcordo, renegotiatedAcordoId, type AcordoSource, type RenegotiationInput } from '../lib/renegotiation'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
@@ -384,6 +384,8 @@ export default function PageAthleteDetail() {
   const [editInstId, setEditInstId] = useState<string | null>(null)
   const [editClauseId, setEditClauseId] = useState<string | null>(null)
   const [showReneg, setShowReneg] = useState(false)
+  const [highlightAcordo, setHighlightAcordo] = useState<string | null>(null)
+  const goToAcordo = (acordoId: string) => { setTab('acordos'); setHighlightAcordo(acordoId) }
   const [showEdit, setShowEdit] = useState(false)
   const [editContractId, setEditContractId] = useState<string | null>(null)
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set())
@@ -713,22 +715,29 @@ export default function PageAthleteDetail() {
                     </tr>
                     {open && parc.map(p => {
                       const late = isOverdue(p.due_date, p.payment_status)
+                      // Parcela renegociada (cancelada em favor de um acordo): linha em vermelho.
+                      const renegId = p.payment_status === 'CANCELADA' ? renegotiatedAcordoId(p.notes) : null
+                      const rc = renegId ? 'var(--neg)' : null
                       return (
                         <tr key={p.id} style={{ background: 'var(--bg-subtle)' }}>
-                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', textAlign: 'left', paddingLeft: 20 }}>#{p.installment_number}</td>
-                          <td style={{ ...td, fontSize: 11, color: 'var(--text-muted)' }}>Parcela {p.installment_number}</td>
-                          <td style={{ ...td, fontSize: 11, color: 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
-                          <td style={{ ...td, fontSize: 11, color: 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
-                          <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
-                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)' }}>{p.payment_status === 'PAGA' ? '100%' : '0%'}</td>
+                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: rc ?? 'var(--text-muted)', textAlign: 'left', paddingLeft: 20 }}>#{p.installment_number}</td>
+                          <td style={{ ...td, fontSize: 11, color: rc ?? 'var(--text-muted)' }}>Parcela {p.installment_number}{renegId ? ' · renegociada' : ''}</td>
+                          <td style={{ ...td, fontSize: 11, color: rc ?? 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
+                          <td style={{ ...td, fontSize: 11, color: rc ?? 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
+                          <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600, color: rc ?? undefined }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
+                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: rc ?? 'var(--text-muted)' }}>{p.payment_status === 'PAGA' ? '100%' : '0%'}</td>
                           <td style={td}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
-                          <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
+                          <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: rc ?? (late ? 'var(--neg)' : 'var(--ink-secondary)'), fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
                           <td style={{ ...td, textAlign: 'center' }}>
-                            <InstallmentActions inst={p} canEdit={canEdit}
-                              onEdit={() => setEditInstId(p.id)}
-                              onPay={() => setPayInstId(p.id)}
-                              onQuickPay={() => handleMarkInstallmentPaidQuick(p.id)}
-                              onRevert={() => handleRevertInstallment(p.id)} />
+                            {renegId ? (
+                              <button onClick={() => goToAcordo(renegId)} title="Ver renegociação" style={{ padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(122,63,44,0.35)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>→ acordo</button>
+                            ) : (
+                              <InstallmentActions inst={p} canEdit={canEdit}
+                                onEdit={() => setEditInstId(p.id)}
+                                onPay={() => setPayInstId(p.id)}
+                                onQuickPay={() => handleMarkInstallmentPaidQuick(p.id)}
+                                onRevert={() => handleRevertInstallment(p.id)} />
+                            )}
                           </td>
                         </tr>
                       )
@@ -746,6 +755,7 @@ export default function PageAthleteDetail() {
       {tab === 'acordos' && (
         <AcordosTab
           clauses={clauses} installments={installments} canEdit={canEdit}
+          highlight={highlightAcordo} onHighlighted={() => setHighlightAcordo(null)}
           onNew={() => setShowReneg(true)}
           onEditInst={id => setEditInstId(id)}
           onPayInst={id => setPayInstId(id)}
@@ -1521,12 +1531,21 @@ function ClauseEditModal({ clause, onClose, onSave }: {
 }
 
 // ── AcordosTab — acordos e renegociações do atleta ──────────────────────────
-function AcordosTab({ clauses, installments, canEdit, onNew, onEditInst, onPayInst, onQuickPayInst, onRevertInst }: {
+function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, onNew, onEditInst, onPayInst, onQuickPayInst, onRevertInst }: {
   clauses: Clause[]; installments: ClauseInstallment[]; canEdit: boolean
+  highlight?: string | null; onHighlighted?: () => void
   onNew: () => void
   onEditInst: (id: string) => void; onPayInst: (id: string) => void; onQuickPayInst: (id: string) => void; onRevertInst: (id: string) => void
 }) {
   const acordos = clauses.filter(isAcordo).sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+  // Ao chegar de "→ acordo" (parcela renegociada), rola até o acordo e o destaca.
+  useEffect(() => {
+    if (!highlight) return
+    const el = document.getElementById(`acordo-${highlight}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const t = setTimeout(() => onHighlighted?.(), 2000)
+    return () => clearTimeout(t)
+  }, [highlight, onHighlighted])
   const th: React.CSSProperties = { padding: '7px 10px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-soft)', fontFamily: fontMono, letterSpacing: '0.12em', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '7px 10px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)' }
   return (
@@ -1549,8 +1568,9 @@ function AcordosTab({ clauses, installments, canEdit, onNew, onEditInst, onPayIn
         const meta = decodeAcordo(ac.notes)
         const parc = installments.filter(i => i.clause_id === ac.id).sort((a, b) => a.installment_number - b.installment_number)
         const paidCount = parc.filter(p => p.payment_status === 'PAGA').length
+        const isHi = highlight === ac.id
         return (
-          <div key={ac.id} className="card" style={{ padding: '18px 20px' }}>
+          <div key={ac.id} id={`acordo-${ac.id}`} className="card" style={{ padding: '18px 20px', border: isHi ? '1px solid var(--gold-ring)' : undefined, boxShadow: isHi ? '0 0 0 3px rgba(190,140,74,0.20)' : undefined, transition: 'box-shadow 0.4s, border-color 0.4s' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{meta?.creditor ?? ac.creditor_party}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>{meta ? `acordado em ${fmtDate(meta.createdAt)}` : ''}</div>
