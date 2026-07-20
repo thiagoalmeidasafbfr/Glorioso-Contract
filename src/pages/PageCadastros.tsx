@@ -10,6 +10,7 @@ import {
 } from '../lib/athleteQueries'
 import type { Club, Intermediary, NewClubInput, NewIntermediaryInput } from '../types/athlete-system'
 import ImageUpload from '../components/ImageUpload'
+import PageHero from '../components/PageHero'
 import { fmtCurrencyShort } from '../lib/format'
 
 const fontBody = "'Inter', system-ui, sans-serif"
@@ -56,21 +57,14 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1300, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 22 }}>
-        <div>
-          <div style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 6 }}>Cadastro</div>
-          <h1 style={{ fontFamily: fontBody, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{title}</h1>
-          <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }} />
-          <button onClick={() => setShowNew(true)}
-            style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            Adicionar {isClube ? 'clube' : 'agente'}
-          </button>
-        </div>
-      </div>
+      <PageHero title={title} subtitle="Cadastro · Botafogo SAF">
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }} />
+        <button onClick={() => setShowNew(true)}
+          style={{ padding: '9px 18px', background: 'var(--gold-soft)', border: 'none', borderRadius: 8, color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          Adicionar {isClube ? 'clube' : 'agente'}
+        </button>
+      </PageHero>
 
       {loading ? (
         <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>Carregando...</div>

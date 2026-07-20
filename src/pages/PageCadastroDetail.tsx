@@ -10,6 +10,7 @@ import {
   fetchAllClauses, fetchAllInstallments,
 } from '../lib/athleteQueries'
 import type { Athlete, Currency } from '../types/athlete-system'
+import PageHero from '../components/PageHero'
 
 // Tipos de cláusula voltados a clube / agente (contraparte = a entidade).
 const CLUB_CLAUSE_TYPES = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
@@ -149,6 +150,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1200, margin: '0 auto' }}>
+      <PageHero title={name} subtitle={isClube ? 'Clube · Botafogo SAF' : 'Agente · Botafogo SAF'} />
       <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody }}>
         <Link to={basePath} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{isClube ? 'Clubes' : 'Agentes'}</Link>
         <span style={{ margin: '0 6px' }}>/</span>

@@ -1,39 +1,42 @@
 // src/pages/PageDashboards.tsx
 // Painel de controle financeiro (todos os atletas), nível executivo.
-//  • Fluxo consolidado de Salário + Imagem ao longo dos meses (área + linha) —
-//    mostra o comportamento do custo mensal e a queda quando contratos encerram.
-//  • Clubes: a pagar vs a receber por mês.
-//  • Pagamentos a agentes por mês.
-//  • Rankings: clubes/agentes em atraso e já pagos.
+//  • Big numbers editoriais (Fraunces) no estilo "Counting House".
+//  • Fluxo consolidado Salário CLT + Imagem: UMA linha (total), tooltip no hover.
+//  • Clubes: a pagar vs a receber — DUAS linhas (fluxo, valores absolutos).
+//  • Agentes: pagamentos por mês (área, série única).
+//  • Rankings (top): barras horizontais — em atraso / já pago.
 // Valores agregados aproximados em BRL (câmbio de referência).
 
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ComposedChart, Area, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Legend, LabelList,
+  AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, LabelList,
 } from 'recharts'
 import {
   fetchAllClauses, fetchAllInstallments,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
 } from '../lib/athleteQueries'
-import { fmtCurrencyShort, isOverdue, todayISO } from '../lib/format'
+import { fmtCurrencyShort, fmtCurrencyParts, isOverdue, todayISO } from '../lib/format'
 import type { Currency } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 
 const font = "'Inter', system-ui, sans-serif"
 const mono = "'IBM Plex Mono', monospace"
+const display = "'Fraunces', 'Cormorant Garamond', Georgia, serif"
 
-// Paleta "Counting House" — muted/pastel, sem cores vivas.
-// Salário + imagem = sequência de OURO (mesma família = remuneração), diferenciadas
-// por tom + posição na pilha + legenda. Direção (pagar/receber) usa o tier muted
-// (terracota / verde-oliva) sempre acompanhado de legenda e rótulo.
+// Paleta "Counting House" — validada para contraste/CVD (ver DESIGN system).
+//  • ouro  → trajetória de gasto no tempo (remuneração / comissões) — série única.
+//  • vermelho/verde (tier "variance") → verdicto direcional: saída x entrada.
+//  • tinta → estruturas / totais.
 const C = {
-  salarioFill: '#be8c4a', salarioLine: '#9a6f2e',   // ouro
-  imagemFill: '#8a6f4a', imagemLine: '#6e5836',      // ouro profundo (2º passo)
-  total: '#3a2e1c',                                   // tinta
-  pagar: '#7a3f2c', receber: '#3a6f3a', agente: '#9a7d44',
-  gridStroke: 'rgba(26,20,16,0.055)', axis: 'rgba(26,20,16,0.42)',
+  goldLine: '#9a6f2e', goldFill: '#be8c4a',
+  ink: '#3a2e1c',
+  pay: '#b91c1c', recv: '#166534',
+  gold: '#be8c4a',
+  surface: '#fdfbf6',
+  grid: 'rgba(26,20,16,0.06)', axis: 'rgba(26,20,16,0.42)',
+  crosshair: 'rgba(122,98,68,0.45)',
 }
 
 const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
@@ -117,104 +120,127 @@ export default function PageDashboards() {
   const paidRank = useMemo(() => rankByParte(items.filter(i => i.status === 'PAGA' && (i.group === 'clube' || i.group === 'agente'))), [items])
 
   const tiles = [
-    { label: 'A pagar (aberto)', value: big.aPagar, accent: C.pagar },
-    { label: 'A receber (aberto)', value: big.aReceber, accent: C.receber },
-    { label: 'Em atraso', value: big.overdue, accent: C.pagar },
-    { label: 'Salário + imagem (mês atual)', value: big.mesAtual, accent: C.salarioFill },
-    { label: 'Já pago (acumulado)', value: big.pago, accent: C.total },
+    { label: 'A pagar · aberto', value: big.aPagar, dot: C.pay, sub: 'Obrigações em aberto' },
+    { label: 'A receber · aberto', value: big.aReceber, dot: C.recv, sub: 'Direitos em aberto' },
+    { label: 'Em atraso', value: big.overdue, dot: C.pay, sub: 'Exposição vencida', alarm: true },
+    { label: 'Salário + imagem · mês atual', value: big.mesAtual, dot: C.gold, sub: 'Custo do mês corrente' },
+    { label: 'Já pago · acumulado', value: big.pago, dot: C.ink, sub: 'Total liquidado' },
   ]
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1360, margin: '0 auto' }}>
       <PageHero title="Painel executivo" subtitle="Controle financeiro · Botafogo SAF" />
 
-      {loading ? <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>Carregando...</div> : (
+      {loading ? (
+        <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)', letterSpacing: '0.1em', padding: '40px 4px' }}>CARREGANDO…</div>
+      ) : (
         <>
-          {/* Stat tiles */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 22 }}>
-            {tiles.map(t => (
-              <div key={t.label} style={{ position: 'relative', background: 'var(--surface, #fff)', border: '1px solid var(--divider, rgba(190,140,74,0.16))', borderRadius: 14, padding: '16px 18px 16px 20px', overflow: 'hidden' }}>
-                <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: t.accent }} />
-                <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>{t.label}</div>
-                <div style={{ fontFamily: mono, fontSize: 23, fontWeight: 700, color: 'var(--ink-primary)', letterSpacing: '-0.02em' }}>{fmtCurrencyShort(t.value, 'BRL')}</div>
-                <div style={{ fontFamily: mono, fontSize: 8.5, color: 'var(--text-muted)', marginTop: 4, letterSpacing: '0.08em' }}>APROX. BRL</div>
-              </div>
-            ))}
+          {/* ── Big numbers editoriais ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 26 }}>
+            {tiles.map(t => {
+              const p = fmtCurrencyParts(t.value, 'BRL')
+              const alarm = t.alarm && t.value > 0
+              return (
+                <div key={t.label} className="stat-tile" style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 0, minHeight: 132 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: t.dot, flexShrink: 0, boxShadow: `0 0 0 3px ${hexA(t.dot, 0.12)}` }} />
+                    <span style={{ fontFamily: mono, fontSize: 9.5, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>{t.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, lineHeight: 1 }}>
+                    <span style={{ fontFamily: display, fontSize: 15, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.01em' }}>{p.sym}</span>
+                    <span style={{ fontFamily: display, fontSize: 'clamp(1.7rem, 2.4vw, 2.3rem)', fontWeight: 700, letterSpacing: '-0.02em', color: alarm ? C.pay : 'var(--ink-primary)' }}>{p.num}</span>
+                    {p.suffix && <span style={{ fontFamily: display, fontSize: 'clamp(1rem, 1.4vw, 1.3rem)', fontWeight: 700, color: 'var(--text-faint)' }}>{p.suffix}</span>}
+                  </div>
+                  <div style={{ marginTop: 'auto', paddingTop: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ height: 1, width: 16, background: 'var(--divider-strong)' }} />
+                    <span style={{ fontFamily: mono, fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>{t.sub}</span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
-          {/* Fluxo consolidado — destaque, largura total */}
-          <Panel title="Fluxo consolidado — Salário CLT + Imagem" subtitle="Custo mensal ao longo da vigência dos contratos (aprox. BRL)" tall>
+          {/* ── Fluxo consolidado — UMA linha (total CLT + imagem) ── */}
+          <Panel eyebrow="Remuneração" title="Fluxo consolidado — Salário CLT + Imagem" subtitle="Custo mensal consolidado ao longo da vigência dos contratos (aprox. BRL)" tall>
             {salImg.length === 0 ? <Empty /> : (
-              <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={salImg} margin={{ top: 14, right: 18, bottom: 4, left: 6 }}>
+              <ResponsiveContainer width="100%" height={296}>
+                <AreaChart data={salImg} margin={{ top: 16, right: 22, bottom: 4, left: 8 }}>
                   <defs>
-                    <linearGradient id="gSal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.salarioFill} stopOpacity={0.45} />
-                      <stop offset="100%" stopColor={C.salarioFill} stopOpacity={0.03} />
-                    </linearGradient>
-                    <linearGradient id="gImg" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.imagemFill} stopOpacity={0.38} />
-                      <stop offset="100%" stopColor={C.imagemFill} stopOpacity={0.03} />
+                    <linearGradient id="gTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={C.goldFill} stopOpacity={0.20} />
+                      <stop offset="100%" stopColor={C.goldFill} stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke={C.gridStroke} />
-                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={16} />
-                  <YAxis tickLine={false} axisLine={false} width={62} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
-                  <Tooltip content={<MoneyTip withTotal />} cursor={{ stroke: C.salarioLine, strokeDasharray: '3 3', strokeOpacity: 0.5 }} />
-                  <Legend verticalAlign="top" align="right" height={28} iconType="circle" wrapperStyle={{ fontSize: 11, fontFamily: font }} />
-                  <Area type="monotone" dataKey="salario" name="Salário CLT" stackId="1" stroke={C.salarioLine} strokeWidth={1.5} fill="url(#gSal)" />
-                  <Area type="monotone" dataKey="imagem" name="Imagem (PJ)" stackId="1" stroke={C.imagemLine} strokeWidth={1.5} fill="url(#gImg)" />
-                  <Line type="monotone" dataKey="total" name="Total consolidado" stroke={C.total} strokeWidth={2.5} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
-                </ComposedChart>
+                  <CartesianGrid vertical={false} stroke={C.grid} />
+                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={18} tickMargin={10} />
+                  <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
+                  <Tooltip content={<MoneyTip leadKey="total" />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
+                  <Area
+                    type="monotone" dataKey="total" name="Total consolidado"
+                    stroke={C.goldLine} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+                    fill="url(#gTotal)" dot={false} isAnimationActive={false}
+                    activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             )}
           </Panel>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: 18, marginTop: 18 }}>
-            <Panel title="Clubes — a pagar vs a receber" subtitle="Transfer fee, sell-on, solidariedade (por mês)">
+
+            {/* ── Clubes — DUAS linhas (fluxo pagar vs receber) ── */}
+            <Panel eyebrow="Clubes" title="A pagar vs a receber" subtitle="Transfer fee, sell-on, solidariedade — fluxo mensal (aprox. BRL)">
               {clube.length === 0 ? <Empty /> : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={clube} margin={{ top: 12, right: 12, bottom: 4, left: 6 }} barGap={2}>
-                    <CartesianGrid vertical={false} stroke={C.gridStroke} />
-                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={12} />
-                    <YAxis tickLine={false} axisLine={false} width={62} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
-                    <Tooltip content={<MoneyTip />} cursor={{ fill: 'rgba(26,20,16,0.04)' }} />
-                    <Legend verticalAlign="top" align="right" height={26} iconType="circle" wrapperStyle={{ fontSize: 11, fontFamily: font }} />
-                    <Bar dataKey="pagar" name="A pagar" fill={C.pagar} radius={[4, 4, 0, 0]} maxBarSize={26} />
-                    <Bar dataKey="receber" name="A receber" fill={C.receber} radius={[4, 4, 0, 0]} maxBarSize={26} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <>
+                  <ChartLegend items={[{ name: 'A pagar', color: C.pay, dash: false }, { name: 'A receber', color: C.recv, dash: true }]} />
+                  <ResponsiveContainer width="100%" height={244}>
+                    <LineChart data={clube} margin={{ top: 8, right: 56, bottom: 4, left: 8 }}>
+                      <CartesianGrid vertical={false} stroke={C.grid} />
+                      <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
+                      <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
+                      <Tooltip content={<MoneyTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
+                      <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
+                        <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={clube.length} />} />
+                      </Line>
+                      <Line type="monotone" dataKey="receber" name="A receber" stroke={C.recv} strokeWidth={2} strokeDasharray="6 4" strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.recv, stroke: C.surface, strokeWidth: 2 }}>
+                        <LabelList dataKey="receber" content={<EndValueTag color={C.recv} total={clube.length} />} />
+                      </Line>
+                    </LineChart>
+                  </ResponsiveContainer>
+                </>
               )}
             </Panel>
 
-            <Panel title="Agentes — pagamentos por mês" subtitle="Comissões de intermediação (aprox. BRL)">
+            {/* ── Agentes — série única (área) ── */}
+            <Panel eyebrow="Agentes" title="Pagamentos por mês" subtitle="Comissões de intermediação (aprox. BRL)">
               {agente.length === 0 ? <Empty /> : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <ComposedChart data={agente} margin={{ top: 12, right: 12, bottom: 4, left: 6 }}>
+                <ResponsiveContainer width="100%" height={244}>
+                  <AreaChart data={agente} margin={{ top: 16, right: 22, bottom: 4, left: 8 }}>
                     <defs>
                       <linearGradient id="gAg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={C.agente} stopOpacity={0.4} />
-                        <stop offset="100%" stopColor={C.agente} stopOpacity={0.03} />
+                        <stop offset="0%" stopColor={C.goldFill} stopOpacity={0.18} />
+                        <stop offset="100%" stopColor={C.goldFill} stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} stroke={C.gridStroke} />
-                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={12} />
-                    <YAxis tickLine={false} axisLine={false} width={62} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
-                    <Tooltip content={<MoneyTip />} cursor={{ stroke: C.agente, strokeDasharray: '3 3', strokeOpacity: 0.5 }} />
-                    <Area type="monotone" dataKey="pagar" name="A pagar" stroke={C.agente} strokeWidth={2} fill="url(#gAg)" activeDot={{ r: 4 }} />
-                  </ComposedChart>
+                    <CartesianGrid vertical={false} stroke={C.grid} />
+                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
+                    <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
+                    <Tooltip content={<MoneyTip leadKey="pagar" />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
+                    <Area type="monotone" dataKey="pagar" name="A pagar" stroke={C.goldLine} strokeWidth={2} strokeLinecap="round" fill="url(#gAg)" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }} />
+                  </AreaChart>
                 </ResponsiveContainer>
               )}
             </Panel>
 
-            <Panel title="Top clubes/agentes em atraso" subtitle="Maior exposição vencida (overdue)">
+            {/* ── Top em atraso — barras horizontais ── */}
+            <Panel eyebrow="Ranking" title="Top clubes/agentes em atraso" subtitle="Maior exposição vencida (overdue)">
               {overdueRank.length === 0 ? <Empty msg="Nada em atraso 🎉" /> : (
-                <ResponsiveContainer width="100%" height={Math.max(160, overdueRank.length * 34 + 24)}>
-                  <BarChart layout="vertical" data={overdueRank} margin={{ top: 6, right: 64, bottom: 4, left: 8 }}>
+                <ResponsiveContainer width="100%" height={Math.max(160, overdueRank.length * 36 + 20)}>
+                  <BarChart layout="vertical" data={overdueRank} margin={{ top: 6, right: 96, bottom: 4, left: 8 }}>
                     <XAxis type="number" hide />
                     <YAxis type="category" dataKey="parte" width={132} tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: font, fill: 'var(--ink-secondary)' }} />
                     <Tooltip content={<MoneyTip />} cursor={{ fill: 'rgba(26,20,16,0.04)' }} />
-                    <Bar dataKey="valor" name="Em atraso" fill={C.pagar} radius={[0, 4, 4, 0]} maxBarSize={22}>
+                    <Bar dataKey="valor" name="Em atraso" fill={C.pay} radius={[0, 4, 4, 0]} maxBarSize={22} barSize={20} isAnimationActive={false}>
                       <LabelList dataKey="valor" position="right" formatter={(v: unknown) => fmtCurrencyShort(Number(v), 'BRL')} style={{ fontFamily: mono, fontSize: 10, fill: 'var(--ink-secondary)' }} />
                     </Bar>
                   </BarChart>
@@ -222,14 +248,15 @@ export default function PageDashboards() {
               )}
             </Panel>
 
-            <Panel title="Top clubes/agentes já pagos" subtitle="Maior volume liquidado">
+            {/* ── Top já pago — barras horizontais ── */}
+            <Panel eyebrow="Ranking" title="Top clubes/agentes já pagos" subtitle="Maior volume liquidado">
               {paidRank.length === 0 ? <Empty /> : (
-                <ResponsiveContainer width="100%" height={Math.max(160, paidRank.length * 34 + 24)}>
-                  <BarChart layout="vertical" data={paidRank} margin={{ top: 6, right: 64, bottom: 4, left: 8 }}>
+                <ResponsiveContainer width="100%" height={Math.max(160, paidRank.length * 36 + 20)}>
+                  <BarChart layout="vertical" data={paidRank} margin={{ top: 6, right: 96, bottom: 4, left: 8 }}>
                     <XAxis type="number" hide />
                     <YAxis type="category" dataKey="parte" width={132} tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: font, fill: 'var(--ink-secondary)' }} />
                     <Tooltip content={<MoneyTip />} cursor={{ fill: 'rgba(26,20,16,0.04)' }} />
-                    <Bar dataKey="valor" name="Pago" fill={C.receber} radius={[0, 4, 4, 0]} maxBarSize={22}>
+                    <Bar dataKey="valor" name="Pago" fill={C.recv} radius={[0, 4, 4, 0]} maxBarSize={22} barSize={20} isAnimationActive={false}>
                       <LabelList dataKey="valor" position="right" formatter={(v: unknown) => fmtCurrencyShort(Number(v), 'BRL')} style={{ fontFamily: mono, fontSize: 10, fill: 'var(--ink-secondary)' }} />
                     </Bar>
                   </BarChart>
@@ -238,7 +265,7 @@ export default function PageDashboards() {
             </Panel>
           </div>
 
-          <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {[
               { l: 'Consolidado', to: '/relatorios/consolidado' },
               { l: 'Salários', to: '/relatorios/salarios' },
@@ -256,43 +283,84 @@ export default function PageDashboards() {
 }
 
 // ── Componentes ──────────────────────────────────────────────────────────────
-function Panel({ title, subtitle, tall, children }: { title: string; subtitle?: string; tall?: boolean; children: React.ReactNode }) {
+function Panel({ eyebrow, title, subtitle, tall, children }: { eyebrow?: string; title: string; subtitle?: string; tall?: boolean; children: React.ReactNode }) {
   return (
-    <div style={{ background: 'var(--surface, #fff)', border: '1px solid var(--divider, rgba(190,140,74,0.16))', borderRadius: 16, padding: tall ? '20px 22px' : '18px 20px' }}>
+    <div className="panel-card" style={{ padding: tall ? '20px 22px' : '18px 20px' }}>
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)' }}>{title}</div>
-        {subtitle && <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.04em' }}>{subtitle}</div>}
+        {eyebrow && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+            <span style={{ height: 1, width: 16, background: 'var(--gold)', opacity: 0.65 }} />
+            <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gold)' }}>{eyebrow}</span>
+          </div>
+        )}
+        <div style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', letterSpacing: '-0.01em' }}>{title}</div>
+        {subtitle && <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.03em' }}>{subtitle}</div>}
       </div>
       {children}
     </div>
   )
 }
+
+function ChartLegend({ items }: { items: { name: string; color: string; dash?: boolean }[] }) {
+  return (
+    <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end', marginTop: -4, marginBottom: 6 }}>
+      {items.map(it => (
+        <span key={it.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: font, fontSize: 11, color: 'var(--ink-secondary)' }}>
+          <svg width="20" height="8" aria-hidden>
+            <line x1="1" y1="4" x2="19" y2="4" stroke={it.color} strokeWidth="2" strokeLinecap="round" strokeDasharray={it.dash ? '5 3' : undefined} />
+          </svg>
+          {it.name}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function Empty({ msg = 'Sem dados.' }: { msg?: string }) {
   return <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>{msg}</div>
 }
 
+// Rótulo apenas no último ponto da linha: bolinha (cor da série) + valor (tinta).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MoneyTip({ active, payload, label, withTotal }: any) {
+function EndValueTag({ x, y, value, index, color, total }: any) {
+  if (index == null || index !== total - 1 || value == null) return null
+  return (
+    <g>
+      <circle cx={x} cy={y} r={3.5} fill={color} stroke={C.surface} strokeWidth={2} />
+      <text x={x} y={y} dx={9} dy={3.6} fontFamily={mono} fontSize={9.5} fontWeight={600} fill={C.ink} textAnchor="start">
+        {fmtCurrencyShort(Number(value), 'BRL')}
+      </text>
+    </g>
+  )
+}
+
+// Tooltip: valor em destaque, nome secundário, chave em traço (não caixa).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function MoneyTip({ active, payload, label, leadKey }: any) {
   if (!active || !payload?.length) return null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = payload.filter((p: any) => !withTotal || p.dataKey !== 'total')
+  const lead = leadKey ? payload.find((p: any) => p.dataKey === leadKey) : null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = payload.filter((p: any) => !leadKey || p.dataKey !== leadKey)
   return (
-    <div style={{ background: '#1a1410', color: '#fff', borderRadius: 10, padding: '9px 12px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 150 }}>
-      <div style={{ opacity: 0.65, marginBottom: 6, letterSpacing: '0.06em' }}>{label}</div>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {rows.map((p: any) => (
-        <div key={p.dataKey} style={{ display: 'flex', gap: 14, justifyContent: 'space-between', alignItems: 'center', padding: '2px 0' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.85 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: p.color }} />{p.name}</span>
-          <strong>{fmtCurrencyShort(Number(p.value), 'BRL')}</strong>
-        </div>
-      ))}
-      {withTotal && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.14)' }}>
-          <span style={{ opacity: 0.85 }}>Total</span>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <strong style={{ color: '#e8c98f' }}>{fmtCurrencyShort(payload.reduce((s: number, p: any) => s + (p.dataKey !== 'total' ? Number(p.value) : 0), 0), 'BRL')}</strong>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 158 }}>
+      <div style={{ opacity: 0.55, marginBottom: 7, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 9 }}>{label}</div>
+      {lead && (
+        <div style={{ marginBottom: rows.length ? 8 : 0, paddingBottom: rows.length ? 8 : 0, borderBottom: rows.length ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
+          <div style={{ opacity: 0.6, fontSize: 8.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{lead.name}</div>
+          <div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: '#f3eee2' }}>{fmtCurrencyShort(Number(lead.value), 'BRL')}</div>
         </div>
       )}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {rows.map((p: any) => (
+        <div key={p.dataKey} style={{ display: 'flex', gap: 16, justifyContent: 'space-between', alignItems: 'center', padding: '2px 0' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7, opacity: 0.78 }}>
+            <svg width="14" height="6" aria-hidden><line x1="0" y1="3" x2="14" y2="3" stroke={p.color} strokeWidth="2" strokeLinecap="round" /></svg>
+            {p.name}
+          </span>
+          <strong style={{ fontWeight: 600 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</strong>
+        </div>
+      ))}
     </div>
   )
 }
@@ -311,4 +379,11 @@ function rankByParte(items: Item[]) {
   const m = new Map<string, number>()
   for (const i of items) m.set(i.parte, (m.get(i.parte) ?? 0) + i.brl)
   return [...m.entries()].map(([parte, valor]) => ({ parte, valor })).sort((a, b) => b.valor - a.valor).slice(0, 6)
+}
+
+// rgba a partir de hex (#rrggbb) para halos suaves das bolinhas de status.
+function hexA(hex: string, a: number) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${a})`
 }

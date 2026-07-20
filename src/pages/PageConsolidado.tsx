@@ -14,6 +14,7 @@ import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import type { Currency } from '../types/athlete-system'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
+import PageHero from '../components/PageHero'
 
 const font = "'Inter', system-ui, sans-serif"
 const mono = "'IBM Plex Mono', monospace"
@@ -145,14 +146,9 @@ export default function PageConsolidado() {
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1280, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 6 }}>Todas as movimentações financeiras</div>
-          <h1 style={{ fontFamily: font, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>Consolidado</h1>
-          <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
-        </div>
-        <button onClick={exportAll} style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>↓ Exportar</button>
-      </div>
+      <PageHero title="Consolidado" subtitle="Todas as movimentações financeiras · Botafogo SAF">
+        <button onClick={exportAll} style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, color: 'var(--on-dark)', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>↓ Exportar</button>
+      </PageHero>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>

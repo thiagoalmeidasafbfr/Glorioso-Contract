@@ -1,5 +1,7 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Cormorant+Garamond:ital,wght@1,600&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Fonts (Fraunces, Inter, IBM Plex Mono, JetBrains Mono, Cormorant Garamond)
+   are loaded via <link> in index.html — a CSS @import here would land after
+   Tailwind's inlined reset and be dropped as out-of-order. */
 
 /* ── Glorioso Finance — Design Tokens ── */
 :root {
@@ -199,3 +201,30 @@ select:focus, input[type="text"]:focus {
 
 /* ── Sort header hover ── */
 thead th[style*="cursor: pointer"]:hover { background: var(--cream-inset); }
+
+/* ── Dashboard: stat tiles & chart panels ── */
+.stat-tile {
+  background: var(--cream-card);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  box-shadow: var(--shadow-hair);
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+.stat-tile:hover {
+  box-shadow: var(--shadow-card);
+  border-color: rgba(190,140,74,0.28);
+  transform: translateY(-1px);
+}
+.panel-card {
+  background: var(--cream-card);
+  border: 1px solid var(--divider);
+  border-radius: 16px;
+  box-shadow: var(--shadow-hair);
+  transition: box-shadow 0.18s ease;
+}
+.panel-card:hover { box-shadow: var(--shadow-card); }
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-tile, .panel-card { transition: none; }
+  .stat-tile:hover { transform: none; }
+}

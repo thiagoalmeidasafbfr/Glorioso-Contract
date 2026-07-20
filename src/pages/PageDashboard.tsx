@@ -6,6 +6,7 @@ import type { Alert, Athlete, Clause, EconomicRight } from '../types/athlete-sys
 import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO } from '../lib/format'
 import { isOwnershipValid } from '../lib/ownership'
 import { useApp } from '../context/AppContext'
+import PageHero from '../components/PageHero'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -159,15 +160,7 @@ export default function PageDashboard() {
 
   return (
     <div style={{ padding: '32px 40px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(190,140,74,0.80)', marginBottom: 6 }}>
-          Dashboard
-        </div>
-        <h1 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 26, fontWeight: 700, color: '#1a1410', margin: 0 }}>
-          Visão Geral
-        </h1>
-      </div>
+      <PageHero title="Visão Geral" subtitle="Dashboard · Botafogo SAF" />
 
       {/* KPI strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>

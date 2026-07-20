@@ -29,6 +29,7 @@ import {
 } from '../lib/importHelpers'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import type { AthleteCategory } from '../types/athlete-system'
+import PageHero from '../components/PageHero'
 
 // Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
 function parseCategory(v: unknown): AthleteCategory {
@@ -317,23 +318,16 @@ export default function PageDados() {
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 22 }}>
-        <div>
-          <div style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 6 }}>Importar / Exportar</div>
-          <h1 style={{ fontFamily: fontBody, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>Dados & Modelos</h1>
-          <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button onClick={exportAll} disabled={exportingAll}
-            style={{ padding: '9px 18px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: exportingAll ? 'default' : 'pointer', opacity: exportingAll ? 0.6 : 1 }}>
-            {exportingAll ? 'Exportando...' : 'Exportar toda a base'}
-          </button>
-          <button onClick={() => { setConfirmWipe(true); setMsg(null) }}
-            style={{ padding: '9px 18px', background: 'transparent', border: '1px solid rgba(122,63,44,0.55)', borderRadius: 8, color: '#7a3f2c', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            Apagar toda a base
-          </button>
-        </div>
-      </div>
+      <PageHero title="Dados & Modelos" subtitle="Importar / Exportar · Botafogo SAF">
+        <button onClick={exportAll} disabled={exportingAll}
+          style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, color: 'var(--on-dark)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: exportingAll ? 'default' : 'pointer', opacity: exportingAll ? 0.6 : 1 }}>
+          {exportingAll ? 'Exportando...' : 'Exportar toda a base'}
+        </button>
+        <button onClick={() => { setConfirmWipe(true); setMsg(null) }}
+          style={{ padding: '9px 18px', background: 'transparent', border: '1px solid rgba(216,122,96,0.55)', borderRadius: 8, color: '#e0a596', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          Apagar toda a base
+        </button>
+      </PageHero>
 
       {confirmWipe && (
         <div style={{ border: '1px solid rgba(122,63,44,0.35)', background: 'rgba(122,63,44,0.06)', borderRadius: 10, padding: 18, marginBottom: 22 }}>

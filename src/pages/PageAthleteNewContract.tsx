@@ -5,6 +5,7 @@ import type { Athlete, NewContractInput, NewClauseInput, ContractType, ContractS
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
 import { todayISO, monthsBetween, addMonths } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
+import PageHero from '../components/PageHero'
 
 // ── Step types ────────────────────────────────────────────────────────────
 
@@ -295,6 +296,7 @@ export default function PageAthleteNewContract() {
 
   return (
     <div style={{ padding: '32px 40px', maxWidth: 800 }}>
+      <PageHero title="Novo Vínculo Contratual" subtitle={athlete?.full_name ?? 'Novo vínculo · Botafogo SAF'} />
       {/* Breadcrumb */}
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center' }}>
         <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
@@ -303,15 +305,6 @@ export default function PageAthleteNewContract() {
         <span>/</span>
         <span style={{ color: '#be8c4a' }}>Novo Vínculo</span>
       </div>
-
-      <h1 style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 22, fontWeight: 700, color: '#1a1410', margin: '0 0 8px' }}>
-        Novo Vínculo Contratual
-      </h1>
-      {athlete && (
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#be8c4a', marginBottom: 28 }}>
-          {athlete.full_name}
-        </div>
-      )}
 
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 32 }}>

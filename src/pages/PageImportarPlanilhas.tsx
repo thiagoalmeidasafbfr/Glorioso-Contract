@@ -6,6 +6,7 @@
 import { useRef, useState } from 'react'
 import { parseWorkbookFile } from '../lib/xlsx-utils'
 import { importWorkbook, type ImportReport } from '../lib/importSheets'
+import PageHero from '../components/PageHero'
 
 const fontBody = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', monospace"
@@ -51,16 +52,12 @@ export default function PageImportarPlanilhas() {
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1000, margin: '0 auto' }}>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 6 }}>Importar / Exportar</div>
-        <h1 style={{ fontFamily: fontBody, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>Importar planilhas (Ativos / Passivos)</h1>
-        <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: 12, maxWidth: 760 }}>
-          Importa os workbooks brutos que alimentavam o Power BI. Os atletas são reconhecidos pela chave natural (CPF/passaporte),
-          clubes e agentes viram cadastros, e cada parcela recebe um <span style={{ fontFamily: fontMono }}>source_key</span> —
-          reimportar o mesmo arquivo <strong>não duplica</strong>, apenas complementa.
-        </p>
-      </div>
+      <PageHero title="Importar planilhas (Ativos / Passivos)" subtitle="Importar / Exportar · Botafogo SAF" />
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: -4, marginBottom: 22, maxWidth: 760 }}>
+        Importa os workbooks brutos que alimentavam o Power BI. Os atletas são reconhecidos pela chave natural (CPF/passaporte),
+        clubes e agentes viram cadastros, e cada parcela recebe um <span style={{ fontFamily: fontMono }}>source_key</span> —
+        reimportar o mesmo arquivo <strong>não duplica</strong>, apenas complementa.
+      </p>
 
       {!sheets && (
         <div className="card" style={{ padding: 40, textAlign: 'center' }}>

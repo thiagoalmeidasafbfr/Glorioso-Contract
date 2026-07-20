@@ -17,6 +17,7 @@ import {
 } from '../lib/athleteQueries'
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
+import PageHero from '../components/PageHero'
 import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
@@ -455,6 +456,7 @@ export default function PageAthleteDetail() {
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
+      <PageHero title={athlete.short_name || athlete.full_name} subtitle="Ficha do atleta · Botafogo SAF" />
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>
         <Link to="/atletas" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Atletas</Link>
         <span>/</span><span style={{ color: 'var(--ink-primary)' }}>{athlete.short_name}</span>
