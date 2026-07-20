@@ -72,6 +72,15 @@ export function isAcordo(c: Clause): boolean {
   return c.clause_type === ACORDO_TYPE
 }
 
+// Extrai o ID do acordo a partir da nota deixada em uma parcela/cláusula
+// renegociada ("… Renegociado no acordo <id> em <data>"). Retorna null se a
+// parcela não foi renegociada.
+export function renegotiatedAcordoId(notes: string | null | undefined): string | null {
+  if (!notes) return null
+  const m = notes.match(/Renegociado no acordo (\S+) em /)
+  return m ? m[1] : null
+}
+
 // Divide um total em N parcelas iguais (centavos), com a última absorvendo a
 // diferença de arredondamento.
 function splitEqual(total: number, n: number): number[] {
