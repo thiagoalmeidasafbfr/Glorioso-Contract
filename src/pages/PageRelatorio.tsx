@@ -14,6 +14,7 @@ import {
 import type { Athlete, Currency, Clause, ClauseInstallment } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
+import PageHero from '../components/PageHero'
 
 // Tipos de cláusula voltados a CLUBES (contraparte = clube) e a AGENTES.
 const CLUB_CLAUSE_TYPES = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
@@ -178,23 +179,16 @@ export default function PageRelatorio() {
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1500, margin: '0 auto' }}>
-      {/* Cabeçalho */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <div>
-          <div style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 6 }}>{meta.subtitle}</div>
-          <h1 style={{ fontFamily: fontBody, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{meta.title}</h1>
-          <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          <SheetIO
-            exportFilename={`relatorio-${k}.xlsx`}
-            exportSheets={[{ name: meta.title.slice(0, 28), cols: exportCols, rows: filtered as unknown as Record<string, unknown>[] }]}
-            onImport={handleImport}
-          />
-          {importMsg && (
-            <div style={{ fontSize: 11, fontFamily: fontMono, color: importMsg.startsWith('Erro') ? 'var(--neg)' : 'var(--gold-deep)' }}>{importMsg}</div>
-          )}
-        </div>
+      <PageHero title={meta.title} subtitle={meta.subtitle} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, marginBottom: 16 }}>
+        <SheetIO
+          exportFilename={`relatorio-${k}.xlsx`}
+          exportSheets={[{ name: meta.title.slice(0, 28), cols: exportCols, rows: filtered as unknown as Record<string, unknown>[] }]}
+          onImport={handleImport}
+        />
+        {importMsg && (
+          <div style={{ fontSize: 11, fontFamily: fontMono, color: importMsg.startsWith('Erro') ? 'var(--neg)' : 'var(--gold-deep)' }}>{importMsg}</div>
+        )}
       </div>
 
       {/* Filtros + total */}

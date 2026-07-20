@@ -10,6 +10,7 @@ import type {
 } from '../types/athlete-system'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
+import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
 
@@ -235,14 +236,7 @@ export default function PageAthletesList() {
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
-          <h1 style={{ fontFamily: font, fontSize: 22, fontWeight: 700, color: 'var(--ink-primary)' }}>Atletas</h1>
-          <span style={{ fontFamily: fontMono, fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>GESTÃO DE PLANTEL</span>
-        </div>
-        <div style={{ height: 2, width: 40, background: '#be8c4a', borderRadius: 2 }} />
-      </div>
+      <PageHero title="Atletas" subtitle="Gestão de plantel · Botafogo SAF" />
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>

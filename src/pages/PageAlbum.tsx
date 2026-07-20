@@ -5,6 +5,7 @@ import {
 } from '../lib/athleteQueries'
 import { bfrShare } from '../lib/ownership'
 import OwnershipBar from '../components/OwnershipBar'
+import PageHero from '../components/PageHero'
 import type { Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause } from '../types/athlete-system'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 
@@ -282,16 +283,9 @@ export default function PageAlbum() {
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
-          <h1 style={{ fontFamily: font, fontSize: 22, fontWeight: 700, color: 'var(--ink-primary)' }}>Álbum de Figurinhas</h1>
-          <span style={{ fontFamily: fontMono, fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>PLANTEL</span>
-        </div>
-        <div style={{ height: 2, width: 40, background: '#be8c4a', borderRadius: 2 }} />
-        <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, maxWidth: 620 }}>
-          Cada figurinha traz a foto do atleta e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.
-        </div>
+      <PageHero title="Álbum de Figurinhas" subtitle="Plantel · Botafogo SAF" />
+      <div style={{ marginTop: -4, marginBottom: 24, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, maxWidth: 620 }}>
+        Cada figurinha traz a foto do atleta e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.
       </div>
 
       {/* Toolbar de filtros */}

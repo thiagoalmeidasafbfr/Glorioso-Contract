@@ -22,6 +22,7 @@ import { CONTRACT_TYPE_LABELS } from '../types/athlete-system'
 import { todayISO } from '../lib/format'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import EntityPicker from '../components/EntityPicker'
+import PageHero from '../components/PageHero'
 
 const font = "'Inter', system-ui, sans-serif"
 const mono = "'IBM Plex Mono', monospace"
@@ -216,9 +217,7 @@ export default function PageWizard() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 920, margin: '0 auto' }}>
-      <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 6 }}>Assistente de criação</div>
-      <h1 style={{ fontFamily: font, fontSize: 24, fontWeight: 700, color: 'var(--ink-primary)', margin: '0 0 4px' }}>O que você quer registrar?</h1>
-      <div style={{ height: 2, width: 38, background: 'var(--gold)', borderRadius: 2, marginBottom: 20 }} />
+      <PageHero title="O que você quer registrar?" subtitle="Assistente de criação · Botafogo SAF" />
 
       {/* Passos */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 22 }}>

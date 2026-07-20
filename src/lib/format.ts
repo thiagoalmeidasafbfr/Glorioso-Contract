@@ -16,6 +16,24 @@ export function fmtCurrencyShort(value: number | null | undefined, currency = 'B
   return `${sym} ${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
 }
 
+// Divide um valor compacto em partes para renderização tipográfica editorial.
+// Ex.: 222_620_000 → { sym: 'R$', num: '222,62', suffix: 'M' }
+export function fmtCurrencyParts(
+  value: number | null | undefined,
+  currency = 'BRL',
+): { sym: string; num: string; suffix: string } {
+  const sym = CURRENCY_SYMBOLS[currency] ?? currency
+  if (value === null || value === undefined) return { sym: '', num: '—', suffix: '' }
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000_000)
+    return { sym, num: (value / 1_000_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), suffix: 'Bi' }
+  if (abs >= 1_000_000)
+    return { sym, num: (value / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), suffix: 'M' }
+  if (abs >= 1_000)
+    return { sym, num: (value / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), suffix: 'K' }
+  return { sym, num: value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }), suffix: '' }
+}
+
 // Formata valor completo com casas decimais (ex: R$ 7.500.000,00)
 export function fmtCurrencyFull(value: number | null | undefined, currency = 'BRL'): string {
   if (value === null || value === undefined) return '—'
