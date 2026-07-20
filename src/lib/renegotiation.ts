@@ -1,0 +1,172 @@
+// src/lib/renegotiation.ts
+// Mecanismo de Acordos e Renegociações.
+//
+// Caso prático: o clube deve 5 parcelas a um intermediário (total R$ 1mi) e quer
+// "reabrir" essa dívida em 10x a partir de uma data específica, eventualmente com
+// desconto no total — SEM perder o rastreio das parcelas originais.
+//
+// Modelo (sem nova tabela — funciona igual no Supabase e no localStore):
+//   • O acordo é uma CLÁUSULA de tipo ACORDO_RENEGOCIACAO, cujas PARCELAS são o
+//     novo fluxo (N x a partir da data-base, com a periodicidade escolhida).
+//   • Os itens originais selecionados (parcelas e/ou cláusulas de valor único)
+//     são marcados como CANCELADA e ganham uma nota apontando para o acordo —
+//     ou seja, o histórico é preservado (nada é apagado).
+//   • Os metadados do acordo (itens de origem, total original, novo total,
+//     desconto, credor/devedor, datas) ficam em JSON no campo `notes` da cláusula
+//     do acordo, permitindo reconstruir e auditar a renegociação e reimportá-la.
+
+import type { Clause, ClauseInstallment, Currency } from '../types/athlete-system'
+import {
+  createClause, createClauseInstallments, updateClause, updateInstallment,
+  updateClubLiability, updateIntermediaryLiability,
+} from './athleteQueries'
+import { addMonths, todayISO } from './format'
+
+export const ACORDO_TYPE = 'ACORDO_RENEGOCIACAO' as const
+
+// Item de origem que entrou na renegociação (parcela ou cláusula de valor único).
+export interface AcordoSource {
+  clauseId?: string
+  installmentId?: string
+  clubLiabId?: string
+  intermLiabId?: string
+  label: string
+  value: number
+  dueDate?: string | null
+}
+
+export interface AcordoMeta {
+  __acordo: 1
+  createdAt: string
+  originalTotal: number
+  newTotal: number
+  discount: number
+  currency: Currency
+  creditor: string
+  debtor: string
+  startDate: string
+  installmentsCount: number
+  periodicityMonths: number
+  sources: AcordoSource[]
+  userNote: string
+}
+
+const PREFIX = '__ACORDO__'
+
+export function encodeAcordo(meta: AcordoMeta): string {
+  return PREFIX + JSON.stringify(meta)
+}
+
+export function decodeAcordo(notes: string | null | undefined): AcordoMeta | null {
+  if (!notes) return null
+  const raw = notes.startsWith(PREFIX) ? notes.slice(PREFIX.length) : notes
+  try {
+    const m = JSON.parse(raw)
+    return m && m.__acordo ? (m as AcordoMeta) : null
+  } catch {
+    return null
+  }
+}
+
+export function isAcordo(c: Clause): boolean {
+  return c.clause_type === ACORDO_TYPE
+}
+
+// Divide um total em N parcelas iguais (centavos), com a última absorvendo a
+// diferença de arredondamento.
+function splitEqual(total: number, n: number): number[] {
+  if (n <= 0) return []
+  const base = Math.floor((total / n) * 100) / 100
+  const arr = Array(n).fill(base)
+  arr[n - 1] = Math.round((total - base * (n - 1)) * 100) / 100
+  return arr
+}
+
+export interface RenegotiationInput {
+  athleteId: string
+  contractId?: string | null
+  creditor: string
+  debtor: string
+  currency: Currency
+  sources: AcordoSource[]
+  newTotal: number
+  startDate: string
+  installmentsCount: number
+  periodicityMonths: number
+  userNote: string
+}
+
+export interface RenegotiationResult {
+  acordo: Clause
+  installments: ClauseInstallment[]
+}
+
+// Executa a renegociação: cria o acordo + novo fluxo e cancela os itens de
+// origem, preservando o rastreio.
+export async function createRenegotiation(input: RenegotiationInput): Promise<RenegotiationResult> {
+  const originalTotal = Math.round(input.sources.reduce((s, x) => s + x.value, 0) * 100) / 100
+  const newTotal = Math.round(input.newTotal * 100) / 100
+  const discount = Math.round((originalTotal - newTotal) * 100) / 100
+  const n = Math.max(1, Math.floor(input.installmentsCount))
+  const period = Math.max(1, Math.floor(input.periodicityMonths))
+
+  const meta: AcordoMeta = {
+    __acordo: 1,
+    createdAt: todayISO(),
+    originalTotal,
+    newTotal,
+    discount,
+    currency: input.currency,
+    creditor: input.creditor,
+    debtor: input.debtor,
+    startDate: input.startDate,
+    installmentsCount: n,
+    periodicityMonths: period,
+    sources: input.sources,
+    userNote: input.userNote,
+  }
+
+  const discountLabel = discount > 0 ? ` (desconto ${input.currency} ${discount.toLocaleString('pt-BR')})` : discount < 0 ? ` (acréscimo ${input.currency} ${Math.abs(discount).toLocaleString('pt-BR')})` : ''
+  const description = `Renegociação — ${input.creditor}: ${input.sources.length} item(ns) → ${n}x a partir de ${input.startDate}${discountLabel}`
+
+  // 1) Cláusula do acordo (o novo compromisso).
+  const acordo = await createClause(input.contractId ?? null, input.athleteId, {
+    clause_type: ACORDO_TYPE,
+    description,
+    creditor_party: input.creditor,
+    debtor_party: input.debtor,
+    currency: input.currency,
+    original_value: newTotal,
+    percentage_value: null,
+    condition_description: input.userNote,
+    due_date: input.startDate,
+    installments_total: n,
+    notes: encodeAcordo(meta),
+  })
+
+  // 2) Novo fluxo de parcelas.
+  const values = splitEqual(newTotal, n)
+  const installments = await createClauseInstallments(acordo.id, input.athleteId, values.map((v, i) => ({
+    installment_number: i + 1,
+    due_date: addMonths(input.startDate, i * period),
+    original_value: v,
+    currency: input.currency,
+  })))
+
+  // 3) Cancela os itens de origem, preservando o rastreio (nota → acordo).
+  const ref = `Renegociado no acordo ${acordo.id} em ${meta.createdAt}`
+  const noteFor = (label: string) => (label ? `${label} · ${ref}` : ref)
+  for (const src of input.sources) {
+    if (src.installmentId) {
+      await updateInstallment(src.installmentId, { payment_status: 'CANCELADA', notes: noteFor(src.label) })
+    } else if (src.clauseId) {
+      await updateClause(src.clauseId, { payment_status: 'CANCELADA', notes: noteFor(src.label) })
+    } else if (src.clubLiabId) {
+      await updateClubLiability(src.clubLiabId, { status: 'CANCELADA', notes: noteFor(src.label) })
+    } else if (src.intermLiabId) {
+      await updateIntermediaryLiability(src.intermLiabId, { status: 'CANCELADA', notes: noteFor(src.label) })
+    }
+  }
+
+  return { acordo, installments }
+}

@@ -7,6 +7,7 @@ import PaymentModal from '../components/athletes/PaymentModal'
 import {
   fetchAthlete, updateAthlete, updateContract, updateContractFlowsCurrency, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
   fetchAthleteInstallments, createClause, createClauseInstallments, deleteClause,
+  updateInstallment, markInstallmentPaid, revertInstallment,
   fetchAthleteAlerts, markAlertRead, updateClause,
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
   fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
@@ -20,7 +21,7 @@ import RefLink from '../components/RefLink'
 import PageHero from '../components/PageHero'
 import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween } from '../lib/format'
 import type {
-  Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
+  Athlete, Contract, Clause, ClauseType, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
   AthleteStatus, AthleteCategory, Currency, HolderType,
   TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput, NewAthletePJInput,
@@ -31,6 +32,7 @@ import {
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
 import { buildRemunerationFlow } from '../lib/remflow'
+import { createRenegotiation, decodeAcordo, isAcordo, type AcordoSource, type RenegotiationInput } from '../lib/renegotiation'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
@@ -39,6 +41,7 @@ import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteCo
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
+const isBFRparty = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
 
 const ATHLETE_STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string; label: string }> = {
   ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a', label: 'Ativo' },
@@ -97,9 +100,36 @@ function FinancialCard({ label, value, sub, color }: { label: string; value: str
   )
 }
 
+// Big number multi-moeda: mostra a moeda dominante em destaque e as demais em
+// linha secundária. Usado nos KPIs de custo consolidado do atleta.
+const RATE_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
+function BigNumberCard({ label, totals, sub, color }: {
+  label: string; totals: Partial<Record<Currency, number>>; sub?: string; color?: string
+}) {
+  const entries = (Object.entries(totals) as [Currency, number][])
+    .filter(([, v]) => v)
+    .sort((a, b) => b[1] * (RATE_BRL[b[0]] ?? 1) - a[1] * (RATE_BRL[a[0]] ?? 1))
+  const primary = entries[0]
+  const rest = entries.slice(1)
+  return (
+    <div className="card" style={{ padding: '14px 18px', minWidth: 160 }}>
+      <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 600, fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>
+        {primary ? fmtCurrencyShort(primary[1], primary[0]) : '—'}
+      </div>
+      {rest.length > 0 && (
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 3 }}>
+          {rest.map(([c, v]) => `+ ${fmtCurrencyShort(v, c)}`).join(' · ')}
+        </div>
+      )}
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{sub}</div>}
+    </div>
+  )
+}
+
 // ── Menu de ações da cláusula (posição fixa p/ não ser cortado) ─────────────
-function ClauseActions({ clause, onMarkAchieved, onPay, onCancel }: {
-  clause: Clause; onMarkAchieved: () => void; onPay: () => void; onCancel: () => void
+function ClauseActions({ clause, onEdit, onMarkAchieved, onPay, onCancel }: {
+  clause: Clause; onEdit: () => void; onMarkAchieved: () => void; onPay: () => void; onCancel: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
@@ -121,10 +151,10 @@ function ClauseActions({ clause, onMarkAchieved, onPay, onCancel }: {
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setOpen(false)} />
           <div style={{ position: 'fixed', top: pos.top, right: pos.right, background: 'var(--cream-card)', border: '1px solid var(--divider-strong)', borderRadius: 8, padding: '4px 0', boxShadow: 'var(--shadow-panel)', zIndex: 1000, minWidth: 210 }}>
+            <button onClick={() => { onEdit(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Editar cláusula</button>
             {canAchieve && <button onClick={() => { onMarkAchieved(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Marcar como atingida</button>}
             {canPay && <button onClick={() => { onPay(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Registrar pagamento</button>}
             {canCancel && <button onClick={() => { onCancel(); setOpen(false) }} style={{ ...item, color: 'var(--neg)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--neg-tint)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Cancelar cláusula</button>}
-            {!canAchieve && !canPay && !canCancel && <div style={{ ...item, color: 'var(--text-muted)', cursor: 'default' }}>Sem ações disponíveis</div>}
           </div>
         </>
       )}
@@ -317,11 +347,12 @@ function employmentContract(contracts: Contract[]): Contract | null {
   return [...arr].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
 }
 
-type Tab = 'consolidado' | 'clt_imagem' | 'clausulas' | 'historico' | 'passivos' | 'alertas'
+type Tab = 'consolidado' | 'clt_imagem' | 'clausulas' | 'acordos' | 'historico' | 'passivos' | 'alertas'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'consolidado', label: 'Consolidado' },
   { id: 'clt_imagem',  label: 'CLT + Imagem' },
   { id: 'clausulas',   label: 'Cláusulas Ativas' },
+  { id: 'acordos',     label: 'Acordos e Renegociações' },
   { id: 'historico',   label: 'Histórico' },
   { id: 'passivos',    label: 'Obrigações' },
   { id: 'alertas',     label: 'Alertas' },
@@ -349,6 +380,9 @@ export default function PageAthleteDetail() {
   const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
   const [tab, setTab] = useState<Tab>('consolidado')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
+  const [payInstId, setPayInstId] = useState<string | null>(null)
+  const [editClauseId, setEditClauseId] = useState<string | null>(null)
+  const [showReneg, setShowReneg] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [editContractId, setEditContractId] = useState<string | null>(null)
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set())
@@ -396,6 +430,27 @@ export default function PageAthleteDetail() {
     const u = await updateClause(clauseId, { payment_status: 'PAGA', payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes })
     setClauses(prev => prev.map(c => c.id === clauseId ? u : c)); setPayClauseId(null)
   }
+  async function handleInstallmentPayment(instId: string, p: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
+    const u = await updateInstallment(instId, { payment_status: 'PAGA', payment_date: p.date, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes || null })
+    setInstallments(prev => prev.map(i => i.id === instId ? u : i)); setPayInstId(null)
+  }
+  async function handleRevertInstallment(instId: string) {
+    const u = await revertInstallment(instId)
+    setInstallments(prev => prev.map(i => i.id === instId ? u : i))
+  }
+  async function handleMarkInstallmentPaidQuick(instId: string) {
+    const u = await markInstallmentPaid(instId, todayISO())
+    setInstallments(prev => prev.map(i => i.id === instId ? u : i))
+  }
+  async function handleUpdateClause(clauseId: string, patch: Partial<Clause>) {
+    const u = await updateClause(clauseId, patch)
+    setClauses(prev => prev.map(c => c.id === clauseId ? u : c)); setEditClauseId(null)
+  }
+  async function handleRenegotiate(input: RenegotiationInput) {
+    await createRenegotiation(input)
+    setShowReneg(false)
+    await loadData()
+  }
   async function handleAddTrigger(input: NewSalaryTriggerInput) { if (!id) return; const c = await createSalaryTrigger(id, input); setTriggers(prev => [...prev, c]) }
   async function handleMarkTrigger(tid: string, date: string) { const u = await markTriggerAchieved(tid, date); setTriggers(prev => prev.map(t => t.id === tid ? u : t)) }
   async function handleResetTrigger(tid: string) { const u = await resetTrigger(tid); setTriggers(prev => prev.map(t => t.id === tid ? u : t)) }
@@ -413,7 +468,7 @@ export default function PageAthleteDetail() {
     // Aba única consolidada: atleta + vínculos + cláusulas + metas + passivos +
     // detentores + PJs + imagem, uma linha por registro (coluna "Seção").
     const rows = buildConsolidatedRows({
-      athlete, contracts, clauses, triggers,
+      athlete, contracts, clauses, installments, triggers,
       clubLiabs, intermLiabs, rights, pjs, imageRights,
     })
     exportWorkbook(
@@ -434,10 +489,42 @@ export default function PageAthleteDetail() {
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1 }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const payClause = payClauseId ? clauses.find(c => c.id === payClauseId) ?? null : null
+  const payInst = payInstId ? installments.find(i => i.id === payInstId) ?? null : null
+  const editClause = editClauseId ? clauses.find(c => c.id === editClauseId) ?? null : null
 
   const emp = employmentContract(contracts)
   const empTriggers = emp ? triggers.filter(t => t.contract_id === emp.id || t.contract_id === null) : []
   const sortedRights = sortRights(rights)
+
+  // ── Big numbers (custos consolidados por natureza) ──────────────────────────
+  // "Custo" = total de cláusulas ativas (não canceladas), por moeda. Fluxos
+  // parcelados usam o total das parcelas; os demais, o valor da cláusula.
+  const alive = (c: Clause) => c.payment_status !== 'CANCELADA'
+  const instByClause = (cid: string) => installments.filter(i => i.clause_id === cid && i.payment_status !== 'CANCELADA')
+  function totalsFor(types: ClauseType[]): Partial<Record<Currency, number>> {
+    const out: Partial<Record<Currency, number>> = {}
+    for (const c of clauses) {
+      if (!types.includes(c.clause_type) || !alive(c)) continue
+      const parc = instByClause(c.id)
+      const val = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
+      if (!val) continue
+      out[c.currency] = (out[c.currency] ?? 0) + val
+    }
+    return out
+  }
+  const transferTotals = totalsFor(['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL'])
+  const luvasTotals = totalsFor(['LUVAS'])
+  const intermTotals = totalsFor(['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA'])
+  // Passivos de agente a pagar também entram na intermediação.
+  for (const l of intermLiabs) {
+    if (l.status === 'CANCELADA') continue
+    intermTotals[l.currency] = (intermTotals[l.currency] ?? 0) + l.amount
+  }
+  const empSalNow = emp ? (effectiveSalary(emp, empTriggers).amount ?? emp.base_salary ?? 0) : 0
+  const empImg = emp?.image_value ?? 0
+  const empOther = emp?.other_value ?? 0
+  const salImgMonthly = empSalNow + empImg + empOther
+  const salImgCurrency: Currency = emp?.salary_currency ?? 'BRL'
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
@@ -516,6 +603,14 @@ export default function PageAthleteDetail() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Big numbers — custos consolidados por natureza */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
+        <BigNumberCard label="Custo total de transfer" totals={transferTotals} sub="Transfer fee (fixo + variável)" />
+        <BigNumberCard label="Salário + imagem (atual)" totals={{ [salImgCurrency]: salImgMonthly }} sub="Remuneração mensal vigente" color="var(--gold-deep)" />
+        <BigNumberCard label="Custo total de intermediação" totals={intermTotals} sub="Agentes (cláusulas + passivos)" />
+        <BigNumberCard label="Custo total de luvas" totals={luvasTotals} sub="Luvas contratadas" />
       </div>
 
       {/* Tabs */}
@@ -606,7 +701,7 @@ export default function PageAthleteDetail() {
                       <td style={td}><PctBadge pct={pctCl} /></td>
                       <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                       <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
-                      <td style={td}><ClauseActions clause={c} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
+                      <td style={td}><ClauseActions clause={c} onEdit={() => setEditClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
                     </tr>
                     {open && parc.map(p => {
                       const late = isOverdue(p.due_date, p.payment_status)
@@ -620,7 +715,12 @@ export default function PageAthleteDetail() {
                           <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)' }}>{p.payment_status === 'PAGA' ? '100%' : '0%'}</td>
                           <td style={td}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                           <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
-                          <td style={td}></td>
+                          <td style={td}>
+                            <InstallmentCheck inst={p} canEdit={canEdit}
+                              onPay={() => setPayInstId(p.id)}
+                              onQuickPay={() => handleMarkInstallmentPaidQuick(p.id)}
+                              onRevert={() => handleRevertInstallment(p.id)} />
+                          </td>
                         </tr>
                       )
                     })}
@@ -631,6 +731,17 @@ export default function PageAthleteDetail() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Acordos e Renegociações */}
+      {tab === 'acordos' && (
+        <AcordosTab
+          clauses={clauses} installments={installments} canEdit={canEdit}
+          onNew={() => setShowReneg(true)}
+          onPayInst={id => setPayInstId(id)}
+          onQuickPayInst={id => handleMarkInstallmentPaidQuick(id)}
+          onRevertInst={id => handleRevertInstallment(id)}
+        />
       )}
 
       {/* Histórico */}
@@ -783,6 +894,9 @@ export default function PageAthleteDetail() {
       )}
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
+      {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
+      {editClause && <ClauseEditModal clause={editClause} onClose={() => setEditClauseId(null)} onSave={patch => handleUpdateClause(editClause.id, patch)} />}
+      {showReneg && athlete && <RenegotiationModal athleteId={athlete.id} clauses={clauses} installments={installments} clubLiabs={clubLiabs} intermLiabs={intermLiabs} onClose={() => setShowReneg(false)} onSave={handleRenegotiate} />}
       {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} pjs={pjs} canEdit={canEdit} onAddPJ={handleAddPJ} onUpdatePJ={handleUpdatePJ} onDeletePJ={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
       {editContractId && (() => {
         const ct = contracts.find(c => c.id === editContractId)
@@ -1220,6 +1334,383 @@ function ContractEditModal({ contract, onClose, onSaved }: {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={save} disabled={saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── InstallmentCheck — check de pagamento por parcela ────────────────────────
+function InstallmentCheck({ inst, canEdit, onPay, onQuickPay, onRevert }: {
+  inst: ClauseInstallment; canEdit: boolean; onPay: () => void; onQuickPay: () => void; onRevert: () => void
+}) {
+  if (!canEdit) return <StatusBadge status={inst.payment_status} map={PAYMENT_STATUS_STYLE} />
+  const btn: React.CSSProperties = { padding: '3px 8px', borderRadius: 6, fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', lineHeight: 1, whiteSpace: 'nowrap' }
+  if (inst.payment_status === 'PAGA') {
+    return <button onClick={onRevert} title="Reverter pagamento desta parcela" style={{ ...btn, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)' }}>↩ reverter</button>
+  }
+  if (inst.payment_status === 'CANCELADA') {
+    return <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)' }}>—</span>
+  }
+  return (
+    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+      <button onClick={onQuickPay} title="Marcar parcela como paga (hoje)" style={{ ...btn, border: 'none', background: '#3a6f3a', color: '#fff' }}>✓</button>
+      <button onClick={onPay} title="Registrar pagamento (data/câmbio)" style={{ ...btn, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a' }}>$</button>
+    </div>
+  )
+}
+
+// ── ClauseEditModal — editar uma cláusula ativa ──────────────────────────────
+function ClauseEditModal({ clause, onClose, onSave }: {
+  clause: Clause; onClose: () => void; onSave: (patch: Partial<Clause>) => Promise<void>
+}) {
+  const [f, setF] = useState({
+    description: clause.description ?? '',
+    creditor_party: clause.creditor_party ?? '',
+    debtor_party: clause.debtor_party ?? '',
+    currency: clause.currency,
+    original_value: clause.original_value != null ? String(clause.original_value) : '',
+    percentage_value: clause.percentage_value != null ? String(clause.percentage_value) : '',
+    condition_description: clause.condition_description ?? '',
+    due_date: clause.due_date ?? '',
+    payment_status: clause.payment_status,
+    achievement_status: clause.achievement_status,
+    notes: clause.notes ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+  const cur: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
+
+  async function save() {
+    setSaving(true)
+    try {
+      await onSave({
+        description: f.description,
+        creditor_party: f.creditor_party,
+        debtor_party: f.debtor_party,
+        currency: f.currency,
+        original_value: f.original_value ? parseFloat(f.original_value) : null,
+        percentage_value: f.percentage_value ? parseFloat(f.percentage_value) : null,
+        condition_description: f.condition_description || null,
+        due_date: f.due_date || null,
+        payment_status: f.payment_status,
+        achievement_status: f.achievement_status,
+        notes: f.notes || null,
+      })
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 640, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar cláusula</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 3 }}>{CLAUSE_TYPE_LABELS[clause.clause_type] ?? clause.clause_type}{clause.installments_total > 1 ? ` · ${clause.installments_total}x (edite o valor por parcela na tabela)` : ''}</div>
+        </div>
+        <div><label style={lbl}>Descrição</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
+          <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
+          <div><label style={lbl}>Valor{clause.installments_total > 1 ? ' total' : ''}</label><input style={inp} type="number" min={0} step={0.01} value={f.original_value} onChange={e => set('original_value', e.target.value)} /></div>
+          <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label style={lbl}>Percentual (%)</label><input style={inp} type="number" min={0} step={0.01} value={f.percentage_value} onChange={e => set('percentage_value', e.target.value)} /></div>
+          <div><label style={lbl}>Vencimento</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+          <div><label style={lbl}>Status pagamento</label>
+            <select style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
+              {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            </select>
+          </div>
+          <div><label style={lbl}>Atingimento</label>
+            <select style={inp} value={f.achievement_status} onChange={e => set('achievement_status', e.target.value)}>
+              {['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            </select>
+          </div>
+        </div>
+        <div><label style={lbl}>Condição</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
+        <div><label style={lbl}>Observações</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={save} disabled={saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── AcordosTab — acordos e renegociações do atleta ──────────────────────────
+function AcordosTab({ clauses, installments, canEdit, onNew, onPayInst, onQuickPayInst, onRevertInst }: {
+  clauses: Clause[]; installments: ClauseInstallment[]; canEdit: boolean
+  onNew: () => void
+  onPayInst: (id: string) => void; onQuickPayInst: (id: string) => void; onRevertInst: (id: string) => void
+}) {
+  const acordos = clauses.filter(isAcordo).sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+  const th: React.CSSProperties = { padding: '7px 10px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-soft)', fontFamily: fontMono, letterSpacing: '0.12em', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '7px 10px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)' }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Acordos e Renegociações</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font, marginTop: 3, maxWidth: 620 }}>
+            Selecione parcelas/cláusulas em aberto e reabra o saldo em um novo fluxo (com desconto, se houver). As parcelas originais são preservadas como canceladas, mantendo o rastreio.
+          </div>
+        </div>
+        {canEdit && <button onClick={onNew} style={{ padding: '8px 16px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Nova renegociação</button>}
+      </div>
+
+      {acordos.length === 0 && (
+        <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhum acordo registrado.</div>
+      )}
+
+      {acordos.map(ac => {
+        const meta = decodeAcordo(ac.notes)
+        const parc = installments.filter(i => i.clause_id === ac.id).sort((a, b) => a.installment_number - b.installment_number)
+        const paidCount = parc.filter(p => p.payment_status === 'PAGA').length
+        return (
+          <div key={ac.id} className="card" style={{ padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{meta?.creditor ?? ac.creditor_party}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>{meta ? `acordado em ${fmtDate(meta.createdAt)}` : ''}</div>
+            </div>
+
+            {meta && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 14 }}>
+                {[
+                  ['Dívida original', fmtCurrencyShort(meta.originalTotal, meta.currency)],
+                  ['Novo total', fmtCurrencyShort(meta.newTotal, meta.currency)],
+                  ['Desconto', meta.discount ? fmtCurrencyShort(meta.discount, meta.currency) : '—'],
+                  ['Novo fluxo', `${meta.installmentsCount}x${meta.periodicityMonths > 1 ? ` / ${meta.periodicityMonths}m` : ' mensal'}`],
+                  ['Pagas', `${paidCount}/${parc.length}`],
+                ].map(([l, v], i) => (
+                  <div key={i} style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                    <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{l}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, fontFamily: fontMono, color: l === 'Desconto' && meta.discount > 0 ? 'var(--pos)' : 'var(--ink-primary)' }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {meta?.userNote && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', borderLeft: '2px solid var(--gold-ring)', borderRadius: 4, padding: '7px 12px', fontFamily: font, marginBottom: 14 }}>{meta.userNote}</div>}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {/* Novo fluxo */}
+              <div>
+                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 8 }}>Novo fluxo</div>
+                <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead><tr><th style={th}>#</th><th style={th}>Vencimento</th><th style={{ ...th, textAlign: 'right' }}>Valor</th><th style={{ ...th, textAlign: 'right' }}>Ação</th></tr></thead>
+                    <tbody>
+                      {parc.map(p => {
+                        const late = isOverdue(p.due_date, p.payment_status)
+                        return (
+                          <tr key={p.id}>
+                            <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)' }}>{p.installment_number}</td>
+                            <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
+                            <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
+                            <td style={{ ...td, textAlign: 'right' }}><InstallmentCheck inst={p} canEdit={canEdit} onPay={() => onPayInst(p.id)} onQuickPay={() => onQuickPayInst(p.id)} onRevert={() => onRevertInst(p.id)} /></td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              {/* Itens de origem (rastreio) */}
+              <div>
+                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Itens de origem (renegociados)</div>
+                <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {(meta?.sources ?? []).map((s, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '6px 10px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
+                      <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtCurrencyShort(s.value, meta?.currency ?? 'BRL')}</span>
+                    </div>
+                  ))}
+                  {(!meta || meta.sources.length === 0) && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>—</div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── RenegotiationModal — seleção de itens e abertura de novo fluxo ───────────
+interface RenegItem {
+  key: string; source: AcordoSource; parte: string
+  creditor: string; debtor: string; currency: Currency
+  natureza: string; dueDate: string | null
+}
+
+function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, intermLiabs, onClose, onSave }: {
+  athleteId: string; clauses: Clause[]; installments: ClauseInstallment[]
+  clubLiabs: ClubLiability[]; intermLiabs: IntermediaryLiability[]
+  onClose: () => void; onSave: (input: RenegotiationInput) => Promise<void>
+}) {
+  const OPEN = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO']
+  const clauseById = new Map(clauses.map(c => [c.id, c]))
+  const items: RenegItem[] = []
+  // Parcelas em aberto (exceto salário/imagem, que são folha mensal, não dívida).
+  for (const it of installments) {
+    if (!OPEN.includes(it.payment_status)) continue
+    const c = clauseById.get(it.clause_id)
+    if (!c || c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM') continue
+    const nat = CLAUSE_TYPE_LABELS[c.clause_type] ?? c.clause_type
+    // "parte" = contraparte (o lado que não é o Botafogo) — usada para agrupar.
+    const parte = isBFRparty(c.debtor_party) ? c.creditor_party : c.debtor_party
+    items.push({
+      key: `i:${it.id}`, source: { installmentId: it.id, label: `${nat} — parcela ${it.installment_number}`, value: it.original_value, dueDate: it.due_date },
+      parte, creditor: c.creditor_party, debtor: c.debtor_party, currency: it.currency, natureza: nat, dueDate: it.due_date,
+    })
+  }
+  // Cláusulas de valor único em aberto (sem parcelas).
+  const clauseHasInst = new Set(installments.map(i => i.clause_id))
+  for (const c of clauses) {
+    if (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM' || isAcordo(c)) continue
+    if (clauseHasInst.has(c.id)) continue
+    if (!OPEN.includes(c.payment_status) || c.original_value == null) continue
+    const nat = CLAUSE_TYPE_LABELS[c.clause_type] ?? c.clause_type
+    const parte = isBFRparty(c.debtor_party) ? c.creditor_party : c.debtor_party
+    items.push({
+      key: `c:${c.id}`, source: { clauseId: c.id, label: nat, value: c.original_value, dueDate: c.due_date },
+      parte, creditor: c.creditor_party, debtor: c.debtor_party, currency: c.currency, natureza: nat, dueDate: c.due_date,
+    })
+  }
+  // Passivos de clube/agente em aberto.
+  for (const l of clubLiabs) {
+    if (!OPEN.includes(l.status)) continue
+    const isPay = l.direction === 'A_PAGAR'
+    items.push({
+      key: `cl:${l.id}`, source: { clubLiabId: l.id, label: `Obrigação clube — ${l.club_name}`, value: l.amount, dueDate: l.due_date },
+      parte: l.club_name, creditor: isPay ? l.club_name : 'Botafogo SAF', debtor: isPay ? 'Botafogo SAF' : l.club_name, currency: l.currency, natureza: 'Obrigação clube', dueDate: l.due_date,
+    })
+  }
+  for (const l of intermLiabs) {
+    if (!OPEN.includes(l.status)) continue
+    const isPay = l.direction === 'A_PAGAR'
+    items.push({
+      key: `il:${l.id}`, source: { intermLiabId: l.id, label: `Intermediação — ${l.intermediary_name}`, value: l.amount, dueDate: l.due_date },
+      parte: l.intermediary_name, creditor: isPay ? l.intermediary_name : 'Botafogo SAF', debtor: isPay ? 'Botafogo SAF' : l.intermediary_name, currency: l.currency, natureza: 'Intermediação', dueDate: l.due_date,
+    })
+  }
+
+  // Agrupa por parte.
+  const groups = new Map<string, RenegItem[]>()
+  for (const it of items) { if (!groups.has(it.parte)) groups.set(it.parte, []); groups.get(it.parte)!.push(it) }
+  for (const arr of groups.values()) arr.sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
+
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [newTotal, setNewTotal] = useState('')
+  const [startDate, setStartDate] = useState(todayISO())
+  const [count, setCount] = useState('10')
+  const [period, setPeriod] = useState('1')
+  const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [touchedTotal, setTouchedTotal] = useState(false)
+
+  const selItems = items.filter(i => selected.has(i.key))
+  const sum = Math.round(selItems.reduce((s, i) => s + i.source.value, 0) * 100) / 100
+  const currencies = Array.from(new Set(selItems.map(i => i.currency)))
+  const parties = Array.from(new Set(selItems.map(i => i.parte)))
+  const mixedCurrency = currencies.length > 1
+  const mixedParty = parties.length > 1
+  const currency = (currencies[0] ?? 'BRL') as Currency
+
+  function toggle(key: string) {
+    setSelected(prev => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n })
+  }
+  function toggleGroup(parte: string, on: boolean) {
+    const keys = (groups.get(parte) ?? []).map(i => i.key)
+    setSelected(prev => { const n = new Set(prev); for (const k of keys) { if (on) n.add(k); else n.delete(k) } return n })
+  }
+
+  const effectiveTotal = touchedTotal && newTotal !== '' ? parseFloat(newTotal) : sum
+  const discount = Math.round((sum - effectiveTotal) * 100) / 100
+  const canSave = selItems.length > 0 && !mixedCurrency && !mixedParty && Number(count) >= 1 && !!startDate
+
+  async function submit() {
+    if (!canSave) return
+    setSaving(true)
+    try {
+      const ref = selItems[0]
+      await onSave({
+        athleteId,
+        creditor: ref.creditor,
+        debtor: ref.debtor,
+        currency,
+        sources: selItems.map(i => i.source),
+        newTotal: effectiveTotal,
+        startDate,
+        installmentsCount: Math.floor(Number(count)),
+        periodicityMonths: Math.floor(Number(period)) || 1,
+        userNote: note,
+      })
+    } finally { setSaving(false) }
+  }
+
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 760, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Nova renegociação</div>
+
+        {/* Seleção de itens */}
+        <div>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 8 }}>1 · Selecione os itens em aberto</div>
+          {items.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhum item em aberto para renegociar.</div>
+          ) : (
+            <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {Array.from(groups.entries()).map(([parte, arr]) => {
+                const allOn = arr.every(i => selected.has(i.key))
+                return (
+                  <div key={parte} style={{ border: '1px solid var(--divider-soft)', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--bg-subtle)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: font, color: 'var(--ink-primary)' }}>
+                        <input type="checkbox" checked={allOn} onChange={e => toggleGroup(parte, e.target.checked)} />
+                        {parte}
+                      </label>
+                      <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)' }}>{arr.length} item(ns)</span>
+                    </div>
+                    {arr.map(it => (
+                      <label key={it.key} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 110px 90px', gap: 8, alignItems: 'center', padding: '6px 10px', borderTop: '1px solid var(--divider-soft)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={selected.has(it.key)} onChange={() => toggle(it.key)} />
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.source.label}</span>
+                        <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-muted)' }}>{it.dueDate ? fmtDate(it.dueDate) : '—'}</span>
+                        <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 600, textAlign: 'right' }}>{fmtCurrencyShort(it.source.value, it.currency)}</span>
+                      </label>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {mixedCurrency && <div style={{ fontSize: 11, color: 'var(--neg)', fontFamily: font, marginTop: 6 }}>⚠ Selecione itens de uma única moeda.</div>}
+          {mixedParty && <div style={{ fontSize: 11, color: 'var(--neg)', fontFamily: font, marginTop: 6 }}>⚠ Selecione itens de uma única contraparte.</div>}
+        </div>
+
+        {/* Parâmetros do novo fluxo */}
+        <div>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 8 }}>2 · Defina o novo fluxo</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+            <div><label style={lbl}>Dívida selecionada</label><input style={{ ...inp, fontFamily: fontMono }} value={`${currency} ${sum.toLocaleString('pt-BR')}`} disabled /></div>
+            <div><label style={lbl}>Novo total ({currency})</label><input style={{ ...inp, fontFamily: fontMono }} type="number" min={0} step={0.01} value={touchedTotal ? newTotal : String(sum || '')} onChange={e => { setTouchedTotal(true); setNewTotal(e.target.value) }} placeholder="Igual à dívida" /></div>
+            <div><label style={lbl}>Desconto</label><input style={{ ...inp, fontFamily: fontMono, color: discount > 0 ? 'var(--pos)' : discount < 0 ? 'var(--neg)' : undefined }} value={`${currency} ${discount.toLocaleString('pt-BR')}`} disabled /></div>
+            <div><label style={lbl}>Data-base</label><input style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+            <div><label style={lbl}>Nº de parcelas</label><input style={inp} type="number" min={1} step={1} value={count} onChange={e => setCount(e.target.value)} /></div>
+            <div><label style={lbl}>Periodicidade (meses)</label><input style={inp} type="number" min={1} step={1} value={period} onChange={e => setPeriod(e.target.value)} /></div>
+          </div>
+          <div style={{ marginTop: 12 }}><label style={lbl}>Observações do acordo</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={note} onChange={e => setNote(e.target.value)} placeholder="Termos, motivo do desconto, referência do aditivo..." /></div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginRight: 'auto' }}>{selItems.length} item(ns) → {Math.max(1, Math.floor(Number(count)) || 1)}x de {fmtCurrencyShort(effectiveTotal / Math.max(1, Math.floor(Number(count)) || 1), currency)}</span>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={submit} disabled={!canSave || saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : '#ccc', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Renegociando...' : 'Renegociar'}</button>
         </div>
       </div>
     </div>

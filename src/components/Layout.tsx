@@ -26,6 +26,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
       { to: '/relatorios/intermediarios', label: 'Agentes' },
       { to: '/relatorios/clubes',        label: 'Clubes' },
       { to: '/relatorios/salarios',      label: 'Salários' },
+      { to: '/relatorios/acordos',       label: 'Acordos e Renegociações' },
       { to: '/relatorios/consolidado',   label: 'Consolidado' },
     ],
   },

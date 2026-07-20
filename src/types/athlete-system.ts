@@ -26,6 +26,7 @@ export type ClauseType =
   | 'EMPRESTIMO_TAXA'
   | 'CLAUSULA_RESCISORIA'
   | 'PERCENTUAL_VENDA_ATLETA'
+  | 'ACORDO_RENEGOCIACAO'
 
 export type AchievementStatus = 'PENDENTE' | 'ATINGIDA' | 'NAO_ATINGIDA' | 'NAO_APLICAVEL'
 
@@ -264,6 +265,7 @@ export const CLAUSE_TYPE_LABELS: Record<ClauseType, string> = {
   EMPRESTIMO_TAXA:           'Taxa de Empréstimo',
   CLAUSULA_RESCISORIA:       'Cláusula Rescisória',
   PERCENTUAL_VENDA_ATLETA:   'Percentual de Venda',
+  ACORDO_RENEGOCIACAO:       'Acordo / Renegociação',
 }
 
 export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
