@@ -21,6 +21,7 @@ import PageCadastroDetail from './pages/PageCadastroDetail'
 
 // Relatórios
 import PageRelatorio from './pages/PageRelatorio'
+import PageAcordos from './pages/PageAcordos'
 import PageConsolidado from './pages/PageConsolidado'
 import PageDados from './pages/PageDados'
 import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
@@ -72,6 +73,7 @@ function AppRoutes() {
 
           {/* Relatórios */}
           <Route path="/relatorios/consolidado" element={<PageConsolidado />} />
+          <Route path="/relatorios/acordos" element={<PageAcordos />} />
           <Route path="/relatorios/:kind" element={<PageRelatorio />} />
 
           {/* Importar / Exportar */}

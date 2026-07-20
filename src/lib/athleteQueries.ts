@@ -892,6 +892,23 @@ export async function createClauseInstallments(
   return data.map(r => fromAcFK<ClauseInstallment>(r))
 }
 
+export async function updateInstallment(id: string, input: Partial<ClauseInstallment>): Promise<ClauseInstallment> {
+  if (!USE_SUPABASE) return local.update<ClauseInstallment>(T.installments, id, input)
+  const { data, error } = await supabase.from(AC.installments).update(nn(toAcFK(input))).eq('id', id).select().single()
+  if (error) throw error
+  return fromAcFK<ClauseInstallment>(data)
+}
+
+/** Marca uma parcela como paga (check rápido) usando o valor previsto. */
+export async function markInstallmentPaid(id: string, date: string): Promise<ClauseInstallment> {
+  return updateInstallment(id, { payment_status: 'PAGA', payment_date: date })
+}
+
+/** Reverte a parcela para pendente (desfaz o check de pagamento). */
+export async function revertInstallment(id: string): Promise<ClauseInstallment> {
+  return updateInstallment(id, { payment_status: 'PENDENTE', payment_date: null, amount_paid_brl: null, exchange_rate: null })
+}
+
 export async function registerInstallmentPayment(id: string, payment: PaymentInput): Promise<ClauseInstallment> {
   const patch = {
     payment_status: 'PAGA' as const,

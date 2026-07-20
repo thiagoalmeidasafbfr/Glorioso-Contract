@@ -8,13 +8,14 @@
 
 import type { ColDef } from './xlsx-utils'
 import type {
-  Athlete, Contract, Clause, SalaryTrigger, ClubLiability,
+  Athlete, Contract, Clause, ClauseInstallment, SalaryTrigger, ClubLiability,
   IntermediaryLiability, EconomicRight, AthletePJ, ImageRight,
 } from '../types/athlete-system'
 import {
-  createAthlete, createContract, createClause, createSalaryTrigger,
-  createClubLiability, createIntermediaryLiability, createEconomicRight,
-  createPJ, createImageRight, updateClause, fetchAthletes,
+  createAthlete, createContract, createClause, createClauseInstallments,
+  updateInstallment, createSalaryTrigger, createClubLiability,
+  createIntermediaryLiability, createEconomicRight, createPJ, createImageRight,
+  updateClause, fetchAthletes,
 } from './athleteQueries'
 import { S, orNull, N, Nn, cur, bool, norm, dupKey } from './importHelpers'
 import { todayISO } from './format'
@@ -26,6 +27,7 @@ export const SECAO = {
   ATLETA: 'ATLETA',
   VINCULO: 'VINCULO',
   CLAUSULA: 'CLAUSULA',
+  PARCELA: 'PARCELA',
   META: 'META_SALARIO',
   PASSIVO_CLUBE: 'PASSIVO_CLUBE',
   PASSIVO_AGENTE: 'PASSIVO_AGENTE',
@@ -39,6 +41,7 @@ function secaoOf(v: unknown): string {
   const s = S(v).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s-]+/g, '_')
   if (s.startsWith('ATLETA')) return SECAO.ATLETA
   if (s.startsWith('VINCULO') || s.startsWith('CONTRATO')) return SECAO.VINCULO
+  if (s.startsWith('PARCELA')) return SECAO.PARCELA
   if (s.startsWith('CLAUSULA')) return SECAO.CLAUSULA
   if (s.startsWith('META')) return SECAO.META
   if (s.startsWith('PASSIVO_CLUBE') || s.startsWith('PASSIVOS_CLUBE')) return SECAO.PASSIVO_CLUBE
@@ -58,6 +61,8 @@ export const COLS_ATLETA_CONSOLIDADO: ColDef[] = [
   { key: 'id',             header: 'ID' },
   { key: 'atleta_id',      header: 'Atleta ID' },
   { key: 'vinculo_id',     header: 'Vínculo ID' },
+  { key: 'clausula_id',    header: 'Cláusula ID' },
+  { key: 'parcela_num',    header: 'Parcela nº' },
   { key: 'tipo',           header: 'Tipo' },
   { key: 'descricao',      header: 'Descrição' },
   { key: 'contraparte',    header: 'Contraparte' },
@@ -107,6 +112,7 @@ export interface AthleteBundle {
   athlete: Athlete
   contracts: Contract[]
   clauses: Clause[]
+  installments: ClauseInstallment[]
   triggers: SalaryTrigger[]
   clubLiabs: ClubLiability[]
   intermLiabs: IntermediaryLiability[]
@@ -158,6 +164,17 @@ export function buildConsolidatedRows(b: AthleteBundle): Row[] {
     condicao: c.condition_description ?? '', vencimento: c.due_date ?? '',
     atingimento: c.achievement_status, status: c.payment_status,
     data_pagamento: c.payment_date ?? '', observacoes: c.notes ?? '',
+  })
+
+  // Parcelas — uma linha por parcela, ligada à cláusula-mãe por "Cláusula ID".
+  // Cobre fluxos regulares (salário/imagem mensal) E irregulares (transfer fee
+  // com valores/datas variáveis): cada vencimento é registrado individualmente.
+  for (const it of b.installments) rows.push({
+    ...base, secao: SECAO.PARCELA, id: it.id, clausula_id: it.clause_id,
+    parcela_num: it.installment_number, descricao: `Parcela ${it.installment_number}`,
+    moeda: it.currency, valor: it.original_value, vencimento: it.due_date,
+    status: it.payment_status, data_pagamento: it.payment_date ?? '',
+    observacoes: it.notes ?? '',
   })
 
   for (const t of b.triggers) rows.push({
@@ -299,9 +316,19 @@ export async function importConsolidatedAthletes(
       res.records++
     }
 
-    // 4) Cláusulas (ligadas ao vínculo remapeado)
+    // 4) Cláusulas (ligadas ao vínculo remapeado) — mapeia ID do arquivo → novo ID
+    // para que as parcelas (seção PARCELA) possam se religar à cláusula-mãe.
+    const clauseMap = new Map<string, string>()
+    const parcelaRows = rowsOf(grp, SECAO.PARCELA)
+    const parcelaCountByClause = new Map<string, number>()
+    for (const pr of parcelaRows) {
+      const cid = S(pr['Cláusula ID'])
+      if (cid) parcelaCountByClause.set(cid, (parcelaCountByClause.get(cid) ?? 0) + 1)
+    }
     for (const r of rowsOf(grp, SECAO.CLAUSULA)) {
       const contractId = contractMap.get(S(r['Vínculo ID'])) ?? null
+      const fileClauseId = S(r['ID'])
+      const nParc = parcelaCountByClause.get(fileClauseId) ?? 0
       const clause = await createClause(contractId, aid, {
         clause_type: (S(r['Tipo']) || 'TRANSFER_FEE_FIXO') as never,
         description: S(r['Descrição']),
@@ -309,8 +336,9 @@ export async function importConsolidatedAthletes(
         currency: cur(r['Moeda']), original_value: Nn(r['Valor']),
         percentage_value: Nn(r['Percentual (%)']),
         condition_description: S(r['Condição']), due_date: S(r['Vencimento']),
-        installments_total: 1, notes: S(r['Observações']),
+        installments_total: nParc > 0 ? nParc : 1, notes: S(r['Observações']),
       })
+      if (fileClauseId) clauseMap.set(fileClauseId, clause.id)
       // Preserva status de atingimento/pagamento quando não for o padrão.
       const patch: Record<string, unknown> = {}
       const ach = S(r['Atingimento']).toUpperCase()
@@ -322,6 +350,38 @@ export async function importConsolidatedAthletes(
       }
       if (Object.keys(patch).length) await updateClause(clause.id, patch as never)
       res.records++
+    }
+
+    // 4b) Parcelas — recria o fluxo parcela a parcela de cada cláusula, com
+    // vencimentos e valores explícitos (preserva fluxos irregulares).
+    const parcByClause = new Map<string, Record<string, string>[]>()
+    for (const pr of parcelaRows) {
+      const cid = S(pr['Cláusula ID']); if (!cid) continue
+      if (!parcByClause.has(cid)) parcByClause.set(cid, [])
+      parcByClause.get(cid)!.push(pr)
+    }
+    for (const [fileClauseId, prs] of parcByClause) {
+      const clauseId = clauseMap.get(fileClauseId)
+      if (!clauseId) continue
+      const ordered = [...prs].sort((a, b) => N(a['Parcela nº']) - N(b['Parcela nº']))
+      const created = await createClauseInstallments(clauseId, aid, ordered.map((pr, i) => ({
+        installment_number: Nn(pr['Parcela nº']) ?? (i + 1),
+        due_date: S(pr['Vencimento']),
+        original_value: N(pr['Valor']),
+        currency: cur(pr['Moeda']),
+      })))
+      // Reaplica pagamentos já registrados nas parcelas.
+      for (let i = 0; i < created.length; i++) {
+        const pr = ordered[i]
+        const st = S(pr['Status']).toUpperCase()
+        if (st && st !== 'PENDENTE') {
+          await updateInstallment(created[i].id, {
+            payment_status: st as never,
+            payment_date: orNull(pr['Data Pagamento/Liquidação']),
+          })
+        }
+      }
+      res.records += created.length
     }
 
     // 5) Metas de salário
