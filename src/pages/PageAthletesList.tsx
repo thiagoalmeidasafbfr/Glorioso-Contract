@@ -33,9 +33,9 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
 }
 
 const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
-  ATIVO:      { bg: '#dcf0e4', fg: '#166534' },
+  ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a' },
   EMPRESTADO: { bg: 'rgba(190,140,74,0.18)', fg: '#7a6244' },
-  VENDIDO:    { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' },
+  VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
 }
 

@@ -19,17 +19,21 @@ import {
 } from '../lib/athleteQueries'
 import { fmtCurrencyShort, isOverdue, todayISO } from '../lib/format'
 import type { Currency } from '../types/athlete-system'
+import PageHero from '../components/PageHero'
 
 const font = "'Inter', system-ui, sans-serif"
 const mono = "'IBM Plex Mono', monospace"
 
-// Paleta (validada — CVD/visão normal ok; ouro usa rótulos/legenda p/ contraste).
+// Paleta "Counting House" — muted/pastel, sem cores vivas.
+// Salário + imagem = sequência de OURO (mesma família = remuneração), diferenciadas
+// por tom + posição na pilha + legenda. Direção (pagar/receber) usa o tier muted
+// (terracota / verde-oliva) sempre acompanhado de legenda e rótulo.
 const C = {
-  salarioFill: '#be8c4a', salarioLine: '#9a6f2e',
-  imagemFill: '#1d4ed8', imagemLine: '#1d4ed8',
-  total: '#3a2e1c',
-  pagar: '#dc2626', receber: '#166534', agente: '#a9752f',
-  gridStroke: 'rgba(26,20,16,0.06)', axis: 'rgba(26,20,16,0.45)',
+  salarioFill: '#be8c4a', salarioLine: '#9a6f2e',   // ouro
+  imagemFill: '#8a6f4a', imagemLine: '#6e5836',      // ouro profundo (2º passo)
+  total: '#3a2e1c',                                   // tinta
+  pagar: '#7a3f2c', receber: '#3a6f3a', agente: '#9a7d44',
+  gridStroke: 'rgba(26,20,16,0.055)', axis: 'rgba(26,20,16,0.42)',
 }
 
 const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
@@ -121,12 +125,8 @@ export default function PageDashboards() {
   ]
 
   return (
-    <div style={{ padding: '26px 30px', maxWidth: 1360, margin: '0 auto' }}>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 6 }}>Controle financeiro · Botafogo SAF</div>
-        <h1 style={{ fontFamily: font, fontSize: 26, fontWeight: 700, color: 'var(--ink-primary)', margin: 0, letterSpacing: '-0.01em' }}>Painel executivo</h1>
-        <div style={{ height: 3, width: 44, background: 'var(--gold)', borderRadius: 2, marginTop: 8 }} />
-      </div>
+    <div style={{ padding: '24px 28px', maxWidth: 1360, margin: '0 auto' }}>
+      <PageHero title="Painel executivo" subtitle="Controle financeiro · Botafogo SAF" />
 
       {loading ? <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>Carregando...</div> : (
         <>

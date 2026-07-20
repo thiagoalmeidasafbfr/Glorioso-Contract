@@ -329,15 +329,15 @@ export default function PageDados() {
             {exportingAll ? 'Exportando...' : 'Exportar toda a base'}
           </button>
           <button onClick={() => { setConfirmWipe(true); setMsg(null) }}
-            style={{ padding: '9px 18px', background: 'transparent', border: '1px solid rgba(220,38,38,0.55)', borderRadius: 8, color: '#dc2626', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            style={{ padding: '9px 18px', background: 'transparent', border: '1px solid rgba(122,63,44,0.55)', borderRadius: 8, color: '#7a3f2c', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Apagar toda a base
           </button>
         </div>
       </div>
 
       {confirmWipe && (
-        <div style={{ border: '1px solid rgba(220,38,38,0.35)', background: 'rgba(220,38,38,0.06)', borderRadius: 10, padding: 18, marginBottom: 22 }}>
-          <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 700, color: '#b91c1c', marginBottom: 6 }}>Apagar toda a base?</div>
+        <div style={{ border: '1px solid rgba(122,63,44,0.35)', background: 'rgba(122,63,44,0.06)', borderRadius: 10, padding: 18, marginBottom: 22 }}>
+          <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 700, color: '#7a3f2c', marginBottom: 6 }}>Apagar toda a base?</div>
           <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
             Isto remove <strong>permanentemente</strong> todos os atletas, vínculos, cláusulas, parcelas, titularidade,
             metas de salário, passivos, direito de imagem, PJs, clubes e agentes. Esta ação <strong>não pode ser desfeita</strong>.
@@ -350,7 +350,7 @@ export default function PageDados() {
               style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--divider-strong)', fontFamily: fontMono, fontSize: 13, width: 160, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}
             />
             <button onClick={handleWipe} disabled={wipeText.trim().toUpperCase() !== 'APAGAR' || wiping}
-              style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: '#dc2626', color: '#fff', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: (wipeText.trim().toUpperCase() !== 'APAGAR' || wiping) ? 'default' : 'pointer', opacity: (wipeText.trim().toUpperCase() !== 'APAGAR' || wiping) ? 0.5 : 1 }}>
+              style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: '#7a3f2c', color: '#fff', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: (wipeText.trim().toUpperCase() !== 'APAGAR' || wiping) ? 'default' : 'pointer', opacity: (wipeText.trim().toUpperCase() !== 'APAGAR' || wiping) ? 0.5 : 1 }}>
               {wiping ? 'Apagando...' : 'Apagar definitivamente'}
             </button>
             <button onClick={() => { setConfirmWipe(false); setWipeText('') }} disabled={wiping}

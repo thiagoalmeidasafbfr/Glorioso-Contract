@@ -183,13 +183,13 @@ export default function PageConsolidado() {
             {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--neg-tint)', border: '1px solid rgba(220,38,38,0.25)' }}>
+        <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--neg-tint)', border: '1px solid rgba(122,63,44,0.25)' }}>
           <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--neg)' }}>A pagar (aprox. BRL)</div>
           <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: 'var(--neg)' }}>{fmtCurrencyShort(totals.pay, 'BRL')}</div>
         </div>
-        <div style={{ padding: '8px 14px', borderRadius: 8, background: '#dcf0e4', border: '1px solid rgba(22,101,52,0.25)' }}>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#166534' }}>A receber (aprox. BRL)</div>
-          <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: '#166534' }}>{fmtCurrencyShort(totals.rec, 'BRL')}</div>
+        <div style={{ padding: '8px 14px', borderRadius: 8, background: '#e6ece2', border: '1px solid rgba(58,111,58,0.25)' }}>
+          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#3a6f3a' }}>A receber (aprox. BRL)</div>
+          <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: '#3a6f3a' }}>{fmtCurrencyShort(totals.rec, 'BRL')}</div>
         </div>
       </div>
 
@@ -216,7 +216,7 @@ export default function PageConsolidado() {
                     <td style={td}><button onClick={() => navigate(`/atletas/${m.athleteId}`)} style={{ background: 'none', border: 'none', padding: 0, color: '#be8c4a', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>{m.atleta}</button></td>
                     <td style={{ ...td, fontSize: 12 }}>{m.natureza}</td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>{m.contraparte}</td>
-                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#166534' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{m.status}</td>
                   </tr>
