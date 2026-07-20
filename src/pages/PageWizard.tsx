@@ -394,7 +394,7 @@ export default function PageWizard() {
           {nature.isMovement && <Row k="Vínculo" v={`${startDate}${endDate ? ` → ${endDate}` : ''}`} />}
           {!nature.isMovement && <Row k="Transação" v={contracts.find(c => c.id === linkContractId) ? `${CONTRACT_TYPE_LABELS[contracts.find(c => c.id === linkContractId)!.type]} · ${contracts.find(c => c.id === linkContractId)!.counterpart_club}` : 'Não vinculado'} />}
           <Row k="Fluxo" v={`${lines.length} parcela(s) · total ${currency} ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-          {error && <div style={{ marginTop: 8, color: 'var(--neg, #b91c1c)', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ marginTop: 8, color: 'var(--neg, #7a3f2c)', fontSize: 13 }}>{error}</div>}
         </div>
       )}
 

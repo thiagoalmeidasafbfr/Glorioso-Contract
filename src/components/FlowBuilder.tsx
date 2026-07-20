@@ -153,7 +153,7 @@ export default function FlowBuilder({
                 <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted, rgba(26,20,16,0.45))', textAlign: 'right' }}>{i + 1}</span>
                 <input style={input} type="date" value={l.due_date} onChange={e => setLine(i, { due_date: e.target.value })} />
                 <input style={input} type="number" min={0} step={0.01} value={l.value || ''} onChange={e => setLine(i, { value: parseFloat(e.target.value) || 0 })} placeholder="0,00" />
-                <button type="button" onClick={() => removeLine(i)} style={{ ...btn('ghost'), color: 'var(--neg, #dc2626)' }}>remover</button>
+                <button type="button" onClick={() => removeLine(i)} style={{ ...btn('ghost'), color: 'var(--neg, #7a3f2c)' }}>remover</button>
               </div>
             ))}
           </div>

@@ -53,21 +53,21 @@ const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
 
 const ATHLETE_STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string; label: string }> = {
-  ATIVO:      { bg: '#dcf0e4', fg: '#166534', label: 'Ativo' },
+  ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a', label: 'Ativo' },
   EMPRESTADO: { bg: 'rgba(190,140,74,0.18)', fg: '#7a6244', label: 'Emprestado' },
-  VENDIDO:    { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8', label: 'Vendido' },
+  VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a', label: 'Vendido' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280', label: 'Desligado' },
 }
 const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
-  PENDENTE:          { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' },
-  PAGA:              { bg: '#dcf0e4', fg: '#166534' },
+  PENDENTE:          { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
+  PAGA:              { bg: '#e6ece2', fg: '#3a6f3a' },
   PARCIALMENTE_PAGA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' },
   EM_ATRASO:         { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
   CANCELADA:         { bg: 'rgba(156,163,175,0.12)', fg: '#6b7280' },
 }
 const TRIGGER_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
-  PENDENTE:     { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' },
-  ATINGIDA:     { bg: '#dcf0e4', fg: '#166534' },
+  PENDENTE:     { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
+  ATINGIDA:     { bg: '#e6ece2', fg: '#3a6f3a' },
   NAO_ATINGIDA: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
 }
 const ATHLETE_POSITIONS = ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante']
@@ -84,7 +84,7 @@ function StatusBadge({ status, map }: { status: string; map: Record<string, { bg
 // % financeiro já pago (barra + rótulo) — usado na coluna Atingimento.
 function PctBadge({ pct }: { pct: number }) {
   const done = pct >= 100
-  const col = done ? '#166534' : pct > 0 ? '#be8c4a' : 'var(--text-muted)'
+  const col = done ? '#3a6f3a' : pct > 0 ? '#be8c4a' : 'var(--text-muted)'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 64 }}>
       <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(26,20,16,0.10)', overflow: 'hidden' }}>
@@ -180,7 +180,7 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: { t: SalaryTrigge
   const [date, setDate] = useState(todayISO())
   const achieved = t.status === 'ATINGIDA'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 8, background: achieved ? '#dcf0e4' : 'var(--bg-subtle)', border: `1px solid ${achieved ? 'rgba(22,101,52,0.25)' : 'var(--divider-soft)'}` }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 8, background: achieved ? '#e6ece2' : 'var(--bg-subtle)', border: `1px solid ${achieved ? 'rgba(58,111,58,0.25)' : 'var(--divider-soft)'}` }}>
       <div style={{ flex: 1, minWidth: 200 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{t.description}</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 2 }}>{TRIGGER_METRIC_LABELS[t.metric]}{t.threshold != null ? ` ≥ ${t.threshold}` : ''} → {fmtCurrencyShort(t.new_salary, t.currency)}{t.notes ? ` · ${t.notes}` : ''}</div>
@@ -188,13 +188,13 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: { t: SalaryTrigge
       <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase', background: TRIGGER_STATUS_STYLE[t.status].bg, color: TRIGGER_STATUS_STYLE[t.status].fg }}>{TRIGGER_STATUS_LABELS[t.status]}</span>
       {achieved ? (
         <>
-          <span style={{ fontSize: 11, fontFamily: fontMono, color: '#166534' }}>desde {fmtDate(t.achieved_date)}</span>
+          <span style={{ fontSize: 11, fontFamily: fontMono, color: '#3a6f3a' }}>desde {fmtDate(t.achieved_date)}</span>
           {canEdit && <button onClick={onReset} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Reverter</button>}
         </>
       ) : canEdit ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '5px 8px', borderRadius: 6, fontSize: 12, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: fontMono }} />
-          <button onClick={() => onMark(date)} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#166534', color: '#fff', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>✓ Meta atingida</button>
+          <button onClick={() => onMark(date)} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#3a6f3a', color: '#fff', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>✓ Meta atingida</button>
         </div>
       ) : null}
       {canEdit && <button onClick={onDelete} title="Remover meta" style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>✕</button>}
@@ -655,7 +655,7 @@ export default function PageAthleteDetail() {
             // Salário (Botafogo×atleta PF) e imagem (Botafogo×PJ) NÃO entram aqui —
             // vivem na aba CLT + Imagem.
             const ctClauses = clauses.filter(c => c.contract_id === ct.id && c.clause_type !== 'SALARIO_CETD' && c.clause_type !== 'DIREITO_IMAGEM')
-            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#dcf0e4', fg: '#166534' }, SAIDA: { bg: 'rgba(59,130,246,0.12)', fg: '#1d4ed8' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(168,85,247,0.12)', fg: '#7c3aed' } }
+            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' } }
             const ts = typeStyle[ct.type] ?? { bg: '#eee', fg: '#333' }
             return (
               <div key={ct.id} className="card" style={{ padding: '18px 22px' }}>
@@ -665,11 +665,11 @@ export default function PageAthleteDetail() {
                     {(() => { const cid = clubIdx.get(norm(ct.counterpart_club)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${ct.counterpart_club}`}>{ct.counterpart_club}</RefLink> : ct.counterpart_club })()}
                   </span>
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ct.counterpart_country}</span>}
-                  <StatusBadge status={ct.status} map={{ ATIVO: { bg: '#dcf0e4', fg: '#166534' }, ENCERRADO: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' }, RESCINDIDO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' } }} />
+                  <StatusBadge status={ct.status} map={{ ATIVO: { bg: '#e6ece2', fg: '#3a6f3a' }, ENCERRADO: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' }, RESCINDIDO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' } }} />
                   {canEdit && (
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                       <button onClick={() => setEditContractId(ct.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar</button>
-                      <button onClick={() => handleDeleteContract(ct.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.4)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
+                      <button onClick={() => handleDeleteContract(ct.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(122,63,44,0.4)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
                     </div>
                   )}
                 </div>
@@ -780,7 +780,7 @@ export default function PageAthleteDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {alerts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhum alerta.</div>}
           {alerts.map(al => {
-            const sevStyle: Record<string, { bg: string; fg: string; border: string }> = { RED: { bg: 'var(--neg-tint)', fg: 'var(--neg)', border: 'rgba(185,28,28,0.20)' }, YELLOW: { bg: 'var(--warn-tint)', fg: 'var(--warn)', border: 'rgba(184,138,42,0.25)' }, GREEN: { bg: '#dcf0e4', fg: '#166534', border: 'rgba(22,101,52,0.20)' } }
+            const sevStyle: Record<string, { bg: string; fg: string; border: string }> = { RED: { bg: 'var(--neg-tint)', fg: 'var(--neg)', border: 'rgba(185,28,28,0.20)' }, YELLOW: { bg: 'var(--warn-tint)', fg: 'var(--warn)', border: 'rgba(184,138,42,0.25)' }, GREEN: { bg: '#e6ece2', fg: '#3a6f3a', border: 'rgba(58,111,58,0.20)' } }
             const ss = sevStyle[al.severity]
             return (
               <div key={al.id} style={{ background: ss.bg, border: `1px solid ${ss.border}`, borderLeft: `3px solid ${ss.fg}`, borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, opacity: al.is_read ? 0.55 : 1 }}>
@@ -977,9 +977,9 @@ function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canE
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: fontMono, boxSizing: 'border-box' }
   const lbl2: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, display: 'block' }
   const kcard = (label: string, val: string, hi?: boolean) => (
-    <div style={{ padding: '12px 16px', borderRadius: 8, background: hi ? '#dcf0e4' : 'var(--bg-subtle)', border: `1px solid ${hi ? 'rgba(22,101,52,0.25)' : 'var(--divider-soft)'}` }}>
-      <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: hi ? '#166534' : 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 19, fontWeight: 700, fontFamily: fontMono, color: hi ? '#166534' : 'var(--ink-primary)' }}>{val}</div>
+    <div style={{ padding: '12px 16px', borderRadius: 8, background: hi ? '#e6ece2' : 'var(--bg-subtle)', border: `1px solid ${hi ? 'rgba(58,111,58,0.25)' : 'var(--divider-soft)'}` }}>
+      <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: hi ? '#3a6f3a' : 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 19, fontWeight: 700, fontFamily: fontMono, color: hi ? '#3a6f3a' : 'var(--ink-primary)' }}>{val}</div>
     </div>
   )
 
@@ -1112,9 +1112,9 @@ function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs }: {
             const [dir, moeda] = k.split('|')
             const pay = dir === 'A_PAGAR'
             return (
-              <div key={k} style={{ padding: '10px 14px', borderRadius: 8, background: pay ? 'var(--neg-tint)' : '#dcf0e4', border: `1px solid ${pay ? 'rgba(220,38,38,0.25)' : 'rgba(22,101,52,0.25)'}` }}>
-                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: pay ? 'var(--neg)' : '#166534', marginBottom: 4 }}>{pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)</div>
-                <div style={{ fontSize: 17, fontWeight: 700, fontFamily: fontMono, color: pay ? 'var(--neg)' : '#166534' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
+              <div key={k} style={{ padding: '10px 14px', borderRadius: 8, background: pay ? 'var(--neg-tint)' : '#e6ece2', border: `1px solid ${pay ? 'rgba(122,63,44,0.25)' : 'rgba(58,111,58,0.25)'}` }}>
+                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: pay ? 'var(--neg)' : '#3a6f3a', marginBottom: 4 }}>{pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)</div>
+                <div style={{ fontSize: 17, fontWeight: 700, fontFamily: fontMono, color: pay ? 'var(--neg)' : '#3a6f3a' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
               </div>
             )
           })}
@@ -1140,7 +1140,7 @@ function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs }: {
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
                     <td style={{ ...td, fontSize: 12 }}>{it.nat}</td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>{it.parte}</td>
-                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: fontMono, color: it.dir === 'A_PAGAR' ? 'var(--neg)' : '#166534' }}>{it.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: fontMono, color: it.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{it.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(it.valor, it.moeda)}</td>
                     <td style={td}><StatusBadge status={it.status} map={PAYMENT_STATUS_STYLE} /></td>
                   </tr>

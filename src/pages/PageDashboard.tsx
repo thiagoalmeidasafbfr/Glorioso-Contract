@@ -173,10 +173,10 @@ export default function PageDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
         {[
           { label: 'A Receber', value: fmtMiC(totalReceivable), color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.20)' },
-          { label: 'A Pagar', value: fmtMiC(totalPayable), color: '#dc2626', bg: 'rgba(220,38,38,0.07)', border: 'rgba(220,38,38,0.20)' },
-          { label: 'Saldo Líquido', value: fmtMiC(totalNet), color: totalNet >= 0 ? '#059669' : '#dc2626', bg: 'rgba(190,140,74,0.08)', border: 'rgba(190,140,74,0.20)' },
+          { label: 'A Pagar', value: fmtMiC(totalPayable), color: '#7a3f2c', bg: 'rgba(122,63,44,0.07)', border: 'rgba(122,63,44,0.20)' },
+          { label: 'Saldo Líquido', value: fmtMiC(totalNet), color: totalNet >= 0 ? '#059669' : '#7a3f2c', bg: 'rgba(190,140,74,0.08)', border: 'rgba(190,140,74,0.20)' },
           { label: 'Alertas Ativos', value: `${redAlerts.length} críticos · ${yellowAlerts.length} atenção`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'rgba(190,140,74,0.15)' },
-          { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#dc2626' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(220,38,38,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(220,38,38,0.20)' : 'rgba(5,150,105,0.20)' },
+          { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#7a3f2c' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
           <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
@@ -209,7 +209,7 @@ export default function PageDashboard() {
                   formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString('pt-BR')}`, name === 'receivable' ? 'A Receber' : 'A Pagar']}
                 />
                 <Bar dataKey="receivable" fill="#059669" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="payable" fill="#dc2626" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="payable" fill="#7a3f2c" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -219,7 +219,7 @@ export default function PageDashboard() {
             <div style={sectionTitle}>Vencimentos — próximos 60 dias ({dueClauses.length})</div>
             {overdueClauses.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'rgba(220,38,38,0.70)', marginBottom: 6 }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'rgba(122,63,44,0.70)', marginBottom: 6 }}>
                   EM ATRASO ({overdueClauses.length})
                 </div>
                 {overdueClauses.map(c => (
@@ -263,8 +263,8 @@ export default function PageDashboard() {
                     <tr key={cur}>
                       <td style={{ padding: '6px 8px', fontWeight: 700, color: '#be8c4a' }}>{cur}</td>
                       <td style={{ padding: '6px 8px', color: '#059669' }}>{v.receivable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: '6px 8px', color: '#dc2626' }}>{v.payable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: '6px 8px', color: net >= 0 ? '#059669' : '#dc2626', fontWeight: 600 }}>
+                      <td style={{ padding: '6px 8px', color: '#7a3f2c' }}>{v.payable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: '6px 8px', color: net >= 0 ? '#059669' : '#7a3f2c', fontWeight: 600 }}>
                         {net >= 0 ? '+' : ''}{net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
                       <td style={{ padding: '6px 8px', color: 'rgba(26,20,16,0.55)' }}>
@@ -296,9 +296,9 @@ export default function PageDashboard() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {unreadAlerts.map(alert => {
-                const bg = alert.severity === 'RED' ? 'rgba(220,38,38,0.08)' : 'rgba(245,158,11,0.08)'
-                const border = alert.severity === 'RED' ? 'rgba(220,38,38,0.25)' : 'rgba(245,158,11,0.25)'
-                const dot = alert.severity === 'RED' ? '#dc2626' : '#f59e0b'
+                const bg = alert.severity === 'RED' ? 'rgba(122,63,44,0.08)' : 'rgba(245,158,11,0.08)'
+                const border = alert.severity === 'RED' ? 'rgba(122,63,44,0.25)' : 'rgba(245,158,11,0.25)'
+                const dot = alert.severity === 'RED' ? '#7a3f2c' : '#f59e0b'
                 return (
                   <div key={alert.id} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: '10px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
@@ -370,7 +370,7 @@ function DueRow({ clause, athleteName, overdue = false }: { clause: Clause; athl
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '7px 10px', borderRadius: 7, textDecoration: 'none',
-        background: overdue ? 'rgba(220,38,38,0.06)' : isDueSoon(clause.due_date, clause.payment_status) ? 'rgba(245,158,11,0.06)' : 'transparent',
+        background: overdue ? 'rgba(122,63,44,0.06)' : isDueSoon(clause.due_date, clause.payment_status) ? 'rgba(245,158,11,0.06)' : 'transparent',
         marginBottom: 2,
       }}
     >
@@ -382,7 +382,7 @@ function DueRow({ clause, athleteName, overdue = false }: { clause: Clause; athl
           {clause.due_date ? fmtDate(clause.due_date) : '—'}
         </div>
       </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: overdue ? '#dc2626' : '#1a1410', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: 8 }}>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: overdue ? '#7a3f2c' : '#1a1410', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: 8 }}>
         {clause.original_value != null ? `${s} ${clause.original_value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` : '—'}
       </div>
     </Link>

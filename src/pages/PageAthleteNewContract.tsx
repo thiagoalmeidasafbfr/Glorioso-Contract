@@ -533,7 +533,7 @@ export default function PageAthleteNewContract() {
                 <div key={i} style={{ padding: 14, borderRadius: 8, border: '1px solid rgba(190,140,74,0.20)', background: 'rgba(190,140,74,0.04)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)' }}>Agente {i + 1}</span>
-                    <button type="button" onClick={() => removeAgent(i)} style={{ background: 'none', border: 'none', color: 'rgba(220,38,38,0.75)', cursor: 'pointer', fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>Remover</button>
+                    <button type="button" onClick={() => removeAgent(i)} style={{ background: 'none', border: 'none', color: 'rgba(122,63,44,0.75)', cursor: 'pointer', fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>Remover</button>
                   </div>
                   <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 12 }}>
@@ -595,7 +595,7 @@ export default function PageAthleteNewContract() {
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a' }}>
                   Cláusula {idx + 1}
                 </div>
-                <button onClick={() => removeClause(idx)} style={{ background: 'none', border: 'none', color: 'rgba(220,38,38,0.70)', cursor: 'pointer', fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>
+                <button onClick={() => removeClause(idx)} style={{ background: 'none', border: 'none', color: 'rgba(122,63,44,0.70)', cursor: 'pointer', fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>
                   Remover
                 </button>
               </div>
@@ -740,7 +740,7 @@ export default function PageAthleteNewContract() {
           )}
 
           {error && (
-            <div style={{ background: 'rgba(220,38,38,0.10)', border: '1px solid rgba(220,38,38,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#b91c1c' }}>
+            <div style={{ background: 'rgba(122,63,44,0.10)', border: '1px solid rgba(122,63,44,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#7a3f2c' }}>
               {error}
             </div>
           )}

@@ -22,13 +22,17 @@
   --tbl-head:       #e7e5de;
   --on-dark:        #f3eee2;
 
-  /* Semantic */
-  --pos:            #166534;
-  --pos-tint:       #dcf0e4;
-  --neg:            #b91c1c;
-  --neg-tint:       #fce8e8;
+  /* Semantic — tier "muted/pastel" do design (deltas suaves, sem cores vivas).
+     Verde-oliva quente para positivo, terracota para negativo. */
+  --pos:            #3a6f3a;
+  --pos-tint:       #e6ece2;
+  --neg:            #7a3f2c;
+  --neg-tint:       #f1e8e3;
   --warn:           #b88a2a;
   --warn-tint:      rgba(184,138,42,0.12);
+  /* Neutro (substitui azuis vivos em status/badges) */
+  --neutral:        #5b6b7a;
+  --neutral-tint:   #e7e9ec;
 
   /* Structure */
   --divider:        rgba(26,20,16,0.08);
