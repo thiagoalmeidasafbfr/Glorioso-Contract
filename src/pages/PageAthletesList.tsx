@@ -12,6 +12,7 @@ import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
 import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
+import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
 
 const font     = "'Inter', system-ui, sans-serif"
@@ -179,6 +180,7 @@ export default function PageAthletesList() {
   const [clauses, setClauses] = useState<Clause[]>([])
   const [installments, setInstallments] = useState<ClauseInstallment[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [importMsg, setImportMsg] = useState<string | null>(null)
 
   function loadAll() {
     fetchAthletes().then(data => { setAthletes(data); setLoading(false) }).catch(() => setLoading(false))
@@ -263,30 +265,51 @@ export default function PageAthletesList() {
           exportFilename="atletas.xlsx"
           exportSheets={[{ name: 'Atletas', cols: COLS_ATHLETES, rows: athletes as unknown as Record<string, unknown>[] }]}
           onImport={async sheets => {
-            const rows = sheets['Atletas'] ?? sheets[Object.keys(sheets)[0]] ?? []
-            for (const r of rows) {
-              const fullName = (r['Nome Completo'] ?? '').trim()
-              if (!fullName) continue
-              await createAthlete({
-                full_name: fullName,
-                short_name: (r['Nome Curto'] ?? '').trim() || fullName.split(' ')[0],
-                position: r['Posição'] || null,
-                current_status: (r['Status'] as AthleteStatus) || 'ATIVO',
-                category: parseImportCategory(r['Categoria']),
-                birth_date: r['Data Nascimento'] || null,
-                nationality: r['Nacionalidade'] || null,
-                cpf: r['CPF'] || null,
-                passport_number: r['Passaporte'] || null,
-                agent_name: r['Agente'] || null,
-                agent_contact: r['Contato Agente'] || null,
-                profile_photo_url: null,
-                notes: r['Observações'] || null,
-              })
+            setImportMsg(null)
+            // Aba consolidada (exportada de dentro de um atleta): cria novos
+            // atletas com TODOS os vínculos. Caso contrário, planilha simples.
+            const consolidated = Object.values(sheets).find(rows => isConsolidatedSheet(rows))
+            if (consolidated) {
+              const r = await importConsolidatedAthletes(consolidated)
+              const parts = [`${r.athletes} atleta(s)`, `${r.records} registro(s)`]
+              if (r.dupSkipped) parts.push(`${r.dupSkipped} já existente(s)`)
+              if (r.invalid) parts.push(`${r.invalid} grupo(s) inválido(s)`)
+              setImportMsg('Importado: ' + parts.join(' · '))
+            } else {
+              const rows = sheets['Atletas'] ?? sheets[Object.keys(sheets)[0]] ?? []
+              let n = 0
+              for (const r of rows) {
+                const fullName = (r['Nome Completo'] ?? '').trim()
+                if (!fullName) continue
+                await createAthlete({
+                  full_name: fullName,
+                  short_name: (r['Nome Curto'] ?? '').trim() || fullName.split(' ')[0],
+                  position: r['Posição'] || null,
+                  current_status: (r['Status'] as AthleteStatus) || 'ATIVO',
+                  category: parseImportCategory(r['Categoria']),
+                  birth_date: r['Data Nascimento'] || null,
+                  nationality: r['Nacionalidade'] || null,
+                  cpf: r['CPF'] || null,
+                  passport_number: r['Passaporte'] || null,
+                  agent_name: r['Agente'] || null,
+                  agent_contact: r['Contato Agente'] || null,
+                  profile_photo_url: null,
+                  notes: r['Observações'] || null,
+                })
+                n++
+              }
+              setImportMsg(`Importado: ${n} atleta(s)`)
             }
             loadAll()
           }}
         />
       </div>
+
+      {importMsg && (
+        <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--gold-deep)', letterSpacing: '0.04em', marginBottom: 14 }}>
+          {importMsg}
+        </div>
+      )}
 
       {/* Table */}
       <div className="card" style={{ overflow: 'hidden' }}>

@@ -34,21 +34,8 @@ import { buildRemunerationFlow } from '../lib/remflow'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
-import {
-  exportWorkbook, type ColDef,
-  COLS_ATHLETES, COLS_CONTRACTS, COLS_SALARY_TRIGGERS,
-  COLS_CLUB_LIABILITIES, COLS_INTERMEDIARY_LIABILITIES, COLS_ECONOMIC_RIGHTS,
-  COLS_ATHLETE_PJS, COLS_IMAGE_RIGHTS,
-} from '../lib/xlsx-utils'
-
-const COLS_CLAUSES_EXPORT: ColDef[] = [
-  { key: 'id', header: 'ID' }, { key: 'clause_type', header: 'Tipo' }, { key: 'description', header: 'Descrição' },
-  { key: 'creditor_party', header: 'Credor' }, { key: 'debtor_party', header: 'Devedor' },
-  { key: 'currency', header: 'Moeda' }, { key: 'original_value', header: 'Valor' }, { key: 'percentage_value', header: '%' },
-  { key: 'condition_description', header: 'Condição' }, { key: 'due_date', header: 'Vencimento' },
-  { key: 'achievement_status', header: 'Atingimento' }, { key: 'payment_status', header: 'Pagamento' },
-  { key: 'payment_date', header: 'Data Pagamento' }, { key: 'notes', header: 'Observações' },
-]
+import { exportWorkbook } from '../lib/xlsx-utils'
+import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteConsolidado'
 
 const font     = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
@@ -423,18 +410,16 @@ export default function PageAthleteDetail() {
 
   function exportAthlete() {
     if (!athlete) return
-    const asRows = (arr: unknown[]) => arr as Record<string, unknown>[]
-    exportWorkbook([
-      { name: 'Atleta', cols: COLS_ATHLETES, rows: asRows([athlete]) },
-      { name: 'Vinculos', cols: COLS_CONTRACTS, rows: asRows(contracts) },
-      { name: 'Clausulas', cols: COLS_CLAUSES_EXPORT, rows: asRows(clauses) },
-      { name: 'Metas_Salario', cols: COLS_SALARY_TRIGGERS, rows: asRows(triggers) },
-      { name: 'Passivos_Clubes', cols: COLS_CLUB_LIABILITIES, rows: asRows(clubLiabs) },
-      { name: 'Passivos_Agentes', cols: COLS_INTERMEDIARY_LIABILITIES, rows: asRows(intermLiabs) },
-      { name: 'Detentores', cols: COLS_ECONOMIC_RIGHTS, rows: asRows(rights) },
-      { name: 'PJs', cols: COLS_ATHLETE_PJS, rows: asRows(pjs) },
-      { name: 'Direito_Imagem', cols: COLS_IMAGE_RIGHTS, rows: asRows(imageRights.map(ir => ({ ...ir, pj_name: pjs.find(p => p.id === ir.pj_id)?.legal_name ?? '' }))) },
-    ], `atleta-${athlete.short_name.toLowerCase().replace(/\s+/g, '-')}.xlsx`)
+    // Aba única consolidada: atleta + vínculos + cláusulas + metas + passivos +
+    // detentores + PJs + imagem, uma linha por registro (coluna "Seção").
+    const rows = buildConsolidatedRows({
+      athlete, contracts, clauses, triggers,
+      clubLiabs, intermLiabs, rights, pjs, imageRights,
+    })
+    exportWorkbook(
+      [{ name: 'Atleta Consolidado', cols: COLS_ATLETA_CONSOLIDADO, rows }],
+      `atleta-${athlete.short_name.toLowerCase().replace(/\s+/g, '-')}.xlsx`,
+    )
   }
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', fontFamily: fontMono, color: 'var(--text-muted)', fontSize: 12, letterSpacing: '0.14em' }}>CARREGANDO...</div>
