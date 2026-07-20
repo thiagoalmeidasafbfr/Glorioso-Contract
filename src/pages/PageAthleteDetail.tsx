@@ -19,7 +19,7 @@ import {
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
 import PageHero from '../components/PageHero'
-import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween } from '../lib/format'
+import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween, addMonths } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClauseType, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
@@ -381,6 +381,7 @@ export default function PageAthleteDetail() {
   const [tab, setTab] = useState<Tab>('consolidado')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [payInstId, setPayInstId] = useState<string | null>(null)
+  const [editInstId, setEditInstId] = useState<string | null>(null)
   const [editClauseId, setEditClauseId] = useState<string | null>(null)
   const [showReneg, setShowReneg] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
@@ -446,6 +447,10 @@ export default function PageAthleteDetail() {
     const u = await updateClause(clauseId, patch)
     setClauses(prev => prev.map(c => c.id === clauseId ? u : c)); setEditClauseId(null)
   }
+  async function handleUpdateInstallment(instId: string, patch: Partial<ClauseInstallment>) {
+    const u = await updateInstallment(instId, patch)
+    setInstallments(prev => prev.map(i => i.id === instId ? u : i)); setEditInstId(null)
+  }
   async function handleRenegotiate(input: RenegotiationInput) {
     await createRenegotiation(input)
     setShowReneg(false)
@@ -490,6 +495,7 @@ export default function PageAthleteDetail() {
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const payClause = payClauseId ? clauses.find(c => c.id === payClauseId) ?? null : null
   const payInst = payInstId ? installments.find(i => i.id === payInstId) ?? null : null
+  const editInst = editInstId ? installments.find(i => i.id === editInstId) ?? null : null
   const editClause = editClauseId ? clauses.find(c => c.id === editClauseId) ?? null : null
 
   const emp = employmentContract(contracts)
@@ -497,14 +503,16 @@ export default function PageAthleteDetail() {
   const sortedRights = sortRights(rights)
 
   // ── Big numbers (custos consolidados por natureza) ──────────────────────────
-  // "Custo" = total de cláusulas ativas (não canceladas), por moeda. Fluxos
-  // parcelados usam o total das parcelas; os demais, o valor da cláusula.
+  // "Custo" = o que o Botafogo PAGA (é o devedor). Vendas/recebimentos NÃO entram
+  // no custo — venda de transfer é receita, não custo. Fluxos parcelados usam o
+  // total das parcelas (não canceladas); os demais, o valor da cláusula.
   const alive = (c: Clause) => c.payment_status !== 'CANCELADA'
   const instByClause = (cid: string) => installments.filter(i => i.clause_id === cid && i.payment_status !== 'CANCELADA')
   function totalsFor(types: ClauseType[]): Partial<Record<Currency, number>> {
     const out: Partial<Record<Currency, number>> = {}
     for (const c of clauses) {
       if (!types.includes(c.clause_type) || !alive(c)) continue
+      if (!isBFRparty(c.debtor_party)) continue   // só custo (Botafogo devedor)
       const parc = instByClause(c.id)
       const val = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
       if (!val) continue
@@ -515,9 +523,9 @@ export default function PageAthleteDetail() {
   const transferTotals = totalsFor(['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL'])
   const luvasTotals = totalsFor(['LUVAS'])
   const intermTotals = totalsFor(['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA'])
-  // Passivos de agente a pagar também entram na intermediação.
+  // Passivos de agente a pagar também entram na intermediação (custo).
   for (const l of intermLiabs) {
-    if (l.status === 'CANCELADA') continue
+    if (l.status === 'CANCELADA' || l.direction !== 'A_PAGAR') continue
     intermTotals[l.currency] = (intermTotals[l.currency] ?? 0) + l.amount
   }
   const empSalNow = emp ? (effectiveSalary(emp, empTriggers).amount ?? emp.base_salary ?? 0) : 0
@@ -701,7 +709,7 @@ export default function PageAthleteDetail() {
                       <td style={td}><PctBadge pct={pctCl} /></td>
                       <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                       <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
-                      <td style={td}><ClauseActions clause={c} onEdit={() => setEditClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
+                      <td style={{ ...td, textAlign: 'center' }}><ClauseActions clause={c} onEdit={() => setEditClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
                     </tr>
                     {open && parc.map(p => {
                       const late = isOverdue(p.due_date, p.payment_status)
@@ -715,8 +723,9 @@ export default function PageAthleteDetail() {
                           <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)' }}>{p.payment_status === 'PAGA' ? '100%' : '0%'}</td>
                           <td style={td}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                           <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
-                          <td style={td}>
-                            <InstallmentCheck inst={p} canEdit={canEdit}
+                          <td style={{ ...td, textAlign: 'center' }}>
+                            <InstallmentActions inst={p} canEdit={canEdit}
+                              onEdit={() => setEditInstId(p.id)}
                               onPay={() => setPayInstId(p.id)}
                               onQuickPay={() => handleMarkInstallmentPaidQuick(p.id)}
                               onRevert={() => handleRevertInstallment(p.id)} />
@@ -738,6 +747,7 @@ export default function PageAthleteDetail() {
         <AcordosTab
           clauses={clauses} installments={installments} canEdit={canEdit}
           onNew={() => setShowReneg(true)}
+          onEditInst={id => setEditInstId(id)}
           onPayInst={id => setPayInstId(id)}
           onQuickPayInst={id => handleMarkInstallmentPaidQuick(id)}
           onRevertInst={id => handleRevertInstallment(id)}
@@ -895,6 +905,7 @@ export default function PageAthleteDetail() {
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
       {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
+      {editInst && <InstallmentEditModal inst={editInst} onClose={() => setEditInstId(null)} onSave={patch => handleUpdateInstallment(editInst.id, patch)} />}
       {editClause && <ClauseEditModal clause={editClause} onClose={() => setEditClauseId(null)} onSave={patch => handleUpdateClause(editClause.id, patch)} />}
       {showReneg && athlete && <RenegotiationModal athleteId={athlete.id} clauses={clauses} installments={installments} clubLiabs={clubLiabs} intermLiabs={intermLiabs} onClose={() => setShowReneg(false)} onSave={handleRenegotiate} />}
       {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} pjs={pjs} canEdit={canEdit} onAddPJ={handleAddPJ} onUpdatePJ={handleUpdatePJ} onDeletePJ={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
@@ -1340,22 +1351,92 @@ function ContractEditModal({ contract, onClose, onSaved }: {
   )
 }
 
-// ── InstallmentCheck — check de pagamento por parcela ────────────────────────
-function InstallmentCheck({ inst, canEdit, onPay, onQuickPay, onRevert }: {
-  inst: ClauseInstallment; canEdit: boolean; onPay: () => void; onQuickPay: () => void; onRevert: () => void
+// ── InstallmentActions — menu ⋯ por parcela (mesmo padrão da cláusula) ────────
+function InstallmentActions({ inst, canEdit, onEdit, onPay, onQuickPay, onRevert }: {
+  inst: ClauseInstallment; canEdit: boolean; onEdit: () => void; onPay: () => void; onQuickPay: () => void; onRevert: () => void
 }) {
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
   if (!canEdit) return <StatusBadge status={inst.payment_status} map={PAYMENT_STATUS_STYLE} />
-  const btn: React.CSSProperties = { padding: '3px 8px', borderRadius: 6, fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', lineHeight: 1, whiteSpace: 'nowrap' }
-  if (inst.payment_status === 'PAGA') {
-    return <button onClick={onRevert} title="Reverter pagamento desta parcela" style={{ ...btn, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)' }}>↩ reverter</button>
+  function toggle() {
+    const el = btnRef.current
+    if (el && !open) { const r = el.getBoundingClientRect(); setPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) }) }
+    setOpen(o => !o)
   }
-  if (inst.payment_status === 'CANCELADA') {
-    return <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)' }}>—</span>
+  const item: React.CSSProperties = { width: '100%', padding: '8px 16px', textAlign: 'left', background: 'none', border: 'none', fontSize: 12.5, fontFamily: font, cursor: 'pointer', whiteSpace: 'nowrap' }
+  const paid = inst.payment_status === 'PAGA'
+  const cancelled = inst.payment_status === 'CANCELADA'
+  return (
+    <>
+      <button ref={btnRef} onClick={toggle} aria-label="Ações da parcela"
+        style={{ width: 26, height: 24, borderRadius: 5, border: '1px solid var(--divider-strong)', background: open ? 'var(--cream-inset)' : 'transparent', fontSize: 14, lineHeight: 1, fontFamily: font, cursor: 'pointer', color: 'var(--text-secondary)' }}>⋯</button>
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setOpen(false)} />
+          <div style={{ position: 'fixed', top: pos.top, right: pos.right, background: 'var(--cream-card)', border: '1px solid var(--divider-strong)', borderRadius: 8, padding: '4px 0', boxShadow: 'var(--shadow-panel)', zIndex: 1000, minWidth: 200 }}>
+            <button onClick={() => { onEdit(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Editar parcela</button>
+            {!paid && !cancelled && <button onClick={() => { onQuickPay(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Marcar como paga</button>}
+            {!paid && !cancelled && <button onClick={() => { onPay(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Registrar pagamento…</button>}
+            {paid && <button onClick={() => { onRevert(); setOpen(false) }} style={{ ...item, color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Reverter pagamento</button>}
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
+// ── InstallmentEditModal — editar uma parcela (venc./valor/moeda/status) ──────
+function InstallmentEditModal({ inst, onClose, onSave }: {
+  inst: ClauseInstallment; onClose: () => void; onSave: (patch: Partial<ClauseInstallment>) => Promise<void>
+}) {
+  const [f, setF] = useState({
+    due_date: inst.due_date ?? '',
+    original_value: String(inst.original_value ?? ''),
+    currency: inst.currency,
+    payment_status: inst.payment_status,
+    payment_date: inst.payment_date ?? '',
+    notes: inst.notes ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+  const cur: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
+  async function save() {
+    setSaving(true)
+    try {
+      await onSave({
+        due_date: f.due_date,
+        original_value: f.original_value ? parseFloat(f.original_value) : 0,
+        currency: f.currency,
+        payment_status: f.payment_status,
+        payment_date: f.payment_date || null,
+        notes: f.notes || null,
+      })
+    } finally { setSaving(false) }
   }
   return (
-    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-      <button onClick={onQuickPay} title="Marcar parcela como paga (hoje)" style={{ ...btn, border: 'none', background: '#3a6f3a', color: '#fff' }}>✓</button>
-      <button onClick={onPay} title="Registrar pagamento (data/câmbio)" style={{ ...btn, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a' }}>$</button>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 480, maxWidth: '96vw', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar parcela {inst.installment_number}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div><label style={lbl}>Vencimento</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+          <div><label style={lbl}>Valor</label><input style={inp} type="number" min={0} step={0.01} value={f.original_value} onChange={e => set('original_value', e.target.value)} /></div>
+          <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label style={lbl}>Status</label>
+            <select style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
+              {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            </select>
+          </div>
+          <div><label style={lbl}>Data pagamento</label><input style={inp} type="date" value={f.payment_date} onChange={e => set('payment_date', e.target.value)} /></div>
+        </div>
+        <div><label style={lbl}>Observações</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={save} disabled={saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1440,10 +1521,10 @@ function ClauseEditModal({ clause, onClose, onSave }: {
 }
 
 // ── AcordosTab — acordos e renegociações do atleta ──────────────────────────
-function AcordosTab({ clauses, installments, canEdit, onNew, onPayInst, onQuickPayInst, onRevertInst }: {
+function AcordosTab({ clauses, installments, canEdit, onNew, onEditInst, onPayInst, onQuickPayInst, onRevertInst }: {
   clauses: Clause[]; installments: ClauseInstallment[]; canEdit: boolean
   onNew: () => void
-  onPayInst: (id: string) => void; onQuickPayInst: (id: string) => void; onRevertInst: (id: string) => void
+  onEditInst: (id: string) => void; onPayInst: (id: string) => void; onQuickPayInst: (id: string) => void; onRevertInst: (id: string) => void
 }) {
   const acordos = clauses.filter(isAcordo).sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
   const th: React.CSSProperties = { padding: '7px 10px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-soft)', fontFamily: fontMono, letterSpacing: '0.12em', textAlign: 'left' }
@@ -1481,7 +1562,7 @@ function AcordosTab({ clauses, installments, canEdit, onNew, onPayInst, onQuickP
                   ['Dívida original', fmtCurrencyShort(meta.originalTotal, meta.currency)],
                   ['Novo total', fmtCurrencyShort(meta.newTotal, meta.currency)],
                   ['Desconto', meta.discount ? fmtCurrencyShort(meta.discount, meta.currency) : '—'],
-                  ['Novo fluxo', `${meta.installmentsCount}x${meta.periodicityMonths > 1 ? ` / ${meta.periodicityMonths}m` : ' mensal'}`],
+                  ['Novo fluxo', `${meta.installmentsCount}x${meta.periodicityMonths === 0 ? ' (personalizado)' : meta.periodicityMonths > 1 ? ` / ${meta.periodicityMonths}m` : ' mensal'}`],
                   ['Pagas', `${paidCount}/${parc.length}`],
                 ].map(([l, v], i) => (
                   <div key={i} style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
@@ -1499,7 +1580,7 @@ function AcordosTab({ clauses, installments, canEdit, onNew, onPayInst, onQuickP
                 <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 8 }}>Novo fluxo</div>
                 <div style={{ maxHeight: 260, overflowY: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead><tr><th style={th}>#</th><th style={th}>Vencimento</th><th style={{ ...th, textAlign: 'right' }}>Valor</th><th style={{ ...th, textAlign: 'right' }}>Ação</th></tr></thead>
+                    <thead><tr><th style={th}>#</th><th style={th}>Vencimento</th><th style={{ ...th, textAlign: 'right' }}>Valor</th><th style={{ ...th, textAlign: 'center' }}>Ação</th></tr></thead>
                     <tbody>
                       {parc.map(p => {
                         const late = isOverdue(p.due_date, p.payment_status)
@@ -1508,7 +1589,7 @@ function AcordosTab({ clauses, installments, canEdit, onNew, onPayInst, onQuickP
                             <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)' }}>{p.installment_number}</td>
                             <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
                             <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
-                            <td style={{ ...td, textAlign: 'right' }}><InstallmentCheck inst={p} canEdit={canEdit} onPay={() => onPayInst(p.id)} onQuickPay={() => onQuickPayInst(p.id)} onRevert={() => onRevertInst(p.id)} /></td>
+                            <td style={{ ...td, textAlign: 'center' }}><InstallmentActions inst={p} canEdit={canEdit} onEdit={() => onEditInst(p.id)} onPay={() => onPayInst(p.id)} onQuickPay={() => onQuickPayInst(p.id)} onRevert={() => onRevertInst(p.id)} /></td>
                           </tr>
                         )
                       })}
@@ -1602,6 +1683,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
   for (const arr of groups.values()) arr.sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [mode, setMode] = useState<'igual' | 'custom'>('igual')
   const [newTotal, setNewTotal] = useState('')
   const [startDate, setStartDate] = useState(todayISO())
   const [count, setCount] = useState('10')
@@ -1609,6 +1691,8 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [touchedTotal, setTouchedTotal] = useState(false)
+  // Fluxo personalizado (irregular): linhas editáveis {due_date, value}.
+  const [schedule, setSchedule] = useState<{ due_date: string; value: string }[]>([])
 
   const selItems = items.filter(i => selected.has(i.key))
   const sum = Math.round(selItems.reduce((s, i) => s + i.source.value, 0) * 100) / 100
@@ -1626,9 +1710,31 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
     setSelected(prev => { const n = new Set(prev); for (const k of keys) { if (on) n.add(k); else n.delete(k) } return n })
   }
 
-  const effectiveTotal = touchedTotal && newTotal !== '' ? parseFloat(newTotal) : sum
+  const scheduleSum = Math.round(schedule.reduce((s, r) => s + (parseFloat(r.value) || 0), 0) * 100) / 100
+  const effectiveTotal = mode === 'custom'
+    ? scheduleSum
+    : (touchedTotal && newTotal !== '' ? parseFloat(newTotal) : sum)
   const discount = Math.round((sum - effectiveTotal) * 100) / 100
-  const canSave = selItems.length > 0 && !mixedCurrency && !mixedParty && Number(count) >= 1 && !!startDate
+  const customValid = mode !== 'custom' || (schedule.length >= 1 && schedule.every(r => r.due_date && parseFloat(r.value) > 0))
+  const nParcelas = mode === 'custom' ? schedule.length : (Math.floor(Number(count)) || 1)
+  const canSave = selItems.length > 0 && !mixedCurrency && !mixedParty && nParcelas >= 1 && !!startDate && customValid
+
+  // Gera as linhas do fluxo personalizado a partir de nº parcelas + data-base +
+  // periodicidade (valores divididos igualmente). O usuário edita cada linha.
+  function generateSchedule() {
+    const n = Math.max(1, Math.floor(Number(count)) || 1)
+    const p = Math.max(1, Math.floor(Number(period)) || 1)
+    const total = touchedTotal && newTotal !== '' ? parseFloat(newTotal) : sum
+    const base = Math.floor((total / n) * 100) / 100
+    setSchedule(Array.from({ length: n }, (_, i) => ({
+      due_date: addMonths(startDate, i * p),
+      value: String(i === n - 1 ? Math.round((total - base * (n - 1)) * 100) / 100 : base),
+    })))
+  }
+  const setSchedRow = (i: number, patch: Partial<{ due_date: string; value: string }>) =>
+    setSchedule(prev => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r))
+  const addSchedRow = () => setSchedule(prev => [...prev, { due_date: prev.length ? addMonths(prev[prev.length - 1].due_date, 1) : startDate, value: '' }])
+  const removeSchedRow = (i: number) => setSchedule(prev => prev.filter((_, idx) => idx !== i))
 
   async function submit() {
     if (!canSave) return
@@ -1643,9 +1749,10 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
         sources: selItems.map(i => i.source),
         newTotal: effectiveTotal,
         startDate,
-        installmentsCount: Math.floor(Number(count)),
+        installmentsCount: Math.floor(Number(count)) || 1,
         periodicityMonths: Math.floor(Number(period)) || 1,
         userNote: note,
+        schedule: mode === 'custom' ? schedule.map(r => ({ due_date: r.due_date, value: parseFloat(r.value) || 0 })) : undefined,
       })
     } finally { setSaving(false) }
   }
@@ -1695,20 +1802,55 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
 
         {/* Parâmetros do novo fluxo */}
         <div>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 8 }}>2 · Defina o novo fluxo</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>2 · Defina o novo fluxo</div>
+            <div style={{ display: 'flex', border: '1px solid var(--divider-strong)', borderRadius: 7, overflow: 'hidden' }}>
+              {(['igual', 'custom'] as const).map(m => (
+                <button key={m} onClick={() => setMode(m)} style={{ padding: '5px 12px', border: 'none', background: mode === m ? 'var(--ink-primary)' : 'transparent', color: mode === m ? 'var(--gold-soft)' : 'var(--text-secondary)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{m === 'igual' ? 'Parcelas iguais' : 'Fluxo personalizado'}</button>
+              ))}
+            </div>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
             <div><label style={lbl}>Dívida selecionada</label><input style={{ ...inp, fontFamily: fontMono }} value={`${currency} ${sum.toLocaleString('pt-BR')}`} disabled /></div>
-            <div><label style={lbl}>Novo total ({currency})</label><input style={{ ...inp, fontFamily: fontMono }} type="number" min={0} step={0.01} value={touchedTotal ? newTotal : String(sum || '')} onChange={e => { setTouchedTotal(true); setNewTotal(e.target.value) }} placeholder="Igual à dívida" /></div>
+            <div><label style={lbl}>Novo total ({currency})</label><input style={{ ...inp, fontFamily: fontMono }} type="number" min={0} step={0.01} value={mode === 'custom' ? String(scheduleSum || '') : (touchedTotal ? newTotal : String(sum || ''))} onChange={e => { setTouchedTotal(true); setNewTotal(e.target.value) }} disabled={mode === 'custom'} placeholder="Igual à dívida" /></div>
             <div><label style={lbl}>Desconto</label><input style={{ ...inp, fontFamily: fontMono, color: discount > 0 ? 'var(--pos)' : discount < 0 ? 'var(--neg)' : undefined }} value={`${currency} ${discount.toLocaleString('pt-BR')}`} disabled /></div>
-            <div><label style={lbl}>Data-base</label><input style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+            <div><label style={lbl}>{mode === 'custom' ? 'Data 1ª parcela' : 'Data-base'}</label><input style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
             <div><label style={lbl}>Nº de parcelas</label><input style={inp} type="number" min={1} step={1} value={count} onChange={e => setCount(e.target.value)} /></div>
-            <div><label style={lbl}>Periodicidade (meses)</label><input style={inp} type="number" min={1} step={1} value={period} onChange={e => setPeriod(e.target.value)} /></div>
+            <div><label style={lbl}>Periodicidade (meses)</label><input style={inp} type="number" min={1} step={1} value={period} onChange={e => setPeriod(e.target.value)} disabled={mode === 'custom'} /></div>
           </div>
+
+          {mode === 'custom' && (
+            <div style={{ marginTop: 12, border: '1px solid var(--divider-soft)', borderRadius: 8, padding: 12, background: 'var(--bg-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Gere as parcelas pelo nº/data acima e edite cada vencimento e valor.</span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Gerar fluxo</button>
+                  <button onClick={addSchedRow} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>+ Linha</button>
+                </div>
+              </div>
+              {schedule.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma parcela — clique em “Gerar fluxo”.</div>
+              ) : (
+                <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {schedule.map((r, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr 30px', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-muted)', textAlign: 'right' }}>{i + 1}</span>
+                      <input style={{ ...inp, padding: '6px 8px', fontSize: 12 }} type="date" value={r.due_date} onChange={e => setSchedRow(i, { due_date: e.target.value })} />
+                      <input style={{ ...inp, padding: '6px 8px', fontSize: 12, fontFamily: fontMono }} type="number" min={0} step={0.01} value={r.value} onChange={e => setSchedRow(i, { value: e.target.value })} placeholder="Valor" />
+                      <button onClick={() => removeSchedRow(i)} title="Remover" style={{ padding: '5px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)', paddingTop: 4 }}>Soma: {fmtCurrencyShort(scheduleSum, currency)}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{ marginTop: 12 }}><label style={lbl}>Observações do acordo</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={note} onChange={e => setNote(e.target.value)} placeholder="Termos, motivo do desconto, referência do aditivo..." /></div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginRight: 'auto' }}>{selItems.length} item(ns) → {Math.max(1, Math.floor(Number(count)) || 1)}x de {fmtCurrencyShort(effectiveTotal / Math.max(1, Math.floor(Number(count)) || 1), currency)}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginRight: 'auto' }}>{selItems.length} item(ns) → {mode === 'custom' ? `${schedule.length}x personalizado` : `${nParcelas}x de ${fmtCurrencyShort(effectiveTotal / nParcelas, currency)}`}</span>
           <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={submit} disabled={!canSave || saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : '#ccc', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Renegociando...' : 'Renegociar'}</button>
         </div>

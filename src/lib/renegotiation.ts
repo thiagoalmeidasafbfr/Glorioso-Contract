@@ -94,6 +94,9 @@ export interface RenegotiationInput {
   installmentsCount: number
   periodicityMonths: number
   userNote: string
+  // Fluxo personalizado (irregular): vencimentos/valores explícitos por parcela.
+  // Quando informado, tem prioridade sobre startDate/installmentsCount/periodicity.
+  schedule?: { due_date: string; value: number }[]
 }
 
 export interface RenegotiationResult {
@@ -104,10 +107,14 @@ export interface RenegotiationResult {
 // Executa a renegociação: cria o acordo + novo fluxo e cancela os itens de
 // origem, preservando o rastreio.
 export async function createRenegotiation(input: RenegotiationInput): Promise<RenegotiationResult> {
+  const custom = !!(input.schedule && input.schedule.length)
   const originalTotal = Math.round(input.sources.reduce((s, x) => s + x.value, 0) * 100) / 100
-  const newTotal = Math.round(input.newTotal * 100) / 100
+  // Fluxo personalizado: o novo total é a soma das parcelas informadas.
+  const newTotal = custom
+    ? Math.round(input.schedule!.reduce((s, r) => s + (r.value || 0), 0) * 100) / 100
+    : Math.round(input.newTotal * 100) / 100
   const discount = Math.round((originalTotal - newTotal) * 100) / 100
-  const n = Math.max(1, Math.floor(input.installmentsCount))
+  const n = custom ? input.schedule!.length : Math.max(1, Math.floor(input.installmentsCount))
   const period = Math.max(1, Math.floor(input.periodicityMonths))
 
   const meta: AcordoMeta = {
@@ -119,15 +126,18 @@ export async function createRenegotiation(input: RenegotiationInput): Promise<Re
     currency: input.currency,
     creditor: input.creditor,
     debtor: input.debtor,
-    startDate: input.startDate,
+    startDate: custom ? (input.schedule![0]?.due_date ?? input.startDate) : input.startDate,
     installmentsCount: n,
-    periodicityMonths: period,
+    periodicityMonths: custom ? 0 : period,
     sources: input.sources,
     userNote: input.userNote,
   }
 
   const discountLabel = discount > 0 ? ` (desconto ${input.currency} ${discount.toLocaleString('pt-BR')})` : discount < 0 ? ` (acréscimo ${input.currency} ${Math.abs(discount).toLocaleString('pt-BR')})` : ''
-  const description = `Renegociação — ${input.creditor}: ${input.sources.length} item(ns) → ${n}x a partir de ${input.startDate}${discountLabel}`
+  const startLabel = custom ? input.schedule![0]?.due_date ?? input.startDate : input.startDate
+  const description = `Renegociação — ${input.creditor}: ${input.sources.length} item(ns) → ${n}x${custom ? ' (fluxo personalizado)' : ''} a partir de ${startLabel}${discountLabel}`
+
+  const firstDue = custom ? (input.schedule![0]?.due_date ?? input.startDate) : input.startDate
 
   // 1) Cláusula do acordo (o novo compromisso).
   const acordo = await createClause(input.contractId ?? null, input.athleteId, {
@@ -139,17 +149,20 @@ export async function createRenegotiation(input: RenegotiationInput): Promise<Re
     original_value: newTotal,
     percentage_value: null,
     condition_description: input.userNote,
-    due_date: input.startDate,
+    due_date: firstDue,
     installments_total: n,
     notes: encodeAcordo(meta),
   })
 
-  // 2) Novo fluxo de parcelas.
-  const values = splitEqual(newTotal, n)
-  const installments = await createClauseInstallments(acordo.id, input.athleteId, values.map((v, i) => ({
+  // 2) Novo fluxo de parcelas — personalizado (vencimentos/valores explícitos)
+  //    ou igual (N parcelas a partir da data-base, com a periodicidade).
+  const flow = custom
+    ? input.schedule!.map(r => ({ due_date: r.due_date, value: Math.round((r.value || 0) * 100) / 100 }))
+    : splitEqual(newTotal, n).map((v, i) => ({ due_date: addMonths(input.startDate, i * period), value: v }))
+  const installments = await createClauseInstallments(acordo.id, input.athleteId, flow.map((r, i) => ({
     installment_number: i + 1,
-    due_date: addMonths(input.startDate, i * period),
-    original_value: v,
+    due_date: r.due_date,
+    original_value: r.value,
     currency: input.currency,
   })))
 
