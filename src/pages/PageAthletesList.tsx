@@ -13,6 +13,7 @@ import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
 import PageHero from '../components/PageHero'
 import SheetIO from '../components/SheetIO'
 import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
+import { downloadImportTemplate } from '../lib/importTemplate'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
 
 const font     = "'Inter', system-ui, sans-serif"
@@ -260,6 +261,11 @@ export default function PageAthletesList() {
         <button onClick={() => setShowNew(true)}
           style={{ padding: '8px 20px', background: '#be8c4a', border: 'none', borderRadius: 8, color: '#fff', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           + Novo Atleta
+        </button>
+        <button onClick={downloadImportTemplate}
+          title="Baixar planilha modelo (com tutorial e avisos) para cadastrar um atleta do zero"
+          style={{ padding: '8px 18px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          ⬇ Baixar modelo
         </button>
         <SheetIO
           exportFilename="atletas.xlsx"
