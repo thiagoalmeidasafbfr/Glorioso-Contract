@@ -105,6 +105,9 @@ export interface NewEconomicRightInput {
 export interface Contract {
   id: string
   athlete_id: string
+  // Contrato-pai ao qual este está atrelado (ex.: intermediação/sell-on de uma
+  // compra ou venda). null quando é um contrato independente.
+  related_contract_id: string | null
   type: ContractType
   counterpart_club: string
   counterpart_country: string | null
@@ -212,6 +215,8 @@ export interface AlertWithDetails extends Alert {
 
 export interface NewContractInput {
   type: ContractType
+  // Opcional: atrela o novo contrato a um contrato existente do atleta.
+  related_contract_id?: string | null
   counterpart_club: string
   counterpart_country: string
   start_date: string

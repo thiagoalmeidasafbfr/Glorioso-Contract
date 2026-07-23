@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { fetchAthlete, createContract, createClause, createInstallments, createClauseInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
-import type { Athlete, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createInstallments, createClauseInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
+import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
 import { todayISO, monthsBetween, addMonths } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
@@ -36,6 +36,13 @@ function dueDayOf(startISO: string, i: number, day: number): string {
 
 function fmtNum(v: number): string { return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }
 function fmtDateBR(iso: string): string { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}` }
+
+// Rótulo curto de um contrato para o seletor de "contrato relacionado".
+function contractLabel(c: Contract): string {
+  const parts = [CONTRACT_TYPE_LABELS[c.type], c.counterpart_club || '—']
+  if (c.start_date) parts.push(fmtDateBR(c.start_date))
+  return parts.join(' · ')
+}
 
 const PAYABLE_CLAUSES: ClauseType[] = [
   'SELL_ON_FEE', 'INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA',
@@ -72,11 +79,18 @@ const cardStyle: React.CSSProperties = {
 export default function PageAthleteNewContract() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [step, setStep] = useState<Step>(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Contratos existentes do atleta + o contrato relacionado escolhido (opcional).
+  // ?rel=<id> pré-seleciona o vínculo (usado pelos atalhos da página do atleta).
+  const [existingContracts, setExistingContracts] = useState<Contract[]>([])
+  const [relatedId, setRelatedId] = useState<string>(searchParams.get('rel') ?? '')
+  const relatedContract = existingContracts.find(c => c.id === relatedId) ?? null
 
   // Step 1 — Contract
   const [contract, setContract] = useState<NewContractInput>({
@@ -115,7 +129,9 @@ export default function PageAthleteNewContract() {
   const [autoRemFlow, setAutoRemFlow] = useState(true)
 
   useEffect(() => {
-    if (id) fetchAthlete(id).then(setAthlete)
+    if (!id) return
+    fetchAthlete(id).then(setAthlete)
+    fetchAthleteContracts(id).then(setExistingContracts)
   }, [id])
 
   // Vigência em meses (base do fluxo mensal de salário/imagem).
@@ -193,7 +209,7 @@ export default function PageAthleteNewContract() {
     setSaving(true)
     setError(null)
     try {
-      const savedContract = await createContract(id, contract)
+      const savedContract = await createContract(id, { ...contract, related_contract_id: relatedId || undefined })
       const buying = contract.type === 'ENTRADA' || contract.type === 'EMPRESTIMO_ENTRADA'
 
       // ── Compra / transferência em parcelas ──────────────────────────────
@@ -336,6 +352,28 @@ export default function PageAthleteNewContract() {
       {/* ── Step 1: Contract ── */}
       {step === 1 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {existingContracts.length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 12 }}>
+                Contrato relacionado (opcional)
+              </div>
+              <label style={labelStyle}>Atrelar este contrato a um vínculo existente</label>
+              <select value={relatedId} onChange={e => setRelatedId(e.target.value)} style={inputStyle}>
+                <option value="">— nenhum (contrato independente) —</option>
+                {existingContracts.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
+              </select>
+              <div style={{ marginTop: 10, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.50)', lineHeight: 1.5 }}>
+                Use quando este contrato deriva de outro — ex.: o <strong>contrato de intermediação</strong> de
+                uma compra/venda, ou uma cláusula de <strong>Sell-on Fee</strong> ligada à transferência. O novo
+                contrato fica agrupado sob o vínculo escolhido no histórico do atleta.
+              </div>
+              {relatedContract && (
+                <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34' }}>
+                  ↳ vinculado a: {contractLabel(relatedContract)}
+                </div>
+              )}
+            </div>
+          )}
           <div style={cardStyle}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
               Dados do Vínculo
@@ -676,6 +714,12 @@ export default function PageAthleteNewContract() {
               Vínculo
             </div>
             <dl style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '6px 16px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, margin: 0 }}>
+              {relatedContract && (
+                <>
+                  <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Vinculado a</dt>
+                  <dd style={{ margin: 0 }}>{contractLabel(relatedContract)}</dd>
+                </>
+              )}
               <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Tipo</dt><dd style={{ margin: 0 }}>{CONTRACT_TYPE_LABELS[contract.type]}</dd>
               <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Clube</dt><dd style={{ margin: 0 }}>{contract.counterpart_club || '—'}</dd>
               <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>País</dt><dd style={{ margin: 0 }}>{contract.counterpart_country || '—'}</dd>
