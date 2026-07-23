@@ -29,7 +29,7 @@ import type {
 } from '../types/athlete-system'
 import {
   CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS,
-  ATHLETE_CATEGORY_LABELS,
+  ATHLETE_CATEGORY_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES,
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
 import { buildRemunerationFlow } from '../lib/remflow'
@@ -782,7 +782,7 @@ export default function PageAthleteDetail() {
             // Salário (Botafogo×atleta PF) e imagem (Botafogo×PJ) NÃO entram aqui —
             // vivem na aba CLT + Imagem.
             const ctClauses = clauses.filter(c => c.contract_id === ct.id && c.clause_type !== 'SALARIO_CETD' && c.clause_type !== 'DIREITO_IMAGEM')
-            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' } }
+            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' }, INTERMEDIACAO: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, LUVAS: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, SOLIDARIEDADE: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, SELL_ON: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, OUTRO: { bg: 'rgba(156,163,175,0.15)', fg: '#6b7280' } }
             const ts = typeStyle[ct.type] ?? { bg: '#eee', fg: '#333' }
             // Vínculo entre contratos: pai (do qual este deriva) e filhos (que derivam deste).
             const parent = ct.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null
@@ -1362,7 +1362,12 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div><label style={lbl}>Tipo</label>
             <select style={inp} value={f.type} onChange={e => set('type', e.target.value)}>
-              {(['ENTRADA', 'SAIDA', 'EMPRESTIMO_ENTRADA', 'EMPRESTIMO_SAIDA'] as Contract['type'][]).map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+              <optgroup label="Transferência">
+                {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+              </optgroup>
+              <optgroup label="Contratos acessórios / vinculados">
+                {ACCESSORY_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+              </optgroup>
             </select>
           </div>
           <div><label style={lbl}>Status</label>

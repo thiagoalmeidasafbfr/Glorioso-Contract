@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createInstallments, createClauseInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
 import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
-import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
+import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES, isTransferContractType } from '../types/athlete-system'
 import { todayISO, monthsBetween, addMonths } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
 import PageHero from '../components/PageHero'
@@ -14,7 +14,6 @@ type Step = 1 | 2 | 3
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 const CURRENCIES: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
-const CONTRACT_TYPES: ContractType[] = ['SAIDA', 'ENTRADA', 'EMPRESTIMO_SAIDA', 'EMPRESTIMO_ENTRADA']
 const CLAUSE_TYPES = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
 
 // Vencimentos do fluxo mensal de remuneração (mês subsequente à competência).
@@ -88,13 +87,16 @@ export default function PageAthleteNewContract() {
 
   // Contratos existentes do atleta + o contrato relacionado escolhido (opcional).
   // ?rel=<id> pré-seleciona o vínculo (usado pelos atalhos da página do atleta).
+  const initialRel = searchParams.get('rel') ?? ''
   const [existingContracts, setExistingContracts] = useState<Contract[]>([])
-  const [relatedId, setRelatedId] = useState<string>(searchParams.get('rel') ?? '')
+  const [relatedId, setRelatedId] = useState<string>(initialRel)
   const relatedContract = existingContracts.find(c => c.id === relatedId) ?? null
 
   // Step 1 — Contract
+  // Quando aberto já atrelado a um vínculo (?rel=), assume um contrato acessório
+  // (intermediação) por padrão — o caso mais comum de contrato derivado.
   const [contract, setContract] = useState<NewContractInput>({
-    type: 'SAIDA',
+    type: initialRel ? 'INTERMEDIACAO' : 'SAIDA',
     counterpart_club: '',
     counterpart_country: '',
     start_date: todayISO(),
@@ -156,7 +158,9 @@ export default function PageAthleteNewContract() {
   const setContractField = <K extends keyof NewContractInput>(k: K, v: NewContractInput[K]) =>
     setContract(prev => ({ ...prev, [k]: v }))
 
-  const step1Valid = contract.counterpart_club.trim() && contract.start_date
+  // Transferência exige contraparte; contratos acessórios não (a parte pode ser
+  // o agente, informado na seção de agentes, ou nem se aplicar).
+  const step1Valid = contract.start_date && (isTransferContractType(contract.type) ? !!contract.counterpart_club.trim() : true)
 
   // ── Step 2 handlers ──────────────────────────────────────────────────────
 
@@ -383,7 +387,12 @@ export default function PageAthleteNewContract() {
               <div>
                 <label style={labelStyle}>Tipo de vínculo</label>
                 <select value={contract.type} onChange={e => setContractField('type', e.target.value as ContractType)} style={inputStyle}>
-                  {CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+                  <optgroup label="Transferência">
+                    {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+                  </optgroup>
+                  <optgroup label="Contratos acessórios / vinculados">
+                    {ACCESSORY_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+                  </optgroup>
                 </select>
               </div>
               <div>
@@ -397,7 +406,7 @@ export default function PageAthleteNewContract() {
               <div>
                 <EntityPicker
                   kind="clube"
-                  label="Clube / Contraparte *"
+                  label={isTransferContractType(contract.type) ? 'Clube / Contraparte *' : 'Clube / Contraparte'}
                   value={contract.counterpart_club}
                   onChange={(name, sub) => {
                     setContractField('counterpart_club', name)
@@ -420,6 +429,7 @@ export default function PageAthleteNewContract() {
             </div>
           </div>
 
+          {isTransferContractType(contract.type) && (<>
           <div style={cardStyle}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
               Compra / Transferência em parcelas
@@ -541,11 +551,12 @@ export default function PageAthleteNewContract() {
               ) : null}
             </div>
           </div>
+          </>)}
 
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a' }}>
-                Agentes desta transação
+                {isTransferContractType(contract.type) ? 'Agentes desta transação' : 'Agentes / intermediários'}
               </div>
               <button type="button" onClick={addAgent}
                 style={{ padding: '6px 14px', borderRadius: 7, border: '1px dashed rgba(190,140,74,0.45)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
