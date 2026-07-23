@@ -25,6 +25,7 @@ import type {
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
   AthleteStatus, AthleteCategory, Currency, HolderType,
   TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput, NewAthletePJInput,
+  NewClauseInput,
 } from '../types/athlete-system'
 import {
   CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS,
@@ -347,6 +348,13 @@ function employmentContract(contracts: Contract[]): Contract | null {
   return [...arr].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
 }
 
+// Rótulo curto de um vínculo (usado nos seletores/labels de contrato relacionado).
+function contractLabel(c: Contract): string {
+  const parts = [CONTRACT_TYPE_LABELS[c.type], c.counterpart_club || '—']
+  if (c.start_date) parts.push(fmtDate(c.start_date))
+  return parts.join(' · ')
+}
+
 type Tab = 'consolidado' | 'clt_imagem' | 'clausulas' | 'acordos' | 'historico' | 'passivos' | 'alertas'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'consolidado', label: 'Consolidado' },
@@ -388,6 +396,7 @@ export default function PageAthleteDetail() {
   const goToAcordo = (acordoId: string) => { setTab('acordos'); setHighlightAcordo(acordoId) }
   const [showEdit, setShowEdit] = useState(false)
   const [editContractId, setEditContractId] = useState<string | null>(null)
+  const [newClauseContractId, setNewClauseContractId] = useState<string | null>(null)
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set())
   const toggleExpand = (cid: string) => setExpandedContracts(prev => { const n = new Set(prev); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
   const [expandedClauses, setExpandedClauses] = useState<Set<string>>(new Set())
@@ -775,6 +784,9 @@ export default function PageAthleteDetail() {
             const ctClauses = clauses.filter(c => c.contract_id === ct.id && c.clause_type !== 'SALARIO_CETD' && c.clause_type !== 'DIREITO_IMAGEM')
             const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' } }
             const ts = typeStyle[ct.type] ?? { bg: '#eee', fg: '#333' }
+            // Vínculo entre contratos: pai (do qual este deriva) e filhos (que derivam deste).
+            const parent = ct.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null
+            const children = contracts.filter(c => c.related_contract_id === ct.id)
             return (
               <div key={ct.id} className="card" style={{ padding: '18px 22px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
@@ -784,8 +796,15 @@ export default function PageAthleteDetail() {
                   </span>
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ct.counterpart_country}</span>}
                   <StatusBadge status={ct.status} map={{ ATIVO: { bg: '#e6ece2', fg: '#3a6f3a' }, ENCERRADO: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' }, RESCINDIDO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' } }} />
+                  {parent && (
+                    <span title={`Contrato vinculado a ${contractLabel(parent)}`} style={{ padding: '3px 9px', borderRadius: 5, background: 'rgba(190,140,74,0.10)', border: '1px solid rgba(190,140,74,0.28)', color: '#8a6a34', fontSize: 10, fontWeight: 600, fontFamily: fontMono, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      ↳ vinculado a {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}
+                    </span>
+                  )}
                   {canEdit && (
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => setNewClauseContractId(ct.id)} title="Adicionar cláusula a este vínculo (ex.: Sell-on Fee, intermediação)" style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>+ Cláusula</button>
+                      <button onClick={() => navigate(`/atletas/${ct.athlete_id}/contratos/novo?rel=${ct.id}`)} title="Criar um novo contrato atrelado a este vínculo (ex.: contrato de intermediação)" style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>+ Contrato vinculado</button>
                       <button onClick={() => setEditContractId(ct.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar</button>
                       <button onClick={() => handleDeleteContract(ct.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(122,63,44,0.4)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
                     </div>
@@ -801,6 +820,7 @@ export default function PageAthleteDetail() {
                     </button>
                   )}
                   {ctClauses.length === 0 && <span style={{ color: 'var(--text-muted)' }}>0 cláusulas</span>}
+                  {children.length > 0 && <span style={{ color: '#8a6a34', fontWeight: 600 }}>· {children.length} contrato{children.length !== 1 ? 's' : ''} vinculado{children.length !== 1 ? 's' : ''}</span>}
                 </div>
                 {ct.description && <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>{ct.description}</div>}
 
@@ -921,7 +941,11 @@ export default function PageAthleteDetail() {
       {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} pjs={pjs} canEdit={canEdit} onAddPJ={handleAddPJ} onUpdatePJ={handleUpdatePJ} onDeletePJ={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
       {editContractId && (() => {
         const ct = contracts.find(c => c.id === editContractId)
-        return ct ? <ContractEditModal contract={ct} onClose={() => setEditContractId(null)} onSaved={() => { setEditContractId(null); loadData() }} /> : null
+        return ct ? <ContractEditModal contract={ct} siblings={contracts} onClose={() => setEditContractId(null)} onSaved={() => { setEditContractId(null); loadData() }} /> : null
+      })()}
+      {newClauseContractId && athlete && (() => {
+        const ct = contracts.find(c => c.id === newClauseContractId)
+        return ct ? <NewClauseModal contract={ct} athleteId={athlete.id} onClose={() => setNewClauseContractId(null)} onSaved={() => { setNewClauseContractId(null); loadData() }} /> : null
       })()}
     </div>
   )
@@ -1277,12 +1301,15 @@ function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs }: {
 }
 
 // ── ContractEditModal — editar vínculo (histórico) ───────────────────────────
-function ContractEditModal({ contract, onClose, onSaved }: {
-  contract: Contract; onClose: () => void; onSaved: () => void
+function ContractEditModal({ contract, siblings, onClose, onSaved }: {
+  contract: Contract; siblings: Contract[]; onClose: () => void; onSaved: () => void
 }) {
+  // Contratos aos quais este pode ser atrelado (todos do atleta, menos ele mesmo).
+  const relatable = siblings.filter(c => c.id !== contract.id)
   const [f, setF] = useState({
     type: contract.type,
     status: contract.status,
+    related_contract_id: contract.related_contract_id ?? '',
     counterpart_club: contract.counterpart_club ?? '',
     counterpart_country: contract.counterpart_country ?? '',
     start_date: contract.start_date ?? '',
@@ -1304,7 +1331,7 @@ function ContractEditModal({ contract, onClose, onSaved }: {
   async function save() {
     setSaving(true)
     try {
-      await updateContract(contract.id, {
+      const patch: Partial<Contract> = {
         type: f.type, status: f.status,
         counterpart_club: f.counterpart_club, counterpart_country: f.counterpart_country || null,
         start_date: f.start_date, end_date: f.end_date || null,
@@ -1315,7 +1342,13 @@ function ContractEditModal({ contract, onClose, onSaved }: {
         other_value: f.other_value ? parseFloat(f.other_value) : null,
         salary_currency: f.salary_currency as Currency,
         description: f.description || null,
-      })
+      }
+      // Só envia o vínculo quando de fato mudou (não toca a coluna em contratos
+      // sem alteração — seguro mesmo antes de aplicar a migração 015).
+      if (f.related_contract_id !== (contract.related_contract_id ?? '')) {
+        patch.related_contract_id = f.related_contract_id || null
+      }
+      await updateContract(contract.id, patch)
       // Propaga a moeda do vínculo para as parcelas do fluxo (salário/imagem/transf.).
       await updateContractFlowsCurrency(contract.id, f.salary_currency as Currency, f.transfer_currency as Currency)
       onSaved()
@@ -1349,12 +1382,195 @@ function ContractEditModal({ contract, onClose, onSaved }: {
           <div><label style={lbl}>Moeda salário</label><select style={inp} value={f.salary_currency} onChange={e => set('salary_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
         <div><label style={lbl}>Descrição</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+        {relatable.length > 0 && (
+          <div>
+            <label style={lbl}>Contrato relacionado</label>
+            <select style={inp} value={f.related_contract_id} onChange={e => set('related_contract_id', e.target.value)}>
+              <option value="">— nenhum (contrato independente) —</option>
+              {relatable.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
+            </select>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 4 }}>
+              Atrele este contrato a outro vínculo do atleta (ex.: intermediação/sell-on de uma compra ou venda).
+            </div>
+          </div>
+        )}
         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
           Alterar salário/imagem aqui muda os valores do vínculo. Para regerar as parcelas mensais, use "Atualizar fluxo mensal" na aba CLT + Imagem.
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={save} disabled={saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── NewClauseModal — adicionar cláusula a um vínculo existente ────────────────
+// Usado pelo botão "+ Cláusula" no histórico. Cobre desde uma cláusula com
+// cronograma de vencimentos (ex.: intermediação parcelada) até cláusulas de
+// valor FUTURO/indeterminado — em especial o Sell-on Fee, que tem só um % de
+// uma venda futura, sem valor definido ainda.
+
+// Cláusulas "a pagar" pelo Botafogo (define credor/devedor padrão).
+const PAYABLE_CLAUSE_TYPES: ClauseType[] = [
+  'SELL_ON_FEE', 'INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA',
+  'SALARIO_CETD', 'DIREITO_IMAGEM', 'LUVAS', 'BONUS_PERFORMANCE_ATLETA',
+  'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA',
+]
+// Cláusulas de valor futuro/indeterminado — o % é o dado principal; o valor
+// (e o cronograma) só existirão quando a venda futura se concretizar.
+const FUTURE_VALUE_CLAUSE_TYPES: ClauseType[] = [
+  'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'INTERMEDIACAO_VENDA_FUTURA', 'PERCENTUAL_VENDA_ATLETA',
+]
+const NEW_CLAUSE_PERIOD_STEP = { MENSAL: 1, SEMESTRAL: 6, ANUAL: 12 } as const
+type NewClausePeriod = keyof typeof NEW_CLAUSE_PERIOD_STEP
+const NEW_CLAUSE_PERIOD_LABEL: Record<NewClausePeriod, string> = { MENSAL: 'Mensal', SEMESTRAL: 'Semestral', ANUAL: 'Anual' }
+
+function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
+  contract: Contract; athleteId: string; onClose: () => void; onSaved: () => void
+}) {
+  const partiesFor = (t: ClauseType) => PAYABLE_CLAUSE_TYPES.includes(t)
+    ? { creditor: contract.counterpart_club || 'Contraparte', debtor: 'Botafogo SAF' }
+    : { creditor: 'Botafogo SAF', debtor: contract.counterpart_club || 'Contraparte' }
+
+  const initialType: ClauseType = 'SELL_ON_FEE_RECEBER'
+  const initialParties = partiesFor(initialType)
+  const [f, setF] = useState<{
+    clause_type: ClauseType; description: string; creditor_party: string; debtor_party: string
+    currency: Currency; original_value: string; percentage_value: string; condition_description: string
+    due_date: string; installments_total: string; period: NewClausePeriod; notes: string
+  }>({
+    clause_type: initialType,
+    description: '',
+    creditor_party: initialParties.creditor,
+    debtor_party: initialParties.debtor,
+    currency: contract.transfer_currency,
+    original_value: '',
+    percentage_value: '',
+    condition_description: 'Sobre venda futura do atleta',
+    due_date: '',
+    installments_total: '1',
+    period: 'ANUAL',
+    notes: '',
+  })
+  const [saving, setSaving] = useState(false)
+  const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+
+  const isFuture = FUTURE_VALUE_CLAUSE_TYPES.includes(f.clause_type)
+  const installments = Math.max(1, parseInt(f.installments_total) || 1)
+  // Cronograma de parcelas só se aplica com valor definido, >1 parcela e tipo não-futuro.
+  const showSchedule = !isFuture && !!f.original_value && installments > 1
+
+  function changeType(t: ClauseType) {
+    const parties = partiesFor(t)
+    const futureNow = FUTURE_VALUE_CLAUSE_TYPES.includes(t)
+    setF(p => ({
+      ...p,
+      clause_type: t,
+      creditor_party: parties.creditor,
+      debtor_party: parties.debtor,
+      original_value: futureNow ? '' : p.original_value,
+      condition_description: futureNow && !p.condition_description.trim() ? 'Sobre venda futura do atleta' : p.condition_description,
+    }))
+  }
+
+  const canSave = f.description.trim().length > 0 && (!isFuture || !!f.percentage_value || !!f.original_value)
+
+  async function save() {
+    if (!canSave) return
+    setSaving(true)
+    try {
+      const value = f.original_value ? parseFloat(f.original_value) : null
+      const input: NewClauseInput = {
+        clause_type: f.clause_type,
+        description: f.description.trim(),
+        creditor_party: f.creditor_party || 'Botafogo SAF',
+        debtor_party: f.debtor_party || 'Contraparte',
+        currency: f.currency,
+        original_value: value,
+        percentage_value: f.percentage_value ? parseFloat(f.percentage_value) : null,
+        condition_description: f.condition_description || '',
+        due_date: f.due_date || '',
+        installments_total: showSchedule ? installments : 1,
+        notes: f.notes || '',
+      }
+      const clause = await createClause(contract.id, athleteId, input)
+      if (showSchedule && value && f.due_date) {
+        const step = NEW_CLAUSE_PERIOD_STEP[f.period]
+        const per = value / installments
+        await createClauseInstallments(clause.id, athleteId, Array.from({ length: installments }, (_, i) => ({
+          installment_number: i + 1,
+          due_date: addMonths(f.due_date, i * step),
+          original_value: per,
+          currency: f.currency,
+        })))
+      }
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+  const cur: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
+  const clauseTypes = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Nova cláusula</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 3 }}>atrelada a {CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}</div>
+        </div>
+
+        <div><label style={lbl}>Tipo</label>
+          <select style={inp} value={f.clause_type} onChange={e => changeType(e.target.value as ClauseType)}>
+            {clauseTypes.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
+          </select>
+        </div>
+
+        {isFuture && (
+          <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(190,140,74,0.10)', border: '1px solid rgba(190,140,74,0.28)', fontFamily: font, fontSize: 12, color: '#8a6a34' }}>
+            Cláusula de <strong>valor futuro</strong>: informe apenas o <strong>percentual (%)</strong>. O valor será apurado quando a venda futura acontecer — deixe o valor em branco.
+          </div>
+        )}
+
+        <div><label style={lbl}>Descrição *</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder={isFuture ? 'Ex: Sell-on de 15% sobre venda futura ao exterior' : 'Descreva a cláusula...'} /></div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
+          <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
+          <div><label style={lbl}>Percentual (%){isFuture ? ' *' : ''}</label><input style={inp} type="number" min={0} max={100} step={0.01} value={f.percentage_value} onChange={e => set('percentage_value', e.target.value)} placeholder="Ex: 15" /></div>
+          <div><label style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><input style={{ ...inp, opacity: isFuture ? 0.55 : 1 }} type="number" min={0} step={0.01} value={f.original_value} onChange={e => set('original_value', e.target.value)} placeholder={isFuture ? 'a definir na venda' : '0.00'} /></div>
+          <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label style={lbl}>{isFuture ? 'Vencimento (opcional)' : 'Vencimento / 1ª parcela'}</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+        </div>
+
+        {!isFuture && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div><label style={lbl}>Nº parcelas</label><input style={inp} type="number" min={1} max={120} value={f.installments_total} onChange={e => set('installments_total', e.target.value)} /></div>
+            {installments > 1 && (
+              <div><label style={lbl}>Periodicidade</label>
+                <select style={inp} value={f.period} onChange={e => set('period', e.target.value)}>
+                  {(Object.keys(NEW_CLAUSE_PERIOD_LABEL) as NewClausePeriod[]).map(p => <option key={p} value={p}>{NEW_CLAUSE_PERIOD_LABEL[p]}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+
+        {showSchedule && f.due_date && (
+          <div style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)', fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)' }}>
+            {installments}× {f.currency} {(parseFloat(f.original_value) / installments).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} · {NEW_CLAUSE_PERIOD_LABEL[f.period].toLowerCase()} · 1º venc. {fmtDate(f.due_date)}
+          </div>
+        )}
+
+        <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} placeholder="Ex: sobre o valor de uma venda futura" /></div>
+        <div><label style={lbl}>Notas</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={save} disabled={saving || !canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
         </div>
       </div>
     </div>

@@ -145,6 +145,7 @@ const CONTRACT_TIPO_ROBUSTO: Record<string, string> = {
 function fromAcContract(r: Row): Contract {
   return {
     id: r.id, athlete_id: r.atleta_id,
+    related_contract_id: r.related_contract_id ?? null,
     type: (r.subtipo_legado ?? 'ENTRADA'),
     counterpart_club: r.contraparte_nome ?? '',
     counterpart_country: r.contraparte_pais ?? null,
@@ -164,6 +165,9 @@ function fromAcContract(r: Row): Contract {
 function toAcContract(c: Partial<Contract>): Row {
   const o: Row = {}
   if (c.athlete_id !== undefined) o.atleta_id = c.athlete_id
+  // Só envia a coluna quando explicitamente informada (evita erro caso a
+  // migração 015 ainda não tenha sido aplicada em contratos sem vínculo).
+  if (c.related_contract_id !== undefined) o.related_contract_id = c.related_contract_id || null
   if (c.type !== undefined) { o.tipo = CONTRACT_TIPO_ROBUSTO[c.type] ?? 'AQUISICAO'; o.subtipo_legado = c.type }
   if (c.counterpart_club !== undefined) o.contraparte_nome = c.counterpart_club
   if (c.counterpart_country !== undefined) o.contraparte_pais = c.counterpart_country
