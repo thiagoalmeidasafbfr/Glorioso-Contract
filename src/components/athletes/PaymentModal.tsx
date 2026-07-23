@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Currency } from '../../types/athlete-system'
+import NumberInput from '../NumberInput'
 
 interface PaymentModalProps {
   label: string
@@ -89,10 +90,9 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
 
           <div>
             <label style={labelStyle}>Valor recebido ({sym})</label>
-            <input
-              type="number" min={0} step={0.01}
-              value={valueCurrency}
-              onChange={e => setValueCurrency(parseFloat(e.target.value) || 0)}
+            <NumberInput
+              value={valueCurrency || ''}
+              onChange={v => setValueCurrency(v ? parseFloat(v) : 0)}
               style={inputStyle}
             />
           </div>
@@ -105,10 +105,10 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
                   PTAX estimado: {defaultRate.toFixed(2)}
                 </span>
               </label>
-              <input
-                type="number" min={0} step={0.0001}
-                value={rate}
-                onChange={e => setRate(parseFloat(e.target.value) || defaultRate)}
+              <NumberInput
+                decimals={4} grouping={false}
+                value={rate || ''}
+                onChange={v => setRate(v ? parseFloat(v) : defaultRate)}
                 style={inputStyle}
               />
             </div>

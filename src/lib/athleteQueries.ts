@@ -144,7 +144,7 @@ const CONTRACT_TIPO_ROBUSTO: Record<string, string> = {
   // Contratos acessórios → tipo robusto mais próximo (o legado real fica em
   // subtipo_legado, que é o que o app lê de volta).
   INTERMEDIACAO: 'REPRESENTACAO', LUVAS: 'TRABALHO',
-  SOLIDARIEDADE: 'AQUISICAO', SELL_ON: 'VENDA', OUTRO: 'AQUISICAO',
+  SELL_ON: 'VENDA', OUTRO: 'AQUISICAO',
 }
 function fromAcContract(r: Row): Contract {
   return {

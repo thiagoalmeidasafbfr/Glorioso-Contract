@@ -7,9 +7,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   fetchClub, updateClub, fetchIntermediary, updateIntermediary,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities, fetchAthletes,
-  fetchAllClauses, fetchAllInstallments,
+  fetchAllClauses, fetchAllInstallments, fetchAthleteContracts,
 } from '../lib/athleteQueries'
-import type { Athlete, Currency } from '../types/athlete-system'
+import type { Athlete, Contract, ContractType, Currency } from '../types/athlete-system'
+import { ACCESSORY_CONTRACT_TYPES, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 
 // Tipos de cláusula voltados a clube / agente (contraparte = a entidade).
@@ -51,16 +52,19 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const [notes, setNotes] = useState<string | null>(null)
   const [liabs, setLiabs] = useState<OblRow[]>([])
   const [nameOf, setNameOf] = useState<Map<string, string>>(new Map())
+  const [athletes, setAthletes] = useState<Athlete[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showNewContract, setShowNewContract] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [athletes, clauses, installments] = await Promise.all([fetchAthletes(), fetchAllClauses(), fetchAllInstallments()])
-    setNameOf(new Map(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name])))
+    const [athletesList, clauses, installments] = await Promise.all([fetchAthletes(), fetchAllClauses(), fetchAllInstallments()])
+    setAthletes(athletesList)
+    setNameOf(new Map(athletesList.map((a: Athlete) => [a.id, a.short_name || a.full_name])))
 
     // Cláusulas voltadas à entidade cujo contraparte casa com o nome dela,
     // expandidas parcela por parcela.
@@ -183,11 +187,20 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
             </>
           )}
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Obrigações vinculadas</div>
-          <div style={{ fontSize: 22, fontWeight: 600, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{liabs.length}</div>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Obrigações vinculadas</div>
+            <div style={{ fontSize: 22, fontWeight: 600, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{liabs.length}</div>
+          </div>
+          {canEdit && !isClube && (
+            <button onClick={() => setShowNewContract(true)} style={{ padding: '8px 16px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ Novo Contrato</button>
+          )}
         </div>
       </div>
+
+      {showNewContract && (
+        <NewContractFromAgentModal agentName={name} athletes={athletes} onClose={() => setShowNewContract(false)} />
+      )}
 
       {/* Obrigações vinculadas */}
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -227,6 +240,81 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Novo Contrato a partir da página do agente ───────────────────────────────
+// Escolhe o atleta e (opcionalmente) o vínculo ao qual o contrato se atrela,
+// depois abre o wizard de novo contrato já com o agente e o tipo pré-preenchidos.
+function NewContractFromAgentModal({ agentName, athletes, onClose }: {
+  agentName: string; athletes: Athlete[]; onClose: () => void
+}) {
+  const navigate = useNavigate()
+  const [athleteId, setAthleteId] = useState('')
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [relId, setRelId] = useState('')
+  const [tipo, setTipo] = useState<ContractType>('INTERMEDIACAO')
+
+  useEffect(() => {
+    setRelId('') // eslint-disable-line react-hooks/set-state-in-effect
+    if (!athleteId) { setContracts([]); return }
+    let alive = true
+    fetchAthleteContracts(athleteId).then(cs => { if (alive) setContracts(cs) })
+    return () => { alive = false }
+  }, [athleteId])
+
+  function go() {
+    if (!athleteId) return
+    const params = new URLSearchParams()
+    params.set('tipo', tipo)
+    params.set('agente', agentName)
+    if (relId) params.set('rel', relId)
+    navigate(`/atletas/${athleteId}/contratos/novo?${params.toString()}`)
+  }
+
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: fontBody, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+  const clabel = (c: Contract) => `${CONTRACT_TYPE_LABELS[c.type]} · ${c.counterpart_club || '—'}${c.start_date ? ' · ' + fmtDate(c.start_date) : ''}`
+  const sortedAthletes = [...athletes].sort((a, b) => (a.short_name || a.full_name).localeCompare(b.short_name || b.full_name))
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 560, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: fontBody }}>Novo contrato</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 3 }}>agente: {agentName}</div>
+        </div>
+
+        <div><label style={lbl}>Atleta *</label>
+          <select style={inp} value={athleteId} onChange={e => setAthleteId(e.target.value)}>
+            <option value="">— selecione o atleta —</option>
+            {sortedAthletes.map(a => <option key={a.id} value={a.id}>{a.short_name || a.full_name}</option>)}
+          </select>
+        </div>
+
+        <div><label style={lbl}>Atrelar a um vínculo do atleta (opcional)</label>
+          <select style={inp} value={relId} onChange={e => setRelId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
+            <option value="">{!athleteId ? '— escolha o atleta primeiro —' : contracts.length === 0 ? '— sem vínculos cadastrados —' : '— nenhum (contrato independente) —'}</option>
+            {contracts.map(c => <option key={c.id} value={c.id}>{clabel(c)}</option>)}
+          </select>
+        </div>
+
+        <div><label style={lbl}>Tipo de contrato</label>
+          <select style={inp} value={tipo} onChange={e => setTipo(e.target.value as ContractType)}>
+            {ACCESSORY_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+          </select>
+        </div>
+
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontBody }}>
+          Em seguida você define as parcelas e o fluxo no cadastro do contrato — o agente já vem preenchido.
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: fontBody, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={go} disabled={!athleteId} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: athleteId ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: fontBody, fontWeight: 600, cursor: athleteId ? 'pointer' : 'not-allowed' }}>Continuar →</button>
         </div>
       </div>
     </div>

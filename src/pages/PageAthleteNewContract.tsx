@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createInstallments, createClauseInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
-import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection } from '../types/athlete-system'
-import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES, isTransferContractType } from '../types/athlete-system'
+import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection, SellOnBasis } from '../types/athlete-system'
+import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES, isTransferContractType, SELL_ON_CLAUSE_TYPES, SELLON_BASIS_LABELS, sellOnConditionText } from '../types/athlete-system'
 import { todayISO, monthsBetween, addMonths } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
+import NumberInput from '../components/NumberInput'
 import PageHero from '../components/PageHero'
 
 // ── Step types ────────────────────────────────────────────────────────────
@@ -86,8 +87,12 @@ export default function PageAthleteNewContract() {
   const [error, setError] = useState<string | null>(null)
 
   // Contratos existentes do atleta + o contrato relacionado escolhido (opcional).
-  // ?rel=<id> pré-seleciona o vínculo (usado pelos atalhos da página do atleta).
+  // ?rel=<id> pré-seleciona o vínculo; ?tipo= define o tipo; ?agente= pré-carrega
+  // um agente (usado pelo atalho "Novo Contrato" da página do agente).
   const initialRel = searchParams.get('rel') ?? ''
+  const initialTipoParam = searchParams.get('tipo')
+  const initialTipo: ContractType | null = initialTipoParam && initialTipoParam in CONTRACT_TYPE_LABELS ? initialTipoParam as ContractType : null
+  const initialAgente = searchParams.get('agente') ?? ''
   const [existingContracts, setExistingContracts] = useState<Contract[]>([])
   const [relatedId, setRelatedId] = useState<string>(initialRel)
   const relatedContract = existingContracts.find(c => c.id === relatedId) ?? null
@@ -96,7 +101,7 @@ export default function PageAthleteNewContract() {
   // Quando aberto já atrelado a um vínculo (?rel=), assume um contrato acessório
   // (intermediação) por padrão — o caso mais comum de contrato derivado.
   const [contract, setContract] = useState<NewContractInput>({
-    type: initialRel ? 'INTERMEDIACAO' : 'SAIDA',
+    type: initialTipo ?? (initialRel ? 'INTERMEDIACAO' : 'SAIDA'),
     counterpart_club: '',
     counterpart_country: '',
     start_date: todayISO(),
@@ -114,7 +119,7 @@ export default function PageAthleteNewContract() {
   // Agentes desta transação (um vínculo pode ter vários, com valores distintos).
   interface AgentRow { name: string; amount: string; currency: Currency; direction: LiabilityDirection }
   const emptyAgent: AgentRow = { name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR' }
-  const [agents, setAgents] = useState<AgentRow[]>([])
+  const [agents, setAgents] = useState<AgentRow[]>(initialAgente ? [{ ...emptyAgent, name: initialAgente }] : [])
   const addAgent = () => setAgents(prev => [...prev, { ...emptyAgent }])
   const removeAgent = (i: number) => setAgents(prev => prev.filter((_, idx) => idx !== i))
   const setAgent = (i: number, patch: Partial<AgentRow>) => setAgents(prev => prev.map((a, idx) => idx === i ? { ...a, ...patch } : a))
@@ -135,6 +140,21 @@ export default function PageAthleteNewContract() {
     fetchAthlete(id).then(setAthlete)
     fetchAthleteContracts(id).then(setExistingContracts)
   }, [id])
+
+  // Contrato acessório atrelado a um vínculo: a contraparte vem do vínculo pai —
+  // não faz sentido pedir o clube de novo. Herda a contraparte e esconde o campo.
+  const hideClub = !!relatedContract && !isTransferContractType(contract.type)
+  useEffect(() => {
+    if (relatedContract && !isTransferContractType(contract.type)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setContract(prev => ({
+        ...prev,
+        counterpart_club: relatedContract.counterpart_club,
+        counterpart_country: relatedContract.counterpart_country ?? '',
+      }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relatedContract?.id, contract.type])
 
   // Vigência em meses (base do fluxo mensal de salário/imagem).
   const vigMonths = (contract.start_date && contract.end_date)
@@ -201,6 +221,8 @@ export default function PageAthleteNewContract() {
           next[idx].creditor_party = 'Botafogo SAF'
           next[idx].debtor_party = contract.counterpart_club || 'Contraparte'
         }
+        // Sell-on: semeia a base de cálculo (mais-valia por padrão).
+        if (SELL_ON_CLAUSE_TYPES.includes(t)) next[idx].condition_description = sellOnConditionText('MAIS_VALIA')
       }
       return next
     })
@@ -316,14 +338,14 @@ export default function PageAthleteNewContract() {
 
   return (
     <div style={{ padding: '32px 40px', maxWidth: 800 }}>
-      <PageHero title="Novo Vínculo Contratual" subtitle={athlete?.full_name ?? 'Novo vínculo · Botafogo SAF'} />
+      <PageHero title="Novo Contrato" subtitle={athlete?.full_name ?? 'Novo contrato · Botafogo SAF'} />
       {/* Breadcrumb */}
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center' }}>
         <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
         <span>/</span>
         <Link to={`/atletas/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete?.short_name ?? '...'}</Link>
         <span>/</span>
-        <span style={{ color: '#be8c4a' }}>Novo Vínculo</span>
+        <span style={{ color: '#be8c4a' }}>Novo Contrato</span>
       </div>
 
       {/* Step indicator */}
@@ -403,21 +425,29 @@ export default function PageAthleteNewContract() {
                   <option value="RESCINDIDO">Rescindido</option>
                 </select>
               </div>
-              <div>
-                <EntityPicker
-                  kind="clube"
-                  label={isTransferContractType(contract.type) ? 'Clube / Contraparte *' : 'Clube / Contraparte'}
-                  value={contract.counterpart_club}
-                  onChange={(name, sub) => {
-                    setContractField('counterpart_club', name)
-                    if (sub) setContractField('counterpart_country', sub)
-                  }}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>País da contraparte</label>
-                <input value={contract.counterpart_country} onChange={e => setContractField('counterpart_country', e.target.value)} placeholder="Ex: Espanha" style={inputStyle} />
-              </div>
+              {hideClub ? (
+                <div style={{ gridColumn: '1 / -1', padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.06)', border: '1px solid rgba(190,140,74,0.18)', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'rgba(26,20,16,0.60)' }}>
+                  Contraparte herdada do vínculo: <strong>{relatedContract?.counterpart_club || '—'}</strong>. O agente/intermediário é informado na seção abaixo.
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <EntityPicker
+                      kind="clube"
+                      label={isTransferContractType(contract.type) ? 'Clube / Contraparte *' : 'Clube / Contraparte'}
+                      value={contract.counterpart_club}
+                      onChange={(name, sub) => {
+                        setContractField('counterpart_club', name)
+                        if (sub) setContractField('counterpart_country', sub)
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>País da contraparte</label>
+                    <input value={contract.counterpart_country} onChange={e => setContractField('counterpart_country', e.target.value)} placeholder="Ex: Espanha" style={inputStyle} />
+                  </div>
+                </>
+              )}
               <div>
                 <label style={labelStyle}>Data de início *</label>
                 <input type="date" value={contract.start_date} onChange={e => setContractField('start_date', e.target.value)} style={inputStyle} />
@@ -437,11 +467,10 @@ export default function PageAthleteNewContract() {
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.7fr 0.8fr 1fr 1.2fr', gap: 12 }}>
               <div>
                 <label style={labelStyle}>Valor total</label>
-                <input
-                  type="number" min={0} step={0.01}
+                <NumberInput
                   value={contract.transfer_fee_gross ?? ''}
-                  onChange={e => setContractField('transfer_fee_gross', e.target.value ? parseFloat(e.target.value) : null)}
-                  placeholder="Ex: 30000000"
+                  onChange={v => setContractField('transfer_fee_gross', v ? parseFloat(v) : null)}
+                  placeholder="Ex: 30.000.000"
                   style={inputStyle}
                 />
               </div>
@@ -488,18 +517,18 @@ export default function PageAthleteNewContract() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 0.8fr', gap: 12 }}>
               <div>
                 <label style={labelStyle}>Salário CLT</label>
-                <input type="number" min={0} step={0.01} value={contract.base_salary ?? ''}
-                  onChange={e => setContractField('base_salary', e.target.value ? parseFloat(e.target.value) : null)} placeholder="Ex: 200000" style={inputStyle} />
+                <NumberInput value={contract.base_salary ?? ''}
+                  onChange={v => setContractField('base_salary', v ? parseFloat(v) : null)} placeholder="Ex: 200.000" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Direito de imagem</label>
-                <input type="number" min={0} step={0.01} value={contract.image_value ?? ''}
-                  onChange={e => setContractField('image_value', e.target.value ? parseFloat(e.target.value) : null)} placeholder="Ex: 200000" style={inputStyle} />
+                <NumberInput value={contract.image_value ?? ''}
+                  onChange={v => setContractField('image_value', v ? parseFloat(v) : null)} placeholder="Ex: 200.000" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Outros (moradia/aux.)</label>
-                <input type="number" min={0} step={0.01} value={contract.other_value ?? ''}
-                  onChange={e => setContractField('other_value', e.target.value ? parseFloat(e.target.value) : null)} placeholder="0.00" style={inputStyle} />
+                <NumberInput value={contract.other_value ?? ''}
+                  onChange={v => setContractField('other_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Moeda</label>
@@ -581,7 +610,7 @@ export default function PageAthleteNewContract() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 12 }}>
                     <div>
                       <label style={labelStyle}>Comissão / valor</label>
-                      <input type="number" min={0} step={0.01} value={ag.amount} onChange={e => setAgent(i, { amount: e.target.value })} placeholder="0.00" style={inputStyle} />
+                      <NumberInput value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle} />
                     </div>
                     <div>
                       <label style={labelStyle}>Moeda</label>
@@ -663,7 +692,7 @@ export default function PageAthleteNewContract() {
                 </div>
                 <div>
                   <label style={labelStyle}>Valor</label>
-                  <input type="number" min={0} step={0.01} value={cl.original_value ?? ''} onChange={e => setClauseField(idx, 'original_value', e.target.value ? parseFloat(e.target.value) : null)} placeholder="0.00" style={inputStyle} />
+                  <NumberInput value={cl.original_value ?? ''} onChange={v => setClauseField(idx, 'original_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Moeda</label>
@@ -673,7 +702,7 @@ export default function PageAthleteNewContract() {
                 </div>
                 <div>
                   <label style={labelStyle}>% (se aplicável)</label>
-                  <input type="number" min={0} max={100} step={0.01} value={cl.percentage_value ?? ''} onChange={e => setClauseField(idx, 'percentage_value', e.target.value ? parseFloat(e.target.value) : null)} placeholder="Ex: 15" style={inputStyle} />
+                  <NumberInput decimals={2} grouping={false} value={cl.percentage_value ?? ''} onChange={v => setClauseField(idx, 'percentage_value', v ? parseFloat(v) : null)} placeholder="Ex: 15" style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Parcelas</label>
@@ -683,10 +712,19 @@ export default function PageAthleteNewContract() {
                   <label style={labelStyle}>Vencimento / 1ª parcela</label>
                   <input type="date" value={cl.due_date ?? ''} onChange={e => setClauseField(idx, 'due_date', e.target.value)} style={inputStyle} />
                 </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={labelStyle}>Condição / gatilho</label>
-                  <input value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder="Ex: Aprovação em 25 jogos na liga" style={inputStyle} />
-                </div>
+                {SELL_ON_CLAUSE_TYPES.includes(cl.clause_type as ClauseType) ? (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Base de cálculo do Sell-on</label>
+                    <select value={cl.condition_description === sellOnConditionText('VALOR_TOTAL') ? 'VALOR_TOTAL' : 'MAIS_VALIA'} onChange={e => setClauseField(idx, 'condition_description', sellOnConditionText(e.target.value as SellOnBasis))} style={inputStyle}>
+                      {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Condição / gatilho</label>
+                    <input value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder="Ex: Aprovação em 25 jogos na liga" style={inputStyle} />
+                  </div>
+                )}
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={labelStyle}>Notas</label>
                   <input value={cl.notes ?? ''} onChange={e => setClauseField(idx, 'notes', e.target.value)} style={inputStyle} />
