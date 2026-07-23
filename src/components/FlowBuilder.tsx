@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import type { Currency } from '../types/athlete-system'
 import { addMonths } from '../lib/format'
+import NumberInput from './NumberInput'
 
 export interface FlowLine { due_date: string; value: number }
 
@@ -101,7 +102,7 @@ export default function FlowBuilder({
           </div>
           <div>
             <label style={lbl}>{mode === 'total' ? 'Valor total' : 'Valor por parcela'}</label>
-            <input style={input} type="number" min={0} step={0.01} value={amount} onChange={e => setAmount(e.target.value)} placeholder="0,00" />
+            <NumberInput style={input} value={amount} onChange={v => setAmount(v)} placeholder="0,00" />
           </div>
           <div>
             <label style={lbl}>Nº parcelas</label>
@@ -152,7 +153,7 @@ export default function FlowBuilder({
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr 70px', gap: 8, alignItems: 'center' }}>
                 <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted, rgba(26,20,16,0.45))', textAlign: 'right' }}>{i + 1}</span>
                 <input style={input} type="date" value={l.due_date} onChange={e => setLine(i, { due_date: e.target.value })} />
-                <input style={input} type="number" min={0} step={0.01} value={l.value || ''} onChange={e => setLine(i, { value: parseFloat(e.target.value) || 0 })} placeholder="0,00" />
+                <NumberInput style={input} value={l.value || ''} onChange={v => setLine(i, { value: v ? parseFloat(v) : 0 })} placeholder="0,00" />
                 <button type="button" onClick={() => removeLine(i)} style={{ ...btn('ghost'), color: 'var(--neg, #7a3f2c)' }}>remover</button>
               </div>
             ))}

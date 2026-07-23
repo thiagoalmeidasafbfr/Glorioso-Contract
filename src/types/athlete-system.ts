@@ -10,7 +10,9 @@ export type ContractType =
   // Transferências (movimentam a titularidade do atleta).
   | 'ENTRADA' | 'SAIDA' | 'EMPRESTIMO_SAIDA' | 'EMPRESTIMO_ENTRADA'
   // Contratos acessórios/derivados — normalmente atrelados a uma transferência.
-  | 'INTERMEDIACAO' | 'LUVAS' | 'SOLIDARIEDADE' | 'SELL_ON' | 'OUTRO'
+  // (Solidariedade NÃO é contrato: é um valor % repassado a clubes formadores,
+  //  cadastrado como cláusula/obrigação — ver SOLIDARIEDADE_FIFA.)
+  | 'INTERMEDIACAO' | 'LUVAS' | 'SELL_ON' | 'OUTRO'
 
 export type ContractStatus = 'ATIVO' | 'ENCERRADO' | 'RESCINDIDO'
 
@@ -30,6 +32,20 @@ export type ClauseType =
   | 'CLAUSULA_RESCISORIA'
   | 'PERCENTUAL_VENDA_ATLETA'
   | 'ACORDO_RENEGOCIACAO'
+
+// Base de cálculo de um Sell-on Fee: sobre a mais-valia (lucro na revenda) ou
+// sobre o valor total da futura venda.
+export type SellOnBasis = 'MAIS_VALIA' | 'VALOR_TOTAL'
+export const SELLON_BASIS_LABELS: Record<SellOnBasis, string> = {
+  MAIS_VALIA:  'Mais-valia (lucro na revenda)',
+  VALOR_TOTAL: 'Valor total da venda',
+}
+export const SELL_ON_CLAUSE_TYPES: ClauseType[] = ['SELL_ON_FEE', 'SELL_ON_FEE_RECEBER']
+export function sellOnConditionText(basis: SellOnBasis): string {
+  return basis === 'MAIS_VALIA'
+    ? 'Sell-on sobre a mais-valia (lucro na revenda de uma venda futura)'
+    : 'Sell-on sobre o valor total de uma venda futura'
+}
 
 export type AchievementStatus = 'PENDENTE' | 'ATINGIDA' | 'NAO_ATINGIDA' | 'NAO_APLICAVEL'
 
@@ -283,7 +299,6 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
   EMPRESTIMO_ENTRADA:'Empréstimo (entrada)',
   INTERMEDIACAO:     'Agentes / Intermediação',
   LUVAS:             'Luvas',
-  SOLIDARIEDADE:     'Mecanismo de Solidariedade',
   SELL_ON:           'Sell-on Fee',
   OUTRO:             'Outro contrato vinculado',
 }
@@ -292,7 +307,7 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
 // titularidade; acessórios são contratos derivados (intermediação, luvas,
 // solidariedade, sell-on) — geralmente atrelados a uma transferência existente.
 export const TRANSFER_CONTRACT_TYPES: ContractType[] = ['ENTRADA', 'SAIDA', 'EMPRESTIMO_ENTRADA', 'EMPRESTIMO_SAIDA']
-export const ACCESSORY_CONTRACT_TYPES: ContractType[] = ['INTERMEDIACAO', 'LUVAS', 'SOLIDARIEDADE', 'SELL_ON', 'OUTRO']
+export const ACCESSORY_CONTRACT_TYPES: ContractType[] = ['INTERMEDIACAO', 'LUVAS', 'SELL_ON', 'OUTRO']
 
 // Um contrato de transferência movimenta a titularidade e exige contraparte +
 // fluxos de transfer/salário; os acessórios não.

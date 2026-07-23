@@ -18,6 +18,7 @@ import {
 } from '../lib/athleteQueries'
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
+import NumberInput from '../components/NumberInput'
 import PageHero from '../components/PageHero'
 import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween, addMonths } from '../lib/format'
 import type {
@@ -25,11 +26,12 @@ import type {
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
   AthleteStatus, AthleteCategory, Currency, HolderType,
   TriggerMetric, NewSalaryTriggerInput, NewEconomicRightInput, NewAthletePJInput,
-  NewClauseInput,
+  NewClauseInput, SellOnBasis,
 } from '../types/athlete-system'
 import {
   CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS,
   ATHLETE_CATEGORY_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES,
+  SELL_ON_CLAUSE_TYPES, SELLON_BASIS_LABELS, sellOnConditionText,
   TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
 } from '../types/athlete-system'
 import { buildRemunerationFlow } from '../lib/remflow'
@@ -183,7 +185,7 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
         <div><label style={lbl}>Descrição *</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Ex: Ao atingir 10 jogos, salário sobe" /></div>
         <div><label style={lbl}>Métrica</label><select style={inp} value={f.metric} onChange={e => set('metric', e.target.value as TriggerMetric)}>{(Object.keys(TRIGGER_METRIC_LABELS) as TriggerMetric[]).map(m => <option key={m} value={m}>{TRIGGER_METRIC_LABELS[m]}</option>)}</select></div>
         <div><label style={lbl}>Meta (nº)</label><input style={inp} type="number" value={f.threshold ?? ''} onChange={e => set('threshold', e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 10" /></div>
-        <div><label style={lbl}>Novo salário CLT *</label><input style={inp} type="number" value={f.new_salary || ''} onChange={e => set('new_salary', Number(e.target.value) || 0)} placeholder="Ex: 300000" /></div>
+        <div><label style={lbl}>Novo salário CLT *</label><NumberInput style={inp} value={f.new_salary || ''} onChange={v => set('new_salary', v ? Number(v) : 0)} placeholder="Ex: 300.000" /></div>
         <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value as Currency)}>{(['BRL','EUR','USD','GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         <div><label style={lbl}>Observações</label><input style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
       </div>
@@ -603,7 +605,7 @@ export default function PageAthleteDetail() {
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <button onClick={exportAthlete} title="Exportar dados deste atleta (XLSX)" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↓ Exportar</button>
             {canEdit && <button onClick={() => setShowEdit(true)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Editar</button>}
-            <Link to={`/atletas/${athlete.id}/contratos/novo`} style={{ padding: '8px 16px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: font, fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>+ Novo Vínculo</Link>
+            <Link to={`/atletas/${athlete.id}/contratos/novo`} style={{ padding: '8px 16px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: font, fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>+ Novo Contrato</Link>
           </div>
         </div>
       </div>
@@ -782,7 +784,7 @@ export default function PageAthleteDetail() {
             // Salário (Botafogo×atleta PF) e imagem (Botafogo×PJ) NÃO entram aqui —
             // vivem na aba CLT + Imagem.
             const ctClauses = clauses.filter(c => c.contract_id === ct.id && c.clause_type !== 'SALARIO_CETD' && c.clause_type !== 'DIREITO_IMAGEM')
-            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' }, INTERMEDIACAO: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, LUVAS: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, SOLIDARIEDADE: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, SELL_ON: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, OUTRO: { bg: 'rgba(156,163,175,0.15)', fg: '#6b7280' } }
+            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' }, INTERMEDIACAO: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, LUVAS: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, SELL_ON: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, OUTRO: { bg: 'rgba(156,163,175,0.15)', fg: '#6b7280' } }
             const ts = typeStyle[ct.type] ?? { bg: '#eee', fg: '#333' }
             // Vínculo entre contratos: pai (do qual este deriva) e filhos (que derivam deste).
             const parent = ct.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null
@@ -1151,9 +1153,9 @@ function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canE
       {editing ? (
         <div style={{ marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-            <div><label style={lbl2}>Salário CLT</label><input style={inp} type="number" min={0} step={0.01} value={f.base_salary} onChange={e => setF(p => ({ ...p, base_salary: e.target.value }))} /></div>
-            <div><label style={lbl2}>Direito de imagem</label><input style={inp} type="number" min={0} step={0.01} value={f.image_value} onChange={e => setF(p => ({ ...p, image_value: e.target.value }))} /></div>
-            <div><label style={lbl2}>Outros (moradia/aux.)</label><input style={inp} type="number" min={0} step={0.01} value={f.other_value} onChange={e => setF(p => ({ ...p, other_value: e.target.value }))} /></div>
+            <div><label style={lbl2}>Salário CLT</label><NumberInput style={inp} value={f.base_salary} onChange={v => setF(p => ({ ...p, base_salary: v }))} /></div>
+            <div><label style={lbl2}>Direito de imagem</label><NumberInput style={inp} value={f.image_value} onChange={v => setF(p => ({ ...p, image_value: v }))} /></div>
+            <div><label style={lbl2}>Outros (moradia/aux.)</label><NumberInput style={inp} value={f.other_value} onChange={v => setF(p => ({ ...p, other_value: v }))} /></div>
             <div><label style={lbl2}>Moeda</label>
               <select style={inp} value={f.salary_currency} onChange={e => setF(p => ({ ...p, salary_currency: e.target.value as Currency }))}>
                 {(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}
@@ -1379,11 +1381,11 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
           <div><label style={lbl}>País</label><input style={inp} value={f.counterpart_country} onChange={e => set('counterpart_country', e.target.value)} /></div>
           <div><label style={lbl}>Início</label><input style={inp} type="date" value={f.start_date} onChange={e => set('start_date', e.target.value)} /></div>
           <div><label style={lbl}>Término</label><input style={inp} type="date" value={f.end_date} onChange={e => set('end_date', e.target.value)} /></div>
-          <div><label style={lbl}>Valor transferência</label><input style={inp} type="number" min={0} step={0.01} value={f.transfer_fee_gross} onChange={e => set('transfer_fee_gross', e.target.value)} /></div>
+          <div><label style={lbl}>Valor transferência</label><NumberInput style={inp} value={f.transfer_fee_gross} onChange={v => set('transfer_fee_gross', v)} /></div>
           <div><label style={lbl}>Moeda transf.</label><select style={inp} value={f.transfer_currency} onChange={e => set('transfer_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label style={lbl}>Salário CLT/mês</label><input style={inp} type="number" min={0} step={0.01} value={f.base_salary} onChange={e => set('base_salary', e.target.value)} /></div>
-          <div><label style={lbl}>Imagem/mês</label><input style={inp} type="number" min={0} step={0.01} value={f.image_value} onChange={e => set('image_value', e.target.value)} /></div>
-          <div><label style={lbl}>Outros/mês</label><input style={inp} type="number" min={0} step={0.01} value={f.other_value} onChange={e => set('other_value', e.target.value)} /></div>
+          <div><label style={lbl}>Salário CLT/mês</label><NumberInput style={inp} value={f.base_salary} onChange={v => set('base_salary', v)} /></div>
+          <div><label style={lbl}>Imagem/mês</label><NumberInput style={inp} value={f.image_value} onChange={v => set('image_value', v)} /></div>
+          <div><label style={lbl}>Outros/mês</label><NumberInput style={inp} value={f.other_value} onChange={v => set('other_value', v)} /></div>
           <div><label style={lbl}>Moeda salário</label><select style={inp} value={f.salary_currency} onChange={e => set('salary_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
         <div><label style={lbl}>Descrição</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.description} onChange={e => set('description', e.target.value)} /></div>
@@ -1444,7 +1446,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
   const [f, setF] = useState<{
     clause_type: ClauseType; description: string; creditor_party: string; debtor_party: string
     currency: Currency; original_value: string; percentage_value: string; condition_description: string
-    due_date: string; installments_total: string; period: NewClausePeriod; notes: string
+    due_date: string; installments_total: string; period: NewClausePeriod; notes: string; basis: SellOnBasis
   }>({
     clause_type: initialType,
     description: '',
@@ -1458,11 +1460,13 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
     installments_total: '1',
     period: 'ANUAL',
     notes: '',
+    basis: 'MAIS_VALIA',
   })
   const [saving, setSaving] = useState(false)
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
   const isFuture = FUTURE_VALUE_CLAUSE_TYPES.includes(f.clause_type)
+  const isSellOn = SELL_ON_CLAUSE_TYPES.includes(f.clause_type)
   const installments = Math.max(1, parseInt(f.installments_total) || 1)
   // Cronograma de parcelas só se aplica com valor definido, >1 parcela e tipo não-futuro.
   const showSchedule = !isFuture && !!f.original_value && installments > 1
@@ -1495,7 +1499,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
         currency: f.currency,
         original_value: value,
         percentage_value: f.percentage_value ? parseFloat(f.percentage_value) : null,
-        condition_description: f.condition_description || '',
+        condition_description: isSellOn ? sellOnConditionText(f.basis) : (f.condition_description || ''),
         due_date: f.due_date || '',
         installments_total: showSchedule ? installments : 1,
         notes: f.notes || '',
@@ -1545,11 +1549,22 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
           <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
-          <div><label style={lbl}>Percentual (%){isFuture ? ' *' : ''}</label><input style={inp} type="number" min={0} max={100} step={0.01} value={f.percentage_value} onChange={e => set('percentage_value', e.target.value)} placeholder="Ex: 15" /></div>
-          <div><label style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><input style={{ ...inp, opacity: isFuture ? 0.55 : 1 }} type="number" min={0} step={0.01} value={f.original_value} onChange={e => set('original_value', e.target.value)} placeholder={isFuture ? 'a definir na venda' : '0.00'} /></div>
+          <div><label style={lbl}>Percentual (%){isFuture ? ' *' : ''}</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} placeholder="Ex: 15" /></div>
+          <div><label style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><NumberInput style={{ ...inp, opacity: isFuture ? 0.55 : 1 }} value={f.original_value} onChange={v => set('original_value', v)} placeholder={isFuture ? 'a definir na venda' : '0,00'} /></div>
           <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
           <div><label style={lbl}>{isFuture ? 'Vencimento (opcional)' : 'Vencimento / 1ª parcela'}</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         </div>
+
+        {isSellOn && (
+          <div><label style={lbl}>Base de cálculo do Sell-on</label>
+            <select style={inp} value={f.basis} onChange={e => set('basis', e.target.value)}>
+              {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+            </select>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 4 }}>
+              O sell-on incide sobre {f.basis === 'MAIS_VALIA' ? 'a mais-valia (lucro na revenda)' : 'o valor total da venda'} futura.
+            </div>
+          </div>
+        )}
 
         {!isFuture && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -1570,7 +1585,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
           </div>
         )}
 
-        <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} placeholder="Ex: sobre o valor de uma venda futura" /></div>
+        {!isSellOn && <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} placeholder="Ex: sobre o valor de uma venda futura" /></div>}
         <div><label style={lbl}>Notas</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -1653,7 +1668,7 @@ function InstallmentEditModal({ inst, onClose, onSave }: {
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar parcela {inst.installment_number}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div><label style={lbl}>Vencimento</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
-          <div><label style={lbl}>Valor</label><input style={inp} type="number" min={0} step={0.01} value={f.original_value} onChange={e => set('original_value', e.target.value)} /></div>
+          <div><label style={lbl}>Valor</label><NumberInput style={inp} value={f.original_value} onChange={v => set('original_value', v)} /></div>
           <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
           <div><label style={lbl}>Status</label>
             <select style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
@@ -1725,9 +1740,9 @@ function ClauseEditModal({ clause, onClose, onSave }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
           <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
-          <div><label style={lbl}>Valor{clause.installments_total > 1 ? ' total' : ''}</label><input style={inp} type="number" min={0} step={0.01} value={f.original_value} onChange={e => set('original_value', e.target.value)} /></div>
+          <div><label style={lbl}>Valor{clause.installments_total > 1 ? ' total' : ''}</label><NumberInput style={inp} value={f.original_value} onChange={v => set('original_value', v)} /></div>
           <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label style={lbl}>Percentual (%)</label><input style={inp} type="number" min={0} step={0.01} value={f.percentage_value} onChange={e => set('percentage_value', e.target.value)} /></div>
+          <div><label style={lbl}>Percentual (%)</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} /></div>
           <div><label style={lbl}>Vencimento</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
           <div><label style={lbl}>Status pagamento</label>
             <select style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
@@ -2053,7 +2068,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
             <div><label style={lbl}>Dívida selecionada</label><input style={{ ...inp, fontFamily: fontMono }} value={`${currency} ${sum.toLocaleString('pt-BR')}`} disabled /></div>
-            <div><label style={lbl}>Novo total ({currency})</label><input style={{ ...inp, fontFamily: fontMono }} type="number" min={0} step={0.01} value={mode === 'custom' ? String(scheduleSum || '') : (touchedTotal ? newTotal : String(sum || ''))} onChange={e => { setTouchedTotal(true); setNewTotal(e.target.value) }} disabled={mode === 'custom'} placeholder="Igual à dívida" /></div>
+            <div><label style={lbl}>Novo total ({currency})</label><NumberInput style={{ ...inp, fontFamily: fontMono }} value={mode === 'custom' ? (scheduleSum || '') : (touchedTotal ? newTotal : (sum || ''))} onChange={v => { setTouchedTotal(true); setNewTotal(v) }} disabled={mode === 'custom'} placeholder="Igual à dívida" /></div>
             <div><label style={lbl}>Desconto</label><input style={{ ...inp, fontFamily: fontMono, color: discount > 0 ? 'var(--pos)' : discount < 0 ? 'var(--neg)' : undefined }} value={`${currency} ${discount.toLocaleString('pt-BR')}`} disabled /></div>
             <div><label style={lbl}>{mode === 'custom' ? 'Data 1ª parcela' : 'Data-base'}</label><input style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
             <div><label style={lbl}>Nº de parcelas</label><input style={inp} type="number" min={1} step={1} value={count} onChange={e => setCount(e.target.value)} /></div>
@@ -2077,7 +2092,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr 30px', gap: 8, alignItems: 'center' }}>
                       <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-muted)', textAlign: 'right' }}>{i + 1}</span>
                       <input style={{ ...inp, padding: '6px 8px', fontSize: 12 }} type="date" value={r.due_date} onChange={e => setSchedRow(i, { due_date: e.target.value })} />
-                      <input style={{ ...inp, padding: '6px 8px', fontSize: 12, fontFamily: fontMono }} type="number" min={0} step={0.01} value={r.value} onChange={e => setSchedRow(i, { value: e.target.value })} placeholder="Valor" />
+                      <NumberInput style={{ ...inp, padding: '6px 8px', fontSize: 12, fontFamily: fontMono }} value={r.value} onChange={v => setSchedRow(i, { value: v })} placeholder="Valor" />
                       <button onClick={() => removeSchedRow(i)} title="Remover" style={{ padding: '5px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>✕</button>
                     </div>
                   ))}
