@@ -7,7 +7,10 @@ export type AthleteStatus = 'ATIVO' | 'EMPRESTADO' | 'VENDIDO' | 'DESLIGADO'
 export type AthleteCategory = 'BASE' | 'PROFISSIONAL' | 'COMISSAO_TECNICA'
 
 export type ContractType =
+  // Transferências (movimentam a titularidade do atleta).
   | 'ENTRADA' | 'SAIDA' | 'EMPRESTIMO_SAIDA' | 'EMPRESTIMO_ENTRADA'
+  // Contratos acessórios/derivados — normalmente atrelados a uma transferência.
+  | 'INTERMEDIACAO' | 'LUVAS' | 'SOLIDARIEDADE' | 'SELL_ON' | 'OUTRO'
 
 export type ContractStatus = 'ATIVO' | 'ENCERRADO' | 'RESCINDIDO'
 
@@ -278,6 +281,23 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
   SAIDA:             'Saída',
   EMPRESTIMO_SAIDA:  'Empréstimo (saída)',
   EMPRESTIMO_ENTRADA:'Empréstimo (entrada)',
+  INTERMEDIACAO:     'Agentes / Intermediação',
+  LUVAS:             'Luvas',
+  SOLIDARIEDADE:     'Mecanismo de Solidariedade',
+  SELL_ON:           'Sell-on Fee',
+  OUTRO:             'Outro contrato vinculado',
+}
+
+// Grupos para o seletor de tipo de contrato. Transferências movimentam a
+// titularidade; acessórios são contratos derivados (intermediação, luvas,
+// solidariedade, sell-on) — geralmente atrelados a uma transferência existente.
+export const TRANSFER_CONTRACT_TYPES: ContractType[] = ['ENTRADA', 'SAIDA', 'EMPRESTIMO_ENTRADA', 'EMPRESTIMO_SAIDA']
+export const ACCESSORY_CONTRACT_TYPES: ContractType[] = ['INTERMEDIACAO', 'LUVAS', 'SOLIDARIEDADE', 'SELL_ON', 'OUTRO']
+
+// Um contrato de transferência movimenta a titularidade e exige contraparte +
+// fluxos de transfer/salário; os acessórios não.
+export function isTransferContractType(t: ContractType): boolean {
+  return TRANSFER_CONTRACT_TYPES.includes(t)
 }
 
 export const ATHLETE_CATEGORY_LABELS: Record<AthleteCategory, string> = {

@@ -141,6 +141,10 @@ function toAcAthlete(a: Partial<Athlete>): Row {
 const CONTRACT_TIPO_ROBUSTO: Record<string, string> = {
   ENTRADA: 'AQUISICAO', SAIDA: 'VENDA',
   EMPRESTIMO_SAIDA: 'EMPRESTIMO', EMPRESTIMO_ENTRADA: 'EMPRESTIMO',
+  // Contratos acessórios → tipo robusto mais próximo (o legado real fica em
+  // subtipo_legado, que é o que o app lê de volta).
+  INTERMEDIACAO: 'REPRESENTACAO', LUVAS: 'TRABALHO',
+  SOLIDARIEDADE: 'AQUISICAO', SELL_ON: 'VENDA', OUTRO: 'AQUISICAO',
 }
 function fromAcContract(r: Row): Contract {
   return {
