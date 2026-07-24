@@ -41,6 +41,20 @@ const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
 }
 
+// Ordem de exibição por posição (de cima pra baixo):
+// Goleiro → Lateral → Zagueiro → Volante → Meio Campo → Atacante.
+function positionOrder(pos: string | null): number {
+  const p = (pos ?? '').toLowerCase()
+  if (!p) return 99
+  if (p.includes('goleiro')) return 0
+  if (p.includes('lateral')) return 1
+  if (p.includes('zagueiro') || p.includes('zaga')) return 2
+  if (p.includes('volante')) return 3
+  if (p.includes('meia') || p.includes('meio')) return 4
+  if (p.includes('atacante') || p.includes('ponta') || p.includes('centroavante')) return 5
+  return 98
+}
+
 function getInitials(name: string): string {
   return name.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('')
 }
@@ -203,6 +217,10 @@ export default function PageAthletesList() {
       if (!a.full_name.toLowerCase().includes(q) && !a.short_name.toLowerCase().includes(q)) return false
     }
     return true
+  }).sort((a, b) => {
+    // Ordena por posição (Goleiro → ... → Atacante); desempate por nome.
+    const d = positionOrder(a.position) - positionOrder(b.position)
+    return d !== 0 ? d : a.short_name.localeCompare(b.short_name)
   }), [athletes, filterStatus, search])
 
   // Stats por atleta calculados a partir dos dados reais (query layer).
@@ -322,7 +340,7 @@ export default function PageAthletesList() {
                 <th style={{ ...th, width: 110 }}>Status</th>
                 <th style={{ ...th, width: 80 }}>País</th>
                 <th style={{ ...th, width: 180, textAlign: 'left' }}>Detentores</th>
-                <th style={{ ...th, width: 80, textAlign: 'right' }}>Cláusulas</th>
+                <th style={{ ...th, width: 130, textAlign: 'left' }}>Posição</th>
                 <th style={{ ...th, width: 120, textAlign: 'right' }}>Próx. Venc.</th>
                 <th style={{ ...th, width: 100 }}>Alertas</th>
                 <th style={{ ...th, width: 90, textAlign: 'right' }}></th>
@@ -338,8 +356,6 @@ export default function PageAthletesList() {
               {filtered.map(a => {
                 const stats = getAthleteStats(a.id)
                 const st = STATUS_STYLE[a.current_status]
-                const athleteClauses = clauses.filter(c => c.athlete_id === a.id)
-                const active = athleteClauses.filter(c => !['PAGA','CANCELADA'].includes(c.payment_status)).length
                 return (
                   <tr key={a.id} style={{ cursor: 'pointer' }}
                     onClick={() => navigate(`/atletas/${a.id}`)}
@@ -368,9 +384,8 @@ export default function PageAthletesList() {
                         <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
                       )}
                     </td>
-                    <td style={{ ...td, width: 80, textAlign: 'right', fontFamily: fontMono, fontSize: 13 }}>
-                      <span style={{ fontWeight: active > 0 ? 600 : 400, color: active > 0 ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{active}</span>
-                      {active > 0 && <span style={{ fontSize: 9, color: 'var(--text-muted)', marginLeft: 2 }}>ativas</span>}
+                    <td style={{ ...td, width: 130, color: a.position ? 'var(--ink-primary)' : 'var(--text-muted)', fontSize: 12 }}>
+                      {a.position || '—'}
                     </td>
                     <td style={{ ...td, width: 120, textAlign: 'right', fontFamily: fontMono, fontSize: 12, color: stats.nextDue ? (isOverdue(stats.nextDue, 'PENDENTE') ? 'var(--neg)' : 'var(--ink-secondary)') : 'var(--text-muted)' }}>
                       {stats.nextDue ? fmtDate(stats.nextDue) : '—'}

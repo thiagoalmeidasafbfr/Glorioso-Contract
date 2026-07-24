@@ -333,6 +333,29 @@ export async function updateAthlete(id: string, input: Partial<Athlete>): Promis
   return fromAcAthlete(data)
 }
 
+// Exclui o atleta e TODOS os seus vínculos (contratos, cláusulas, parcelas,
+// gatilhos, passivos, imagem, titularidade, alertas e PJs). Ação irreversível —
+// a UI deve confirmar antes de chamar.
+export async function deleteAthlete(id: string): Promise<void> {
+  if (!USE_SUPABASE) {
+    // Ordem FK-safe (filhos antes dos pais), filtrando pelo atleta.
+    const byAthlete = (table: string) => local.where<{ id: string }>(table, 'athlete_id', id)
+    for (const t of [T.installments, T.alerts, T.clauses, T.imageRights, T.salaryTriggers,
+                     T.clubLiabilities, T.intermediaryLiabilities, T.economicRights,
+                     T.athletePjs, T.contracts]) {
+      for (const row of byAthlete(t)) local.remove(t, row.id)
+    }
+    return local.remove(T.athletes, id)
+  }
+  // Supabase: apagar o atleta cascateia contratos/cláusulas/parcelas/passivos/
+  // imagem/gatilhos/alertas/titularidade. As PJs (ac_entidades tipo PJ_IMAGEM)
+  // NÃO caem por cascata — só a extensão pj_imagem — então limpamos antes.
+  const pjs = await loadPJs({ athleteId: id })
+  for (const pj of pjs) await deletePJ(pj.id)
+  const { error } = await supabase.from(AC.athletes).delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Economic Rights (titularidade) ──────────────────────────────────────────
 
 export async function fetchAthleteEconomicRights(athleteId: string): Promise<EconomicRight[]> {
@@ -477,6 +500,7 @@ export async function createSalaryTrigger(athleteId: string, input: NewSalaryTri
     metric: input.metric,
     threshold: input.threshold,
     new_salary: input.new_salary,
+    new_image_value: input.new_image_value ?? null,
     currency: input.currency,
     status: 'PENDENTE' as const,
     achieved_date: null,
@@ -912,6 +936,13 @@ export async function createClauseInstallments(
   const { data, error } = await supabase.from(AC.installments).insert(nn(installments.map(toAcFK))).select()
   if (error) throw error
   return data.map(r => fromAcFK<ClauseInstallment>(r))
+}
+
+// Apaga uma única parcela (usado ao regenerar o fluxo preservando as pagas).
+export async function deleteInstallment(id: string): Promise<void> {
+  if (!USE_SUPABASE) return local.remove(T.installments, id)
+  const { error } = await supabase.from(AC.installments).delete().eq('id', id)
+  if (error) throw error
 }
 
 // Apaga todas as parcelas de uma cláusula (usado ao regenerar o fluxo de pagamento).
