@@ -386,6 +386,13 @@ export async function fetchAthleteContracts(athleteId: string): Promise<Contract
   return data.map(fromAcContract)
 }
 
+export async function fetchContract(id: string): Promise<Contract | null> {
+  if (!USE_SUPABASE) return local.find<Contract>(T.contracts, id)
+  const { data, error } = await supabase.from(AC.contracts).select('*').eq('id', id).single()
+  if (error) return null
+  return fromAcContract(data)
+}
+
 export async function fetchAllContracts(): Promise<Contract[]> {
   if (!USE_SUPABASE) return local.all<Contract>(T.contracts)
   const { data, error } = await supabase.from(AC.contracts).select('*')
@@ -777,6 +784,13 @@ export async function fetchAllClauses(): Promise<Clause[]> {
   const { data, error } = await supabase.from(AC.clauses).select('*')
   if (error) throw error
   return data.map(fromAcClause)
+}
+
+export async function fetchClause(id: string): Promise<Clause | null> {
+  if (!USE_SUPABASE) return local.find<Clause>(T.clauses, id)
+  const { data, error } = await supabase.from(AC.clauses).select('*').eq('id', id).single()
+  if (error) return null
+  return fromAcClause(data)
 }
 
 export async function fetchContractClauses(contractId: string): Promise<Clause[]> {

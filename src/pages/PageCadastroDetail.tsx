@@ -36,6 +36,7 @@ interface OblRow {
   id: string; athlete_id: string; description: string
   dirLabel: string; amount: number; currency: Currency
   due_date: string | null; statusLabel: string; tone: 'pos' | 'neg' | 'neutral'
+  clauseId?: string
 }
 
 export default function PageCadastroDetail({ kind }: { kind: Kind }) {
@@ -82,12 +83,14 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
             id: p.id, athlete_id: c.athlete_id, description: `${c.description} — parcela ${p.installment_number}`,
             dirLabel, amount: p.original_value, currency: p.currency, due_date: p.due_date,
             statusLabel: PST[p.payment_status]?.l ?? p.payment_status, tone: PST[p.payment_status]?.t ?? 'neutral',
+            clauseId: c.id,
           })
         } else {
           out.push({
             id: c.id, athlete_id: c.athlete_id, description: c.description,
             dirLabel, amount: c.original_value ?? 0, currency: c.currency, due_date: c.due_date,
             statusLabel: PST[c.payment_status]?.l ?? c.payment_status, tone: PST[c.payment_status]?.t ?? 'neutral',
+            clauseId: c.id,
           })
         }
       }
@@ -227,7 +230,11 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                   <td style={{ ...td, fontWeight: 600 }}>
                     <RefLink to={`/atletas/${l.athlete_id}`} title="Abrir atleta">{nameOf.get(l.athlete_id) ?? '—'}</RefLink>
                   </td>
-                  <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{l.description}</td>
+                  <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>
+                    {l.clauseId
+                      ? <RefLink to={`/obrigacoes/${l.clauseId}`} title="Abrir a obrigação">{l.description}</RefLink>
+                      : l.description}
+                  </td>
                   <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>{l.dirLabel}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: fontMono }}>{fmtCurrencyShort(l.amount, l.currency)}</td>
                   <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: l.tone === 'neg' ? 'var(--neg)' : 'var(--text-secondary)' }}>{l.due_date ? fmtDate(l.due_date) : '—'}</td>
