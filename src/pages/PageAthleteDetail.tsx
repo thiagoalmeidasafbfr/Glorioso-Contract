@@ -6,8 +6,9 @@ import OwnershipBar from '../components/OwnershipBar'
 import PaymentModal from '../components/athletes/PaymentModal'
 import {
   fetchAthlete, updateAthlete, updateContract, updateContractFlowsCurrency, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
-  fetchAthleteInstallments, createClause, createClauseInstallments, deleteClause,
+  fetchAthleteInstallments, createClause, createClauseInstallments, deleteClause, deleteClauseInstallments, fetchClauseInstallments,
   updateInstallment, markInstallmentPaid, revertInstallment,
+  deleteClubLiability, deleteIntermediaryLiability,
   fetchAthleteAlerts, markAlertRead, updateClause,
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
   fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
@@ -19,6 +20,7 @@ import {
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import RefLink from '../components/RefLink'
 import NumberInput from '../components/NumberInput'
+import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import PageHero from '../components/PageHero'
 import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween, addMonths } from '../lib/format'
 import type {
@@ -131,8 +133,8 @@ function BigNumberCard({ label, totals, sub, color }: {
 }
 
 // ── Menu de ações da cláusula (posição fixa p/ não ser cortado) ─────────────
-function ClauseActions({ clause, onEdit, onMarkAchieved, onPay, onCancel }: {
-  clause: Clause; onEdit: () => void; onMarkAchieved: () => void; onPay: () => void; onCancel: () => void
+function ClauseActions({ clause, onEdit, onFlow, onMarkAchieved, onPay, onCancel }: {
+  clause: Clause; onEdit: () => void; onFlow: () => void; onMarkAchieved: () => void; onPay: () => void; onCancel: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
@@ -155,6 +157,7 @@ function ClauseActions({ clause, onEdit, onMarkAchieved, onPay, onCancel }: {
           <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setOpen(false)} />
           <div style={{ position: 'fixed', top: pos.top, right: pos.right, background: 'var(--cream-card)', border: '1px solid var(--divider-strong)', borderRadius: 8, padding: '4px 0', boxShadow: 'var(--shadow-panel)', zIndex: 1000, minWidth: 210 }}>
             <button onClick={() => { onEdit(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Editar cláusula</button>
+            <button onClick={() => { onFlow(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Gerar / editar fluxo de pagamento</button>
             {canAchieve && <button onClick={() => { onMarkAchieved(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Marcar como atingida</button>}
             {canPay && <button onClick={() => { onPay(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Registrar pagamento</button>}
             {canCancel && <button onClick={() => { onCancel(); setOpen(false) }} style={{ ...item, color: 'var(--neg)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--neg-tint)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Cancelar cláusula</button>}
@@ -361,7 +364,7 @@ type Tab = 'consolidado' | 'clt_imagem' | 'clausulas' | 'acordos' | 'historico' 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'consolidado', label: 'Consolidado' },
   { id: 'clt_imagem',  label: 'CLT + Imagem' },
-  { id: 'clausulas',   label: 'Cláusulas Ativas' },
+  { id: 'clausulas',   label: 'Contratos Ativos' },
   { id: 'acordos',     label: 'Acordos e Renegociações' },
   { id: 'historico',   label: 'Histórico' },
   { id: 'passivos',    label: 'Obrigações' },
@@ -399,6 +402,7 @@ export default function PageAthleteDetail() {
   const [showEdit, setShowEdit] = useState(false)
   const [editContractId, setEditContractId] = useState<string | null>(null)
   const [newClauseContractId, setNewClauseContractId] = useState<string | null>(null)
+  const [flowClauseId, setFlowClauseId] = useState<string | null>(null)
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set())
   const toggleExpand = (cid: string) => setExpandedContracts(prev => { const n = new Set(prev); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
   const [expandedClauses, setExpandedClauses] = useState<Set<string>>(new Set())
@@ -437,6 +441,14 @@ export default function PageAthleteDetail() {
   async function handleDeleteContract(cid: string) {
     if (!window.confirm('Excluir este vínculo e todo o seu fluxo (cláusulas e parcelas)? Esta ação não pode ser desfeita.')) return
     await deleteContract(cid); loadData()
+  }
+  async function handleDeleteClubLiab(lid: string) {
+    if (!window.confirm('Excluir esta obrigação com clube?')) return
+    await deleteClubLiability(lid); setClubLiabs(prev => prev.filter(l => l.id !== lid))
+  }
+  async function handleDeleteIntermLiab(lid: string) {
+    if (!window.confirm('Excluir esta obrigação com agente?')) return
+    await deleteIntermediaryLiability(lid); setIntermLiabs(prev => prev.filter(l => l.id !== lid))
   }
   async function handleMarkAchieved(clauseId: string) { const u = await updateClause(clauseId, { achievement_status: 'ATINGIDA', achievement_date: todayISO() }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) }
   async function handleCancelClause(clauseId: string) { const u = await updateClause(clauseId, { payment_status: 'CANCELADA' }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) }
@@ -722,7 +734,7 @@ export default function PageAthleteDetail() {
                       <td style={td}><PctBadge pct={pctCl} /></td>
                       <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                       <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
-                      <td style={{ ...td, textAlign: 'center' }}><ClauseActions clause={c} onEdit={() => setEditClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
+                      <td style={{ ...td, textAlign: 'center' }}><ClauseActions clause={c} onEdit={() => setEditClauseId(c.id)} onFlow={() => setFlowClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
                     </tr>
                     {open && parc.map(p => {
                       const late = isOverdue(p.due_date, p.payment_status)
@@ -885,6 +897,7 @@ export default function PageAthleteDetail() {
                     <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>
                     {l.due_date && <span style={{ fontSize: 11, fontFamily: fontMono, color: isOverdue(l.due_date, l.status) ? 'var(--neg)' : 'var(--text-muted)' }}>{fmtDate(l.due_date)}</span>}
                     <StatusBadge status={l.status} map={PAYMENT_STATUS_STYLE} />
+                    {canEdit && <button onClick={() => handleDeleteClubLiab(l.id)} title="Excluir obrigação" style={{ background: 'none', border: 'none', color: 'var(--neg)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '0 2px' }}>×</button>}
                   </div>
                 ))}
               </div>
@@ -907,6 +920,7 @@ export default function PageAthleteDetail() {
                     <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>
                     {l.due_date && <span style={{ fontSize: 11, fontFamily: fontMono, color: isOverdue(l.due_date, l.status) ? 'var(--neg)' : 'var(--text-muted)' }}>{fmtDate(l.due_date)}</span>}
                     <StatusBadge status={l.status} map={PAYMENT_STATUS_STYLE} />
+                    {canEdit && <button onClick={() => handleDeleteIntermLiab(l.id)} title="Excluir obrigação" style={{ background: 'none', border: 'none', color: 'var(--neg)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '0 2px' }}>×</button>}
                   </div>
                 ))}
               </div>
@@ -948,6 +962,10 @@ export default function PageAthleteDetail() {
       {newClauseContractId && athlete && (() => {
         const ct = contracts.find(c => c.id === newClauseContractId)
         return ct ? <NewClauseModal contract={ct} athleteId={athlete.id} onClose={() => setNewClauseContractId(null)} onSaved={() => { setNewClauseContractId(null); loadData() }} /> : null
+      })()}
+      {flowClauseId && athlete && (() => {
+        const cl = clauses.find(c => c.id === flowClauseId)
+        return cl ? <ClauseFlowModal clause={cl} athleteId={athlete.id} onClose={() => setFlowClauseId(null)} onSaved={() => { setFlowClauseId(null); loadData() }} /> : null
       })()}
     </div>
   )
@@ -1591,6 +1609,72 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={save} disabled={saving || !canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ClauseFlowModal — gerar/editar o fluxo de pagamento (parcelas) da cláusula ─
+// Usa o FlowBuilder para (re)gerar um cronograma regular ou editar parcela a
+// parcela. Ao salvar, substitui as parcelas da cláusula e ajusta o total.
+function ClauseFlowModal({ clause, athleteId, onClose, onSaved }: {
+  clause: Clause; athleteId: string; onClose: () => void; onSaved: () => void
+}) {
+  const [lines, setLines] = useState<FlowLine[]>([])
+  const [currency, setCurrency] = useState<Currency>(clause.currency)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    fetchClauseInstallments(clause.id).then(insts => {
+      if (!alive) return
+      setLines(insts.map(i => ({ due_date: i.due_date, value: i.original_value })))
+      setLoading(false)
+    })
+    return () => { alive = false }
+  }, [clause.id])
+
+  const total = lines.reduce((s, l) => s + (l.value || 0), 0)
+
+  async function save() {
+    setSaving(true)
+    try {
+      await deleteClauseInstallments(clause.id)
+      const valid = lines.filter(l => l.due_date)
+      if (valid.length > 0) {
+        await createClauseInstallments(clause.id, athleteId, valid.map((l, i) => ({
+          installment_number: i + 1, due_date: l.due_date, original_value: l.value || 0, currency,
+        })))
+        await updateClause(clause.id, { installments_total: valid.length, original_value: total, currency })
+      } else {
+        await updateClause(clause.id, { installments_total: 1, currency })
+      }
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 720, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Fluxo de pagamento</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 3 }}>{CLAUSE_TYPE_LABELS[clause.clause_type]} · {clause.description}</div>
+        </div>
+        {loading ? (
+          <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>Carregando parcelas…</div>
+        ) : (
+          <>
+            <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} defaultFirst={clause.due_date ?? ''} />
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+              Salvar substitui as parcelas atuais desta cláusula pelo fluxo acima. O total da cláusula passa a ser {fmtCurrencyShort(total, currency)}.
+            </div>
+          </>
+        )}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={save} disabled={saving || loading} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer', opacity: (saving || loading) ? 0.6 : 1 }}>{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
         </div>
       </div>
     </div>

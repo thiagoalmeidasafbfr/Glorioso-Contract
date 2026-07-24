@@ -75,9 +75,10 @@ export default function Layout({ children }: Props) {
       {/* ── Sidebar ── */}
       <aside style={{
         position: 'fixed', top: 0, left: 0, bottom: 0,
-        width: 'var(--sidebar-w)', background: 'var(--ink-primary)',
+        width: 'var(--sidebar-w)',
+        background: 'linear-gradient(180deg, #1e1710 0%, #130f0a 100%)',
         display: 'flex', flexDirection: 'column', zIndex: 100, overflowY: 'auto',
-        borderRight: '1px solid rgba(190,140,74,0.14)',
+        borderRight: '1px solid rgba(190,140,74,0.16)',
       }}>
         {/* Marca */}
         <div style={{ padding: '22px 22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>

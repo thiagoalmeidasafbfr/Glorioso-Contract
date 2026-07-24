@@ -89,7 +89,7 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
   const hv = hover != null ? months[hover] : null
 
   return (
-    <div ref={wrapRef} style={{ maxWidth: 620, position: 'relative' }}>
+    <div ref={wrapRef} style={{ maxWidth: 620, margin: '0 auto', position: 'relative' }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}
         onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         {[0, 0.5, 1].map(g => (
