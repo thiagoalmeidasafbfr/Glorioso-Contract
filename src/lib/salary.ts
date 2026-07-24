@@ -63,6 +63,24 @@ export function effectiveSalary(
 }
 
 /**
+ * Direito de imagem efetivo numa data: usa o `new_image` do gatilho ATINGIDA
+ * mais recente (com achieved_date <= asOf) que altere a imagem; senão o valor
+ * base de imagem do contrato.
+ */
+export function effectiveImage(
+  contract: Pick<Contract, 'id' | 'image_value' | 'start_date'>,
+  triggers: SalaryTrigger[],
+  asOf: string = todayISO(),
+): number {
+  const relevant = achievedTriggers(triggers).filter(
+    t => (t.contract_id === contract.id || t.contract_id === null) &&
+         t.new_image != null && (t.achieved_date as string) <= asOf,
+  )
+  if (relevant.length > 0) return relevant[relevant.length - 1].new_image as number
+  return contract.image_value ?? 0
+}
+
+/**
  * Linha do tempo dos degraus salariais do contrato: começa no salário base e
  * adiciona um degrau por gatilho atingido (na ordem das datas).
  */

@@ -24,6 +24,8 @@ import type {
   NewImageRightInput, AthleteWithStats, AthletePJ, NewAthletePJInput, Currency,
 } from '../types/athlete-system'
 import { isOverdue, isDueSoon, addMonths } from './format'
+import { buildRemunerationFlow } from './remflow'
+import { effectiveSalary, effectiveImage } from './salary'
 
 // Nomes das tabelas no localStore (modo navegador — formas legadas "achatadas").
 const T = {
@@ -333,6 +335,27 @@ export async function updateAthlete(id: string, input: Partial<Athlete>): Promis
   return fromAcAthlete(data)
 }
 
+// Exclui o atleta e TODOS os seus vínculos/registros. No Supabase, as FKs
+// `on delete cascade` para atleta_id cobrem os filhos; no modo local removemos
+// manualmente cada tabela dependente.
+export async function deleteAthlete(id: string): Promise<void> {
+  if (!USE_SUPABASE) {
+    for (const inst of local.where<ClauseInstallment>(T.installments, 'athlete_id', id)) local.remove(T.installments, inst.id)
+    for (const c of local.where<Clause>(T.clauses, 'athlete_id', id)) local.remove(T.clauses, c.id)
+    for (const c of local.where<Contract>(T.contracts, 'athlete_id', id)) local.remove(T.contracts, c.id)
+    for (const l of local.where<ClubLiability>(T.clubLiabilities, 'athlete_id', id)) local.remove(T.clubLiabilities, l.id)
+    for (const l of local.where<IntermediaryLiability>(T.intermediaryLiabilities, 'athlete_id', id)) local.remove(T.intermediaryLiabilities, l.id)
+    for (const ir of local.where<ImageRight>(T.imageRights, 'athlete_id', id)) local.remove(T.imageRights, ir.id)
+    for (const tr of local.where<SalaryTrigger>(T.salaryTriggers, 'athlete_id', id)) local.remove(T.salaryTriggers, tr.id)
+    for (const er of local.where<EconomicRight>(T.economicRights, 'athlete_id', id)) local.remove(T.economicRights, er.id)
+    for (const pj of local.where<AthletePJ>(T.athletePjs, 'athlete_id', id)) local.remove(T.athletePjs, pj.id)
+    for (const al of local.where<Alert>(T.alerts, 'athlete_id', id)) local.remove(T.alerts, al.id)
+    return local.remove(T.athletes, id)
+  }
+  const { error } = await supabase.from(AC.athletes).delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Economic Rights (titularidade) ──────────────────────────────────────────
 
 export async function fetchAthleteEconomicRights(athleteId: string): Promise<EconomicRight[]> {
@@ -477,6 +500,7 @@ export async function createSalaryTrigger(athleteId: string, input: NewSalaryTri
     metric: input.metric,
     threshold: input.threshold,
     new_salary: input.new_salary,
+    new_image: input.new_image ?? null,
     currency: input.currency,
     status: 'PENDENTE' as const,
     achieved_date: null,
@@ -912,6 +936,42 @@ export async function createClauseInstallments(
   const { data, error } = await supabase.from(AC.installments).insert(nn(installments.map(toAcFK))).select()
   if (error) throw error
   return data.map(r => fromAcFK<ClauseInstallment>(r))
+}
+
+// (Re)gera o fluxo mensal de salário + imagem de um contrato de trabalho ao
+// longo da vigência, com pro-rata nos meses quebrados e — importante — aplicando
+// os DEGRAUS dos gatilhos atingidos (salário e imagem mudam a partir da data em
+// que a meta foi marcada como atingida). Chamado ao salvar a remuneração e ao
+// atingir/reverter um gatilho. Salário vence dia 5; imagem, dia 20.
+export async function regenerateSalaryImageFlow(opts: {
+  contract: Contract; triggers: SalaryTrigger[]; existingClauses: Clause[]; athleteName: string; pjName: string
+}): Promise<void> {
+  const { contract, triggers, existingClauses, athleteName, pjName } = opts
+  if (!contract.start_date || !contract.end_date) return
+  // Remove o fluxo anterior de salário/imagem deste contrato.
+  for (const c of existingClauses) {
+    if (c.contract_id === contract.id && (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM')) await deleteClause(c.id)
+  }
+  const gen = async (clauseType: 'SALARIO_CETD' | 'DIREITO_IMAGEM', label: string, dueDay: number, valueAt: (comp: string) => number, creditor: string) => {
+    // Fração de mês (pro-rata) com monthly=1; multiplica pelo valor vigente no mês.
+    const fracs = buildRemunerationFlow(contract.start_date, contract.end_date!, 1, dueDay)
+    const lines = fracs
+      .map(l => ({ due_date: l.due_date, value: Math.round(valueAt(l.competencia) * l.value * 100) / 100 }))
+      .filter(l => l.value > 0)
+    if (lines.length === 0) return
+    const total = lines.reduce((s, l) => s + l.value, 0)
+    const clause = await createClause(contract.id, contract.athlete_id, {
+      clause_type: clauseType, description: `${label} — ${lines.length}x mensais (venc. dia ${dueDay}, pro-rata)`,
+      creditor_party: creditor, debtor_party: 'Botafogo SAF',
+      currency: contract.salary_currency, original_value: total, percentage_value: null,
+      condition_description: '', due_date: lines[0].due_date, installments_total: lines.length, notes: '',
+    })
+    await createClauseInstallments(clause.id, contract.athlete_id, lines.map((l, i) => ({
+      installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: contract.salary_currency,
+    })))
+  }
+  await gen('SALARIO_CETD', 'Salário CLT', 5, comp => effectiveSalary(contract, triggers, `${comp}-28`).amount ?? 0, athleteName)
+  if (pjName) await gen('DIREITO_IMAGEM', 'Direito de imagem', 20, comp => effectiveImage(contract, triggers, `${comp}-28`), pjName)
 }
 
 // Apaga todas as parcelas de uma cláusula (usado ao regenerar o fluxo de pagamento).
