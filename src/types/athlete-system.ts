@@ -355,6 +355,8 @@ export interface SalaryTrigger {
   metric: TriggerMetric
   threshold: number | null
   new_salary: number
+  // Novo valor de imagem quando a meta é atingida (null = imagem inalterada).
+  new_image_value: number | null
   currency: Currency
   status: TriggerStatus
   achieved_date: string | null
@@ -369,6 +371,7 @@ export interface NewSalaryTriggerInput {
   metric: TriggerMetric
   threshold: number | null
   new_salary: number
+  new_image_value?: number | null
   currency: Currency
   notes: string
 }

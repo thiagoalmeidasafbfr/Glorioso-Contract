@@ -1,19 +1,19 @@
-import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import ImageUpload from '../components/ImageUpload'
 import RemunerationChart from '../components/RemunerationChart'
 import OwnershipBar from '../components/OwnershipBar'
 import PaymentModal from '../components/athletes/PaymentModal'
 import {
-  fetchAthlete, updateAthlete, updateContract, updateContractFlowsCurrency, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
+  fetchAthlete, updateAthlete, deleteAthlete, updateContract, updateContractFlowsCurrency, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
   fetchAthleteInstallments, createClause, createClauseInstallments, deleteClause, deleteClauseInstallments, fetchClauseInstallments,
   updateInstallment, markInstallmentPaid, revertInstallment,
   deleteClubLiability, deleteIntermediaryLiability, updateClubLiability, updateIntermediaryLiability,
-  fetchAthleteAlerts, markAlertRead, updateClause,
+  fetchAthleteAlerts, updateClause,
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
   fetchAthleteSalaryTriggers, createSalaryTrigger, markTriggerAchieved, resetTrigger, deleteSalaryTrigger,
   fetchAthleteClubLiabilities, fetchAthleteIntermediaryLiabilities,
-  fetchClubs, fetchIntermediaries,
+  fetchClubs,
   fetchAthletePJs, createPJ, updatePJ, deletePJ,
   fetchAthleteImageRights,
 } from '../lib/athleteQueries'
@@ -22,7 +22,7 @@ import RefLink from '../components/RefLink'
 import NumberInput from '../components/NumberInput'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import PageHero from '../components/PageHero'
-import { fmtDate, fmtCurrencyShort, fmtRelative, isOverdue, isDueSoon, todayISO, CURRENCY_SYMBOLS, monthsBetween, addMonths } from '../lib/format'
+import { fmtDate, fmtCurrencyShort, isOverdue, todayISO, CURRENCY_SYMBOLS, addMonths } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClauseType, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight, AthletePJ,
@@ -34,10 +34,10 @@ import {
   CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS,
   ATHLETE_CATEGORY_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES,
   SELL_ON_CLAUSE_TYPES, SELLON_BASIS_LABELS, sellOnConditionText,
-  TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS, LIABILITY_DIRECTION_LABELS,
+  TRIGGER_METRIC_LABELS, TRIGGER_STATUS_LABELS,
 } from '../types/athlete-system'
-import { buildRemunerationFlow } from '../lib/remflow'
-import { createRenegotiation, decodeAcordo, isAcordo, renegotiatedAcordoId, type AcordoSource, type RenegotiationInput } from '../lib/renegotiation'
+import { regenerateSalaryFlow } from '../lib/salaryFlow'
+import { createRenegotiation, decodeAcordo, isAcordo, type AcordoSource, type RenegotiationInput } from '../lib/renegotiation'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
@@ -74,20 +74,6 @@ function StatusBadge({ status, map }: { status: string; map: Record<string, { bg
     <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase', background: s.bg, color: s.fg, whiteSpace: 'nowrap' }}>
       {status.replace(/_/g, ' ')}
     </span>
-  )
-}
-
-// % financeiro já pago (barra + rótulo) — usado na coluna Atingimento.
-function PctBadge({ pct }: { pct: number }) {
-  const done = pct >= 100
-  const col = done ? '#3a6f3a' : pct > 0 ? '#be8c4a' : 'var(--text-muted)'
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 64 }}>
-      <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(26,20,16,0.10)', overflow: 'hidden' }}>
-        <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: col, borderRadius: 3 }} />
-      </div>
-      <span style={{ fontFamily: fontMono, fontSize: 10, fontWeight: 600, color: col }}>{pct}%</span>
-    </div>
   )
 }
 
@@ -171,7 +157,7 @@ function ClauseActions({ clause, onOpen, onEdit, onFlow, onMarkAchieved, onPay, 
 
 function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input: NewSalaryTriggerInput) => Promise<void> }) {
   const [open, setOpen] = useState(false)
-  const [f, setF] = useState<NewSalaryTriggerInput>({ contract_id: contract.id, description: '', metric: 'JOGOS', threshold: null, new_salary: 0, currency: contract.salary_currency, notes: '' })
+  const [f, setF] = useState<NewSalaryTriggerInput>({ contract_id: contract.id, description: '', metric: 'JOGOS', threshold: null, new_salary: 0, new_image_value: null, currency: contract.salary_currency, notes: '' })
   const set = <K extends keyof NewSalaryTriggerInput>(k: K, v: NewSalaryTriggerInput[K]) => setF(prev => ({ ...prev, [k]: v }))
   const inp: React.CSSProperties = { padding: '7px 9px', borderRadius: 6, fontSize: 12, width: '100%', boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: font }
   const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
@@ -179,7 +165,7 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
   async function submit() {
     if (!f.description.trim() || !f.new_salary) return
     await onAdd({ ...f, contract_id: contract.id })
-    setF({ contract_id: contract.id, description: '', metric: 'JOGOS', threshold: null, new_salary: 0, currency: contract.salary_currency, notes: '' })
+    setF({ contract_id: contract.id, description: '', metric: 'JOGOS', threshold: null, new_salary: 0, new_image_value: null, currency: contract.salary_currency, notes: '' })
     setOpen(false)
   }
   return (
@@ -189,7 +175,8 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
         <div><label style={lbl}>Descrição *</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Ex: Ao atingir 10 jogos, salário sobe" /></div>
         <div><label style={lbl}>Métrica</label><select style={inp} value={f.metric} onChange={e => set('metric', e.target.value as TriggerMetric)}>{(Object.keys(TRIGGER_METRIC_LABELS) as TriggerMetric[]).map(m => <option key={m} value={m}>{TRIGGER_METRIC_LABELS[m]}</option>)}</select></div>
         <div><label style={lbl}>Meta (nº)</label><input style={inp} type="number" value={f.threshold ?? ''} onChange={e => set('threshold', e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 10" /></div>
-        <div><label style={lbl}>Novo salário CLT *</label><NumberInput style={inp} value={f.new_salary || ''} onChange={v => set('new_salary', v ? Number(v) : 0)} placeholder="Ex: 300.000" /></div>
+        <div><label style={lbl}>Novo salário CLT *</label><NumberInput style={inp} value={f.new_salary || ''} onChange={v => set('new_salary', v ? Number(v) : 0)} placeholder="Ex: 600.000" /></div>
+        <div><label style={lbl}>Novo direito de imagem</label><NumberInput style={inp} value={f.new_image_value ?? ''} onChange={v => set('new_image_value', v ? Number(v) : null)} placeholder="Ex: 600.000 (opcional)" /></div>
         <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value as Currency)}>{(['BRL','EUR','USD','GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         <div><label style={lbl}>Observações</label><input style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
       </div>
@@ -208,7 +195,7 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: { t: SalaryTrigge
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 8, background: achieved ? '#e6ece2' : 'var(--bg-subtle)', border: `1px solid ${achieved ? 'rgba(58,111,58,0.25)' : 'var(--divider-soft)'}` }}>
       <div style={{ flex: 1, minWidth: 200 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{t.description}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 2 }}>{TRIGGER_METRIC_LABELS[t.metric]}{t.threshold != null ? ` ≥ ${t.threshold}` : ''} → {fmtCurrencyShort(t.new_salary, t.currency)}{t.notes ? ` · ${t.notes}` : ''}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 2 }}>{TRIGGER_METRIC_LABELS[t.metric]}{t.threshold != null ? ` ≥ ${t.threshold}` : ''} → CLT {fmtCurrencyShort(t.new_salary, t.currency)}{t.new_image_value != null ? ` + Imagem ${fmtCurrencyShort(t.new_image_value, t.currency)}` : ''}{t.notes ? ` · ${t.notes}` : ''}</div>
       </div>
       <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase', background: TRIGGER_STATUS_STYLE[t.status].bg, color: TRIGGER_STATUS_STYLE[t.status].fg }}>{TRIGGER_STATUS_LABELS[t.status]}</span>
       {achieved ? (
@@ -361,16 +348,40 @@ function contractLabel(c: Contract): string {
   return parts.join(' · ')
 }
 
-type Tab = 'consolidado' | 'clt_imagem' | 'clausulas' | 'acordos' | 'historico' | 'passivos' | 'alertas'
+type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'acordos' | 'transferencias' | 'consolidado'
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'consolidado', label: 'Consolidado' },
-  { id: 'clt_imagem',  label: 'CLT + Imagem' },
-  { id: 'clausulas',   label: 'Contratos Ativos' },
-  { id: 'acordos',     label: 'Acordos e Renegociações' },
-  { id: 'historico',   label: 'Histórico' },
-  { id: 'passivos',    label: 'Obrigações' },
-  { id: 'alertas',     label: 'Alertas' },
+  { id: 'salario',        label: 'Salário' },
+  { id: 'luvas',          label: 'Luvas' },
+  { id: 'agentes',        label: 'Agentes' },
+  { id: 'gatilhos',       label: 'Gatilhos e Cláusulas Diversas' },
+  { id: 'acordos',        label: 'Acordos e Renegociações' },
+  { id: 'transferencias', label: 'Histórico de Transferências' },
+  { id: 'consolidado',    label: 'Consolidado' },
 ]
+
+// Agrupamento de tipos de cláusula por natureza (usado pelas abas).
+const SALARY_IMAGE_TYPES: ClauseType[] = ['SALARIO_CETD', 'DIREITO_IMAGEM']
+const LUVAS_TYPES: ClauseType[] = ['LUVAS']
+const AGENT_TYPES: ClauseType[] = ['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA']
+const TRANSFER_FEE_TYPES: ClauseType[] = [
+  'TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER',
+  'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA', 'SOLIDARIEDADE_FIFA',
+]
+// "Cláusulas diversas / gatilhos de performance" = tudo que não é salário/imagem,
+// luvas, agente, transfer fee ou acordo de renegociação.
+function isDiverseClause(t: ClauseType): boolean {
+  return !SALARY_IMAGE_TYPES.includes(t) && !LUVAS_TYPES.includes(t) &&
+    !AGENT_TYPES.includes(t) && !TRANSFER_FEE_TYPES.includes(t) && t !== 'ACORDO_RENEGOCIACAO'
+}
+
+// Contrato guarda-chuva do atleta = a transferência de ENTRADA (compra) mais
+// recente; luvas, agentes e gatilhos ficam atrelados a ele.
+function umbrellaContract(contracts: Contract[]): Contract | null {
+  const buys = contracts.filter(c => c.type === 'ENTRADA' || c.type === 'EMPRESTIMO_ENTRADA')
+  const pool = buys.length ? buys : contracts.filter(c => TRANSFER_CONTRACT_TYPES.includes(c.type))
+  if (!pool.length) return null
+  return [...pool].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
+}
 
 export default function PageAthleteDetail() {
   const { id } = useParams<{ id: string }>()
@@ -391,7 +402,6 @@ export default function PageAthleteDetail() {
   const [installments, setInstallments] = useState<ClauseInstallment[]>([])
   const [loading, setLoading] = useState(true)
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
-  const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
   const [tab, setTab] = useState<Tab>('consolidado')
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [payInstId, setPayInstId] = useState<string | null>(null)
@@ -399,7 +409,6 @@ export default function PageAthleteDetail() {
   const [editClauseId, setEditClauseId] = useState<string | null>(null)
   const [showReneg, setShowReneg] = useState(false)
   const [highlightAcordo, setHighlightAcordo] = useState<string | null>(null)
-  const goToAcordo = (acordoId: string) => { setTab('acordos'); setHighlightAcordo(acordoId) }
   const [showEdit, setShowEdit] = useState(false)
   const [editContractId, setEditContractId] = useState<string | null>(null)
   const [newClauseContractId, setNewClauseContractId] = useState<string | null>(null)
@@ -407,22 +416,20 @@ export default function PageAthleteDetail() {
   const [editLiab, setEditLiab] = useState<{ kind: 'club' | 'agent'; liab: ClubLiability | IntermediaryLiability } | null>(null)
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set())
   const toggleExpand = (cid: string) => setExpandedContracts(prev => { const n = new Set(prev); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
-  const [expandedClauses, setExpandedClauses] = useState<Set<string>>(new Set())
-  const toggleClause = (cid: string) => setExpandedClauses(prev => { const n = new Set(prev); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
 
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, inters, pjList, imgs, inst] = await Promise.all([
+    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, pjList, imgs, inst] = await Promise.all([
       fetchAthlete(id), fetchAthleteContracts(id), fetchAthleteClauses(id), fetchAthleteAlerts(id),
       fetchAthleteEconomicRights(id), fetchAthleteSalaryTriggers(id),
       fetchAthleteClubLiabilities(id), fetchAthleteIntermediaryLiabilities(id),
-      fetchClubs(), fetchIntermediaries(),
+      fetchClubs(),
       fetchAthletePJs(id), fetchAthleteImageRights(id), fetchAthleteInstallments(id),
     ])
     setAthlete(ath); setContracts(contr); setClauses(cls); setAlerts(alrt)
     setRights(rght); setTriggers(trg); setClubLiabs(clb); setIntermLiabs(itm)
-    setClubIdx(buildNameIndex(clubs)); setInterIdx(buildNameIndex(inters))
+    setClubIdx(buildNameIndex(clubs))
     setPjs(pjList); setImageRights(imgs); setInstallments(inst)
     setLoading(false)
   }, [id])
@@ -515,11 +522,46 @@ export default function PageAthleteDetail() {
     setShowReneg(false)
     await loadData()
   }
+  // Regenera o fluxo mensal de salário/imagem do vínculo de trabalho usando um
+  // conjunto de gatilhos (aplica os degraus atingidos, preserva parcelas pagas).
+  async function regenEmpFlow(nextTriggers: SalaryTrigger[]) {
+    const empC = employmentContract(contracts)
+    if (!empC || !athlete) return
+    await regenerateSalaryFlow({
+      contract: empC,
+      triggers: nextTriggers.filter(t => t.contract_id === empC.id || t.contract_id === null),
+      pjs, athleteName: athlete.full_name, clauses, installments,
+    })
+  }
   async function handleAddTrigger(input: NewSalaryTriggerInput) { if (!id) return; const c = await createSalaryTrigger(id, input); setTriggers(prev => [...prev, c]) }
-  async function handleMarkTrigger(tid: string, date: string) { const u = await markTriggerAchieved(tid, date); setTriggers(prev => prev.map(t => t.id === tid ? u : t)) }
-  async function handleResetTrigger(tid: string) { const u = await resetTrigger(tid); setTriggers(prev => prev.map(t => t.id === tid ? u : t)) }
-  async function handleDeleteTrigger(tid: string) { await deleteSalaryTrigger(tid); setTriggers(prev => prev.filter(t => t.id !== tid)) }
+  async function handleMarkTrigger(tid: string, date: string) {
+    const u = await markTriggerAchieved(tid, date)
+    const next = triggers.map(t => t.id === tid ? u : t)
+    setTriggers(next)
+    await regenEmpFlow(next)   // aplica o novo salário/imagem no fluxo a partir da data
+    await loadData()
+  }
+  async function handleResetTrigger(tid: string) {
+    const u = await resetTrigger(tid)
+    const next = triggers.map(t => t.id === tid ? u : t)
+    setTriggers(next)
+    await regenEmpFlow(next)
+    await loadData()
+  }
+  async function handleDeleteTrigger(tid: string) {
+    await deleteSalaryTrigger(tid)
+    const next = triggers.filter(t => t.id !== tid)
+    setTriggers(next)
+    await regenEmpFlow(next)
+    await loadData()
+  }
   async function handlePhoto(url: string | null) { if (!id) return; const u = await updateAthlete(id, { profile_photo_url: url }); setAthlete(u) }
+  async function handleDeleteAthlete() {
+    if (!id || !athlete) return
+    if (!window.confirm(`Excluir o atleta "${athlete.full_name}" e TODOS os seus vínculos (contratos, salário, luvas, agentes, gatilhos, transferências, parcelas, PJs)? Esta ação é irreversível.`)) return
+    await deleteAthlete(id)
+    navigate('/atletas')
+  }
 
   // ── PJs ──
   async function handleAddPJ(input: NewAthletePJInput) { if (!id) return; const p = await createPJ(id, input); setPjs(prev => [...prev, p]) }
@@ -550,8 +592,6 @@ export default function PageAthleteDetail() {
   )
 
   const st = ATHLETE_STATUS_STYLE[athlete.current_status]
-  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1 }
-  const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const payClause = payClauseId ? clauses.find(c => c.id === payClauseId) ?? null : null
   const payInst = payInstId ? installments.find(i => i.id === payInstId) ?? null : null
   const editInst = editInstId ? installments.find(i => i.id === editInstId) ?? null : null
@@ -609,8 +649,8 @@ export default function PageAthleteDetail() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, margin: 0 }}>{athlete.full_name}</h1>
               <span style={{ padding: '3px 10px', borderRadius: 6, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{st.label}</span>
-              {unreadCrit > 0 && <span onClick={() => setTab('alertas')} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, cursor: 'pointer' }}>{unreadCrit} {unreadCrit === 1 ? 'crítico' : 'críticos'}</span>}
-              {warnCount > 0 && <span onClick={() => setTab('alertas')} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, cursor: 'pointer' }}>{warnCount} atenção</span>}
+              {unreadCrit > 0 && <span title={`${unreadCrit} alerta(s) crítico(s)`} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 10, fontWeight: 600, fontFamily: fontMono }}>{unreadCrit} {unreadCrit === 1 ? 'crítico' : 'críticos'}</span>}
+              {warnCount > 0 && <span title={`${warnCount} vencimento(s) próximo(s)`} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 10, fontWeight: 600, fontFamily: fontMono }}>{warnCount} atenção</span>}
             </div>
             <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
               <span><LabelSpan>Categoria</LabelSpan> {ATHLETE_CATEGORY_LABELS[athlete.category ?? 'PROFISSIONAL']}</span>
@@ -652,6 +692,7 @@ export default function PageAthleteDetail() {
             <button onClick={exportAthlete} title="Exportar dados deste atleta (XLSX)" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↓ Exportar</button>
             {canEdit && <button onClick={() => setShowEdit(true)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Editar</button>}
             <Link to={`/atletas/${athlete.id}/contratos/novo`} style={{ padding: '8px 16px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: font, fontSize: 12, fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>+ Novo Contrato</Link>
+            {canEdit && <button onClick={handleDeleteAthlete} title="Excluir atleta e todos os vínculos" style={{ padding: '8px 16px', background: 'transparent', border: '1px solid rgba(122,63,44,0.4)', borderRadius: 8, color: 'var(--neg)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Excluir atleta</button>}
           </div>
         </div>
       </div>
@@ -683,7 +724,7 @@ export default function PageAthleteDetail() {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--divider)', marginBottom: 16 }}>
         {TABS.map(t => {
-          const count = t.id === 'alertas' ? alerts.filter(a => !a.is_read).length : 0
+          const count = 0
           return (
             <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '10px 18px', border: 'none', background: 'none', fontFamily: font, fontSize: 13, fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', color: tab === t.id ? '#be8c4a' : 'var(--text-secondary)', borderBottom: tab === t.id ? '2px solid #be8c4a' : '2px solid transparent', marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6 }}>
               {t.label}
@@ -710,114 +751,50 @@ export default function PageAthleteDetail() {
         />
       )}
 
-      {/* CLT + Imagem — remuneração (salário + imagem), fluxo e gráfico */}
-      {tab === 'clt_imagem' && (
+      {/* Salário — remuneração (salário CLT + imagem), fluxo automático e gráfico */}
+      {tab === 'salario' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!emp ? (
             <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>
-              Nenhum vínculo de trabalho com remuneração cadastrado. Use o assistente (+ Criar) ou crie um vínculo com salário base.
+              Nenhum vínculo de trabalho com remuneração cadastrado. Crie um contrato de entrada com salário base — o fluxo mensal é gerado automaticamente.
             </div>
           ) : (
-            <>
-              <SalaryImageEditor contract={emp} triggers={empTriggers} clauses={clauses} pjs={pjs} athleteName={athlete?.full_name ?? 'Atleta'} canEdit={canEdit} onSaved={loadData} />
-              <div className="card" style={{ padding: '18px 20px' }}>
-                <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Metas de aumento salarial</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                  {empTriggers.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma meta cadastrada.</div>
-                    : empTriggers.map(t => <TriggerRow key={t.id} t={t} canEdit={canEdit} onMark={d => handleMarkTrigger(t.id, d)} onReset={() => handleResetTrigger(t.id)} onDelete={() => handleDeleteTrigger(t.id)} />)}
-                </div>
-                {canEdit && <NewTriggerForm contract={emp} onAdd={handleAddTrigger} />}
-              </div>
-            </>
+            <SalaryImageEditor contract={emp} triggers={empTriggers} clauses={clauses} installments={installments} pjs={pjs} athleteName={athlete?.full_name ?? 'Atleta'} canEdit={canEdit} onSaved={loadData} />
           )}
           <FlowList title="Fluxo mensal — Salário CLT + Imagem" installments={installments} clauses={clauses} types={['SALARIO_CETD', 'DIREITO_IMAGEM']} />
         </div>
       )}
 
-      {/* Cláusulas Ativas */}
-      {tab === 'clausulas' && (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
-              <thead><tr>
-                <th style={{ ...th, textAlign: 'left', minWidth: 150 }}>Tipo</th>
-                <th style={{ ...th, textAlign: 'left', minWidth: 220 }}>Descrição</th>
-                <th style={{ ...th, minWidth: 120 }}>Credor</th>
-                <th style={{ ...th, minWidth: 120 }}>Devedor</th>
-                <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-                <th style={{ ...th, minWidth: 90 }}>Atingimento</th>
-                <th style={{ ...th, minWidth: 90 }}>Pagamento</th>
-                <th style={{ ...th, minWidth: 90 }}>Vencimento</th>
-                <th style={{ ...th, minWidth: 60 }}></th>
-              </tr></thead>
-              <tbody>
-                {clauses.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma cláusula cadastrada.</td></tr>}
-                {clauses.map(c => {
-                  const overdue = isOverdue(c.due_date, c.payment_status); const soon = isDueSoon(c.due_date, c.payment_status)
-                  const parc = installments.filter(i => i.clause_id === c.id).sort((a, b) => a.due_date.localeCompare(b.due_date))
-                  const open = expandedClauses.has(c.id)
-                  // Atingimento financeiro = % já pago do total (pago/total).
-                  const totCl = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
-                  const paidCl = parc.length
-                    ? parc.filter(p => p.payment_status === 'PAGA').reduce((s, p) => s + p.original_value, 0)
-                    : (c.payment_status === 'PAGA' ? (c.original_value ?? 0) : (c.amount_paid_brl ?? 0))
-                  const pctCl = totCl > 0 ? Math.round((paidCl / totCl) * 100) : 0
-                  return (
-                    <Fragment key={c.id}>
-                    <tr style={{ background: overdue ? 'var(--row-late-bg)' : soon ? 'var(--warn-tint)' : 'transparent' }}>
-                      <td style={td}>
-                        {parc.length > 0
-                          ? <button onClick={() => toggleClause(c.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: '#be8c4a' }}>{open ? '▾' : '▸'} {CLAUSE_TYPE_LABELS[c.clause_type]}</button>
-                          : <span style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: 'var(--text-muted)' }}>{CLAUSE_TYPE_LABELS[c.clause_type]}</span>}
-                      </td>
-                      <td style={{ ...td, maxWidth: 280 }}>
-                        <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description}</div>
-                        {c.condition_description && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.condition_description}</div>}
-                      </td>
-                      <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
-                      <td style={{ ...td, fontSize: 11, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
-                      <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{c.original_value ? fmtCurrencyShort(c.original_value, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}{parc.length > 0 && <span style={{ fontSize: 9, color: 'var(--text-muted)' }}> · {parc.length}x</span>}</td>
-                      <td style={td}><PctBadge pct={pctCl} /></td>
-                      <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
-                      <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
-                      <td style={{ ...td, textAlign: 'center' }}><ClauseActions clause={c} onOpen={() => navigate(`/obrigacoes/${c.id}`)} onEdit={() => setEditClauseId(c.id)} onFlow={() => setFlowClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
-                    </tr>
-                    {open && parc.map(p => {
-                      const late = isOverdue(p.due_date, p.payment_status)
-                      // Parcela renegociada (cancelada em favor de um acordo): linha em vermelho.
-                      const renegId = p.payment_status === 'CANCELADA' ? renegotiatedAcordoId(p.notes) : null
-                      const rc = renegId ? 'var(--neg)' : null
-                      return (
-                        <tr key={p.id} style={{ background: 'var(--bg-subtle)' }}>
-                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: rc ?? 'var(--text-muted)', textAlign: 'left', paddingLeft: 20 }}>#{p.installment_number}</td>
-                          <td style={{ ...td, fontSize: 11, color: rc ?? 'var(--text-muted)' }}>Parcela {p.installment_number}{renegId ? ' · renegociada' : ''}</td>
-                          <td style={{ ...td, fontSize: 11, color: rc ?? 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.creditor_party}</td>
-                          <td style={{ ...td, fontSize: 11, color: rc ?? 'var(--text-muted)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.debtor_party}</td>
-                          <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600, color: rc ?? undefined }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
-                          <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: rc ?? 'var(--text-muted)' }}>{p.payment_status === 'PAGA' ? '100%' : '0%'}</td>
-                          <td style={td}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
-                          <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: rc ?? (late ? 'var(--neg)' : 'var(--ink-secondary)'), fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</td>
-                          <td style={{ ...td, textAlign: 'center' }}>
-                            {renegId ? (
-                              <button onClick={() => goToAcordo(renegId)} title="Ver renegociação" style={{ padding: '3px 9px', borderRadius: 6, border: '1px solid rgba(122,63,44,0.35)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>→ acordo</button>
-                            ) : (
-                              <InstallmentActions inst={p} canEdit={canEdit}
-                                onEdit={() => setEditInstId(p.id)}
-                                onPay={() => setPayInstId(p.id)}
-                                onQuickPay={() => handleMarkInstallmentPaidQuick(p.id)}
-                                onRevert={() => handleRevertInstallment(p.id)} />
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                    </Fragment>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {/* Luvas */}
+      {tab === 'luvas' && (
+        <AccessoryFlowTab
+          kind="luvas" athleteId={athlete.id} clauses={clauses} installments={installments}
+          intermLiabs={[]} contracts={contracts} canEdit={canEdit}
+          onOpenClause={cid => navigate(`/obrigacoes/${cid}`)} onSaved={loadData}
+        />
+      )}
+
+      {/* Agentes */}
+      {tab === 'agentes' && (
+        <AccessoryFlowTab
+          kind="agentes" athleteId={athlete.id} clauses={clauses} installments={installments}
+          intermLiabs={intermLiabs} contracts={contracts} canEdit={canEdit}
+          onOpenClause={cid => navigate(`/obrigacoes/${cid}`)} onSaved={loadData}
+        />
+      )}
+
+      {/* Gatilhos e Cláusulas Diversas */}
+      {tab === 'gatilhos' && (
+        <GatilhosTab
+          emp={emp} empTriggers={empTriggers} clauses={clauses} installments={installments}
+          umbrella={umbrellaContract(contracts)} canEdit={canEdit}
+          onAddTrigger={handleAddTrigger}
+          onMarkTrigger={handleMarkTrigger} onResetTrigger={handleResetTrigger} onDeleteTrigger={handleDeleteTrigger}
+          onOpenClause={cid => navigate(`/obrigacoes/${cid}`)}
+          onEditClause={cid => setEditClauseId(cid)} onFlowClause={cid => setFlowClauseId(cid)}
+          onMarkAchieved={handleMarkAchieved} onPayClause={cid => setPayClauseId(cid)} onCancelClause={handleCancelClause}
+          onNewClause={cid => setNewClauseContractId(cid)}
+        />
       )}
 
       {/* Acordos e Renegociações */}
@@ -833,15 +810,15 @@ export default function PageAthleteDetail() {
         />
       )}
 
-      {/* Histórico */}
-      {tab === 'historico' && (
+      {/* Histórico de Transferências — só contratos de transferência + transfer fees */}
+      {tab === 'transferencias' && (() => {
+        const transferContracts = contracts.filter(ct => TRANSFER_CONTRACT_TYPES.includes(ct.type))
+        return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {contracts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhum vínculo cadastrado.</div>}
-          {contracts.map(ct => {
-            // O vínculo (clube) só mostra transfer fee, cláusulas e gatilhos.
-            // Salário (Botafogo×atleta PF) e imagem (Botafogo×PJ) NÃO entram aqui —
-            // vivem na aba CLT + Imagem.
-            const ctClauses = clauses.filter(c => c.contract_id === ct.id && c.clause_type !== 'SALARIO_CETD' && c.clause_type !== 'DIREITO_IMAGEM')
+          {transferContracts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhuma transferência cadastrada. Use “+ Novo Contrato” para registrar uma compra, venda ou empréstimo.</div>}
+          {transferContracts.map(ct => {
+            // Só as cláusulas de transferência (transfer fee, sell-on, taxas, etc.).
+            const ctClauses = clauses.filter(c => c.contract_id === ct.id && TRANSFER_FEE_TYPES.includes(c.clause_type))
             const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' }, INTERMEDIACAO: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, LUVAS: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, SELL_ON: { bg: 'rgba(190,140,74,0.14)', fg: '#8a6a34' }, OUTRO: { bg: 'rgba(156,163,175,0.15)', fg: '#6b7280' } }
             const ts = typeStyle[ct.type] ?? { bg: '#eee', fg: '#333' }
             // Vínculo entre contratos: pai (do qual este deriva) e filhos (que derivam deste).
@@ -921,79 +898,8 @@ export default function PageAthleteDetail() {
             )
           })}
         </div>
-      )}
-
-      {/* Passivos */}
-      {tab === 'passivos' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="card" style={{ padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Obrigações com Clubes</div>
-              <Link to="/clubes" style={{ fontSize: 11, color: '#be8c4a', fontFamily: font, textDecoration: 'none' }}>Gerenciar →</Link>
-            </div>
-            {clubLiabs.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma obrigação com clube.</div> : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {clubLiabs.map(l => (
-                  <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>
-                      {(() => { const cid = clubIdx.get(norm(l.club_name)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${l.club_name}`}>{l.club_name}</RefLink> : l.club_name })()}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, flex: 1 }}>{l.description ?? ''}</span>
-                    <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</span>
-                    <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>
-                    {l.due_date && <span style={{ fontSize: 11, fontFamily: fontMono, color: isOverdue(l.due_date, l.status) ? 'var(--neg)' : 'var(--text-muted)' }}>{fmtDate(l.due_date)}</span>}
-                    <StatusBadge status={l.status} map={PAYMENT_STATUS_STYLE} />
-                    {canEdit && <button onClick={() => handleDeleteClubLiab(l.id)} title="Excluir obrigação" style={{ background: 'none', border: 'none', color: 'var(--neg)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '0 2px' }}>×</button>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="card" style={{ padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes</div>
-              <Link to="/intermediarios" style={{ fontSize: 11, color: '#be8c4a', fontFamily: font, textDecoration: 'none' }}>Gerenciar →</Link>
-            </div>
-            {intermLiabs.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma obrigação com agente.</div> : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {intermLiabs.map(l => (
-                  <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-                    <span style={{ fontWeight: 600, fontFamily: font, fontSize: 13 }}>
-                      {(() => { const iid = interIdx.get(norm(l.intermediary_name)); return iid ? <RefLink to={`/intermediarios/${iid}`} title={`Abrir ${l.intermediary_name}`}>{l.intermediary_name}</RefLink> : l.intermediary_name })()}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, flex: 1 }}>{l.description ?? ''}</span>
-                    <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{LIABILITY_DIRECTION_LABELS[l.direction]}</span>
-                    <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13 }}>{fmtCurrencyShort(l.amount, l.currency)}</span>
-                    {l.due_date && <span style={{ fontSize: 11, fontFamily: fontMono, color: isOverdue(l.due_date, l.status) ? 'var(--neg)' : 'var(--text-muted)' }}>{fmtDate(l.due_date)}</span>}
-                    <StatusBadge status={l.status} map={PAYMENT_STATUS_STYLE} />
-                    {canEdit && <button onClick={() => handleDeleteIntermLiab(l.id)} title="Excluir obrigação" style={{ background: 'none', border: 'none', color: 'var(--neg)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '0 2px' }}>×</button>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Alertas */}
-      {tab === 'alertas' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {alerts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhum alerta.</div>}
-          {alerts.map(al => {
-            const sevStyle: Record<string, { bg: string; fg: string; border: string }> = { RED: { bg: 'var(--neg-tint)', fg: 'var(--neg)', border: 'rgba(185,28,28,0.20)' }, YELLOW: { bg: 'var(--warn-tint)', fg: 'var(--warn)', border: 'rgba(184,138,42,0.25)' }, GREEN: { bg: '#e6ece2', fg: '#3a6f3a', border: 'rgba(58,111,58,0.20)' } }
-            const ss = sevStyle[al.severity]
-            return (
-              <div key={al.id} style={{ background: ss.bg, border: `1px solid ${ss.border}`, borderLeft: `3px solid ${ss.fg}`, borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, opacity: al.is_read ? 0.55 : 1 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: al.is_read ? 400 : 600, color: ss.fg, fontFamily: font }}>{al.message}</div>
-                  <div style={{ fontSize: 10, color: ss.fg, opacity: 0.65, marginTop: 3, fontFamily: fontMono }}>{fmtDate(al.created_at)}</div>
-                </div>
-                {!al.is_read && <button onClick={() => { markAlertRead(al.id); setAlerts(prev => prev.map(a => a.id === al.id ? { ...a, is_read: true } : a)) }} style={{ padding: '3px 8px', borderRadius: 5, border: `1px solid ${ss.border}`, background: 'transparent', fontSize: 10, fontFamily: font, cursor: 'pointer', color: ss.fg, flexShrink: 0 }}>Marcar lido</button>}
-              </div>
-            )
-          })}
-        </div>
-      )}
+        )
+      })()}
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
       {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
@@ -1110,55 +1016,12 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
 
 
 // ── SalaryImageEditor — salário + imagem editáveis, com o gráfico ────────────
-function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canEdit, onSaved }: {
-  contract: Contract; triggers: SalaryTrigger[]; clauses: Clause[]; pjs: AthletePJ[]; athleteName: string; canEdit: boolean; onSaved: () => void
+function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, athleteName, canEdit, onSaved }: {
+  contract: Contract; triggers: SalaryTrigger[]; clauses: Clause[]; installments: ClauseInstallment[]; pjs: AthletePJ[]; athleteName: string; canEdit: boolean; onSaved: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [genning, setGenning] = useState(false)
 
-  const SALARY_DUE_DAY = 5, IMAGE_DUE_DAY = 20
-  const vig = (contract.start_date && contract.end_date) ? monthsBetween(contract.start_date, contract.end_date) : 0
-  const flowCount = clauses.filter(c => c.contract_id === contract.id && (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM')).length
-
-  async function genFlow() {
-    if (!contract.end_date) { window.alert('Defina a data de término do vínculo para gerar o fluxo mensal.'); return }
-    if (vig < 1) { window.alert('Vigência inválida (término deve ser depois do início).'); return }
-    if (flowCount > 0 && !window.confirm('Isto substitui o fluxo mensal de salário/imagem já existente deste vínculo. Continuar?')) return
-    // Regra: salário CLT é pago ao ATLETA (pessoa física); imagem é paga à PJ
-    // atrelada ao atleta (credor final). Sem PJ, não há como vincular a imagem.
-    const pjName = pjs[0]?.legal_name ?? ''
-    if ((contract.image_value ?? 0) > 0 && !pjName) {
-      window.alert('Cadastre a PJ do atleta (no cadastro do atleta → PJ) para vincular o Direito de Imagem. O fluxo de imagem não será gerado sem PJ.')
-    }
-    setGenning(true)
-    try {
-      // Remove fluxo anterior (salário/imagem) deste vínculo.
-      for (const c of clauses) {
-        if (c.contract_id === contract.id && (c.clause_type === 'SALARIO_CETD' || c.clause_type === 'DIREITO_IMAGEM')) await deleteClause(c.id)
-      }
-      const gen = async (type: Clause['clause_type'], label: string, monthly: number, day: number, creditor: string) => {
-        if (!(monthly > 0)) return
-        // Fluxo com pro-rata nos meses quebrados, vencimento no mês subsequente.
-        const flow = buildRemunerationFlow(contract.start_date, contract.end_date!, monthly, day)
-        if (flow.length === 0) return
-        const totalValue = flow.reduce((s, l) => s + l.value, 0)
-        const clause = await createClause(contract.id, contract.athlete_id, {
-          clause_type: type, description: `${label} — ${flow.length}x mensais (venc. dia ${day}, pro-rata)`,
-          creditor_party: creditor, debtor_party: 'Botafogo SAF',
-          currency: contract.salary_currency, original_value: totalValue, percentage_value: null,
-          condition_description: '', due_date: flow[0].due_date, installments_total: flow.length, notes: '',
-        })
-        await createClauseInstallments(clause.id, contract.athlete_id, flow.map((l, i) => ({
-          installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: contract.salary_currency,
-        })))
-      }
-      // Salário → atleta (PF); Imagem → PJ do atleta (só gera se houver PJ).
-      await gen('SALARIO_CETD', 'Salário CLT', contract.base_salary ?? 0, SALARY_DUE_DAY, athleteName)
-      if (pjName) await gen('DIREITO_IMAGEM', 'Direito de imagem', contract.image_value ?? 0, IMAGE_DUE_DAY, pjName)
-      onSaved()
-    } finally { setGenning(false) }
-  }
   const [f, setF] = useState({
     base_salary: contract.base_salary != null ? String(contract.base_salary) : '',
     image_value: contract.image_value != null ? String(contract.image_value) : '',
@@ -1174,14 +1037,19 @@ function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canE
   async function save() {
     setSaving(true)
     try {
-      await updateContract(contract.id, {
+      const patch = {
         base_salary: f.base_salary ? parseFloat(f.base_salary) : null,
         image_value: f.image_value ? parseFloat(f.image_value) : null,
         other_value: f.other_value ? parseFloat(f.other_value) : null,
         salary_currency: f.salary_currency as Currency,
-      })
+      }
+      await updateContract(contract.id, patch)
       // Propaga a moeda para as parcelas de salário/imagem já geradas.
       await updateContractFlowsCurrency(contract.id, f.salary_currency as Currency, contract.transfer_currency)
+      // Fluxo mensal automático: regenera salário/imagem preservando parcelas pagas.
+      await regenerateSalaryFlow({
+        contract: { ...contract, ...patch }, triggers, pjs, athleteName, clauses, installments,
+      })
       setEditing(false)
       onSaved()
     } finally { setSaving(false) }
@@ -1205,12 +1073,7 @@ function SalaryImageEditor({ contract, triggers, clauses, pjs, athleteName, canE
             Vínculo {fmtDate(contract.start_date)}{contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ''} · origem: {contract.counterpart_club}
           </div>
           {canEdit && !editing && (
-            <>
-              <button onClick={genFlow} disabled={genning} title="Gera as parcelas mensais de salário (dia 5) e imagem (dia 20) por toda a vigência" style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: '#be8c4a', color: '#fff', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>
-                {genning ? 'Gerando...' : flowCount > 0 ? 'Atualizar fluxo mensal' : 'Gerar fluxo mensal'}
-              </button>
-              <button onClick={() => setEditing(true)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar</button>
-            </>
+            <button onClick={() => setEditing(true)} title="Editar salário e imagem — o fluxo mensal é gerado automaticamente" style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>Editar salário / imagem</button>
           )}
         </div>
       </div>
@@ -1381,6 +1244,250 @@ function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs, canEdit
                         </>}
                       </td>
                     )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── AccessoryFlowTab — Luvas / Agentes (estilo relatório) + novo fluxo ────────
+function AccessoryFlowTab({ kind, athleteId, clauses, installments, intermLiabs, contracts, canEdit, onOpenClause, onSaved }: {
+  kind: 'luvas' | 'agentes'
+  athleteId: string
+  clauses: Clause[]
+  installments: ClauseInstallment[]
+  intermLiabs: IntermediaryLiability[]
+  contracts: Contract[]
+  canEdit: boolean
+  onOpenClause: (clauseId: string) => void
+  onSaved: () => void
+}) {
+  const [showNew, setShowNew] = useState(false)
+  const types = kind === 'luvas' ? LUVAS_TYPES : AGENT_TYPES
+  const clauseType: ClauseType = kind === 'luvas' ? 'LUVAS' : 'INTERMEDIACAO'
+  const title = kind === 'luvas' ? 'Luvas' : 'Agentes'
+
+  type R = { id: string; parte: string; natureza: string; descricao: string; valor: number | null; moeda: Currency; venc: string | null; pag: string | null; status: string; clauseRef?: string }
+  const rows: R[] = []
+  for (const c of clauses.filter(c => types.includes(c.clause_type))) {
+    const contraparte = isBFRparty(c.debtor_party) ? c.creditor_party : c.debtor_party
+    const parc = installments.filter(i => i.clause_id === c.id).sort((a, b) => a.due_date.localeCompare(b.due_date))
+    if (parc.length) {
+      for (const p of parc) rows.push({ id: p.id, parte: contraparte, natureza: CLAUSE_TYPE_LABELS[c.clause_type], descricao: `${c.description} — parcela ${p.installment_number}`, valor: p.original_value, moeda: p.currency, venc: p.due_date, pag: p.payment_date, status: p.payment_status, clauseRef: c.id })
+    } else {
+      rows.push({ id: c.id, parte: contraparte, natureza: CLAUSE_TYPE_LABELS[c.clause_type], descricao: c.description, valor: c.original_value, moeda: c.currency, venc: c.due_date, pag: c.payment_date, status: c.payment_status, clauseRef: c.id })
+    }
+  }
+  if (kind === 'agentes') {
+    for (const l of intermLiabs) rows.push({ id: l.id, parte: l.intermediary_name, natureza: 'Intermediação (passivo)', descricao: l.description ?? '', valor: l.amount, moeda: l.currency, venc: l.due_date, pag: l.settled_date, status: l.status })
+  }
+  rows.sort((a, b) => (a.venc ?? '9999-99-99').localeCompare(b.venc ?? '9999-99-99'))
+  const total = rows.reduce((s, r) => s + (r.valor ?? 0) * (RATE_BRL[r.moeda] ?? 1), 0)
+
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: fontMono }}>
+          {rows.length} lançamento(s) · Total aprox. {fmtCurrencyShort(total, 'BRL')}
+        </div>
+        {canEdit && <button onClick={() => setShowNew(true)} style={{ padding: '8px 18px', background: '#be8c4a', border: 'none', borderRadius: 8, color: '#fff', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ Novo fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}</button>}
+      </div>
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              <th style={th}>Parte</th>
+              <th style={th}>Natureza</th>
+              <th style={th}>Descrição</th>
+              <th style={{ ...th, textAlign: 'right' }}>Valor</th>
+              <th style={th}>Vencimento</th>
+              <th style={th}>Pagamento</th>
+              <th style={th}>Status</th>
+            </tr></thead>
+            <tbody>
+              {rows.length === 0 && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum fluxo de {title.toLowerCase()} cadastrado.</td></tr>}
+              {rows.map(r => {
+                const late = r.venc && isOverdue(r.venc, r.status)
+                return (
+                  <tr key={r.id}>
+                    <td style={{ ...td, fontWeight: 600 }}>{r.parte}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)' }}>
+                      {r.clauseRef ? <button onClick={() => onOpenClause(r.clauseRef!)} style={{ background: 'none', border: 'none', padding: 0, color: '#be8c4a', fontFamily: font, fontSize: 12, cursor: 'pointer' }}>{r.natureza}</button> : r.natureza}
+                    </td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{r.descricao || '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{r.valor != null ? fmtCurrencyShort(r.valor, r.moeda) : '—'}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-secondary)' }}>{r.venc ? fmtDate(r.venc) : '—'}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: r.pag ? 'var(--pos)' : 'var(--text-muted)' }}>{r.pag ? fmtDate(r.pag) : '—'}</td>
+                    <td style={td}><StatusBadge status={r.status} map={PAYMENT_STATUS_STYLE} /></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {showNew && (
+        <NewAccessoryFlowModal
+          clauseType={clauseType} title={title} athleteId={athleteId} contracts={contracts}
+          onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); onSaved() }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Modal de novo fluxo (luvas / agente): cria a cláusula + parcelas, atrelada ao
+// contrato guarda-chuva (transferência de compra).
+function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClose, onSaved }: {
+  clauseType: ClauseType; title: string; athleteId: string; contracts: Contract[]
+  onClose: () => void; onSaved: () => void
+}) {
+  const umbrella = umbrellaContract(contracts)
+  const [name, setName] = useState('')
+  const [desc, setDesc] = useState('')
+  const [currency, setCurrency] = useState<Currency>('BRL')
+  const [contractId, setContractId] = useState<string>(umbrella?.id ?? '')
+  const [lines, setLines] = useState<FlowLine[]>([])
+  const [saving, setSaving] = useState(false)
+
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+  const valid = lines.filter(l => l.due_date && l.value > 0)
+  const canSave = !!name.trim() && valid.length > 0 && !saving
+
+  async function save() {
+    if (!canSave) return
+    setSaving(true)
+    try {
+      const total = valid.reduce((s, l) => s + l.value, 0)
+      const clause = await createClause(contractId || null, athleteId, {
+        clause_type: clauseType,
+        description: desc.trim() || `${title} — ${name.trim()}`,
+        creditor_party: name.trim(), debtor_party: 'Botafogo SAF',
+        currency, original_value: total, percentage_value: null,
+        condition_description: '', due_date: valid[0].due_date,
+        installments_total: valid.length, notes: '',
+      })
+      await createClauseInstallments(clause.id, athleteId,
+        valid.map((l, i) => ({ installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency })))
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 680, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Novo fluxo — {title}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div><label style={lbl}>{clauseType === 'INTERMEDIACAO' ? 'Agente / Intermediário *' : 'Credor (agente/clube) *'}</label><input style={inp} value={name} onChange={e => setName(e.target.value)} placeholder="Nome do credor" /></div>
+          <div><label style={lbl}>Moeda</label><select style={inp} value={currency} onChange={e => setCurrency(e.target.value as Currency)}>{(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+        </div>
+        <div><label style={lbl}>Descrição</label><input style={inp} value={desc} onChange={e => setDesc(e.target.value)} placeholder={`Ex.: Contrato de ${title.toLowerCase()} 2M em 10x`} /></div>
+        <div>
+          <label style={lbl}>Contrato guarda-chuva</label>
+          <select style={inp} value={contractId} onChange={e => setContractId(e.target.value)}>
+            <option value="">— nenhum (independente) —</option>
+            {contracts.filter(c => TRANSFER_CONTRACT_TYPES.includes(c.type)).map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
+          </select>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 4 }}>Atrela este fluxo à transferência de compra do atleta.</div>
+        </div>
+        <div>
+          <label style={lbl}>Fluxo de pagamento</label>
+          <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} />
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={save} disabled={!canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? '#be8c4a' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Salvando...' : 'Salvar fluxo'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── GatilhosTab — metas salariais (CLT + imagem) + cláusulas de performance ───
+function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdit, onAddTrigger, onMarkTrigger, onResetTrigger, onDeleteTrigger, onOpenClause, onEditClause, onFlowClause, onMarkAchieved, onPayClause, onCancelClause, onNewClause }: {
+  emp: Contract | null
+  empTriggers: SalaryTrigger[]
+  clauses: Clause[]
+  installments: ClauseInstallment[]
+  umbrella: Contract | null
+  canEdit: boolean
+  onAddTrigger: (input: NewSalaryTriggerInput) => Promise<void>
+  onMarkTrigger: (tid: string, date: string) => void
+  onResetTrigger: (tid: string) => void
+  onDeleteTrigger: (tid: string) => void
+  onOpenClause: (cid: string) => void
+  onEditClause: (cid: string) => void
+  onFlowClause: (cid: string) => void
+  onMarkAchieved: (cid: string) => void
+  onPayClause: (cid: string) => void
+  onCancelClause: (cid: string) => void
+  onNewClause: (contractId: string) => void
+}) {
+  const diverse = clauses.filter(c => isDiverseClause(c.clause_type))
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Metas salariais (gatilhos que mudam salário/imagem) */}
+      <div className="card" style={{ padding: '18px 20px' }}>
+        <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Gatilhos de salário / imagem</div>
+        {!emp ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Cadastre o salário do atleta (aba Salário) para criar gatilhos de aumento.</div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+              {empTriggers.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhum gatilho cadastrado.</div>
+                : empTriggers.map(t => <TriggerRow key={t.id} t={t} canEdit={canEdit} onMark={d => onMarkTrigger(t.id, d)} onReset={() => onResetTrigger(t.id)} onDelete={() => onDeleteTrigger(t.id)} />)}
+            </div>
+            {canEdit && <NewTriggerForm contract={emp} onAdd={onAddTrigger} />}
+          </>
+        )}
+      </div>
+
+      {/* Cláusulas diversas / de performance */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--divider-soft)' }}>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Cláusulas diversas e de performance</div>
+          {canEdit && umbrella && <button onClick={() => onNewClause(umbrella.id)} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 11, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>+ Nova cláusula</button>}
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              <th style={th}>Tipo</th>
+              <th style={th}>Descrição</th>
+              <th style={{ ...th, textAlign: 'right' }}>Valor</th>
+              <th style={th}>Atingimento</th>
+              <th style={th}>Pagamento</th>
+              <th style={{ ...th, textAlign: 'center' }}>Ações</th>
+            </tr></thead>
+            <tbody>
+              {diverse.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma cláusula de performance. Ex.: 10k por gol, 10k por clean sheet, bônus de convocação.</td></tr>}
+              {diverse.map(c => {
+                const parc = installments.filter(i => i.clause_id === c.id)
+                const tot = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
+                return (
+                  <tr key={c.id}>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 10, fontWeight: 600, color: 'var(--text-muted)' }}>{CLAUSE_TYPE_LABELS[c.clause_type]}</td>
+                    <td style={td}>
+                      <div style={{ fontWeight: 500 }}>{c.description}</div>
+                      {c.condition_description && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{c.condition_description}</div>}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{tot ? fmtCurrencyShort(tot, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}</td>
+                    <td style={td}><StatusBadge status={c.achievement_status} map={{ PENDENTE: TRIGGER_STATUS_STYLE.PENDENTE, ATINGIDA: TRIGGER_STATUS_STYLE.ATINGIDA, NAO_ATINGIDA: TRIGGER_STATUS_STYLE.NAO_ATINGIDA, NAO_APLICAVEL: TRIGGER_STATUS_STYLE.NAO_ATINGIDA }} /></td>
+                    <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
+                    <td style={{ ...td, textAlign: 'center' }}>
+                      {canEdit && <ClauseActions clause={c} onOpen={() => onOpenClause(c.id)} onEdit={() => onEditClause(c.id)} onFlow={() => onFlowClause(c.id)} onMarkAchieved={() => onMarkAchieved(c.id)} onPay={() => onPayClause(c.id)} onCancel={() => onCancelClause(c.id)} />}
+                    </td>
                   </tr>
                 )
               })}

@@ -22,6 +22,18 @@ export interface EffectiveSalary {
   since: string | null
 }
 
+export interface EffectiveRemuneration {
+  /** salário CLT vigente na data. */
+  salary: number
+  /** valor de imagem vigente na data. */
+  image: number
+  currency: Currency
+  /** gatilho que definiu os valores vigentes (null = valores base do contrato). */
+  source: SalaryTrigger | null
+  /** data em que estes valores passaram a vigorar. */
+  since: string | null
+}
+
 /** Gatilhos ATINGIDOS com data, ordenados por achieved_date crescente. */
 export function achievedTriggers(triggers: SalaryTrigger[]): SalaryTrigger[] {
   return triggers
@@ -60,6 +72,40 @@ export function effectiveSalary(
     source: null,
     since: contract.start_date,
   }
+}
+
+/**
+ * Remuneração efetiva (salário CLT + imagem) do contrato numa data. O gatilho
+ * ATINGIDA com a maior `achieved_date <= asOf` define os novos valores; a partir
+ * dele o salário passa a `new_salary` e — quando informado — a imagem passa a
+ * `new_image_value` (se null, mantém o valor de imagem do gatilho anterior ou do
+ * contrato). Sem gatilho aplicável, usa os valores base do contrato.
+ */
+export function effectiveRemuneration(
+  contract: Pick<Contract, 'id' | 'base_salary' | 'image_value' | 'salary_currency' | 'start_date'>,
+  triggers: SalaryTrigger[],
+  asOf: string = todayISO(),
+): EffectiveRemuneration {
+  const relevant = achievedTriggers(triggers).filter(
+    t => (t.contract_id === contract.id || t.contract_id === null) &&
+         (t.achieved_date as string) <= asOf,
+  )
+
+  let salary = contract.base_salary ?? 0
+  let image = contract.image_value ?? 0
+  let source: SalaryTrigger | null = null
+  let since: string | null = contract.start_date
+  const currency = contract.salary_currency
+
+  for (const t of relevant) {
+    salary = t.new_salary
+    // Imagem só muda quando o gatilho traz um novo valor; senão preserva o atual.
+    if (t.new_image_value != null) image = t.new_image_value
+    source = t
+    since = t.achieved_date
+  }
+
+  return { salary, image, currency, source, since }
 }
 
 /**
