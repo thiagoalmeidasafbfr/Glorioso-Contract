@@ -133,8 +133,8 @@ function BigNumberCard({ label, totals, sub, color }: {
 }
 
 // ── Menu de ações da cláusula (posição fixa p/ não ser cortado) ─────────────
-function ClauseActions({ clause, onEdit, onFlow, onMarkAchieved, onPay, onCancel }: {
-  clause: Clause; onEdit: () => void; onFlow: () => void; onMarkAchieved: () => void; onPay: () => void; onCancel: () => void
+function ClauseActions({ clause, onOpen, onEdit, onFlow, onMarkAchieved, onPay, onCancel }: {
+  clause: Clause; onOpen: () => void; onEdit: () => void; onFlow: () => void; onMarkAchieved: () => void; onPay: () => void; onCancel: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
@@ -156,6 +156,7 @@ function ClauseActions({ clause, onEdit, onFlow, onMarkAchieved, onPay, onCancel
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setOpen(false)} />
           <div style={{ position: 'fixed', top: pos.top, right: pos.right, background: 'var(--cream-card)', border: '1px solid var(--divider-strong)', borderRadius: 8, padding: '4px 0', boxShadow: 'var(--shadow-panel)', zIndex: 1000, minWidth: 210 }}>
+            <button onClick={() => { onOpen(); setOpen(false) }} style={{ ...item, color: '#be8c4a', fontWeight: 600 }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Abrir página da obrigação</button>
             <button onClick={() => { onEdit(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Editar cláusula</button>
             <button onClick={() => { onFlow(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Gerar / editar fluxo de pagamento</button>
             {canAchieve && <button onClick={() => { onMarkAchieved(); setOpen(false) }} style={{ ...item, color: 'var(--ink-primary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream-inset)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>Marcar como atingida</button>}
@@ -451,6 +452,34 @@ export default function PageAthleteDetail() {
     if (!window.confirm('Excluir esta obrigação com clube?')) return
     await deleteClubLiability(lid); setClubLiabs(prev => prev.filter(l => l.id !== lid))
   }
+  // Converte um passivo "flat" (agente/clube) em cláusula — assim vira uma
+  // obrigação única com página própria e permite fluxo de parcelas.
+  async function handleConvertLiab(kind: 'club' | 'agent', lid: string) {
+    if (!id) return
+    const liab = kind === 'club' ? clubLiabs.find(l => l.id === lid) : intermLiabs.find(l => l.id === lid)
+    if (!liab) return
+    const name = kind === 'club' ? (liab as ClubLiability).club_name : (liab as IntermediaryLiability).intermediary_name
+    const contractId = kind === 'agent' ? ((liab as IntermediaryLiability).contract_id ?? null) : null
+    const payable = liab.direction === 'A_PAGAR'
+    const clauseType: ClauseType = kind === 'agent' ? 'INTERMEDIACAO' : 'SOLIDARIEDADE_FIFA'
+    if (!window.confirm('Converter em cláusula? Passa a aparecer em Contratos Ativos, ganha página própria e permite fluxo de parcelas.')) return
+    const clause = await createClause(contractId, id, {
+      clause_type: clauseType,
+      description: liab.description || `${kind === 'agent' ? 'Comissão de agente' : 'Obrigação'} — ${name}`,
+      creditor_party: payable ? name : 'Botafogo SAF',
+      debtor_party: payable ? 'Botafogo SAF' : name,
+      currency: liab.currency,
+      original_value: liab.amount,
+      percentage_value: null,
+      condition_description: liab.condition_description || '',
+      due_date: liab.due_date || todayISO(),
+      installments_total: 1,
+      notes: liab.notes || '',
+    })
+    if (kind === 'agent') await deleteIntermediaryLiability(lid)
+    else await deleteClubLiability(lid)
+    navigate(`/obrigacoes/${clause.id}`)
+  }
   async function handleDeleteIntermLiab(lid: string) {
     if (!window.confirm('Excluir esta obrigação com agente?')) return
     await deleteIntermediaryLiability(lid); setIntermLiabs(prev => prev.filter(l => l.id !== lid))
@@ -669,14 +698,15 @@ export default function PageAthleteDetail() {
         <ConsolidadoTab
           clauses={clauses} installments={installments} clubLiabs={clubLiabs} intermLiabs={intermLiabs}
           canEdit={canEdit}
+          onOpenClause={cid => navigate(`/obrigacoes/${cid}`)}
           onEditInst={id => setEditInstId(id)}
-          onEditClause={id => setEditClauseId(id)}
           onDeleteClause={handleDeleteClause}
           onEditLiab={(kind, lid) => {
             const liab = kind === 'club' ? clubLiabs.find(l => l.id === lid) : intermLiabs.find(l => l.id === lid)
             if (liab) setEditLiab({ kind, liab })
           }}
           onDeleteLiab={(kind, lid) => kind === 'club' ? handleDeleteClubLiab(lid) : handleDeleteIntermLiab(lid)}
+          onConvertLiab={handleConvertLiab}
         />
       )}
 
@@ -750,7 +780,7 @@ export default function PageAthleteDetail() {
                       <td style={td}><PctBadge pct={pctCl} /></td>
                       <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                       <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: overdue ? 'var(--neg)' : soon ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: overdue ? 700 : 400 }}>{c.due_date ? fmtDate(c.due_date) : '—'}{(overdue || soon) && <div style={{ fontSize: 9 }}>{fmtRelative(c.due_date)}</div>}</td>
-                      <td style={{ ...td, textAlign: 'center' }}><ClauseActions clause={c} onEdit={() => setEditClauseId(c.id)} onFlow={() => setFlowClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
+                      <td style={{ ...td, textAlign: 'center' }}><ClauseActions clause={c} onOpen={() => navigate(`/obrigacoes/${c.id}`)} onEdit={() => setEditClauseId(c.id)} onFlow={() => setFlowClauseId(c.id)} onMarkAchieved={() => handleMarkAchieved(c.id)} onPay={() => setPayClauseId(c.id)} onCancel={() => handleCancelClause(c.id)} /></td>
                     </tr>
                     {open && parc.map(p => {
                       const late = isOverdue(p.due_date, p.payment_status)
@@ -1256,32 +1286,33 @@ function FlowList({ title, installments, clauses, types }: {
 }
 
 // ── ConsolidadoTab — todo o fluxo financeiro do atleta ───────────────────────
-function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs, canEdit, onEditInst, onEditClause, onDeleteClause, onEditLiab, onDeleteLiab }: {
+function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs, canEdit, onOpenClause, onEditInst, onDeleteClause, onEditLiab, onDeleteLiab, onConvertLiab }: {
   clauses: Clause[]; installments: ClauseInstallment[]; clubLiabs: ClubLiability[]; intermLiabs: IntermediaryLiability[]
   canEdit: boolean
+  onOpenClause: (clauseId: string) => void
   onEditInst: (id: string) => void
-  onEditClause: (id: string) => void
   onDeleteClause: (id: string) => void
   onEditLiab: (kind: 'club' | 'agent', id: string) => void
   onDeleteLiab: (kind: 'club' | 'agent', id: string) => void
+  onConvertLiab: (kind: 'club' | 'agent', id: string) => void
 }) {
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const clauseById = new Map(clauses.map(c => [c.id, c]))
-  type Item = { date: string | null; nat: string; parte: string; dir: 'A_PAGAR' | 'A_RECEBER'; valor: number; moeda: Currency; status: string; kind: 'inst' | 'clause' | 'club' | 'agent'; ref: string }
+  type Item = { date: string | null; nat: string; parte: string; dir: 'A_PAGAR' | 'A_RECEBER'; valor: number; moeda: Currency; status: string; kind: 'inst' | 'clause' | 'club' | 'agent'; ref: string; clauseRef?: string }
   const items: Item[] = []
   const isBFR = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
 
   for (const it of installments) {
     const c = clauseById.get(it.clause_id)
     const dir: Item['dir'] = c && isBFR(c.debtor_party) ? 'A_PAGAR' : c ? 'A_RECEBER' : 'A_PAGAR'
-    items.push({ date: it.due_date, nat: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela', parte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—', dir, valor: it.original_value, moeda: it.currency, status: it.payment_status, kind: 'inst', ref: it.id })
+    items.push({ date: it.due_date, nat: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela', parte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—', dir, valor: it.original_value, moeda: it.currency, status: it.payment_status, kind: 'inst', ref: it.id, clauseRef: it.clause_id })
   }
   for (const c of clauses) {
     if ((c.installments_total ?? 1) > 1) continue
     if (c.original_value == null) continue
     const dir: Item['dir'] = isBFR(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
-    items.push({ date: c.due_date, nat: CLAUSE_TYPE_LABELS[c.clause_type], parte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status, kind: 'clause', ref: c.id })
+    items.push({ date: c.due_date, nat: CLAUSE_TYPE_LABELS[c.clause_type], parte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status, kind: 'clause', ref: c.id, clauseRef: c.id })
   }
   for (const l of clubLiabs) items.push({ date: l.due_date, nat: 'Obrigação clube', parte: l.club_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status, kind: 'club', ref: l.id })
   for (const l of intermLiabs) items.push({ date: l.due_date, nat: 'Obrigação agente', parte: l.intermediary_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status, kind: 'agent', ref: l.id })
@@ -1329,19 +1360,22 @@ function ConsolidadoTab({ clauses, installments, clubLiabs, intermLiabs, canEdit
                 return (
                   <tr key={i} style={{ background: late ? 'var(--row-late-bg)' : 'transparent' }}>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
-                    <td style={{ ...td, fontSize: 12 }}>{it.nat}</td>
+                    <td style={{ ...td, fontSize: 12 }}>
+                      {it.clauseRef
+                        ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(190,140,74,0.5)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir a obrigação">{it.nat}</button>
+                        : it.nat}
+                    </td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>{it.parte}</td>
                     <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: fontMono, color: it.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{it.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(it.valor, it.moeda)}</td>
                     <td style={td}><StatusBadge status={it.status} map={PAYMENT_STATUS_STYLE} /></td>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        {it.kind === 'inst' && <button style={{ ...act, color: '#be8c4a' }} onClick={() => onEditInst(it.ref)} title="Editar esta parcela">Editar</button>}
-                        {it.kind === 'clause' && <>
-                          <button style={{ ...act, color: '#be8c4a' }} onClick={() => onEditClause(it.ref)}>Editar</button>
-                          <button style={{ ...act, color: 'var(--neg)' }} onClick={() => onDeleteClause(it.ref)}>Excluir</button>
-                        </>}
+                        {it.clauseRef && <button style={{ ...act, color: '#be8c4a' }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir página da obrigação">Abrir</button>}
+                        {it.kind === 'inst' && <button style={{ ...act, color: '#be8c4a' }} onClick={() => onEditInst(it.ref)} title="Editar esta parcela">Parcela</button>}
+                        {it.kind === 'clause' && <button style={{ ...act, color: 'var(--neg)' }} onClick={() => onDeleteClause(it.ref)}>Excluir</button>}
                         {(it.kind === 'club' || it.kind === 'agent') && <>
+                          <button style={{ ...act, color: '#be8c4a' }} onClick={() => onConvertLiab(it.kind as 'club' | 'agent', it.ref)} title="Converter em cláusula com fluxo de parcelas">Converter</button>
                           <button style={{ ...act, color: '#be8c4a' }} onClick={() => onEditLiab(it.kind as 'club' | 'agent', it.ref)}>Editar</button>
                           <button style={{ ...act, color: 'var(--neg)' }} onClick={() => onDeleteLiab(it.kind as 'club' | 'agent', it.ref)}>Excluir</button>
                         </>}

@@ -14,6 +14,7 @@ import PageAthleteDetail from './pages/PageAthleteDetail'
 import PageWizard from './pages/PageWizard'
 import PageDashboards from './pages/PageDashboards'
 import PageAthleteNewContract from './pages/PageAthleteNewContract'
+import PageClauseDetail from './pages/PageClauseDetail'
 
 // Cadastros (clubes / intermediários)
 import PageCadastros from './pages/PageCadastros'
@@ -64,6 +65,7 @@ function AppRoutes() {
           <Route path="/atletas" element={<PageAthletesList />} />
           <Route path="/atletas/:id" element={<PageAthleteDetail />} />
           <Route path="/atletas/:id/contratos/novo" element={<PageAthleteNewContract />} />
+          <Route path="/obrigacoes/:clauseId" element={<PageClauseDetail />} />
 
           {/* Cadastros */}
           <Route path="/clubes" element={<PageCadastros kind="clube" />} />
