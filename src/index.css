@@ -16,36 +16,36 @@
   --ink-primary:    #1a1410;
   --ink-secondary:  #3a2e1c;
 
-  /* Cream surfaces */
-  --cream-page:     #f9f7f2;
-  --cream-canvas:   #f5f2eb;
-  --cream-card:     #fdfbf6;
-  --cream-inset:    #ece6d8;
-  --tbl-head:       #e7e5de;
+  /* Cream surfaces — página um pouco mais profunda p/ os cards ganharem relevo,
+     card quase branco quente (mais contraste, leitura mais "atual"). */
+  --cream-page:     #f3efe6;
+  --cream-canvas:   #efeadf;
+  --cream-card:     #fffef9;
+  --cream-inset:    #ebe4d5;
+  --tbl-head:       #efe9dd;
   --on-dark:        #f3eee2;
 
-  /* Semantic — tier "muted/pastel" do design (deltas suaves, sem cores vivas).
-     Verde-oliva quente para positivo, terracota para negativo. */
+  /* Semantic — verde-oliva quente para positivo, terracota para negativo. */
   --pos:            #3a6f3a;
-  --pos-tint:       #e6ece2;
-  --neg:            #7a3f2c;
-  --neg-tint:       #f1e8e3;
-  --warn:           #b88a2a;
-  --warn-tint:      rgba(184,138,42,0.12);
+  --pos-tint:       #e5ece1;
+  --neg:            #8a3f27;
+  --neg-tint:       #f2e7e1;
+  --warn:           #b0801f;
+  --warn-tint:      rgba(176,128,31,0.13);
   /* Neutro (substitui azuis vivos em status/badges) */
   --neutral:        #5b6b7a;
   --neutral-tint:   #e7e9ec;
 
-  /* Structure */
-  --divider:        rgba(26,20,16,0.08);
-  --divider-soft:   rgba(26,20,16,0.05);
-  --divider-strong: rgba(26,20,16,0.14);
+  /* Structure — bordas mornas e visíveis deixam os cards nítidos. */
+  --divider:        rgba(94,70,38,0.12);
+  --divider-soft:   rgba(94,70,38,0.07);
+  --divider-strong: rgba(94,70,38,0.20);
   --sidebar-w:      220px;
 
-  /* Shadows */
-  --shadow-hair:    0 1px 0 rgba(40,32,22,0.03);
-  --shadow-card:    0 1px 0 rgba(40,32,22,0.04), 0 4px 12px -8px rgba(40,32,22,0.10);
-  --shadow-panel:   0 1px 0 rgba(40,32,22,0.04), 0 8px 20px -10px rgba(40,32,22,0.15);
+  /* Shadows — presentes e macias (profundidade sem "peso"). */
+  --shadow-hair:    0 1px 2px rgba(40,32,22,0.05);
+  --shadow-card:    0 1px 3px rgba(40,32,22,0.05), 0 8px 20px -14px rgba(40,32,22,0.28);
+  --shadow-panel:   0 4px 10px -6px rgba(40,32,22,0.12), 0 20px 40px -20px rgba(40,32,22,0.34);
 
   /* Fonts */
   --font-display:   'Fraunces', 'Cormorant Garamond', Georgia, serif;
@@ -93,12 +93,12 @@ body {
 /* ── Cards ── */
 .card {
   background: var(--cream-card);
-  border-radius: 10px;
+  border-radius: 13px;
   border: 1px solid var(--divider);
-  box-shadow: var(--shadow-hair);
-  transition: box-shadow 0.15s ease;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
 }
-.card:hover { box-shadow: var(--shadow-card); }
+.card:hover { box-shadow: var(--shadow-panel); border-color: var(--gold-ring); }
 
 /* ── KPI classes ── */
 .kpi-label {
