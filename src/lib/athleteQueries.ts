@@ -900,6 +900,16 @@ export async function createClauseInstallments(
   return data.map(r => fromAcFK<ClauseInstallment>(r))
 }
 
+// Apaga todas as parcelas de uma cláusula (usado ao regenerar o fluxo de pagamento).
+export async function deleteClauseInstallments(clauseId: string): Promise<void> {
+  if (!USE_SUPABASE) {
+    for (const inst of local.where<ClauseInstallment>(T.installments, 'clause_id', clauseId)) local.remove(T.installments, inst.id)
+    return
+  }
+  const { error } = await supabase.from(AC.installments).delete().eq('clausula_fin_id', clauseId)
+  if (error) throw error
+}
+
 export async function updateInstallment(id: string, input: Partial<ClauseInstallment>): Promise<ClauseInstallment> {
   if (!USE_SUPABASE) return local.update<ClauseInstallment>(T.installments, id, input)
   const { data, error } = await supabase.from(AC.installments).update(nn(toAcFK(input))).eq('id', id).select().single()

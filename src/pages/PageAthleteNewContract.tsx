@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createInstallments, createClauseInstallments, createIntermediaryLiability } from '../lib/athleteQueries'
+import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createInstallments, createClauseInstallments } from '../lib/athleteQueries'
 import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection, SellOnBasis } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES, isTransferContractType, SELL_ON_CLAUSE_TYPES, SELLON_BASIS_LABELS, sellOnConditionText } from '../types/athlete-system'
 import { todayISO, monthsBetween, addMonths } from '../lib/format'
@@ -285,21 +285,24 @@ export default function PageAthleteNewContract() {
       if (willGenSalary) await genRemFlow('SALARIO_CETD', 'Salário CLT', salaryMonthly, SALARY_DUE_DAY)
       if (willGenImage) await genRemFlow('DIREITO_IMAGEM', 'Direito de imagem', imageMonthly, IMAGE_DUE_DAY)
 
-      // Agentes desta transação → um passivo vinculado ao atleta por agente.
+      // Agentes → uma cláusula de INTERMEDIAÇÃO por agente. Assim aparecem em
+      // "Contratos Ativos", são editáveis e permitem gerar fluxo de pagamento
+      // (o valor informado entra como total; o cronograma de parcelas é definido
+      // depois no editor de fluxo da cláusula).
       for (const ag of agents) {
         if (!ag.name.trim()) continue
-        await createIntermediaryLiability(id, {
-          contract_id: savedContract.id,
-          intermediary_name: ag.name.trim(),
-          description: `Agenciamento — ${CONTRACT_TYPE_LABELS[contract.type]}${contract.counterpart_club ? ` (${contract.counterpart_club})` : ''}`,
-          direction: ag.direction,
-          amount: ag.amount ? parseFloat(ag.amount) : 0,
+        const payable = ag.direction === 'A_PAGAR'
+        await createClause(savedContract.id, id, {
+          clause_type: 'INTERMEDIACAO',
+          description: `Comissão de agente — ${ag.name.trim()}`,
+          creditor_party: payable ? ag.name.trim() : 'Botafogo SAF',
+          debtor_party: payable ? 'Botafogo SAF' : ag.name.trim(),
           currency: ag.currency,
-          due_date: null,
-          conditional: false,
+          original_value: ag.amount ? parseFloat(ag.amount) : null,
+          percentage_value: null,
           condition_description: '',
-          penalty_terms: '',
-          status: 'PENDENTE',
+          due_date: contract.start_date,
+          installments_total: 1,
           notes: '',
         })
       }
@@ -337,7 +340,7 @@ export default function PageAthleteNewContract() {
   const conflict = isSellOnConflict(clauses)
 
   return (
-    <div style={{ padding: '32px 40px', maxWidth: 800 }}>
+    <div style={{ padding: '32px 40px', maxWidth: 860, margin: '0 auto' }}>
       <PageHero title="Novo Contrato" subtitle={athlete?.full_name ?? 'Novo contrato · Botafogo SAF'} />
       {/* Breadcrumb */}
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center' }}>
