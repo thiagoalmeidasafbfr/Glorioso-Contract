@@ -11,6 +11,7 @@ import type {
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
 import PageHero from '../components/PageHero'
+import { Icon, IconButton } from '../components/Icon'
 import SheetIO from '../components/SheetIO'
 import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
@@ -172,7 +173,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={handleSave} disabled={!f.full_name.trim()}
             style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: f.full_name.trim() ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
             Criar Atleta
@@ -180,6 +181,19 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+// Alertas de vencimento como ÍCONE + contagem: triângulo vermelho para o que já
+// venceu, relógio amarelo para o que vence em breve.
+function AlertCount({ kind, count }: { kind: 'atraso' | 'breve'; count: number }) {
+  const atraso = kind === 'atraso'
+  return (
+    <span title={atraso ? `${count} parcela(s) em atraso` : `${count} parcela(s) vencendo em breve`}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: atraso ? 'var(--neg)' : 'var(--warn)' }}>
+      <Icon name={atraso ? 'alert' : 'clock'} size={14} />
+      <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 700 }}>{count}</span>
+    </span>
   )
 }
 
@@ -275,9 +289,8 @@ export default function PageAthletesList() {
             ))}
           </select>
         </div>
-        <button onClick={() => setShowNew(true)}
-          style={{ padding: '8px 20px', background: 'var(--accent)', border: 'none', borderRadius: 8, color: '#fff', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          + Novo Atleta
+        <button onClick={() => setShowNew(true)} className="btn btn-primary">
+          <Icon name="plus" size={13} /> Novo atleta
         </button>
         <SheetIO
           exportFilename="atletas.xlsx"
@@ -391,25 +404,14 @@ export default function PageAthletesList() {
                       {stats.nextDue ? fmtDate(stats.nextDue) : '—'}
                     </td>
                     <td style={{ ...td, width: 100 }}>
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        {stats.overdue > 0 && (
-                          <span title={`${stats.overdue} em atraso`} style={{ padding: '2px 7px', borderRadius: 4, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 9, fontFamily: fontMono, fontWeight: 600, letterSpacing: '0.04em' }}>
-                            {stats.overdue} atraso
-                          </span>
-                        )}
-                        {stats.soon > 0 && (
-                          <span title={`${stats.soon} vencendo em breve`} style={{ padding: '2px 7px', borderRadius: 4, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 9, fontFamily: fontMono, fontWeight: 600, letterSpacing: '0.04em' }}>
-                            {stats.soon} em breve
-                          </span>
-                        )}
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        {stats.overdue > 0 && <AlertCount kind="atraso" count={stats.overdue} />}
+                        {stats.soon > 0 && <AlertCount kind="breve" count={stats.soon} />}
                         {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
                       </div>
                     </td>
-                    <td style={{ ...td, width: 90, textAlign: 'right' }}>
-                      <button onClick={e => { e.stopPropagation(); navigate(`/atletas/${a.id}`) }}
-                        style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>
-                        Ver
-                      </button>
+                    <td style={{ ...td, width: 70, textAlign: 'right' }}>
+                      <IconButton icon="open" label={`Abrir a ficha de ${a.short_name || a.full_name}`} to={`/atletas/${a.id}`} />
                     </td>
                   </tr>
                 )

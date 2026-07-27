@@ -183,7 +183,7 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
         <div><label style={lbl}>Observações</label><input style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button onClick={() => setOpen(false)} style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={() => setOpen(false)} className="btn btn-outline">Cancelar</button>
         <button onClick={submit} disabled={!f.description.trim() || !f.new_salary} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', background: (f.description.trim() && f.new_salary) ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: (f.description.trim() && f.new_salary) ? 'pointer' : 'not-allowed' }}>Adicionar Meta</button>
       </div>
     </div>
@@ -203,7 +203,7 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: { t: SalaryTrigge
       {achieved ? (
         <>
           <span style={{ fontSize: 11, fontFamily: fontMono, color: '#3a6f3a' }}>desde {fmtDate(t.achieved_date)}</span>
-          {canEdit && <button onClick={onReset} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Reverter</button>}
+          {canEdit && <button onClick={onReset} className="btn btn-outline">Reverter</button>}
         </>
       ) : canEdit ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -325,8 +325,8 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
-          <button onClick={save} disabled={saving || !f.full_name.trim()} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
+          <button onClick={save} disabled={saving || !f.full_name.trim()} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
         </div>
       </div>
     </div>
@@ -564,7 +564,7 @@ export default function PageAthleteDetail() {
   if (!athlete) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
       <div style={{ fontSize: 16, color: 'var(--text-muted)' }}>Atleta não encontrado.</div>
-      <button onClick={() => navigate('/atletas')} style={{ marginTop: 16, padding: '8px 20px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontFamily: font, cursor: 'pointer' }}>← Voltar</button>
+      <button onClick={() => navigate('/atletas')} className="btn btn-outline">← Voltar</button>
     </div>
   )
 
@@ -984,8 +984,8 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
           <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={f.cnpj} onChange={e => setF(p => ({ ...p, cnpj: e.target.value }))} /></div>
           <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={submitNew} disabled={!f.legal_name.trim()} style={{ padding: '7px 14px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
-            <button onClick={() => setAdding(false)} style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>✕</button>
+            <button onClick={submitNew} disabled={!f.legal_name.trim()} className="btn btn-primary">Salvar</button>
+            <button onClick={() => setAdding(false)} className="btn btn-outline">✕</button>
           </div>
         </div>
       )}
@@ -1000,8 +1000,8 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
               <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={ef.cnpj} onChange={e => setEf(s => ({ ...s, cnpj: e.target.value }))} /></div>
               <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={ef.notes} onChange={e => setEf(s => ({ ...s, notes: e.target.value }))} /></div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={submitEdit} style={{ padding: '7px 14px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
-                <button onClick={() => setEditId(null)} style={{ padding: '7px 12px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>✕</button>
+                <button onClick={submitEdit} className="btn btn-primary">Salvar</button>
+                <button onClick={() => setEditId(null)} className="btn btn-outline">✕</button>
               </div>
             </div>
           ) : (
@@ -1017,7 +1017,7 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
               </span>
               {canEdit && (
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => startEdit(p)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => startEdit(p)} className="btn btn-outline">Editar</button>
                   <button onClick={() => { if (window.confirm(`Excluir a PJ "${p.legal_name}"? Os lançamentos de imagem ficarão sem PJ.`)) onDelete(p.id) }} title="Excluir" style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
                 </div>
               )}
@@ -1106,8 +1106,8 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button onClick={save} disabled={saving} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
-            <button onClick={() => setEditing(false)} style={{ padding: '7px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+            <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
+            <button onClick={() => setEditing(false)} className="btn btn-outline">Cancelar</button>
           </div>
         </div>
       ) : (
@@ -1565,7 +1565,7 @@ function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClos
           <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} seedRows={4} />
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={save} disabled={!canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Salvando...' : 'Salvar fluxo'}</button>
         </div>
       </div>
@@ -1763,8 +1763,8 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
           Alterar salário/imagem aqui muda os valores do vínculo. Para regerar as parcelas mensais, use "Atualizar fluxo mensal" na aba CLT + Imagem.
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
-          <button onClick={save} disabled={saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: 'var(--ink-primary)', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
+          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
+          <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
         </div>
       </div>
     </div>
@@ -1947,7 +1947,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
         <div><label style={lbl}>Notas</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={save} disabled={saving || !canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
         </div>
       </div>
@@ -2294,7 +2294,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Gere as parcelas pelo nº/data acima e edite cada vencimento e valor.</span>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'var(--accent-tint)', color: 'var(--accent)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Gerar fluxo</button>
-                  <button onClick={addSchedRow} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>+ Linha</button>
+                  <button onClick={addSchedRow} className="btn btn-outline">+ Linha</button>
                 </div>
               </div>
               {schedule.length === 0 ? (
@@ -2320,7 +2320,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginRight: 'auto' }}>{selItems.length} item(ns) → {mode === 'custom' ? `${schedule.length}x personalizado` : `${nParcelas}x de ${fmtCurrencyShort(effectiveTotal / nParcelas, currency)}`}</span>
-          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={submit} disabled={!canSave || saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : '#ccc', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Renegociando...' : 'Renegociar'}</button>
         </div>
       </div>

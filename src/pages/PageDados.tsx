@@ -372,8 +372,8 @@ export default function PageDados() {
               {d.cols.length} colunas{d.parent ? ` · requer ${d.parent}` : ''}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={() => downloadTemplate(d)} style={btn('outline')}>Baixar modelo</button>
-              <button onClick={() => exportData(d)} style={btn('outline')}>Exportar</button>
+              <button onClick={() => downloadTemplate(d)} className="btn btn-outline">Baixar modelo</button>
+              <button onClick={() => exportData(d)} className="btn btn-outline">Exportar</button>
               <ImportButton onDone={(text, ok) => setMsg({ key: d.key, text, ok })} d={d} />
             </div>
             {msg?.key === d.key && (
@@ -404,17 +404,9 @@ function ImportButton({ d, onDone }: { d: Descriptor; onDone: (text: string, ok:
   }
   return (
     <>
-      <button onClick={() => ref.current?.click()} disabled={busy} style={btn('solid')}>{busy ? 'Importando...' : 'Importar'}</button>
+      <button onClick={() => ref.current?.click()} disabled={busy} className="btn btn-primary">{busy ? 'Importando...' : 'Importar'}</button>
       <input ref={ref} type="file" accept=".xlsx,.xls" onChange={handle} style={{ display: 'none' }} />
     </>
   )
 }
 
-function btn(kind: 'solid' | 'outline'): React.CSSProperties {
-  const base: React.CSSProperties = {
-    padding: '7px 14px', borderRadius: 7, fontFamily: fontBody, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-  }
-  return kind === 'solid'
-    ? { ...base, background: 'var(--gold-tint)', border: '1px solid var(--divider-strong)', color: 'var(--accent)' }
-    : { ...base, background: 'transparent', border: '1px solid var(--divider-strong)', color: 'var(--text-secondary)' }
-}

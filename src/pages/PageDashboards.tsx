@@ -272,7 +272,7 @@ export default function PageDashboards() {
               { l: 'Clubes', to: '/relatorios/clubes' },
               { l: 'Agentes', to: '/relatorios/intermediarios' },
             ].map(x => (
-              <button key={x.to} onClick={() => navigate(x.to)} style={{ padding: '8px 16px', borderRadius: 20, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--accent)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{x.l} →</button>
+              <button key={x.to} onClick={() => navigate(x.to)} className="btn btn-outline">{x.l} →</button>
             ))}
           </div>
         </>

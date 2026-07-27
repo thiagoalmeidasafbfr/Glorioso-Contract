@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Icon } from './Icon'
 import { exportWorkbook, parseWorkbookFile, type ColDef } from '../lib/xlsx-utils'
 
 export interface ExportSheet {
@@ -58,21 +59,13 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
   return (
     <>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button
-          onClick={handleExport}
-          title="Exportar dados como XLSX"
-          style={btnStyle('rgba(26,20,16,0.90)', '#dcc89a')}
-        >
-          ↓ Exportar
+        <button onClick={handleExport} title="Exportar dados como XLSX" className="btn btn-dark">
+          <Icon name="download" size={13} /> Exportar
         </button>
         {onImport && (
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={parsing}
-            title="Importar dados de um arquivo XLSX"
-            style={btnStyle('var(--accent-tint2)', 'var(--accent)', 'var(--divider-strong)')}
-          >
-            {parsing ? '…' : '↑ Importar'}
+          <button onClick={() => fileRef.current?.click()} disabled={parsing}
+            title="Importar dados de um arquivo XLSX" className="btn btn-outline">
+            <Icon name="upload" size={13} /> {parsing ? 'Lendo…' : 'Importar'}
           </button>
         )}
         <input
@@ -223,10 +216,10 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
               flexShrink: 0,
               background: '#f0ede6',
             }}>
-              <button onClick={() => setPreview(null)} style={btnStyle('transparent', '#888', '#ccc8c0')}>
+              <button onClick={() => setPreview(null)} className="btn btn-ghost">
                 Cancelar
               </button>
-              <button onClick={handleConfirm} style={btnStyle('#1a1410', '#dcc89a')}>
+              <button onClick={handleConfirm} className="btn btn-primary">
                 Confirmar Importação
               </button>
             </div>
@@ -237,18 +230,3 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
   )
 }
 
-function btnStyle(bg: string, color: string, border?: string): React.CSSProperties {
-  return {
-    background: bg,
-    color,
-    border: border ? `1px solid ${border}` : 'none',
-    borderRadius: 999,
-    padding: '8px 18px',
-    fontFamily: "'IBM Plex Mono', monospace",
-    fontSize: 10, fontWeight: 500,
-    letterSpacing: '0.12em',
-    textTransform: 'uppercase',
-    cursor: 'pointer',
-    transition: 'opacity 0.12s',
-  }
-}
