@@ -25,18 +25,17 @@ const font = "'Inter', system-ui, sans-serif"
 const mono = "'IBM Plex Mono', monospace"
 const display = "'Fraunces', 'Cormorant Garamond', Georgia, serif"
 
-// Paleta "Counting House" — validada para contraste/CVD (ver DESIGN system).
-//  • ouro  → trajetória de gasto no tempo (remuneração / comissões) — série única.
-//  • vermelho/verde (tier "variance") → verdicto direcional: saída x entrada.
-//  • tinta → estruturas / totais.
+// Paleta dos gráficos — preto/grafite para as séries de estrutura e gasto;
+// vermelho/verde só para o veredicto direcional (saída x entrada). Valores
+// literais porque atributos SVG não resolvem variáveis CSS.
 const C = {
-  goldLine: '#9a6f2e', goldFill: '#be8c4a',
-  ink: '#3a2e1c',
-  pay: '#b91c1c', recv: '#166534',
-  gold: '#be8c4a',
-  surface: '#fdfbf6',
-  grid: 'rgba(26,20,16,0.06)', axis: 'rgba(26,20,16,0.42)',
-  crosshair: 'rgba(122,98,68,0.45)',
+  goldLine: '#14110d', goldFill: '#14110d',
+  ink: '#2a2521',
+  pay: '#8a3524', recv: '#2f6b3a',
+  gold: '#14110d',
+  surface: '#ffffff',
+  grid: 'rgba(20,17,13,0.07)', axis: 'rgba(20,17,13,0.45)',
+  crosshair: 'rgba(20,17,13,0.35)',
 }
 
 const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
@@ -273,7 +272,7 @@ export default function PageDashboards() {
               { l: 'Clubes', to: '/relatorios/clubes' },
               { l: 'Agentes', to: '/relatorios/intermediarios' },
             ].map(x => (
-              <button key={x.to} onClick={() => navigate(x.to)} style={{ padding: '8px 16px', borderRadius: 20, border: '1px solid var(--divider-strong)', background: 'transparent', color: '#be8c4a', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{x.l} →</button>
+              <button key={x.to} onClick={() => navigate(x.to)} style={{ padding: '8px 16px', borderRadius: 20, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--accent)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{x.l} →</button>
             ))}
           </div>
         </>

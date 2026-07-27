@@ -95,7 +95,7 @@ export default function PageLogin() {
                 outline: 'none',
                 boxSizing: 'border-box',
               }}
-              onFocus={e => (e.target.style.borderColor = '#be8c4a')}
+              onFocus={e => (e.target.style.borderColor = '#f3eee2')}
               onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
             />
           </div>
@@ -131,7 +131,7 @@ export default function PageLogin() {
                 outline: 'none',
                 boxSizing: 'border-box',
               }}
-              onFocus={e => (e.target.style.borderColor = '#be8c4a')}
+              onFocus={e => (e.target.style.borderColor = '#f3eee2')}
               onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
             />
           </div>

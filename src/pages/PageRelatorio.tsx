@@ -10,11 +10,19 @@ import {
   fetchAthletes, fetchAllImageRights, fetchAllIntermediaryLiabilities,
   fetchAllClubLiabilities, fetchAllClauses, fetchAllInstallments,
   fetchClubs, fetchIntermediaries,
+  markInstallmentPaid, revertInstallment,
 } from '../lib/athleteQueries'
-import type { Athlete, Currency, Clause, ClauseInstallment } from '../types/athlete-system'
+import type {
+  Athlete, Currency, Clause, ClauseInstallment, ClubLiability, IntermediaryLiability,
+} from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
-import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
+import { fmtCurrencyShort, fmtDate, isOverdue, todayISO } from '../lib/format'
 import PageHero from '../components/PageHero'
+import { IconButton, IconRow } from '../components/Icon'
+import {
+  InstallmentEditModal, ClauseEditModal, ClauseFlowModal, LiabilityEditModal,
+} from '../components/modals/EditModals'
+import { useAuth } from '../context/AuthContext'
 
 // Tipos de cláusula voltados a CLUBES (contraparte = clube) e a AGENTES.
 const CLUB_CLAUSE_TYPES = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
@@ -45,8 +53,12 @@ type Tone = 'pos' | 'neg' | 'warn' | 'neutral'
 // Natureza da "parte" — define para onde o nome aponta ao ser clicado.
 type ParteKind = 'atleta' | 'clube' | 'intermediario' | 'clube_ou_agente' | null
 
+type RowKind = 'inst' | 'clause' | 'clubLiab' | 'intermLiab' | 'legacy'
+
 interface Row {
   id: string
+  kind: RowKind
+  clauseId: string | null
   atleta: string
   athleteId: string
   natureza: string
@@ -94,12 +106,26 @@ export default function PageRelatorio() {
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [interIdx, setInterIdx] = useState<Map<string, string>>(new Map())
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const { profile } = useAuth()
+  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  // Registros brutos p/ os modais de edição (qualquer linha é editável aqui).
+  const [clausesRaw, setClausesRaw] = useState<Clause[]>([])
+  const [instsRaw, setInstsRaw] = useState<ClauseInstallment[]>([])
+  const [clubLiabsRaw, setClubLiabsRaw] = useState<ClubLiability[]>([])
+  const [intermLiabsRaw, setIntermLiabsRaw] = useState<IntermediaryLiability[]>([])
+  const [editInstId, setEditInstId] = useState<string | null>(null)
+  const [editClauseId, setEditClauseId] = useState<string | null>(null)
+  const [flowClauseId, setFlowClauseId] = useState<string | null>(null)
+  const [editLiab, setEditLiab] = useState<{ kind: 'club' | 'agent'; id: string } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, clubs, inters] = await Promise.all([
+    const [athletes, clubs, inters, allClauses, allInsts, allClubLiabs, allIntermLiabs] = await Promise.all([
       fetchAthletes(), fetchClubs(), fetchIntermediaries(),
+      fetchAllClauses(), fetchAllInstallments(), fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
     ])
+    setClausesRaw(allClauses); setInstsRaw(allInsts)
+    setClubLiabsRaw(allClubLiabs); setIntermLiabsRaw(allIntermLiabs)
     setClubIdx(buildNameIndex(clubs))
     setInterIdx(buildNameIndex(inters))
     setPosByAth(new Map(athletes.map((a: Athlete) => [a.id, a.position ?? '—'])))
@@ -124,6 +150,9 @@ export default function PageRelatorio() {
     }
     return null
   }
+
+  async function quickPay(id: string) { await markInstallmentPaid(id, todayISO()); await load() }
+  async function quickRevert(id: string) { await revertInstallment(id); await load() }
 
   async function handleImport(sheets: Record<string, Record<string, string>[]>) {
     const rowsIn = sheets[Object.keys(sheets)[0]] ?? []
@@ -187,7 +216,7 @@ export default function PageRelatorio() {
           onImport={handleImport}
         />
         {importMsg && (
-          <div style={{ fontSize: 11, fontFamily: fontMono, color: importMsg.startsWith('Erro') ? 'var(--neg)' : 'var(--gold-deep)' }}>{importMsg}</div>
+          <div style={{ fontSize: 11, fontFamily: fontMono, color: importMsg.startsWith('Erro') ? 'var(--neg)' : 'var(--text-muted)' }}>{importMsg}</div>
         )}
       </div>
 
@@ -246,11 +275,12 @@ export default function PageRelatorio() {
                 <th style={th}>Vencimento</th>
                 <th style={th}>Pagamento</th>
                 <th style={th}>Status</th>
+                <th style={{ ...th, textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação cadastrada.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação cadastrada.</td></tr>}
               {filtered.map(r => {
                 const overdue = r.vencimento && isOverdue(r.vencimento, r.status === 'Paga' || r.status === 'Cancelada' ? 'PAGA' : 'PENDENTE')
                 const tone = TONE_STYLE[r.tone]
@@ -259,7 +289,9 @@ export default function PageRelatorio() {
                     <td style={{ ...td, fontWeight: 600 }}>
                       {r.athleteId ? <RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink> : r.atleta}
                     </td>
-                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.natureza}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)' }}>
+                      {r.clauseId ? <RefLink to={`/obrigacoes/${r.clauseId}`} title="Abrir a obrigação">{r.natureza}</RefLink> : r.natureza}
+                    </td>
                     <td style={td}>{r.parte ? <RefLink to={parteTarget(r)} title={`Abrir ${r.parte}`}>{r.parte}</RefLink> : '—'}</td>
                     <td style={{ ...td, maxWidth: 320, color: 'var(--text-secondary)' }}>{r.descricao || '—'}</td>
                     <td style={tdNum}>{r.valor != null ? fmtCurrencyShort(r.valor, r.moeda) : '—'}</td>
@@ -267,6 +299,18 @@ export default function PageRelatorio() {
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: r.pagamento ? 'var(--pos)' : 'var(--text-muted)' }}>{r.pagamento ? fmtDate(r.pagamento) : '—'}</td>
                     <td style={td}>
                       <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: tone.bg, color: tone.fg }}>{r.status}</span>
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <IconRow>
+                        {r.clauseId && <IconButton icon="open" label="Abrir página da obrigação" small to={`/obrigacoes/${r.clauseId}`} />}
+                        {canEdit && r.kind === 'inst' && <IconButton icon="edit" label="Editar parcela" small onClick={() => setEditInstId(r.id)} />}
+                        {canEdit && r.kind === 'clause' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditClauseId(r.id)} />}
+                        {canEdit && r.kind === 'clubLiab' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditLiab({ kind: 'club', id: r.id })} />}
+                        {canEdit && r.kind === 'intermLiab' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditLiab({ kind: 'agent', id: r.id })} />}
+                        {canEdit && r.clauseId && <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" small onClick={() => setFlowClauseId(r.clauseId!)} />}
+                        {canEdit && r.kind === 'inst' && r.status !== 'Paga' && r.status !== 'Cancelada' && <IconButton icon="check" label="Marcar parcela como paga" small onClick={() => quickPay(r.id)} />}
+                        {canEdit && r.kind === 'inst' && r.status === 'Paga' && <IconButton icon="undo" label="Reverter pagamento" tone="muted" small onClick={() => quickRevert(r.id)} />}
+                      </IconRow>
                     </td>
                   </tr>
                 )
@@ -278,6 +322,25 @@ export default function PageRelatorio() {
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length === 1 ? 'movimentação' : 'movimentações'}
       </div>
+
+      {editInstId && (() => {
+        const inst = instsRaw.find(i => i.id === editInstId)
+        return inst ? <InstallmentEditModal inst={inst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); load() }} /> : null
+      })()}
+      {editClauseId && (() => {
+        const cl = clausesRaw.find(c => c.id === editClauseId)
+        return cl ? <ClauseEditModal clause={cl} onClose={() => setEditClauseId(null)} onSaved={() => { setEditClauseId(null); load() }} /> : null
+      })()}
+      {flowClauseId && (() => {
+        const cl = clausesRaw.find(c => c.id === flowClauseId)
+        return cl ? <ClauseFlowModal clause={cl} onClose={() => setFlowClauseId(null)} onSaved={() => { setFlowClauseId(null); load() }} /> : null
+      })()}
+      {editLiab && (() => {
+        const liab = editLiab.kind === 'club'
+          ? clubLiabsRaw.find(l => l.id === editLiab.id)
+          : intermLiabsRaw.find(l => l.id === editLiab.id)
+        return liab ? <LiabilityEditModal kind={editLiab.kind} liab={liab} onClose={() => setEditLiab(null)} onSaved={() => { setEditLiab(null); load() }} /> : null
+      })()}
     </div>
   )
 }
@@ -294,14 +357,14 @@ function clauseRows(clauses: Clause[], installments: ClauseInstallment[], parteK
     const parcelas = installments.filter(i => i.clause_id === c.id)
     if (parcelas.length > 0) {
       for (const p of parcelas) rows.push({
-        id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza,
+        id: p.id, kind: 'inst', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza,
         parte: contraparte, parteKind, descricao: `${c.description} — parcela ${p.installment_number}`,
         valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
         pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
       })
     } else {
       rows.push({
-        id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza,
+        id: c.id, kind: 'clause', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza,
         parte: contraparte, parteKind, descricao: c.description,
         valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
         pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',
@@ -324,7 +387,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
       if (parcelas.length > 0) {
         for (const p of parcelas) {
           rows.push({
-            id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Direito de Imagem',
+            id: p.id, kind: 'inst', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Direito de Imagem',
             parte: c.creditor_party, parteKind: 'atleta', descricao: `${c.description} — parcela ${p.installment_number}`,
             valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
             pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
@@ -332,7 +395,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
         }
       } else {
         rows.push({
-          id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Direito de Imagem',
+          id: c.id, kind: 'clause', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Direito de Imagem',
           parte: c.creditor_party, parteKind: 'atleta', descricao: c.description,
           valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
           pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',
@@ -342,7 +405,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
     // Compatibilidade: lançamentos antigos da tabela image_rights (se houver).
     for (const ir of legacy) {
       rows.push({
-        id: ir.id, atleta: name(ir.athlete_id), athleteId: ir.athlete_id, natureza: 'Direito de Imagem',
+        id: ir.id, kind: 'legacy', clauseId: null, atleta: name(ir.athlete_id), athleteId: ir.athlete_id, natureza: 'Direito de Imagem',
         parte: name(ir.athlete_id), parteKind: 'atleta' as ParteKind, descricao: `Competência ${ir.month} (legado)`,
         valor: ir.amount, moeda: ir.currency, vencimento: `${ir.month}-01`,
         pagamento: ir.paid_date, status: STATUS_LABEL[ir.status] ?? ir.status, tone: STATUS_TONE[ir.status] ?? 'neutral',
@@ -354,7 +417,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   if (kind === 'intermediarios') {
     const [list, clauses, installments] = await Promise.all([fetchAllIntermediaryLiabilities(), fetchAllClauses(), fetchAllInstallments()])
     const rows: Row[] = list.map(l => ({
-      id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Intermediação',
+      id: l.id, kind: 'intermLiab' as RowKind, clauseId: null, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Intermediação',
       parte: l.intermediary_name, parteKind: 'intermediario' as ParteKind, descricao: l.description ?? '',
       valor: l.amount, moeda: l.currency, vencimento: l.due_date,
       pagamento: l.settled_date, status: STATUS_LABEL[l.status] ?? l.status, tone: STATUS_TONE[l.status] ?? 'neutral',
@@ -366,7 +429,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
   if (kind === 'clubes') {
     const [list, clauses, installments] = await Promise.all([fetchAllClubLiabilities(), fetchAllClauses(), fetchAllInstallments()])
     const rows: Row[] = list.map(l => ({
-      id: l.id, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Obrigação clube',
+      id: l.id, kind: 'clubLiab' as RowKind, clauseId: null, atleta: name(l.athlete_id), athleteId: l.athlete_id, natureza: 'Obrigação clube',
       parte: l.club_name, parteKind: 'clube' as ParteKind, descricao: l.description ?? '',
       valor: l.amount, moeda: l.currency, vencimento: l.due_date,
       pagamento: l.settled_date, status: STATUS_LABEL[l.status] ?? l.status, tone: STATUS_TONE[l.status] ?? 'neutral',
@@ -385,7 +448,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
       if (parcelas.length > 0) {
         for (const p of parcelas) {
           rows.push({
-            id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Luvas',
+            id: p.id, kind: 'inst', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Luvas',
             parte: c.creditor_party, parteKind: 'clube_ou_agente', descricao: `${c.description} — parcela ${p.installment_number}`,
             valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
             pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
@@ -393,7 +456,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
         }
       } else {
         rows.push({
-          id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Luvas',
+          id: c.id, kind: 'clause', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Luvas',
           parte: c.creditor_party, parteKind: 'clube_ou_agente', descricao: c.description,
           valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
           pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',
@@ -416,7 +479,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
     if (parcelas.length > 0) {
       for (const p of parcelas) {
         rows.push({
-          id: p.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Salário CLT',
+          id: p.id, kind: 'inst', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Salário CLT',
           parte, parteKind: 'atleta', descricao: `${c.description} — parcela ${p.installment_number}`,
           valor: p.original_value, moeda: p.currency, vencimento: p.due_date,
           pagamento: p.payment_date, status: STATUS_LABEL[p.payment_status] ?? p.payment_status, tone: STATUS_TONE[p.payment_status] ?? 'neutral',
@@ -424,7 +487,7 @@ async function buildRows(kind: Kind, nameOf: Map<string, string>): Promise<Row[]
       }
     } else {
       rows.push({
-        id: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Salário CLT',
+        id: c.id, kind: 'clause', clauseId: c.id, atleta: name(c.athlete_id), athleteId: c.athlete_id, natureza: 'Salário CLT',
         parte, parteKind: 'atleta', descricao: c.description,
         valor: c.original_value, moeda: c.currency, vencimento: c.due_date,
         pagamento: c.payment_date, status: STATUS_LABEL[c.payment_status] ?? c.payment_status, tone: STATUS_TONE[c.payment_status] ?? 'neutral',

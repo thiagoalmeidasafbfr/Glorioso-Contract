@@ -3,49 +3,58 @@
    are loaded via <link> in index.html — a CSS @import here would land after
    Tailwind's inlined reset and be dropped as out-of-order. */
 
-/* ── Glorioso Finance — Design Tokens ── */
+/* ── Glorioso Finance — Design Tokens ──────────────────────────────────────
+   Paleta Botafogo: PRETO como cor principal (textos, botões, ícones, ações) e
+   cinzas neutros nas superfícies. O dourado é apenas um DETALHE (filete do
+   cabeçalho, item ativo do menu) — nunca a cor de textos, rótulos ou links.  */
 :root {
-  /* Brand */
-  --gold:           #be8c4a;
-  --gold-soft:      #dcc89a;
-  --gold-deep:      #7a6244;
-  --gold-tint:      rgba(190,140,74,0.15);
-  --gold-ring:      rgba(190,140,74,0.18);
+  /* Brand — dourado usado com parcimônia, tom mais fechado (menos pastel) */
+  --gold:           #8f6a2a;
+  --gold-soft:      #f2efe8;   /* texto claro sobre superfícies pretas */
+  --gold-deep:      #5b544b;   /* cinza-quente: rótulos que antes eram dourados */
+  --gold-tint:      rgba(143,106,42,0.10);
+  --gold-ring:      rgba(143,106,42,0.16);
 
-  /* Ink */
-  --ink-primary:    #1a1410;
-  --ink-secondary:  #3a2e1c;
+  /* Ink — preto de verdade nos textos */
+  --ink-primary:    #100d0a;
+  --ink-secondary:  #2a2521;
 
-  /* Cream surfaces — página um pouco mais profunda p/ os cards ganharem relevo,
-     card quase branco quente (mais contraste, leitura mais "atual"). */
-  --cream-page:     #f3efe6;
-  --cream-canvas:   #efeadf;
-  --cream-card:     #fffef9;
-  --cream-inset:    #ebe4d5;
-  --tbl-head:       #efe9dd;
-  --on-dark:        #f3eee2;
+  /* Ação primária = preto (Botafogo). Substitui o dourado nos botões/links. */
+  --accent:         #14110d;
+  --accent-hover:   #2a2521;
+  --accent-on:      #faf8f4;
+  --accent-tint:    rgba(20,17,13,0.055);
+  --accent-tint2:   rgba(20,17,13,0.10);
+  --accent-line:    rgba(20,17,13,0.18);
 
-  /* Semantic — verde-oliva quente para positivo, terracota para negativo. */
-  --pos:            #3a6f3a;
-  --pos-tint:       #e5ece1;
-  --neg:            #8a3f27;
-  --neg-tint:       #f2e7e1;
-  --warn:           #b0801f;
-  --warn-tint:      rgba(176,128,31,0.13);
-  /* Neutro (substitui azuis vivos em status/badges) */
-  --neutral:        #5b6b7a;
-  --neutral-tint:   #e7e9ec;
+  /* Superfícies — neutras (cinza-claro), sem viés avermelhado */
+  --cream-page:     #f3f2ef;
+  --cream-canvas:   #eeedea;
+  --cream-card:     #ffffff;
+  --cream-inset:    #e7e5e0;
+  --tbl-head:       #eeedea;
+  --on-dark:        #f4f2ee;
 
-  /* Structure — bordas mornas e visíveis deixam os cards nítidos. */
-  --divider:        rgba(94,70,38,0.12);
-  --divider-soft:   rgba(94,70,38,0.07);
-  --divider-strong: rgba(94,70,38,0.20);
+  /* Semantic */
+  --pos:            #2f6b3a;
+  --pos-tint:       #e6ede6;
+  --neg:            #8a3524;
+  --neg-tint:       #f3e6e2;
+  --warn:           #8a6516;
+  --warn-tint:      rgba(138,101,22,0.12);
+  --neutral:        #55606a;
+  --neutral-tint:   #e8eaec;
+
+  /* Structure — bordas neutras */
+  --divider:        rgba(20,17,13,0.10);
+  --divider-soft:   rgba(20,17,13,0.06);
+  --divider-strong: rgba(20,17,13,0.18);
   --sidebar-w:      220px;
 
-  /* Shadows — presentes e macias (profundidade sem "peso"). */
-  --shadow-hair:    0 1px 2px rgba(40,32,22,0.05);
-  --shadow-card:    0 1px 3px rgba(40,32,22,0.05), 0 8px 20px -14px rgba(40,32,22,0.28);
-  --shadow-panel:   0 4px 10px -6px rgba(40,32,22,0.12), 0 20px 40px -20px rgba(40,32,22,0.34);
+  /* Shadows */
+  --shadow-hair:    0 1px 2px rgba(16,13,10,0.05);
+  --shadow-card:    0 1px 2px rgba(16,13,10,0.05), 0 8px 20px -16px rgba(16,13,10,0.30);
+  --shadow-panel:   0 4px 10px -6px rgba(16,13,10,0.12), 0 20px 40px -20px rgba(16,13,10,0.34);
 
   /* Fonts */
   --font-display:   'Fraunces', 'Cormorant Garamond', Georgia, serif;
@@ -60,23 +69,23 @@
   --card-border:        var(--divider);
   --card-shadow:        var(--shadow-card);
   --text-primary:       var(--ink-primary);
-  --text-secondary:     var(--ink-secondary);
-  --text-muted:         var(--gold-deep);
-  --text-faint:         rgba(26,20,16,0.35);
+  --text-secondary:     #38322c;
+  --text-muted:         #6b645d;
+  --text-faint:         rgba(16,13,10,0.38);
   --table-header-bg:    var(--tbl-head);
   --table-header-color: var(--ink-secondary);
-  --table-row-even:     var(--cream-canvas);
+  --table-row-even:     #faf9f7;
   --table-row-hover:    var(--cream-inset);
   --table-border:       var(--divider);
-  --bg-subtle:          var(--cream-canvas);
+  --bg-subtle:          #f6f5f2;
   --bg-subtle2:         var(--cream-inset);
   --input-bg:           var(--cream-card);
-  --input-border:       rgba(26,20,16,0.15);
+  --input-border:       rgba(20,17,13,0.16);
   --input-color:        var(--ink-primary);
   --row-late-bg:        var(--neg-tint);
   --scrollbar-track:    var(--cream-inset);
-  --scrollbar-thumb:    rgba(26,20,16,0.20);
-  --scrollbar-thumb-hover: rgba(26,20,16,0.38);
+  --scrollbar-thumb:    rgba(20,17,13,0.22);
+  --scrollbar-thumb-hover: rgba(20,17,13,0.40);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -93,27 +102,26 @@ body {
 /* ── Cards ── */
 .card {
   background: var(--cream-card);
-  border-radius: 13px;
+  border-radius: 12px;
   border: 1px solid var(--divider);
   box-shadow: var(--shadow-card);
   transition: box-shadow 0.18s ease, border-color 0.18s ease;
 }
-.card:hover { box-shadow: var(--shadow-panel); border-color: var(--gold-ring); }
+.card:hover { box-shadow: var(--shadow-panel); border-color: var(--divider-strong); }
 
 /* ── KPI classes ── */
 .kpi-label {
   font-family: var(--font-label);
   font-size: 9px;
   font-weight: 500;
-  color: var(--ink-secondary);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  opacity: 0.7;
 }
 .kpi-value {
   font-family: var(--font-data);
   font-size: 20px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ink-primary);
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
@@ -121,7 +129,7 @@ body {
 .kpi-sub {
   font-family: var(--font-body);
   font-size: 11px;
-  color: var(--gold-deep);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -133,10 +141,10 @@ thead th {
   padding: 8px 10px;
   text-align: left;
   font-family: var(--font-label);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   color: var(--ink-secondary);
   border-bottom: 1px solid var(--divider-strong);
   position: sticky;
@@ -145,8 +153,8 @@ thead th {
   white-space: nowrap;
 }
 
-tbody tr { border-bottom: 1px solid var(--divider); }
-tbody tr:nth-child(even) { background: var(--cream-canvas); }
+tbody tr { border-bottom: 1px solid var(--divider-soft); }
+tbody tr:nth-child(even) { background: var(--table-row-even); }
 tbody tr:hover { background: var(--cream-inset) !important; }
 
 tbody td {
@@ -166,20 +174,20 @@ tbody td {
   border-radius: 4px;
   font-family: var(--font-label);
   font-size: 9px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
 .chip-pos,  .badge-ativo      { background: var(--pos-tint);  color: var(--pos); }
 .chip-neg,  .badge-inativo    { background: var(--neg-tint);  color: var(--neg); }
-.chip-gold, .badge-emprestado { background: var(--gold-tint); color: var(--gold-deep); }
+.chip-gold, .badge-emprestado { background: var(--accent-tint2); color: var(--ink-secondary); }
 .chip-neutral               { border: 1px solid var(--divider-strong); color: var(--ink-secondary); }
-.badge-acordo               { background: var(--gold-tint);  color: var(--gold-deep); }
+.badge-acordo               { background: var(--accent-tint2);  color: var(--ink-secondary); }
 
 /* ── Inputs & Selects ── */
 select, input[type="text"] {
   background: var(--cream-card);
-  border: 1px solid rgba(26,20,16,0.15);
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;
@@ -188,16 +196,58 @@ select, input[type="text"] {
   outline: none;
   transition: border-color 0.15s;
 }
-select:focus, input[type="text"]:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px var(--gold-ring);
+select:focus, input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint2);
 }
+
+/* ── Botões de ícone (ações minimalistas em preto) ── */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-primary);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.icon-btn:hover { background: var(--accent-tint); border-color: var(--divider-strong); }
+.icon-btn:active { background: var(--accent-tint2); }
+.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.icon-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+.icon-btn.danger { color: var(--neg); }
+.icon-btn.danger:hover { background: var(--neg-tint); border-color: rgba(138,53,36,0.25); }
+.icon-btn.muted { color: var(--text-muted); }
+.icon-btn.sm { width: 22px; height: 22px; border-radius: 5px; }
+
+/* ── Botões de texto ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px;
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid transparent; text-decoration: none;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.btn-primary { background: var(--accent); color: var(--accent-on); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-outline { background: transparent; border-color: var(--divider-strong); color: var(--ink-primary); }
+.btn-outline:hover { background: var(--accent-tint); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--accent-tint); }
+.btn-danger { background: transparent; border-color: rgba(138,53,36,0.35); color: var(--neg); }
+.btn-danger:hover { background: var(--neg-tint); }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--cream-inset); }
-::-webkit-scrollbar-thumb { background: rgba(26,20,16,0.20); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(26,20,16,0.38); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* ── Sort header hover ── */
 thead th[style*="cursor: pointer"]:hover { background: var(--cream-inset); }
@@ -212,19 +262,19 @@ thead th[style*="cursor: pointer"]:hover { background: var(--cream-inset); }
 }
 .stat-tile:hover {
   box-shadow: var(--shadow-card);
-  border-color: rgba(190,140,74,0.28);
+  border-color: var(--divider-strong);
   transform: translateY(-1px);
 }
 .panel-card {
   background: var(--cream-card);
   border: 1px solid var(--divider);
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow: var(--shadow-hair);
   transition: box-shadow 0.18s ease;
 }
 .panel-card:hover { box-shadow: var(--shadow-card); }
 
 @media (prefers-reduced-motion: reduce) {
-  .stat-tile, .panel-card { transition: none; }
+  .stat-tile, .panel-card, .icon-btn, .btn { transition: none; }
   .stat-tile:hover { transform: none; }
 }

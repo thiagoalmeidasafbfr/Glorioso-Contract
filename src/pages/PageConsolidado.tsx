@@ -4,17 +4,27 @@
 // intermediação, solidariedade, cláusulas em geral e obrigações com clube/agente.
 // Cada linha é um vencimento (parcela) ou um item de pagamento único.
 
-import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   fetchAthletes, fetchAllClauses, fetchAllInstallments,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
+  fetchClubs, fetchIntermediaries,
+  markInstallmentPaid, revertInstallment,
 } from '../lib/athleteQueries'
-import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
+import { fmtCurrencyShort, fmtDate, isOverdue, todayISO } from '../lib/format'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
-import type { Currency } from '../types/athlete-system'
+import type {
+  Currency, Clause, ClauseInstallment, ClubLiability, IntermediaryLiability,
+} from '../types/athlete-system'
+import { buildNameIndex, norm } from '../lib/importHelpers'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
+import RefLink from '../components/RefLink'
+import { Icon, IconButton, IconRow } from '../components/Icon'
+import {
+  InstallmentEditModal, ClauseEditModal, ClauseFlowModal, LiabilityEditModal,
+} from '../components/modals/EditModals'
+import { useAuth } from '../context/AuthContext'
 
 const font = "'Inter', system-ui, sans-serif"
 const mono = "'IBM Plex Mono', monospace"
@@ -25,6 +35,8 @@ const STATUS_OPTS = ['Todos', 'PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA']
 
 interface Mov {
   id: string
+  kind: 'inst' | 'clause' | 'club' | 'agent'
+  clauseId: string | null
   date: string | null
   athleteId: string
   atleta: string
@@ -40,8 +52,20 @@ interface Mov {
 const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
 
 export default function PageConsolidado() {
-  const navigate = useNavigate()
+  const { profile } = useAuth()
+  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
   const [movs, setMovs] = useState<Mov[]>([])
+  // Registros brutos — necessários para abrir os modais de edição de qualquer linha.
+  const [clauses, setClauses] = useState<Clause[]>([])
+  const [insts, setInsts] = useState<ClauseInstallment[]>([])
+  const [cLiabs, setCLiabs] = useState<ClubLiability[]>([])
+  const [iLiabs, setILiabs] = useState<IntermediaryLiability[]>([])
+  const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
+  const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
+  const [editInstId, setEditInstId] = useState<string | null>(null)
+  const [editClauseId, setEditClauseId] = useState<string | null>(null)
+  const [flowClauseId, setFlowClauseId] = useState<string | null>(null)
+  const [editLiab, setEditLiab] = useState<{ kind: 'club' | 'agent'; id: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('Todos')
@@ -50,13 +74,16 @@ export default function PageConsolidado() {
   const [posF, setPosF] = useState('Todos')
   const [posByAth, setPosByAth] = useState<Map<string, string>>(new Map())
 
-  useEffect(() => {
-    (async () => {
+  const load = useCallback(async () => {
+    {
       setLoading(true)
-      const [athletes, clauses, installments, clubLiabs, interLiabs] = await Promise.all([
+      const [athletes, clauses, installments, clubLiabs, interLiabs, clubs, agents] = await Promise.all([
         fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
         fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
+        fetchClubs(), fetchIntermediaries(),
       ])
+      setClauses(clauses); setInsts(installments); setCLiabs(clubLiabs); setILiabs(interLiabs)
+      setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
       const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
       setPosByAth(new Map(athletes.map(a => [a.id, a.position ?? '—'])))
       const clauseById = new Map(clauses.map(c => [c.id, c]))
@@ -68,7 +95,8 @@ export default function PageConsolidado() {
         const c = clauseById.get(it.clause_id)
         const dir: Mov['dir'] = c && isBFR(c.debtor_party) ? 'A_PAGAR' : c ? 'A_RECEBER' : 'A_PAGAR'
         list.push({
-          id: it.id, date: it.due_date, athleteId: it.athlete_id, atleta: nameOf.get(it.athlete_id) ?? '—',
+          id: it.id, kind: 'inst', clauseId: it.clause_id,
+          date: it.due_date, athleteId: it.athlete_id, atleta: nameOf.get(it.athlete_id) ?? '—',
           natureza: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela',
           contraparte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—',
           descricao: c ? `${c.description} — parc. ${it.installment_number}` : `Parcela ${it.installment_number}`,
@@ -81,19 +109,22 @@ export default function PageConsolidado() {
         if (c.original_value == null) continue
         const dir: Mov['dir'] = isBFR(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
         list.push({
-          id: c.id, date: c.due_date, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
+          id: c.id, kind: 'clause', clauseId: c.id,
+          date: c.due_date, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
           natureza: CLAUSE_TYPE_LABELS[c.clause_type], contraparte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party,
           descricao: c.description, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status,
         })
       }
       // Obrigações com clube / agente
       for (const l of clubLiabs) list.push({
-        id: l.id, date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
+        id: l.id, kind: 'club', clauseId: null,
+        date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
         natureza: 'Obrigação clube', contraparte: l.club_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
       })
       for (const l of interLiabs) list.push({
-        id: l.id, date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
+        id: l.id, kind: 'agent', clauseId: l.contract_id ? null : null,
+        date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
         natureza: 'Intermediação', contraparte: l.intermediary_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
       })
@@ -101,8 +132,22 @@ export default function PageConsolidado() {
       list.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
       setMovs(list)
       setLoading(false)
-    })()
+    }
   }, [])
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount
+  useEffect(() => { load() }, [load])
+
+  const entityLink = (parte: string): string | null => {
+    const k = norm(parte)
+    const club = clubIdx.get(k)
+    if (club) return `/clubes/${club}`
+    const agent = agentIdx.get(k)
+    if (agent) return `/intermediarios/${agent}`
+    return null
+  }
+  async function quickPay(id: string) { await markInstallmentPaid(id, todayISO()); await load() }
+  async function quickRevert(id: string) { await revertInstallment(id); await load() }
 
   const atletas = useMemo(() => ['Todos', ...Array.from(new Set(movs.map(m => m.atleta))).sort()], [movs])
   const naturezas = useMemo(() => ['Todos', ...Array.from(new Set(movs.map(m => m.natureza))).sort()], [movs])
@@ -147,7 +192,7 @@ export default function PageConsolidado() {
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1280, margin: '0 auto' }}>
       <PageHero title="Consolidado" subtitle="Todas as movimentações financeiras · Botafogo SAF">
-        <button onClick={exportAll} style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, color: 'var(--on-dark)', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>↓ Exportar</button>
+        <button onClick={exportAll} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, color: 'var(--on-dark)', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}><Icon name="download" size={14} /> Exportar</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
@@ -200,21 +245,44 @@ export default function PageConsolidado() {
               <th style={{ ...th, minWidth: 80 }}>Direção</th>
               <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
               <th style={{ ...th, minWidth: 90 }}>Status</th>
+              <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>Ações</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
+              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
               {filtered.map(m => {
                 const late = isOverdue(m.date, m.status)
                 return (
                   <tr key={m.id} style={{ background: late ? 'var(--row-late-bg)' : 'transparent' }}>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
-                    <td style={td}><button onClick={() => navigate(`/atletas/${m.athleteId}`)} style={{ background: 'none', border: 'none', padding: 0, color: '#be8c4a', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>{m.atleta}</button></td>
-                    <td style={{ ...td, fontSize: 12 }}>{m.natureza}</td>
-                    <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>{m.contraparte}</td>
+                    <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
+                    <td style={{ ...td, fontSize: 12 }}>
+                      {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
+                    </td>
+                    <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
+                      {(() => { const to = entityLink(m.contraparte); return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{m.contraparte}</RefLink> : m.contraparte })()}
+                    </td>
                     <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{m.status}</td>
+                    <td style={td}>
+                      <span style={{
+                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
+                        fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
+                        background: m.status === 'PAGA' ? 'var(--pos-tint)' : m.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
+                        color: m.status === 'PAGA' ? 'var(--pos)' : m.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
+                      }}>{m.status.replace(/_/g, ' ')}</span>
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <IconRow>
+                        {m.clauseId && <IconButton icon="open" label="Abrir página da obrigação" small to={`/obrigacoes/${m.clauseId}`} />}
+                        {canEdit && m.kind === 'inst' && <IconButton icon="edit" label="Editar parcela" small onClick={() => setEditInstId(m.id)} />}
+                        {canEdit && m.kind === 'clause' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditClauseId(m.id)} />}
+                        {canEdit && (m.kind === 'club' || m.kind === 'agent') && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditLiab({ kind: m.kind as 'club' | 'agent', id: m.id })} />}
+                        {canEdit && m.clauseId && <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" small onClick={() => setFlowClauseId(m.clauseId!)} />}
+                        {canEdit && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' && <IconButton icon="check" label="Marcar parcela como paga" small onClick={() => quickPay(m.id)} />}
+                        {canEdit && m.kind === 'inst' && m.status === 'PAGA' && <IconButton icon="undo" label="Reverter pagamento" tone="muted" small onClick={() => quickRevert(m.id)} />}
+                      </IconRow>
+                    </td>
                   </tr>
                 )
               })}
@@ -223,6 +291,23 @@ export default function PageConsolidado() {
         </div>
       </div>
       <div style={{ marginTop: 10, fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>{filtered.length} movimentação(ões)</div>
+
+      {editInstId && (() => {
+        const inst = insts.find(i => i.id === editInstId)
+        return inst ? <InstallmentEditModal inst={inst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); load() }} /> : null
+      })()}
+      {editClauseId && (() => {
+        const cl = clauses.find(c => c.id === editClauseId)
+        return cl ? <ClauseEditModal clause={cl} onClose={() => setEditClauseId(null)} onSaved={() => { setEditClauseId(null); load() }} /> : null
+      })()}
+      {flowClauseId && (() => {
+        const cl = clauses.find(c => c.id === flowClauseId)
+        return cl ? <ClauseFlowModal clause={cl} onClose={() => setFlowClauseId(null)} onSaved={() => { setFlowClauseId(null); load() }} /> : null
+      })()}
+      {editLiab && (() => {
+        const liab = editLiab.kind === 'club' ? cLiabs.find(l => l.id === editLiab.id) : iLiabs.find(l => l.id === editLiab.id)
+        return liab ? <LiabilityEditModal kind={editLiab.kind} liab={liab} onClose={() => setEditLiab(null)} onSaved={() => { setEditLiab(null); load() }} /> : null
+      })()}
     </div>
   )
 }

@@ -26,9 +26,9 @@ export default function RefLink({ to, children, title, style, stopPropagation = 
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        color: hover ? 'var(--gold-deep)' : 'inherit',
+        color: hover ? 'var(--ink-primary)' : 'inherit',
         textDecoration: 'none',
-        borderBottom: `1px dashed ${hover ? 'var(--gold)' : 'rgba(190,140,74,0.45)'}`,
+        borderBottom: `1px dashed ${hover ? 'var(--accent)' : 'var(--accent-line)'}`,
         cursor: 'pointer',
         transition: 'color 0.12s, border-color 0.12s',
         ...style,

@@ -11,7 +11,9 @@ import {
   fetchClause, fetchAthlete, fetchAthleteContracts, fetchClauseInstallments,
   updateClause, deleteClause, deleteClauseInstallments, createClauseInstallments,
   markInstallmentPaid, revertInstallment, registerInstallmentPayment,
+  fetchClubs, fetchIntermediaries,
 } from '../lib/athleteQueries'
+import { buildNameIndex, norm } from '../lib/importHelpers'
 import type { Athlete, Clause, Contract, ClauseInstallment, Currency, ClauseType } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS } from '../types/athlete-system'
 import { fmtDate, fmtCurrencyShort, isOverdue, todayISO } from '../lib/format'
@@ -20,6 +22,8 @@ import NumberInput from '../components/NumberInput'
 import RefLink from '../components/RefLink'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import PaymentModal from '../components/athletes/PaymentModal'
+import { Icon, IconButton, IconRow } from '../components/Icon'
+import { InstallmentEditModal } from '../components/modals/EditModals'
 import { useAuth } from '../context/AuthContext'
 
 const font = "'Inter', system-ui, sans-serif"
@@ -30,7 +34,7 @@ const CLAUSE_TYPES = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
 const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDENTE: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
   PAGA: { bg: '#e5ece1', fg: '#3a6f3a' },
-  PARCIALMENTE_PAGA: { bg: 'rgba(190,140,74,0.15)', fg: '#7a6244' },
+  PARCIALMENTE_PAGA: { bg: 'var(--accent-tint2)', fg: '#7a6244' },
   EM_ATRASO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
   CANCELADA: { bg: 'rgba(156,163,175,0.12)', fg: '#6b7280' },
 }
@@ -42,8 +46,8 @@ function Badge({ status }: { status: string }) {
 
 const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 7, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
 const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
-const btnGold: React.CSSProperties = { padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(190,140,74,0.4)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }
-const btnSolid: React.CSSProperties = { padding: '8px 20px', borderRadius: 8, border: 'none', background: 'var(--ink-primary)', color: 'var(--gold-soft)', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }
+const btnSolid: React.CSSProperties = { padding: '8px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--accent-on)', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }
+const btnOutline: React.CSSProperties = { padding: '8px 16px', borderRadius: 8, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--ink-primary)', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }
 
 export default function PageClauseDetail() {
   const { clauseId } = useParams<{ clauseId: string }>()
@@ -61,6 +65,9 @@ export default function PageClauseDetail() {
   const [editing, setEditing] = useState(false)
   const [showFlow, setShowFlow] = useState(false)
   const [payInstId, setPayInstId] = useState<string | null>(null)
+  const [editInstId, setEditInstId] = useState<string | null>(null)
+  const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
+  const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
 
   const load = useCallback(async () => {
     if (!clauseId) return
@@ -68,13 +75,15 @@ export default function PageClauseDetail() {
     const cl = await fetchClause(clauseId)
     if (!cl) { setNotFound(true); setLoading(false); return }
     setClause(cl)
-    const [ath, insts, contracts] = await Promise.all([
+    const [ath, insts, contracts, clubs, agents] = await Promise.all([
       fetchAthlete(cl.athlete_id),
       fetchClauseInstallments(cl.id),
       fetchAthleteContracts(cl.athlete_id),
+      fetchClubs(), fetchIntermediaries(),
     ])
     setAthlete(ath)
     setInstallments(insts)
+    setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
     const ct = cl.contract_id ? contracts.find(c => c.id === cl.contract_id) ?? null : null
     setContract(ct)
     setParent(ct?.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null)
@@ -88,7 +97,7 @@ export default function PageClauseDetail() {
   if (notFound || !clause) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
       <div style={{ color: 'var(--text-muted)' }}>Obrigação não encontrada.</div>
-      <button onClick={() => navigate('/atletas')} style={{ ...btnGold, marginTop: 16 }}>← Voltar</button>
+      <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 16 }}>← Voltar</button>
     </div>
   )
 
@@ -96,6 +105,16 @@ export default function PageClauseDetail() {
   const paidParc = installments.filter(p => p.payment_status === 'PAGA').reduce((s, p) => s + p.original_value, 0)
   const total = installments.length ? totalParc : (clause.original_value ?? 0)
   const payInst = payInstId ? installments.find(i => i.id === payInstId) ?? null : null
+  const editInst = editInstId ? installments.find(i => i.id === editInstId) ?? null : null
+
+  // Credor/devedor viram link quando existe cadastro de clube ou agente com o nome.
+  function partyNode(name: string) {
+    const k = norm(name)
+    const club = clubIdx.get(k)
+    const agent = agentIdx.get(k)
+    const to = club ? `/clubes/${club}` : agent ? `/intermediarios/${agent}` : null
+    return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{name}</RefLink> : <>{name}</>
+  }
 
   async function handleQuickPay(id: string) { await markInstallmentPaid(id, todayISO()); load() }
   async function handleRevert(id: string) { await revertInstallment(id); load() }
@@ -117,18 +136,18 @@ export default function PageClauseDetail() {
         <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
         <span>/</span>
         {athlete && <><Link to={`/atletas/${athlete.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete.short_name ?? athlete.full_name}</Link><span>/</span></>}
-        <span style={{ color: '#be8c4a' }}>Obrigação</span>
+        <span style={{ color: 'var(--ink-primary)' }}>Obrigação</span>
       </div>
 
       {/* Dados da obrigação */}
       <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#be8c4a', fontWeight: 600 }}>Dados da obrigação</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', fontWeight: 700 }}>Dados da obrigação</div>
           {canEdit && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setEditing(e => !e)} style={btnGold}>{editing ? 'Fechar edição' : 'Editar dados'}</button>
-              <button onClick={handleDelete} style={{ ...btnGold, border: '1px solid rgba(122,63,44,0.4)', background: 'transparent', color: 'var(--neg)' }}>Excluir</button>
-            </div>
+            <IconRow>
+              <IconButton icon={editing ? 'x' : 'edit'} label={editing ? 'Fechar edição' : 'Editar dados da obrigação'} onClick={() => setEditing(e => !e)} />
+              <IconButton icon="trash" label="Excluir obrigação" tone="danger" onClick={handleDelete} />
+            </IconRow>
           )}
         </div>
 
@@ -146,8 +165,8 @@ export default function PageClauseDetail() {
               {parent && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>↳ vínculo pai: {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}</div>}
             </dd>
             <dt style={dt}>Natureza</dt><dd style={dd}>{CLAUSE_TYPE_LABELS[clause.clause_type]}</dd>
-            <dt style={dt}>Credor</dt><dd style={dd}>{clause.creditor_party}</dd>
-            <dt style={dt}>Devedor</dt><dd style={dd}>{clause.debtor_party}</dd>
+            <dt style={dt}>Credor</dt><dd style={dd}>{partyNode(clause.creditor_party)}</dd>
+            <dt style={dt}>Devedor</dt><dd style={dd}>{partyNode(clause.debtor_party)}</dd>
             <dt style={dt}>Valor</dt><dd style={dd}>{clause.original_value != null ? fmtCurrencyShort(clause.original_value, clause.currency) : (clause.percentage_value != null ? `${clause.percentage_value}%` : '—')}</dd>
             {clause.condition_description && <><dt style={dt}>Condição</dt><dd style={dd}>{clause.condition_description}</dd></>}
             <dt style={dt}>Status</dt><dd style={dd}><Badge status={clause.payment_status} /></dd>
@@ -159,12 +178,17 @@ export default function PageClauseDetail() {
       <div className="card" style={{ padding: '20px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div>
-            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#be8c4a', fontWeight: 600 }}>Fluxo de pagamento</div>
+            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', fontWeight: 700 }}>Fluxo de pagamento</div>
             <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--text-secondary)', marginTop: 4 }}>
               {installments.length > 0 ? `${installments.length} parcela${installments.length !== 1 ? 's' : ''} · ${fmtCurrencyShort(paidParc, clause.currency)} pago de ${fmtCurrencyShort(total, clause.currency)}` : `Sem parcelas · total ${fmtCurrencyShort(total, clause.currency)}`}
             </div>
           </div>
-          {canEdit && <button onClick={() => setShowFlow(s => !s)} style={btnGold}>{showFlow ? 'Fechar' : (installments.length ? 'Editar fluxo' : 'Gerar fluxo')}</button>}
+          {canEdit && (
+            <button onClick={() => setShowFlow(s => !s)} className="btn btn-outline">
+              <Icon name={showFlow ? 'x' : 'flow'} size={14} />
+              {showFlow ? 'Fechar' : (installments.length ? 'Editar fluxo' : 'Gerar fluxo')}
+            </button>
+          )}
         </div>
 
         {showFlow && clause && (
@@ -189,13 +213,14 @@ export default function PageClauseDetail() {
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
                   <Badge status={p.payment_status} />
                   {canEdit && (
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                    <IconRow>
+                      <IconButton icon="edit" label={`Editar parcela ${p.installment_number}`} onClick={() => setEditInstId(p.id)} />
                       {!paid && p.payment_status !== 'CANCELADA' && <>
-                        <button onClick={() => handleQuickPay(p.id)} title="Marcar como paga" style={miniBtn}>✓ paga</button>
-                        <button onClick={() => setPayInstId(p.id)} title="Registrar pagamento com câmbio" style={miniBtn}>registrar…</button>
+                        <IconButton icon="check" label="Marcar como paga" onClick={() => handleQuickPay(p.id)} />
+                        <IconButton icon="money" label="Registrar pagamento com câmbio" onClick={() => setPayInstId(p.id)} />
                       </>}
-                      {paid && <button onClick={() => handleRevert(p.id)} title="Reverter" style={{ ...miniBtn, color: 'var(--text-secondary)' }}>reverter</button>}
-                    </div>
+                      {paid && <IconButton icon="undo" label="Reverter pagamento" tone="muted" onClick={() => handleRevert(p.id)} />}
+                    </IconRow>
                   )}
                 </div>
               )
@@ -205,13 +230,13 @@ export default function PageClauseDetail() {
       </div>
 
       {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handlePay(payInst.id, p)} />}
+      {editInst && <InstallmentEditModal inst={editInst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); load() }} />}
     </div>
   )
 }
 
 const dt: React.CSSProperties = { color: 'var(--text-muted)', fontWeight: 500 }
 const dd: React.CSSProperties = { margin: 0, color: 'var(--ink-primary)' }
-const miniBtn: React.CSSProperties = { padding: '3px 9px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: '#be8c4a', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }
 
 // ── Formulário de edição dos dados da cláusula ───────────────────────────────
 function ClauseFields({ clause, onSaved, onCancel }: { clause: Clause; onSaved: () => void; onCancel: () => void }) {
@@ -266,7 +291,7 @@ function ClauseFields({ clause, onSaved, onCancel }: { clause: Clause; onSaved: 
         </select>
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <button onClick={onCancel} style={{ ...btnGold, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)' }}>Cancelar</button>
+        <button onClick={onCancel} style={btnOutline}>Cancelar</button>
         <button onClick={save} disabled={saving} style={btnSolid}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </div>
     </div>
@@ -295,7 +320,7 @@ function FlowEditor({ clause, installments, onSaved }: { clause: Clause; install
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} defaultFirst={clause.due_date ?? ''} />
+      <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} defaultFirst={clause.due_date ?? ''} seedRows={4} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>Salvar substitui as parcelas atuais. Total: <strong>{fmtCurrencyShort(total, currency)}</strong>.</span>
         <button onClick={save} disabled={saving} style={btnSolid}>{saving ? 'Salvando…' : 'Salvar fluxo'}</button>

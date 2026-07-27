@@ -21,7 +21,7 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
 
 const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
   ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a' },
-  EMPRESTADO: { bg: 'rgba(190,140,74,0.20)', fg: '#7a6244' },
+  EMPRESTADO: { bg: 'var(--divider-strong)', fg: '#7a6244' },
   VENDIDO:    { bg: 'rgba(91,107,122,0.14)', fg: '#5b6b7a' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.20)', fg: '#6b7280' },
 }
@@ -61,7 +61,7 @@ function StickerPhoto({ athlete }: { athlete: Athlete }) {
       ) : (
         <span style={{
           fontFamily: fontMono, fontSize: 52, fontWeight: 700,
-          color: 'rgba(190,140,74,0.55)', letterSpacing: '0.04em',
+          color: 'var(--accent-line)', letterSpacing: '0.04em',
         }}>
           {getInitials(athlete.short_name)}
         </span>
@@ -69,7 +69,7 @@ function StickerPhoto({ athlete }: { athlete: Athlete }) {
       {/* Faixa de brilho dourada no topo, remete a card colecionável */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: 'linear-gradient(90deg, transparent, #be8c4a, transparent)',
+        background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
       }} />
     </div>
   )
@@ -98,7 +98,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
         background: 'var(--cream-card)', borderRadius: 14, overflow: 'hidden',
         border: `1px solid ${hover ? 'var(--gold)' : 'var(--divider-strong)'}`,
         boxShadow: hover
-          ? '0 14px 34px rgba(0,0,0,0.20), 0 0 0 1px rgba(190,140,74,0.35)'
+          ? '0 14px 34px rgba(0,0,0,0.20), 0 0 0 1px var(--divider-strong)'
           : '0 2px 10px rgba(0,0,0,0.07)',
         transform: hover ? 'translateY(-5px)' : 'translateY(0)',
         transition: 'transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease',
@@ -350,7 +350,7 @@ export default function PageAlbum() {
             <section key={g.pos}>
               {/* Cabeçalho da posição */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: '#be8c4a', flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--accent)', flexShrink: 0 }} />
                 <h2 style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
                 <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em' }}>
                   {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}

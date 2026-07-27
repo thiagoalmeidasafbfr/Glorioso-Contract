@@ -36,7 +36,7 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
 
 const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
   ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a' },
-  EMPRESTADO: { bg: 'rgba(190,140,74,0.18)', fg: '#7a6244' },
+  EMPRESTADO: { bg: 'var(--accent-tint2)', fg: '#7a6244' },
   VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
 }
@@ -65,7 +65,7 @@ function AthleteAvatar({ athlete, size = 38 }: { athlete: Athlete; size?: number
     return (
       <img src={athlete.profile_photo_url} alt={athlete.short_name}
         onError={() => setErr(true)}
-        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(190,140,74,0.30)', flexShrink: 0 }} />
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--divider-strong)', flexShrink: 0 }} />
     )
   }
   return (
@@ -174,7 +174,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, fontFamily: font, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={handleSave} disabled={!f.full_name.trim()}
-            style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: f.full_name.trim() ? '#be8c4a' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
+            style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: f.full_name.trim() ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
             Criar Atleta
           </button>
         </div>
@@ -276,7 +276,7 @@ export default function PageAthletesList() {
           </select>
         </div>
         <button onClick={() => setShowNew(true)}
-          style={{ padding: '8px 20px', background: '#be8c4a', border: 'none', borderRadius: 8, color: '#fff', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          style={{ padding: '8px 20px', background: 'var(--accent)', border: 'none', borderRadius: 8, color: '#fff', fontFamily: font, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           + Novo Atleta
         </button>
         <SheetIO
