@@ -10,7 +10,7 @@ import {
   fetchAthletes, fetchAllImageRights, fetchAllIntermediaryLiabilities,
   fetchAllClubLiabilities, fetchAllClauses, fetchAllInstallments,
   fetchClubs, fetchIntermediaries,
-  markInstallmentPaid, revertInstallment,
+  markInstallmentPaid, revertInstallment, registerInstallmentPayment,
 } from '../lib/athleteQueries'
 import type {
   Athlete, Currency, Clause, ClauseInstallment, ClubLiability, IntermediaryLiability,
@@ -18,10 +18,12 @@ import type {
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import { fmtCurrencyShort, fmtDate, isOverdue, todayISO } from '../lib/format'
 import PageHero from '../components/PageHero'
-import { IconButton, IconRow } from '../components/Icon'
+import RowActions, { ActionLegend } from '../components/RowActions'
+import PaymentModal from '../components/athletes/PaymentModal'
 import {
   InstallmentEditModal, ClauseEditModal, ClauseFlowModal, LiabilityEditModal,
 } from '../components/modals/EditModals'
+import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import { useAuth } from '../context/AuthContext'
 
 // Tipos de cláusula voltados a CLUBES (contraparte = clube) e a AGENTES.
@@ -54,6 +56,7 @@ type Tone = 'pos' | 'neg' | 'warn' | 'neutral'
 type ParteKind = 'atleta' | 'clube' | 'intermediario' | 'clube_ou_agente' | null
 
 type RowKind = 'inst' | 'clause' | 'clubLiab' | 'intermLiab' | 'legacy'
+const isLiab = (k: RowKind) => k === 'clubLiab' || k === 'intermLiab'
 
 interface Row {
   id: string
@@ -114,6 +117,7 @@ export default function PageRelatorio() {
   const [clubLiabsRaw, setClubLiabsRaw] = useState<ClubLiability[]>([])
   const [intermLiabsRaw, setIntermLiabsRaw] = useState<IntermediaryLiability[]>([])
   const [editInstId, setEditInstId] = useState<string | null>(null)
+  const [payInstId, setPayInstId] = useState<string | null>(null)
   const [editClauseId, setEditClauseId] = useState<string | null>(null)
   const [flowClauseId, setFlowClauseId] = useState<string | null>(null)
   const [editLiab, setEditLiab] = useState<{ kind: 'club' | 'agent'; id: string } | null>(null)
@@ -153,6 +157,22 @@ export default function PageRelatorio() {
 
   async function quickPay(id: string) { await markInstallmentPaid(id, todayISO()); await load() }
   async function quickRevert(id: string) { await revertInstallment(id); await load() }
+  async function registerPayment(id: string, pmt: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
+    await registerInstallmentPayment(id, {
+      payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
+      amount_paid_brl: pmt.valueBRL, exchange_rate: pmt.rate, notes: pmt.notes,
+    })
+    setPayInstId(null); await load()
+  }
+
+  // Passivo flat (linha sem parcelas) → obrigação com fluxo, e abre o editor.
+  async function generateFlowFor(rowKind: RowKind, rowId: string) {
+    const liab = rowKind === 'clubLiab' ? clubLiabsRaw.find(l => l.id === rowId) : intermLiabsRaw.find(l => l.id === rowId)
+    if (!liab) return
+    const clause = await promoteLiabilityToClause(rowKind === 'clubLiab' ? 'club' : 'agent', liab)
+    await load()
+    setFlowClauseId(clause.id)
+  }
 
   async function handleImport(sheets: Record<string, Record<string, string>[]>) {
     const rowsIn = sheets[Object.keys(sheets)[0]] ?? []
@@ -262,6 +282,9 @@ export default function PageRelatorio() {
       </div>
 
       {/* Tabela */}
+      <div style={{ marginBottom: 8 }}>
+        <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert']} />
+      </div>
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
@@ -301,16 +324,32 @@ export default function PageRelatorio() {
                       <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: tone.bg, color: tone.fg }}>{r.status}</span>
                     </td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <IconRow>
-                        {r.clauseId && <IconButton icon="open" label="Abrir página da obrigação" small to={`/obrigacoes/${r.clauseId}`} />}
-                        {canEdit && r.kind === 'inst' && <IconButton icon="edit" label="Editar parcela" small onClick={() => setEditInstId(r.id)} />}
-                        {canEdit && r.kind === 'clause' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditClauseId(r.id)} />}
-                        {canEdit && r.kind === 'clubLiab' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditLiab({ kind: 'club', id: r.id })} />}
-                        {canEdit && r.kind === 'intermLiab' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditLiab({ kind: 'agent', id: r.id })} />}
-                        {canEdit && r.clauseId && <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" small onClick={() => setFlowClauseId(r.clauseId!)} />}
-                        {canEdit && r.kind === 'inst' && r.status !== 'Paga' && r.status !== 'Cancelada' && <IconButton icon="check" label="Marcar parcela como paga" small onClick={() => quickPay(r.id)} />}
-                        {canEdit && r.kind === 'inst' && r.status === 'Paga' && <IconButton icon="undo" label="Reverter pagamento" tone="muted" small onClick={() => quickRevert(r.id)} />}
-                      </IconRow>
+                      <RowActions
+                        open={{ to: r.clauseId ? `/obrigacoes/${r.clauseId}` : null, reason: isLiab(r.kind) ? 'passivo importado — gere as parcelas para criar a obrigação' : 'esta linha não tem página própria' }}
+                        edit={{
+                          onClick: !canEdit ? undefined
+                            : r.kind === 'inst' ? () => setEditInstId(r.id)
+                            : r.kind === 'clause' ? () => setEditClauseId(r.id)
+                            : r.kind === 'clubLiab' ? () => setEditLiab({ kind: 'club', id: r.id })
+                            : r.kind === 'intermLiab' ? () => setEditLiab({ kind: 'agent', id: r.id })
+                            : undefined,
+                          reason: r.kind === 'legacy' ? 'lançamento legado de imagem' : 'sem permissão de edição',
+                        }}
+                        schedule={r.clauseId ? { onClick: canEdit ? () => setFlowClauseId(r.clauseId!) : undefined, reason: 'sem permissão de edição' } : undefined}
+                        generate={isLiab(r.kind) ? { onClick: canEdit ? () => generateFlowFor(r.kind, r.id) : undefined, reason: 'sem permissão de edição' } : undefined}
+                        markPaid={{
+                          onClick: canEdit && r.kind === 'inst' && r.status !== 'Paga' && r.status !== 'Cancelada' ? () => quickPay(r.id) : undefined,
+                          reason: r.kind !== 'inst' ? 'gere as parcelas para dar baixa' : r.status === 'Paga' ? 'parcela já paga' : 'parcela cancelada',
+                        }}
+                        pay={{
+                          onClick: canEdit && r.kind === 'inst' && r.status !== 'Paga' && r.status !== 'Cancelada' ? () => setPayInstId(r.id) : undefined,
+                          reason: r.kind !== 'inst' ? 'gere as parcelas para registrar o pagamento' : r.status === 'Paga' ? 'parcela já paga' : 'parcela cancelada',
+                        }}
+                        revert={{
+                          onClick: canEdit && r.kind === 'inst' && r.status === 'Paga' ? () => quickRevert(r.id) : undefined,
+                          reason: 'a parcela não está paga',
+                        }}
+                      />
                     </td>
                   </tr>
                 )
@@ -323,6 +362,13 @@ export default function PageRelatorio() {
         {filtered.length} {filtered.length === 1 ? 'movimentação' : 'movimentações'}
       </div>
 
+      {payInstId && (() => {
+        const inst = instsRaw.find(i => i.id === payInstId)
+        return inst ? (
+          <PaymentModal label={`Parcela ${inst.installment_number}`} currency={inst.currency} value={inst.original_value}
+            onClose={() => setPayInstId(null)} onSave={pmt => registerPayment(inst.id, pmt)} />
+        ) : null
+      })()}
       {editInstId && (() => {
         const inst = instsRaw.find(i => i.id === editInstId)
         return inst ? <InstallmentEditModal inst={inst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); load() }} /> : null
@@ -339,7 +385,12 @@ export default function PageRelatorio() {
         const liab = editLiab.kind === 'club'
           ? clubLiabsRaw.find(l => l.id === editLiab.id)
           : intermLiabsRaw.find(l => l.id === editLiab.id)
-        return liab ? <LiabilityEditModal kind={editLiab.kind} liab={liab} onClose={() => setEditLiab(null)} onSaved={() => { setEditLiab(null); load() }} /> : null
+        return liab ? (
+          <LiabilityEditModal kind={editLiab.kind} liab={liab}
+            onClose={() => setEditLiab(null)}
+            onSaved={() => { setEditLiab(null); load() }}
+            onPromoted={async clauseId => { setEditLiab(null); await load(); setFlowClauseId(clauseId) }} />
+        ) : null
       })()}
     </div>
   )

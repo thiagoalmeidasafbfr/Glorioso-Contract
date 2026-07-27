@@ -13,7 +13,8 @@ import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
-import { Icon, IconButton, IconRow } from '../components/Icon'
+import { Icon } from '../components/Icon'
+import RowActions from '../components/RowActions'
 import { ClauseEditModal, ClauseFlowModal } from '../components/modals/EditModals'
 import { useAuth } from '../context/AuthContext'
 
@@ -190,11 +191,11 @@ export default function PageAcordos() {
                     <td style={{ ...td, textAlign: 'center', fontFamily: fontMono }}>{r.paid}/{r.count}</td>
                     <td style={td}><span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <IconRow>
-                        <IconButton icon="open" label="Abrir o acordo" small to={`/obrigacoes/${r.id}`} />
-                        {canEdit && <IconButton icon="edit" label="Editar acordo" small onClick={() => setEditId(r.id)} />}
-                        {canEdit && <IconButton icon="flow" label="Editar fluxo do acordo" small onClick={() => setFlowId(r.id)} />}
-                      </IconRow>
+                      <RowActions
+                        open={{ to: `/obrigacoes/${r.id}`, label: 'Abrir o acordo' }}
+                        edit={{ onClick: canEdit ? () => setEditId(r.id) : undefined, label: 'Editar acordo', reason: 'sem permissão de edição' }}
+                        schedule={{ onClick: canEdit ? () => setFlowId(r.id) : undefined, label: 'Ver / editar as parcelas do acordo', reason: 'sem permissão de edição' }}
+                      />
                     </td>
                   </tr>
                 )

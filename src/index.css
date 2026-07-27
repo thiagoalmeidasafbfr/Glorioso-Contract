@@ -44,6 +44,10 @@
   --warn-tint:      rgba(138,101,22,0.12);
   --neutral:        #55606a;
   --neutral-tint:   #e8eaec;
+  /* Azul das ações de parcelas/cronograma e cinza dos ícones indisponíveis. */
+  --info:           #1f5673;
+  --info-tint:      rgba(31,86,115,0.10);
+  --icon-off:       #b9b4ad;
 
   /* Structure — bordas neutras */
   --divider:        rgba(20,17,13,0.10);
@@ -201,7 +205,11 @@ select:focus, input[type="text"]:focus, input[type="date"]:focus, input[type="nu
   box-shadow: 0 0 0 3px var(--accent-tint2);
 }
 
-/* ── Botões de ícone (ações minimalistas em preto) ── */
+/* ── Botões de ícone ──────────────────────────────────────────────────────
+   A COR faz parte do vocabulário da ação (não é decoração):
+     preto   → abrir / editar          azul  → parcelas (cronograma, gerar)
+     verde   → pagamento               âmbar → desfazer
+     vermelho→ excluir                 cinza → indisponível (ícone continua visível) */
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -219,10 +227,29 @@ select:focus, input[type="text"]:focus, input[type="date"]:focus, input[type="nu
 .icon-btn:hover { background: var(--accent-tint); border-color: var(--divider-strong); }
 .icon-btn:active { background: var(--accent-tint2); }
 .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.icon-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
-.icon-btn.danger { color: var(--neg); }
-.icon-btn.danger:hover { background: var(--neg-tint); border-color: rgba(138,53,36,0.25); }
-.icon-btn.muted { color: var(--text-muted); }
+
+.icon-btn.info    { color: var(--info); }
+.icon-btn.info:hover    { background: var(--info-tint);  border-color: rgba(31,86,115,0.25); }
+.icon-btn.success { color: var(--pos); }
+.icon-btn.success:hover { background: var(--pos-tint);   border-color: rgba(47,107,58,0.25); }
+.icon-btn.warn    { color: var(--warn); }
+.icon-btn.warn:hover    { background: var(--warn-tint);  border-color: rgba(138,101,22,0.25); }
+.icon-btn.danger  { color: var(--neg); }
+.icon-btn.danger:hover  { background: var(--neg-tint);   border-color: rgba(138,53,36,0.25); }
+.icon-btn.muted   { color: var(--text-muted); }
+
+/* Indisponível: cinza, sem hover, sem cursor de clique — mas ainda visível,
+   para a linha manter o mesmo conjunto de ações em todas as tabelas. */
+.icon-btn[disabled],
+.icon-btn[aria-disabled="true"] {
+  color: var(--icon-off);
+  cursor: default;
+  background: transparent;
+  border-color: transparent;
+}
+.icon-btn[disabled]:hover,
+.icon-btn[aria-disabled="true"]:hover { background: transparent; border-color: transparent; }
+
 .icon-btn.sm { width: 22px; height: 22px; border-radius: 5px; }
 
 /* ── Botões de texto ── */

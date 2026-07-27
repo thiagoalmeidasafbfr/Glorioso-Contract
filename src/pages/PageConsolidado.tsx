@@ -9,7 +9,7 @@ import {
   fetchAthletes, fetchAllClauses, fetchAllInstallments,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
   fetchClubs, fetchIntermediaries,
-  markInstallmentPaid, revertInstallment,
+  markInstallmentPaid, revertInstallment, registerInstallmentPayment,
 } from '../lib/athleteQueries'
 import { fmtCurrencyShort, fmtDate, isOverdue, todayISO } from '../lib/format'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
@@ -20,10 +20,13 @@ import { buildNameIndex, norm } from '../lib/importHelpers'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
-import { Icon, IconButton, IconRow } from '../components/Icon'
+import { Icon } from '../components/Icon'
+import RowActions, { ActionLegend } from '../components/RowActions'
+import PaymentModal from '../components/athletes/PaymentModal'
 import {
   InstallmentEditModal, ClauseEditModal, ClauseFlowModal, LiabilityEditModal,
 } from '../components/modals/EditModals'
+import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import { useAuth } from '../context/AuthContext'
 
 const font = "'Inter', system-ui, sans-serif"
@@ -63,6 +66,7 @@ export default function PageConsolidado() {
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
   const [editInstId, setEditInstId] = useState<string | null>(null)
+  const [payInstId, setPayInstId] = useState<string | null>(null)
   const [editClauseId, setEditClauseId] = useState<string | null>(null)
   const [flowClauseId, setFlowClauseId] = useState<string | null>(null)
   const [editLiab, setEditLiab] = useState<{ kind: 'club' | 'agent'; id: string } | null>(null)
@@ -148,6 +152,20 @@ export default function PageConsolidado() {
   }
   async function quickPay(id: string) { await markInstallmentPaid(id, todayISO()); await load() }
   async function quickRevert(id: string) { await revertInstallment(id); await load() }
+  async function registerPayment(id: string, pmt: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
+    await registerInstallmentPayment(id, {
+      payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
+      amount_paid_brl: pmt.valueBRL, exchange_rate: pmt.rate, notes: pmt.notes,
+    })
+    setPayInstId(null); await load()
+  }
+  async function generateFlowFor(kind: 'club' | 'agent', id: string) {
+    const liab = kind === 'club' ? cLiabs.find(l => l.id === id) : iLiabs.find(l => l.id === id)
+    if (!liab) return
+    const clause = await promoteLiabilityToClause(kind, liab)
+    await load()
+    setFlowClauseId(clause.id)
+  }
 
   const atletas = useMemo(() => ['Todos', ...Array.from(new Set(movs.map(m => m.atleta))).sort()], [movs])
   const naturezas = useMemo(() => ['Todos', ...Array.from(new Set(movs.map(m => m.natureza))).sort()], [movs])
@@ -234,6 +252,9 @@ export default function PageConsolidado() {
         </div>
       </div>
 
+      <div style={{ marginBottom: 8 }}>
+        <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert']} />
+      </div>
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -273,15 +294,30 @@ export default function PageConsolidado() {
                       }}>{m.status.replace(/_/g, ' ')}</span>
                     </td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <IconRow>
-                        {m.clauseId && <IconButton icon="open" label="Abrir página da obrigação" small to={`/obrigacoes/${m.clauseId}`} />}
-                        {canEdit && m.kind === 'inst' && <IconButton icon="edit" label="Editar parcela" small onClick={() => setEditInstId(m.id)} />}
-                        {canEdit && m.kind === 'clause' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditClauseId(m.id)} />}
-                        {canEdit && (m.kind === 'club' || m.kind === 'agent') && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditLiab({ kind: m.kind as 'club' | 'agent', id: m.id })} />}
-                        {canEdit && m.clauseId && <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" small onClick={() => setFlowClauseId(m.clauseId!)} />}
-                        {canEdit && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' && <IconButton icon="check" label="Marcar parcela como paga" small onClick={() => quickPay(m.id)} />}
-                        {canEdit && m.kind === 'inst' && m.status === 'PAGA' && <IconButton icon="undo" label="Reverter pagamento" tone="muted" small onClick={() => quickRevert(m.id)} />}
-                      </IconRow>
+                      <RowActions
+                        open={{ to: m.clauseId ? `/obrigacoes/${m.clauseId}` : null, reason: 'passivo importado — gere as parcelas para criar a obrigação' }}
+                        edit={{
+                          onClick: !canEdit ? undefined
+                            : m.kind === 'inst' ? () => setEditInstId(m.id)
+                            : m.kind === 'clause' ? () => setEditClauseId(m.id)
+                            : () => setEditLiab({ kind: m.kind as 'club' | 'agent', id: m.id }),
+                          reason: 'sem permissão de edição',
+                        }}
+                        schedule={m.clauseId ? { onClick: canEdit ? () => setFlowClauseId(m.clauseId!) : undefined, reason: 'sem permissão de edição' } : undefined}
+                        generate={!m.clauseId ? { onClick: canEdit ? () => generateFlowFor(m.kind as 'club' | 'agent', m.id) : undefined, reason: 'sem permissão de edição' } : undefined}
+                        markPaid={{
+                          onClick: canEdit && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' ? () => quickPay(m.id) : undefined,
+                          reason: m.kind !== 'inst' ? 'gere as parcelas para dar baixa' : m.status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
+                        }}
+                        pay={{
+                          onClick: canEdit && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' ? () => setPayInstId(m.id) : undefined,
+                          reason: m.kind !== 'inst' ? 'gere as parcelas para registrar o pagamento' : m.status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
+                        }}
+                        revert={{
+                          onClick: canEdit && m.kind === 'inst' && m.status === 'PAGA' ? () => quickRevert(m.id) : undefined,
+                          reason: 'a parcela não está paga',
+                        }}
+                      />
                     </td>
                   </tr>
                 )
@@ -292,6 +328,13 @@ export default function PageConsolidado() {
       </div>
       <div style={{ marginTop: 10, fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>{filtered.length} movimentação(ões)</div>
 
+      {payInstId && (() => {
+        const inst = insts.find(i => i.id === payInstId)
+        return inst ? (
+          <PaymentModal label={`Parcela ${inst.installment_number}`} currency={inst.currency} value={inst.original_value}
+            onClose={() => setPayInstId(null)} onSave={pmt => registerPayment(inst.id, pmt)} />
+        ) : null
+      })()}
       {editInstId && (() => {
         const inst = insts.find(i => i.id === editInstId)
         return inst ? <InstallmentEditModal inst={inst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); load() }} /> : null
@@ -306,7 +349,12 @@ export default function PageConsolidado() {
       })()}
       {editLiab && (() => {
         const liab = editLiab.kind === 'club' ? cLiabs.find(l => l.id === editLiab.id) : iLiabs.find(l => l.id === editLiab.id)
-        return liab ? <LiabilityEditModal kind={editLiab.kind} liab={liab} onClose={() => setEditLiab(null)} onSaved={() => { setEditLiab(null); load() }} /> : null
+        return liab ? (
+          <LiabilityEditModal kind={editLiab.kind} liab={liab}
+            onClose={() => setEditLiab(null)}
+            onSaved={() => { setEditLiab(null); load() }}
+            onPromoted={async clauseId => { setEditLiab(null); await load(); setFlowClauseId(clauseId) }} />
+        ) : null
       })()}
     </div>
   )

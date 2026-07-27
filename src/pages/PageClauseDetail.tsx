@@ -23,6 +23,7 @@ import RefLink from '../components/RefLink'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import PaymentModal from '../components/athletes/PaymentModal'
 import { Icon, IconButton, IconRow } from '../components/Icon'
+import RowActions, { ActionLegend } from '../components/RowActions'
 import { InstallmentEditModal } from '../components/modals/EditModals'
 import { useAuth } from '../context/AuthContext'
 
@@ -197,6 +198,12 @@ export default function PageClauseDetail() {
           </div>
         )}
 
+        {canEdit && installments.length > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            <ActionLegend items={['edit', 'markPaid', 'pay', 'revert']} />
+          </div>
+        )}
+
         {installments.length === 0 ? (
           <div style={{ fontFamily: font, fontSize: 13, color: 'var(--text-muted)', padding: '10px 0' }}>
             Nenhuma parcela cadastrada. Use "{installments.length ? 'Editar' : 'Gerar'} fluxo" para lançar as parcelas (ex.: dividir {fmtCurrencyShort(total, clause.currency)} em vencimentos).
@@ -213,14 +220,18 @@ export default function PageClauseDetail() {
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
                   <Badge status={p.payment_status} />
                   {canEdit && (
-                    <IconRow>
-                      <IconButton icon="edit" label={`Editar parcela ${p.installment_number}`} onClick={() => setEditInstId(p.id)} />
-                      {!paid && p.payment_status !== 'CANCELADA' && <>
-                        <IconButton icon="check" label="Marcar como paga" onClick={() => handleQuickPay(p.id)} />
-                        <IconButton icon="money" label="Registrar pagamento com câmbio" onClick={() => setPayInstId(p.id)} />
-                      </>}
-                      {paid && <IconButton icon="undo" label="Reverter pagamento" tone="muted" onClick={() => handleRevert(p.id)} />}
-                    </IconRow>
+                    <RowActions small={false}
+                      edit={{ onClick: () => setEditInstId(p.id), label: `Editar parcela ${p.installment_number}` }}
+                      markPaid={{
+                        onClick: !paid && p.payment_status !== 'CANCELADA' ? () => handleQuickPay(p.id) : undefined,
+                        reason: paid ? 'parcela já paga' : 'parcela cancelada',
+                      }}
+                      pay={{
+                        onClick: !paid && p.payment_status !== 'CANCELADA' ? () => setPayInstId(p.id) : undefined,
+                        reason: paid ? 'parcela já paga' : 'parcela cancelada',
+                      }}
+                      revert={{ onClick: paid ? () => handleRevert(p.id) : undefined, reason: 'a parcela não está paga' }}
+                    />
                   )}
                 </div>
               )

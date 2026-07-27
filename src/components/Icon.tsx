@@ -13,7 +13,9 @@ export type IconName =
   | 'check'       // marcar como paga / atingida
   | 'undo'        // reverter
   | 'money'       // registrar pagamento
-  | 'flow'        // fluxo de parcelas (cronograma)
+  | 'flow'        // lista genérica
+  | 'schedule'    // cronograma de parcelas já existente (calendário)
+  | 'split'       // gerar parcelas a partir de um valor único
   | 'x'           // fechar / remover linha
   | 'chevronDown'
   | 'chevronRight'
@@ -71,6 +73,29 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M4.5 14h7" />
     </>
   ),
+  // Calendário com marcas de vencimento — "ver/editar o cronograma de parcelas".
+  schedule: (
+    <>
+      <rect x="3.5" y="5" width="13" height="11.5" rx="1.5" />
+      <path d="M3.5 8.5h13" />
+      <path d="M7 3.8v2.2" />
+      <path d="M13 3.8v2.2" />
+      <path d="M6.6 11.6h1.2" />
+      <path d="M11 11.6h2.4" />
+      <path d="M6.6 14h1.2" />
+      <path d="M11 14h2.4" />
+    </>
+  ),
+  // Um valor que se divide em vários — "gerar/parcelar".
+  split: (
+    <>
+      <path d="M3.5 10h4" />
+      <path d="M7.5 10L11 6.2h5" />
+      <path d="M7.5 10L11 13.8h5" />
+      <path d="M14 4.4l2 1.8-2 1.8" />
+      <path d="M14 12l2 1.8-2 1.8" />
+    </>
+  ),
   x: (
     <>
       <path d="M5.5 5.5l9 9" />
@@ -118,7 +143,11 @@ export function Icon({ name, size = 15, strokeWidth = 1.6, style }: {
   )
 }
 
-type Tone = 'default' | 'danger' | 'muted'
+/** Tom = significado da ação (a cor é parte do vocabulário, não decoração):
+ *   default → navegação/edição (preto)   info    → parcelas / cronograma (azul)
+ *   success → pagamento (verde)          warn    → desfazer (âmbar)
+ *   danger  → exclusão (vermelho)        muted   → auxiliar (cinza)          */
+export type Tone = 'default' | 'info' | 'success' | 'warn' | 'danger' | 'muted'
 
 interface IconButtonProps {
   icon: IconName
@@ -131,25 +160,28 @@ interface IconButtonProps {
   tone?: Tone
   small?: boolean
   disabled?: boolean
+  /** Por que a ação está indisponível — entra no tooltip do ícone cinza. */
+  disabledReason?: string
   style?: React.CSSProperties
 }
 
-/** Botão de ação em ícone: preto, discreto, com tooltip e rótulo acessível. */
+/** Botão de ação em ícone: tom = significado, cinza quando indisponível. */
 export function IconButton({
-  icon, label, title, onClick, to, tone = 'default', small = false, disabled, style,
+  icon, label, title, onClick, to, tone = 'default', small = false, disabled, disabledReason, style,
 }: IconButtonProps) {
-  const cls = `icon-btn${tone === 'danger' ? ' danger' : tone === 'muted' ? ' muted' : ''}${small ? ' sm' : ''}`
+  const cls = `icon-btn ${tone}${small ? ' sm' : ''}`
   const size = small ? 13 : 15
+  const tip = disabled ? `${label}${disabledReason ? ` — ${disabledReason}` : ' (indisponível)'}` : (title ?? label)
   if (to && !disabled) {
     return (
-      <Link to={to} className={cls} title={title ?? label} aria-label={label} style={style}
+      <Link to={to} className={cls} title={tip} aria-label={label} style={style}
         onClick={e => e.stopPropagation()}>
         <Icon name={icon} size={size} />
       </Link>
     )
   }
   return (
-    <button type="button" className={cls} title={title ?? label} aria-label={label} disabled={disabled} style={style}
+    <button type="button" className={cls} title={tip} aria-label={label} aria-disabled={disabled} disabled={disabled} style={style}
       onClick={e => { e.stopPropagation(); onClick?.() }}>
       <Icon name={icon} size={size} />
     </button>
