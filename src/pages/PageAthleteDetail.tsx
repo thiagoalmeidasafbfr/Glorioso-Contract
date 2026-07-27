@@ -24,6 +24,8 @@ import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import EntityPicker from '../components/EntityPicker'
 import PageHero from '../components/PageHero'
 import { Icon, IconButton, IconRow } from '../components/Icon'
+import RowActions, { ActionLegend } from '../components/RowActions'
+import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import {
   InstallmentEditModal, ClauseEditModal, ClauseFlowModal, LiabilityEditModal,
 } from '../components/modals/EditModals'
@@ -131,14 +133,27 @@ function ClauseActions({ clause, onOpen, onEdit, onFlow, onMarkAchieved, onPay, 
   const canAchieve = clause.achievement_status === 'PENDENTE'
   const canCancel = clause.payment_status !== 'CANCELADA'
   return (
-    <IconRow align="center">
-      <IconButton icon="open" label="Abrir página da obrigação" onClick={onOpen} />
-      <IconButton icon="edit" label="Editar obrigação" onClick={onEdit} />
-      <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" onClick={onFlow} />
-      {canAchieve && <IconButton icon="check" label="Marcar como atingida" onClick={onMarkAchieved} />}
-      {canPay && <IconButton icon="money" label="Registrar pagamento" onClick={onPay} />}
-      {canCancel && <IconButton icon="x" label="Cancelar obrigação" tone="danger" onClick={onCancel} />}
-    </IconRow>
+    <RowActions align="center" small={false}
+      open={{ onClick: onOpen }}
+      edit={{ onClick: onEdit }}
+      schedule={{ onClick: onFlow }}
+      markPaid={{
+        onClick: canAchieve ? onMarkAchieved : undefined,
+        label: 'Marcar meta como atingida',
+        reason: 'a meta já foi avaliada',
+      }}
+      pay={{
+        onClick: canPay ? onPay : undefined,
+        reason: clause.payment_status === 'PAGA' ? 'obrigação já paga'
+          : clause.payment_status === 'CANCELADA' ? 'obrigação cancelada'
+          : 'sem valor definido (cláusula de valor futuro)',
+      }}
+      remove={{
+        onClick: canCancel ? onCancel : undefined,
+        label: 'Cancelar obrigação',
+        reason: 'obrigação já cancelada',
+      }}
+    />
   )
 }
 
@@ -447,33 +462,15 @@ export default function PageAthleteDetail() {
     if (!window.confirm('Excluir esta obrigação com clube?')) return
     await deleteClubLiability(lid); setClubLiabs(prev => prev.filter(l => l.id !== lid))
   }
-  // Converte um passivo "flat" (agente/clube) em cláusula — assim vira uma
-  // obrigação única com página própria e permite fluxo de parcelas.
+  // Passivo "flat" (agente/clube) → obrigação com página própria e parcelas.
+  // Depois de promover, abre direto o editor de fluxo (o objetivo do usuário).
   async function handleConvertLiab(kind: 'club' | 'agent', lid: string) {
     if (!id) return
     const liab = kind === 'club' ? clubLiabs.find(l => l.id === lid) : intermLiabs.find(l => l.id === lid)
     if (!liab) return
-    const name = kind === 'club' ? (liab as ClubLiability).club_name : (liab as IntermediaryLiability).intermediary_name
-    const contractId = kind === 'agent' ? ((liab as IntermediaryLiability).contract_id ?? null) : null
-    const payable = liab.direction === 'A_PAGAR'
-    const clauseType: ClauseType = kind === 'agent' ? 'INTERMEDIACAO' : 'SOLIDARIEDADE_FIFA'
-    if (!window.confirm('Converter em cláusula? Passa a aparecer em Contratos Ativos, ganha página própria e permite fluxo de parcelas.')) return
-    const clause = await createClause(contractId, id, {
-      clause_type: clauseType,
-      description: liab.description || `${kind === 'agent' ? 'Comissão de agente' : 'Obrigação'} — ${name}`,
-      creditor_party: payable ? name : 'Botafogo SAF',
-      debtor_party: payable ? 'Botafogo SAF' : name,
-      currency: liab.currency,
-      original_value: liab.amount,
-      percentage_value: null,
-      condition_description: liab.condition_description || '',
-      due_date: liab.due_date || todayISO(),
-      installments_total: 1,
-      notes: liab.notes || '',
-    })
-    if (kind === 'agent') await deleteIntermediaryLiability(lid)
-    else await deleteClubLiability(lid)
-    navigate(`/obrigacoes/${clause.id}`)
+    const clause = await promoteLiabilityToClause(kind, liab)
+    await loadData()
+    setFlowClauseId(clause.id)
   }
   async function handleDeleteIntermLiab(lid: string) {
     if (!window.confirm('Excluir esta obrigação com agente?')) return
@@ -753,7 +750,7 @@ export default function PageAthleteDetail() {
             types={['SALARIO_CETD', 'DIREITO_IMAGEM']} canEdit={canEdit}
             onEditInst={id => setEditInstId(id)} onPayInst={id => setPayInstId(id)}
             onQuickPayInst={handleMarkInstallmentPaidQuick} onRevertInst={handleRevertInstallment}
-            onOpenClause={cid => navigate(`/obrigacoes/${cid}`)} onFlowClause={cid => setFlowClauseId(cid)} />
+            onFlowClause={cid => setFlowClauseId(cid)} />
         </div>
       )}
 
@@ -768,6 +765,7 @@ export default function PageAthleteDetail() {
           onEditInst={id => setEditInstId(id)} onPayInst={id => setPayInstId(id)}
           onQuickPayInst={handleMarkInstallmentPaidQuick} onRevertInst={handleRevertInstallment}
           onEditLiab={lid => { const liab = intermLiabs.find(l => l.id === lid); if (liab) setEditLiab({ kind: 'agent', liab }) }}
+          onGenerateLiabFlow={lid => handleConvertLiab('agent', lid)}
         />
       )}
 
@@ -782,6 +780,7 @@ export default function PageAthleteDetail() {
           onEditInst={id => setEditInstId(id)} onPayInst={id => setPayInstId(id)}
           onQuickPayInst={handleMarkInstallmentPaidQuick} onRevertInst={handleRevertInstallment}
           onEditLiab={lid => { const liab = intermLiabs.find(l => l.id === lid); if (liab) setEditLiab({ kind: 'agent', liab }) }}
+          onGenerateLiabFlow={lid => handleConvertLiab('agent', lid)}
         />
       )}
 
@@ -843,8 +842,8 @@ export default function PageAthleteDetail() {
                   {canEdit && (
                     <div style={{ marginLeft: 'auto' }}>
                       <IconRow>
-                        <IconButton icon="plus" label="Adicionar cláusula a este vínculo (ex.: Sell-on Fee, intermediação)" onClick={() => setNewClauseContractId(ct.id)} />
-                        <IconButton icon="link" label="Criar um contrato atrelado a este vínculo (ex.: intermediação)" onClick={() => navigate(`/atletas/${ct.athlete_id}/contratos/novo?rel=${ct.id}`)} />
+                        <IconButton icon="plus" label="Adicionar cláusula a este vínculo (ex.: Sell-on Fee, intermediação)" tone="info" onClick={() => setNewClauseContractId(ct.id)} />
+                        <IconButton icon="link" label="Criar um contrato atrelado a este vínculo (ex.: intermediação)" tone="info" onClick={() => navigate(`/atletas/${ct.athlete_id}/contratos/novo?rel=${ct.id}`)} />
                         <IconButton icon="edit" label="Editar vínculo" onClick={() => setEditContractId(ct.id)} />
                         <IconButton icon="trash" label="Excluir vínculo" tone="danger" onClick={() => handleDeleteContract(ct.id)} />
                       </IconRow>
@@ -878,11 +877,11 @@ export default function PageAthleteDetail() {
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(totalCl, cl.currency)}{parc.length ? ` · ${parc.length}x` : ''}</span>
-                              <IconRow>
-                                <IconButton icon="open" label="Abrir página da obrigação" small to={`/obrigacoes/${cl.id}`} />
-                                {canEdit && <IconButton icon="edit" label="Editar obrigação" small onClick={() => setEditClauseId(cl.id)} />}
-                                {canEdit && <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" small onClick={() => setFlowClauseId(cl.id)} />}
-                              </IconRow>
+                              <RowActions
+                                open={{ to: `/obrigacoes/${cl.id}` }}
+                                edit={{ onClick: canEdit ? () => setEditClauseId(cl.id) : undefined, reason: 'sem permissão de edição' }}
+                                schedule={{ onClick: canEdit ? () => setFlowClauseId(cl.id) : undefined, reason: 'sem permissão de edição' }}
+                              />
                             </span>
                           </div>
                           {parc.length > 0 && (
@@ -1129,14 +1128,13 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
 // ── FlowList — parcelas de cláusulas de tipos específicos (fluxo mensal) ──────
 // Cada parcela é editável aqui mesmo (ícones): editar, marcar paga, registrar
 // pagamento, reverter — além de abrir a obrigação e editar o fluxo inteiro.
-function FlowList({ title, installments, clauses, types, canEdit, onEditInst, onPayInst, onQuickPayInst, onRevertInst, onOpenClause, onFlowClause }: {
+function FlowList({ title, installments, clauses, types, canEdit, onEditInst, onPayInst, onQuickPayInst, onRevertInst, onFlowClause }: {
   title: string; installments: ClauseInstallment[]; clauses: Clause[]; types: string[]
   canEdit: boolean
   onEditInst: (id: string) => void
   onPayInst: (id: string) => void
   onQuickPayInst: (id: string) => void
   onRevertInst: (id: string) => void
-  onOpenClause: (clauseId: string) => void
   onFlowClause: (clauseId: string) => void
 }) {
   const typeById = new Map(clauses.map(c => [c.id, c.clause_type as string]))
@@ -1151,16 +1149,31 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
     <div className="card" style={{ padding: '16px 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)' }}>{title}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{rows.length} parcela(s) · {fmtCurrencyShort(total, cur)}</div>
-          {canEdit && flowClauses.map(c => (
-            <IconRow key={c.id}>
-              <IconButton icon="open" label={`Abrir ${CLAUSE_TYPE_LABELS[c.clause_type]}`} onClick={() => onOpenClause(c.id)} />
-              <IconButton icon="flow" label={`Editar fluxo de ${CLAUSE_TYPE_LABELS[c.clause_type]}`} onClick={() => onFlowClause(c.id)} />
-            </IconRow>
+        <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{rows.length} parcela(s) · {fmtCurrencyShort(total, cur)}</div>
+      </div>
+
+      {/* Uma "pastilha" por fluxo, com o nome escrito — evita ícones repetidos e
+          anônimos quando o atleta tem salário E imagem. */}
+      {canEdit && flowClauses.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          {flowClauses.map(c => (
+            <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 6px 4px 12px', borderRadius: 20, background: 'var(--bg-subtle)', border: '1px solid var(--divider)' }}>
+              <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)' }}>
+                {c.clause_type === 'SALARIO_CETD' ? 'Salário CLT' : c.clause_type === 'DIREITO_IMAGEM' ? 'Direito de imagem' : CLAUSE_TYPE_LABELS[c.clause_type]}
+              </span>
+              <RowActions align="left"
+                open={{ to: `/obrigacoes/${c.id}`, label: `Abrir ${CLAUSE_TYPE_LABELS[c.clause_type]}` }}
+                schedule={{ onClick: () => onFlowClause(c.id), label: `Ver / editar as parcelas de ${CLAUSE_TYPE_LABELS[c.clause_type]}` }}
+              />
+            </span>
           ))}
         </div>
-      </div>
+      )}
+      {canEdit && rows.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <ActionLegend items={['edit', 'schedule', 'markPaid', 'pay', 'revert']} />
+        </div>
+      )}
       {rows.length === 0 ? (
         <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Nenhuma parcela gerada. Use o assistente (+ Criar) ou o novo vínculo para gerar o fluxo.</div>
       ) : (
@@ -1176,7 +1189,8 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
                 <span style={{ textAlign: 'right' }}><StatusBadge status={r.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
                 <span style={{ textAlign: 'right' }}>
                   <InstallmentActions inst={r} canEdit={canEdit} onEdit={() => onEditInst(r.id)} onPay={() => onPayInst(r.id)}
-                    onQuickPay={() => onQuickPayInst(r.id)} onRevert={() => onRevertInst(r.id)} />
+                    onQuickPay={() => onQuickPayInst(r.id)} onRevert={() => onRevertInst(r.id)}
+                    onSchedule={() => onFlowClause(r.clause_id)} />
                 </span>
               </div>
             )
@@ -1262,6 +1276,7 @@ function ConsolidadoTab({
           })}
         </div>
       )}
+      {canEdit && <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert', 'remove']} />}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1296,23 +1311,34 @@ function ConsolidadoTab({
                     <td style={td}><StatusBadge status={it.status} map={PAYMENT_STATUS_STYLE} /></td>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <IconRow>
-                          {it.clauseRef && <IconButton icon="open" label="Abrir página da obrigação" small onClick={() => onOpenClause(it.clauseRef!)} />}
-                          {it.kind === 'inst' && <IconButton icon="edit" label="Editar esta parcela" small onClick={() => onEditInst(it.ref)} />}
-                          {it.kind === 'clause' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => onEditClause(it.ref)} />}
-                          {it.clauseRef && <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" small onClick={() => onFlowClause(it.clauseRef!)} />}
-                          {inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' && <>
-                            <IconButton icon="check" label="Marcar parcela como paga" small onClick={() => onQuickPayInst(it.ref)} />
-                            <IconButton icon="money" label="Registrar pagamento com câmbio" small onClick={() => onPayInst(it.ref)} />
-                          </>}
-                          {inst && inst.payment_status === 'PAGA' && <IconButton icon="undo" label="Reverter pagamento" tone="muted" small onClick={() => onRevertInst(it.ref)} />}
-                          {it.kind === 'clause' && <IconButton icon="trash" label="Excluir obrigação" tone="danger" small onClick={() => onDeleteClause(it.ref)} />}
-                          {(it.kind === 'club' || it.kind === 'agent') && <>
-                            <IconButton icon="flow" label="Converter em obrigação com fluxo de parcelas" small onClick={() => onConvertLiab(it.kind as 'club' | 'agent', it.ref)} />
-                            <IconButton icon="edit" label="Editar obrigação" small onClick={() => onEditLiab(it.kind as 'club' | 'agent', it.ref)} />
-                            <IconButton icon="trash" label="Excluir obrigação" tone="danger" small onClick={() => onDeleteLiab(it.kind as 'club' | 'agent', it.ref)} />
-                          </>}
-                        </IconRow>
+                        <RowActions
+                          open={{ to: it.clauseRef ? `/obrigacoes/${it.clauseRef}` : null, reason: 'passivo importado — gere as parcelas para criar a obrigação' }}
+                          edit={{
+                            onClick: it.kind === 'inst' ? () => onEditInst(it.ref)
+                              : it.kind === 'clause' ? () => onEditClause(it.ref)
+                              : () => onEditLiab(it.kind as 'club' | 'agent', it.ref),
+                          }}
+                          schedule={it.clauseRef ? { onClick: () => onFlowClause(it.clauseRef!) } : undefined}
+                          generate={!it.clauseRef ? { onClick: () => onConvertLiab(it.kind as 'club' | 'agent', it.ref) } : undefined}
+                          markPaid={{
+                            onClick: inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => onQuickPayInst(it.ref) : undefined,
+                            reason: !inst ? 'gere as parcelas para dar baixa' : inst.payment_status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
+                          }}
+                          pay={{
+                            onClick: inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => onPayInst(it.ref) : undefined,
+                            reason: !inst ? 'disponível por parcela' : inst.payment_status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
+                          }}
+                          revert={{
+                            onClick: inst && inst.payment_status === 'PAGA' ? () => onRevertInst(it.ref) : undefined,
+                            reason: 'a parcela não está paga',
+                          }}
+                          remove={{
+                            onClick: it.kind === 'clause' ? () => onDeleteClause(it.ref)
+                              : (it.kind === 'club' || it.kind === 'agent') ? () => onDeleteLiab(it.kind as 'club' | 'agent', it.ref)
+                              : undefined,
+                            reason: 'exclua a parcela pela tela de edição',
+                          }}
+                        />
                       </td>
                     )}
                   </tr>
@@ -1329,7 +1355,8 @@ function ConsolidadoTab({
 // ── AccessoryFlowTab — Luvas / Agentes (estilo relatório) + novo fluxo ────────
 function AccessoryFlowTab({
   kind, athleteId, clauses, installments, intermLiabs, contracts, canEdit, clubIdx, agentIdx,
-  onOpenClause, onSaved, onEditClause, onFlowClause, onEditInst, onPayInst, onQuickPayInst, onRevertInst, onEditLiab,
+  onOpenClause, onSaved, onEditClause, onFlowClause, onEditInst, onPayInst, onQuickPayInst, onRevertInst,
+  onEditLiab, onGenerateLiabFlow,
 }: {
   kind: 'luvas' | 'agentes'
   athleteId: string
@@ -1349,6 +1376,7 @@ function AccessoryFlowTab({
   onQuickPayInst: (id: string) => void
   onRevertInst: (id: string) => void
   onEditLiab: (id: string) => void
+  onGenerateLiabFlow: (id: string) => void
 }) {
   const [showNew, setShowNew] = useState(false)
   const types = kind === 'luvas' ? LUVAS_TYPES : AGENT_TYPES
@@ -1395,6 +1423,7 @@ function AccessoryFlowTab({
           </button>
         )}
       </div>
+      {canEdit && <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert']} />}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1430,18 +1459,30 @@ function AccessoryFlowTab({
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: r.pag ? 'var(--pos)' : 'var(--text-muted)' }}>{r.pag ? fmtDate(r.pag) : '—'}</td>
                     <td style={td}><StatusBadge status={r.status} map={PAYMENT_STATUS_STYLE} /></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <IconRow>
-                        {r.clauseRef && <IconButton icon="open" label="Abrir página da obrigação" small onClick={() => onOpenClause(r.clauseRef!)} />}
-                        {canEdit && r.kind === 'inst' && <IconButton icon="edit" label="Editar parcela" small onClick={() => onEditInst(r.id)} />}
-                        {canEdit && r.kind === 'clause' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => onEditClause(r.id)} />}
-                        {canEdit && r.kind === 'liab' && <IconButton icon="edit" label="Editar obrigação" small onClick={() => onEditLiab(r.id)} />}
-                        {canEdit && r.clauseRef && <IconButton icon="flow" label="Gerar / editar fluxo de parcelas" small onClick={() => onFlowClause(r.clauseRef!)} />}
-                        {canEdit && inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' && <>
-                          <IconButton icon="check" label="Marcar parcela como paga" small onClick={() => onQuickPayInst(r.id)} />
-                          <IconButton icon="money" label="Registrar pagamento com câmbio" small onClick={() => onPayInst(r.id)} />
-                        </>}
-                        {canEdit && inst && inst.payment_status === 'PAGA' && <IconButton icon="undo" label="Reverter pagamento" tone="muted" small onClick={() => onRevertInst(r.id)} />}
-                      </IconRow>
+                      <RowActions
+                        open={{ to: r.clauseRef ? `/obrigacoes/${r.clauseRef}` : null, reason: 'passivo importado — gere as parcelas para criar a obrigação' }}
+                        edit={{
+                          onClick: !canEdit ? undefined
+                            : r.kind === 'inst' ? () => onEditInst(r.id)
+                            : r.kind === 'clause' ? () => onEditClause(r.id)
+                            : () => onEditLiab(r.id),
+                          reason: 'sem permissão de edição',
+                        }}
+                        schedule={r.clauseRef ? { onClick: canEdit ? () => onFlowClause(r.clauseRef!) : undefined, reason: 'sem permissão de edição' } : undefined}
+                        generate={r.kind === 'liab' ? { onClick: canEdit ? () => onGenerateLiabFlow(r.id) : undefined, reason: 'sem permissão de edição' } : undefined}
+                        markPaid={{
+                          onClick: canEdit && inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => onQuickPayInst(r.id) : undefined,
+                          reason: !inst ? 'gere as parcelas para dar baixa' : inst.payment_status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
+                        }}
+                        pay={{
+                          onClick: canEdit && inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => onPayInst(r.id) : undefined,
+                          reason: !inst ? 'disponível por parcela' : inst.payment_status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
+                        }}
+                        revert={{
+                          onClick: canEdit && inst && inst.payment_status === 'PAGA' ? () => onRevertInst(r.id) : undefined,
+                          reason: 'a parcela não está paga',
+                        }}
+                      />
                     </td>
                   </tr>
                 )
@@ -1916,19 +1957,25 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
 
 
 // ── InstallmentActions — ações por parcela em ícones ─────────────────────────
-function InstallmentActions({ inst, canEdit, onEdit, onPay, onQuickPay, onRevert }: {
-  inst: ClauseInstallment; canEdit: boolean; onEdit: () => void; onPay: () => void; onQuickPay: () => void; onRevert: () => void
+function InstallmentActions({ inst, canEdit, onEdit, onPay, onQuickPay, onRevert, clauseId, onSchedule }: {
+  inst: ClauseInstallment; canEdit: boolean
+  onEdit: () => void; onPay: () => void; onQuickPay: () => void; onRevert: () => void
+  /** Opcional: quando informado, mostra também o acesso ao cronograma da obrigação. */
+  clauseId?: string
+  onSchedule?: () => void
 }) {
   if (!canEdit) return <StatusBadge status={inst.payment_status} map={PAYMENT_STATUS_STYLE} />
   const paid = inst.payment_status === 'PAGA'
   const cancelled = inst.payment_status === 'CANCELADA'
   return (
-    <IconRow align="center">
-      <IconButton icon="edit" label="Editar parcela" small onClick={onEdit} />
-      {!paid && !cancelled && <IconButton icon="check" label="Marcar como paga" small onClick={onQuickPay} />}
-      {!paid && !cancelled && <IconButton icon="money" label="Registrar pagamento com câmbio" small onClick={onPay} />}
-      {paid && <IconButton icon="undo" label="Reverter pagamento" tone="muted" small onClick={onRevert} />}
-    </IconRow>
+    <RowActions align="center"
+      open={clauseId ? { to: `/obrigacoes/${clauseId}` } : undefined}
+      edit={{ onClick: onEdit, label: 'Editar parcela' }}
+      schedule={onSchedule ? { onClick: onSchedule } : undefined}
+      markPaid={{ onClick: !paid && !cancelled ? onQuickPay : undefined, reason: paid ? 'parcela já paga' : 'parcela cancelada' }}
+      pay={{ onClick: !paid && !cancelled ? onPay : undefined, reason: paid ? 'parcela já paga' : 'parcela cancelada' }}
+      revert={{ onClick: paid ? onRevert : undefined, reason: 'a parcela não está paga' }}
+    />
   )
 }
 

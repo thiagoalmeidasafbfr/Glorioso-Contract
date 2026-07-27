@@ -16,7 +16,9 @@ import {
   deleteClubLiability, deleteIntermediaryLiability,
   fetchClauseInstallments, deleteClauseInstallments, createClauseInstallments,
 } from '../../lib/athleteQueries'
+import { promoteLiabilityToClause, PROMOTE_HINT, type LiabKind } from '../../lib/liabilityFlow'
 import { fmtCurrencyShort } from '../../lib/format'
+import { Icon } from '../Icon'
 import NumberInput from '../NumberInput'
 import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { modalInput, modalLabel } from './styles'
@@ -258,8 +260,10 @@ export function ClauseFlowModal({ clause, onClose, onSaved }: {
 
 // ── Passivo "flat" de clube / agente ─────────────────────────────────────────
 
-export function LiabilityEditModal({ kind, liab, onClose, onSaved }: {
-  kind: 'club' | 'agent'; liab: ClubLiability | IntermediaryLiability; onClose: () => void; onSaved: () => void
+export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }: {
+  kind: LiabKind; liab: ClubLiability | IntermediaryLiability; onClose: () => void; onSaved: () => void
+  /** Chamado após virar obrigação — a tela abre o editor de fluxo da nova cláusula. */
+  onPromoted?: (clauseId: string) => void
 }) {
   const isClub = kind === 'club'
   const initialName = isClub ? (liab as ClubLiability).club_name : (liab as IntermediaryLiability).intermediary_name
@@ -305,6 +309,32 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved }: {
     } finally { setSaving(false) }
   }
 
+  // Gera as parcelas aqui mesmo: salva o que foi editado, promove a obrigação e
+  // devolve o id para a tela abrir o editor de fluxo.
+  async function generateFlow() {
+    setSaving(true)
+    try {
+      const patch = {
+        description: f.description || null,
+        direction: f.direction as ClubLiability['direction'],
+        amount: f.amount ? parseFloat(f.amount) : 0,
+        currency: f.currency as Currency,
+        due_date: f.due_date || null,
+        status: f.status as ClubLiability['status'],
+        condition_description: f.condition_description || null,
+        notes: f.notes || null,
+      }
+      if (isClub) await updateClubLiability(liab.id, { ...patch, club_name: f.name })
+      else await updateIntermediaryLiability(liab.id, { ...patch, intermediary_name: f.name })
+      const clause = await promoteLiabilityToClause(kind, {
+        ...liab, ...patch,
+        ...(isClub ? { club_name: f.name } : { intermediary_name: f.name }),
+      } as ClubLiability | IntermediaryLiability)
+      if (onPromoted) onPromoted(clause.id)
+      else onSaved()
+    } finally { setSaving(false) }
+  }
+
   return (
     <ModalShell title={`Editar obrigação — ${isClub ? 'clube' : 'agente'}`} width={560} onClose={onClose}
       footer={<>
@@ -331,8 +361,14 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved }: {
       </div>
       <div><label style={modalLabel}>Condição</label><input style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
       <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
-        Precisa de parcelas? Use <strong>Converter em obrigação</strong> na ficha do atleta — a obrigação ganha página própria e fluxo de vencimentos.
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 8, background: 'var(--info-tint)', border: '1px solid rgba(31,86,115,0.22)' }}>
+        <span style={{ fontSize: 11.5, color: 'var(--ink-secondary)', fontFamily: font, flex: 1, minWidth: 220 }}>
+          Precisa de parcelas? {PROMOTE_HINT}
+        </span>
+        <button onClick={generateFlow} className="btn btn-outline" disabled={saving}
+          style={{ borderColor: 'rgba(31,86,115,0.35)', color: 'var(--info)', whiteSpace: 'nowrap' }}>
+          <Icon name="split" size={14} /> Gerar parcelas
+        </button>
       </div>
     </ModalShell>
   )
