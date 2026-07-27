@@ -7,8 +7,10 @@ interface Props {
 export default function PageHero({ title, subtitle, children }: Props) {
   return (
     <div style={{
-      background: 'radial-gradient(130% 150% at 100% 0%, rgba(190,140,74,0.18), transparent 55%), linear-gradient(135deg, #201913 0%, #100d09 100%)',
-      border: '1px solid rgba(190,140,74,0.20)',
+      // Preto Botafogo. O dourado aparece só como um brilho discreto no canto e
+      // no filete acima do título — o resto é preto e branco.
+      background: 'radial-gradient(130% 150% at 100% 0%, rgba(190,140,74,0.08), transparent 55%), linear-gradient(135deg, #17150f 0%, #0b0a07 100%)',
+      border: '1px solid rgba(255,255,255,0.08)',
       borderRadius: 16,
       padding: 'clamp(20px, 3vw, 30px) clamp(22px, 3vw, 34px)',
       marginBottom: 18,
@@ -27,7 +29,7 @@ export default function PageHero({ title, subtitle, children }: Props) {
           fontWeight: 500,
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          color: 'rgba(224,199,152,0.72)',
+          color: 'rgba(243,240,232,0.66)',
           marginBottom: 8,
           display: 'flex',
           alignItems: 'center',

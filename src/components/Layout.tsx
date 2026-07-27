@@ -51,11 +51,11 @@ function NavItem({ to, label }: { to: string; label: string }) {
       style={({ isActive }) => ({
         display: 'block', textDecoration: 'none',
         padding: '8px 22px 8px 21px',
-        borderLeft: `2px solid ${isActive ? 'var(--gold)' : 'transparent'}`,
-        background: isActive ? 'rgba(190,140,74,0.10)' : 'transparent',
+        borderLeft: `2px solid ${isActive ? '#f3eee2' : 'transparent'}`,
+        background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
         fontFamily: fontBody, fontSize: 13,
         fontWeight: isActive ? 600 : 400,
-        color: isActive ? 'var(--gold-soft)' : 'rgba(243,238,226,0.62)',
+        color: isActive ? '#ffffff' : 'rgba(243,238,226,0.62)',
         transition: 'background 0.12s, color 0.12s',
       })}
       onMouseEnter={e => { const el = e.currentTarget; if (!el.getAttribute('aria-current')) el.style.color = 'rgba(243,238,226,0.92)' }}
@@ -76,9 +76,9 @@ export default function Layout({ children }: Props) {
       <aside style={{
         position: 'fixed', top: 0, left: 0, bottom: 0,
         width: 'var(--sidebar-w)',
-        background: 'linear-gradient(180deg, #1e1710 0%, #130f0a 100%)',
+        background: 'linear-gradient(180deg, #17150f 0%, #0b0a07 100%)',
         display: 'flex', flexDirection: 'column', zIndex: 100, overflowY: 'auto',
-        borderRight: '1px solid rgba(190,140,74,0.16)',
+        borderRight: '1px solid rgba(255,255,255,0.07)',
       }}>
         {/* Marca */}
         <div style={{ padding: '22px 22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -94,7 +94,7 @@ export default function Layout({ children }: Props) {
           {NAV_SECTIONS.map((section, i) => (
             <div key={i} style={{ marginBottom: 14 }}>
               {section.label && (
-                <div style={{ fontFamily: fontMono, fontSize: 8.5, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(190,140,74,0.70)', padding: '4px 22px 8px' }}>
+                <div style={{ fontFamily: fontMono, fontSize: 8.5, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.34)', padding: '4px 22px 8px' }}>
                   {section.label}
                 </div>
               )}
@@ -119,9 +119,9 @@ export default function Layout({ children }: Props) {
               return (
                 <button key={l} onClick={() => setLanguage(l.toLowerCase() as 'pt' | 'en' | 'es')}
                   style={{
-                    flex: 1, background: active ? 'rgba(190,140,74,0.18)' : 'transparent',
-                    border: `1px solid ${active ? 'rgba(190,140,74,0.40)' : 'rgba(255,255,255,0.08)'}`,
-                    color: active ? 'var(--gold-soft)' : 'rgba(243,238,226,0.40)',
+                    flex: 1, background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+                    border: `1px solid ${active ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.08)'}`,
+                    color: active ? '#ffffff' : 'rgba(243,238,226,0.40)',
                     borderRadius: 6, padding: '4px 0', fontFamily: fontMono, fontSize: 9, letterSpacing: '0.10em', cursor: 'pointer',
                   }}>{l}</button>
               )
@@ -130,7 +130,7 @@ export default function Layout({ children }: Props) {
 
           {USE_SUPABASE && profile && (
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
-              <div style={{ fontFamily: fontMono, fontSize: 8.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(190,140,74,0.72)', marginBottom: 3 }}>
+              <div style={{ fontFamily: fontMono, fontSize: 8.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.42)', marginBottom: 3 }}>
                 {profile.role === 'master' ? 'Master' : 'Jurídico'}
               </div>
               <div style={{ fontFamily: fontBody, fontSize: 11, color: 'rgba(243,238,226,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 8 }}>

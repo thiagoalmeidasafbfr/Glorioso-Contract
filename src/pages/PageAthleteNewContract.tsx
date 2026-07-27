@@ -1,12 +1,25 @@
+// src/pages/PageAthleteNewContract.tsx
+// Cadastro de um VÍNCULO (contrato) do atleta em 3 passos. Tudo o que gera
+// dinheiro pode ter o FLUXO DE PARCELAS definido AQUI — transferência, comissão
+// de agente e cada cláusula — sem precisar salvar e voltar depois para lançar os
+// vencimentos um a um.
+//
+//   1 · Vínculo    → tipo, contraparte, datas, transferência (com parcelas),
+//                    remuneração mensal (fluxo automático) e agentes (com parcelas)
+//   2 · Cláusulas  → cláusulas extras, cada uma com fluxo de parcelas opcional
+//   3 · Revisão    → o que será criado, incluindo cada fluxo
+
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createInstallments, createClauseInstallments } from '../lib/athleteQueries'
+import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createClauseInstallments } from '../lib/athleteQueries'
 import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection, SellOnBasis } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES, isTransferContractType, SELL_ON_CLAUSE_TYPES, SELLON_BASIS_LABELS, sellOnConditionText } from '../types/athlete-system'
-import { todayISO, monthsBetween, addMonths } from '../lib/format'
+import { todayISO, monthsBetween, addMonths, fmtCurrencyShort } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
 import NumberInput from '../components/NumberInput'
 import PageHero from '../components/PageHero'
+import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
+import { Icon, IconButton } from '../components/Icon'
 
 // ── Step types ────────────────────────────────────────────────────────────
 
@@ -35,7 +48,7 @@ function dueDayOf(startISO: string, i: number, day: number): string {
 }
 
 function fmtNum(v: number): string { return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }
-function fmtDateBR(iso: string): string { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}` }
+function fmtDateBR(iso: string): string { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}` }
 
 // Rótulo curto de um contrato para o seletor de "contrato relacionado".
 function contractLabel(c: Contract): string {
@@ -50,28 +63,56 @@ const PAYABLE_CLAUSES: ClauseType[] = [
   'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA',
 ]
 
-function isSellOnConflict(clauses: Partial<NewClauseInput>[]): boolean {
+interface ClauseRow extends Partial<NewClauseInput> {
+  lines: FlowLine[]
+  flowOpen: boolean
+}
+interface AgentRow {
+  name: string; amount: string; currency: Currency; direction: LiabilityDirection
+  lines: FlowLine[]; flowOpen: boolean
+}
+
+function isSellOnConflict(clauses: ClauseRow[]): boolean {
   const hasSellOnPay = clauses.some(c => c.clause_type === 'SELL_ON_FEE')
   const hasSellOnReceive = clauses.some(c => c.clause_type === 'SELL_ON_FEE_RECEBER')
   return hasSellOnPay && hasSellOnReceive
 }
 
+const validLines = (lines: FlowLine[]) => lines
+  .filter(l => l.due_date && l.value > 0)
+  .sort((a, b) => a.due_date.localeCompare(b.due_date))
+
 const inputStyle: React.CSSProperties = {
-  width: '100%', background: 'rgba(255,255,255,0.60)',
-  border: '1px solid rgba(26,20,16,0.15)', borderRadius: 7,
-  padding: '8px 10px', fontSize: 13, color: '#1a1410',
+  width: '100%', background: 'var(--cream-card)',
+  border: '1px solid var(--input-border)', borderRadius: 7,
+  padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)',
   fontFamily: "'Inter', system-ui, sans-serif", boxSizing: 'border-box',
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-  fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-  color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
+  fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+  fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+  color: 'var(--text-muted)', display: 'block', marginBottom: 4,
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(190,140,74,0.15)',
-  borderRadius: 10, padding: 20,
+  background: 'var(--cream-card)', border: '1px solid var(--divider)',
+  borderRadius: 12, padding: 20, boxShadow: 'var(--shadow-hair)',
+}
+
+const sectionTitle: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 700,
+  letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)',
+}
+
+const hintStyle: React.CSSProperties = {
+  fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5,
+}
+
+const noteBox: React.CSSProperties = {
+  padding: '9px 13px', borderRadius: 8, background: 'var(--bg-subtle)',
+  border: '1px solid var(--divider)', fontFamily: "'IBM Plex Mono', monospace",
+  fontSize: 11, color: 'var(--ink-secondary)',
 }
 
 // ── Main component ────────────────────────────────────────────────────────
@@ -87,22 +128,21 @@ export default function PageAthleteNewContract() {
   const [error, setError] = useState<string | null>(null)
 
   // Contratos existentes do atleta + o contrato relacionado escolhido (opcional).
-  // ?rel=<id> pré-seleciona o vínculo; ?tipo= define o tipo; ?agente= pré-carrega
-  // um agente (usado pelo atalho "Novo Contrato" da página do agente).
+  // ?rel=<id> pré-seleciona o vínculo; ?tipo= define o tipo; ?agente=/?clube=
+  // pré-carregam a contraparte (atalhos das páginas de agente e de clube).
   const initialRel = searchParams.get('rel') ?? ''
   const initialTipoParam = searchParams.get('tipo')
   const initialTipo: ContractType | null = initialTipoParam && initialTipoParam in CONTRACT_TYPE_LABELS ? initialTipoParam as ContractType : null
   const initialAgente = searchParams.get('agente') ?? ''
+  const initialClube = searchParams.get('clube') ?? ''
   const [existingContracts, setExistingContracts] = useState<Contract[]>([])
   const [relatedId, setRelatedId] = useState<string>(initialRel)
   const relatedContract = existingContracts.find(c => c.id === relatedId) ?? null
 
   // Step 1 — Contract
-  // Quando aberto já atrelado a um vínculo (?rel=), assume um contrato acessório
-  // (intermediação) por padrão — o caso mais comum de contrato derivado.
   const [contract, setContract] = useState<NewContractInput>({
     type: initialTipo ?? (initialRel ? 'INTERMEDIACAO' : 'SAIDA'),
-    counterpart_club: '',
+    counterpart_club: initialClube,
     counterpart_country: '',
     start_date: todayISO(),
     end_date: '',
@@ -117,20 +157,20 @@ export default function PageAthleteNewContract() {
   })
 
   // Agentes desta transação (um vínculo pode ter vários, com valores distintos).
-  interface AgentRow { name: string; amount: string; currency: Currency; direction: LiabilityDirection }
-  const emptyAgent: AgentRow = { name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR' }
+  const emptyAgent: AgentRow = { name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR', lines: [], flowOpen: false }
   const [agents, setAgents] = useState<AgentRow[]>(initialAgente ? [{ ...emptyAgent, name: initialAgente }] : [])
   const addAgent = () => setAgents(prev => [...prev, { ...emptyAgent }])
   const removeAgent = (i: number) => setAgents(prev => prev.filter((_, idx) => idx !== i))
   const setAgent = (i: number, patch: Partial<AgentRow>) => setAgents(prev => prev.map((a, idx) => idx === i ? { ...a, ...patch } : a))
 
   // Step 2 — Clauses
-  const [clauses, setClauses] = useState<Partial<NewClauseInput>[]>([])
+  const [clauses, setClauses] = useState<ClauseRow[]>([])
 
-  // Compra / transferência em parcelas (gera cláusula TRANSFER_FEE + parcelas).
-  const [transferInst, setTransferInst] = useState(1)          // nº de parcelas
+  // Compra / transferência em parcelas — cronograma editável linha por linha.
+  const [transferInst, setTransferInst] = useState(1)          // nº de parcelas (gerador)
   const [transferPeriod, setTransferPeriod] = useState<TransferPeriod>('ANUAL')
   const [transferFirst, setTransferFirst] = useState('')       // 1ª parcela (default = início)
+  const [transferLines, setTransferLines] = useState<FlowLine[]>([])
 
   // Gerar fluxo mensal de remuneração (salário + imagem) pela vigência.
   const [autoRemFlow, setAutoRemFlow] = useState(true)
@@ -165,13 +205,23 @@ export default function PageAthleteNewContract() {
   const willGenSalary = autoRemFlow && salaryMonthly > 0 && vigMonths > 0
   const willGenImage = autoRemFlow && imageMonthly > 0 && vigMonths > 0
 
-  // Compra parcelada: prévia.
-  const transferTotal = contract.transfer_fee_gross ?? 0
+  // Transferência: as parcelas são as linhas do cronograma (editáveis). Sem
+  // linhas, o valor total vira uma única parcela na data de início.
+  const transferTotalField = contract.transfer_fee_gross ?? 0
   const transferFirstDate = transferFirst || contract.start_date
-  const willGenTransfer = transferTotal > 0 && transferInst >= 1 && !!transferFirstDate
-  const transferPerParcel = willGenTransfer ? transferTotal / transferInst : 0
-  const transferLastDate = willGenTransfer
-    ? addMonths(transferFirstDate, (transferInst - 1) * PERIOD_STEP[transferPeriod]) : ''
+  const transferValid = validLines(transferLines)
+  const transferTotal = transferValid.length ? transferValid.reduce((s, l) => s + l.value, 0) : transferTotalField
+  const willGenTransfer = transferTotal > 0
+
+  function generateTransferLines() {
+    if (!transferTotalField || transferInst < 1 || !transferFirstDate) return
+    const per = Math.round((transferTotalField / transferInst) * 100) / 100
+    const last = Math.round((transferTotalField - per * (transferInst - 1)) * 100) / 100
+    setTransferLines(Array.from({ length: transferInst }, (_, i) => ({
+      due_date: addMonths(transferFirstDate, i * PERIOD_STEP[transferPeriod]),
+      value: i === transferInst - 1 ? last : per,
+    })))
+  }
 
   // ── Step 1 handlers ──────────────────────────────────────────────────────
 
@@ -199,12 +249,18 @@ export default function PageAthleteNewContract() {
         due_date: contract.start_date,
         installments_total: 1,
         notes: '',
+        lines: [],
+        flowOpen: false,
       },
     ])
   }
 
   function removeClause(idx: number) {
     setClauses(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  function setClauseRow(idx: number, patch: Partial<ClauseRow>) {
+    setClauses(prev => prev.map((c, i) => i === idx ? { ...c, ...patch } : c))
   }
 
   function setClauseField<K extends keyof NewClauseInput>(idx: number, k: K, v: NewClauseInput[K]) {
@@ -235,29 +291,32 @@ export default function PageAthleteNewContract() {
     setSaving(true)
     setError(null)
     try {
-      const savedContract = await createContract(id, { ...contract, related_contract_id: relatedId || undefined })
+      const savedContract = await createContract(id, {
+        ...contract,
+        transfer_fee_gross: willGenTransfer ? transferTotal : contract.transfer_fee_gross,
+        related_contract_id: relatedId || undefined,
+      })
       const buying = contract.type === 'ENTRADA' || contract.type === 'EMPRESTIMO_ENTRADA'
 
-      // ── Compra / transferência em parcelas ──────────────────────────────
-      // Gera uma cláusula de transferência + o cronograma de parcelas.
+      // ── Compra / transferência (com o cronograma definido nesta tela) ────
       if (willGenTransfer) {
+        const sched = transferValid.length
+          ? transferValid
+          : [{ due_date: transferFirstDate || contract.start_date, value: transferTotal }]
         const clause = await createClause(savedContract.id, id, {
           clause_type: 'TRANSFER_FEE_FIXO',
-          description: `Transferência ${buying ? '(compra)' : '(venda)'} — ${transferInst}x ${PERIOD_LABEL[transferPeriod].toLowerCase()}`,
+          description: `Transferência ${buying ? '(compra)' : '(venda)'} — ${sched.length}x`,
           creditor_party: buying ? (contract.counterpart_club || 'Contraparte') : 'Botafogo SAF',
           debtor_party: buying ? 'Botafogo SAF' : (contract.counterpart_club || 'Contraparte'),
           currency: contract.transfer_currency,
           original_value: transferTotal, percentage_value: null,
-          condition_description: '', due_date: transferFirstDate,
-          installments_total: transferInst, notes: '',
+          condition_description: '', due_date: sched[0].due_date,
+          installments_total: sched.length, notes: '',
         })
-        if (transferInst > 1) {
-          const step = PERIOD_STEP[transferPeriod]
-          await createClauseInstallments(clause.id, id, Array.from({ length: transferInst }, (_, i) => ({
-            installment_number: i + 1,
-            due_date: addMonths(transferFirstDate, i * step),
-            original_value: transferPerParcel,
-            currency: contract.transfer_currency,
+        if (sched.length > 1) {
+          await createClauseInstallments(clause.id, id, sched.map((l, i) => ({
+            installment_number: i + 1, due_date: l.due_date,
+            original_value: l.value, currency: contract.transfer_currency,
           })))
         }
       }
@@ -285,46 +344,55 @@ export default function PageAthleteNewContract() {
       if (willGenSalary) await genRemFlow('SALARIO_CETD', 'Salário CLT', salaryMonthly, SALARY_DUE_DAY)
       if (willGenImage) await genRemFlow('DIREITO_IMAGEM', 'Direito de imagem', imageMonthly, IMAGE_DUE_DAY)
 
-      // Agentes → uma cláusula de INTERMEDIAÇÃO por agente. Assim aparecem em
-      // "Contratos Ativos", são editáveis e permitem gerar fluxo de pagamento
-      // (o valor informado entra como total; o cronograma de parcelas é definido
-      // depois no editor de fluxo da cláusula).
+      // Agentes → uma cláusula de INTERMEDIAÇÃO por agente, com o fluxo de
+      // parcelas informado aqui (ou uma parcela única com o valor total).
       for (const ag of agents) {
         if (!ag.name.trim()) continue
         const payable = ag.direction === 'A_PAGAR'
-        await createClause(savedContract.id, id, {
+        const sched = validLines(ag.lines)
+        const total = sched.length ? sched.reduce((s, l) => s + l.value, 0) : (ag.amount ? parseFloat(ag.amount) : null)
+        const clause = await createClause(savedContract.id, id, {
           clause_type: 'INTERMEDIACAO',
           description: `Comissão de agente — ${ag.name.trim()}`,
           creditor_party: payable ? ag.name.trim() : 'Botafogo SAF',
           debtor_party: payable ? 'Botafogo SAF' : ag.name.trim(),
           currency: ag.currency,
-          original_value: ag.amount ? parseFloat(ag.amount) : null,
+          original_value: total,
           percentage_value: null,
           condition_description: '',
-          due_date: contract.start_date,
-          installments_total: 1,
+          due_date: sched[0]?.due_date ?? contract.start_date,
+          installments_total: sched.length || 1,
           notes: '',
         })
+        if (sched.length > 1) {
+          await createClauseInstallments(clause.id, id, sched.map((l, i) => ({
+            installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: ag.currency,
+          })))
+        }
       }
 
       for (const cl of clauses) {
         if (!cl.clause_type || !cl.description?.trim()) continue
+        const sched = validLines(cl.lines)
+        const total = sched.length ? sched.reduce((s, l) => s + l.value, 0) : (cl.original_value ?? null)
         const full: NewClauseInput = {
           clause_type: cl.clause_type,
           description: cl.description || '',
           creditor_party: cl.creditor_party || 'Botafogo SAF',
           debtor_party: cl.debtor_party || '',
           currency: cl.currency || 'EUR',
-          original_value: cl.original_value ?? null,
+          original_value: total,
           percentage_value: cl.percentage_value ?? null,
           condition_description: cl.condition_description || '',
-          due_date: cl.due_date || todayISO(),
-          installments_total: cl.installments_total || 1,
+          due_date: sched[0]?.due_date ?? cl.due_date ?? todayISO(),
+          installments_total: sched.length || 1,
           notes: cl.notes || '',
         }
         const savedClause = await createClause(savedContract.id, id, full)
-        if ((full.installments_total ?? 1) > 1 && full.original_value) {
-          await createInstallments(savedClause.id, id, full)
+        if (sched.length > 1) {
+          await createClauseInstallments(savedClause.id, id, sched.map((l, i) => ({
+            installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: full.currency,
+          })))
         }
       }
       navigate(`/atletas/${id}`)
@@ -340,39 +408,40 @@ export default function PageAthleteNewContract() {
   const conflict = isSellOnConflict(clauses)
 
   return (
-    <div style={{ padding: '32px 40px', maxWidth: 860, margin: '0 auto' }}>
+    <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
       <PageHero title="Novo Contrato" subtitle={athlete?.full_name ?? 'Novo contrato · Botafogo SAF'} />
       {/* Breadcrumb */}
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)', marginBottom: 24, display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
         <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
         <span>/</span>
         <Link to={`/atletas/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete?.short_name ?? '...'}</Link>
         <span>/</span>
-        <span style={{ color: '#be8c4a' }}>Novo Contrato</span>
+        <span style={{ color: 'var(--ink-primary)' }}>Novo Contrato</span>
       </div>
 
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 32 }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 26, flexWrap: 'wrap' }}>
         {([1, 2, 3] as Step[]).map((s, i) => {
-          const labels = ['Contrato', 'Cláusulas', 'Revisão']
+          const labels = ['Vínculo', 'Cláusulas', 'Revisão']
           const active = step === s
           const done = step > s
           return (
             <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-              {i > 0 && <div style={{ width: 40, height: 1, background: done ? '#be8c4a' : 'rgba(26,20,16,0.12)' }} />}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: active ? '#be8c4a' : done ? 'rgba(190,140,74,0.20)' : 'rgba(26,20,16,0.08)',
-                  fontSize: 12, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace",
-                  color: active ? '#fff' : done ? '#be8c4a' : 'rgba(26,20,16,0.35)',
+              {i > 0 && <div style={{ width: 34, height: 1, background: done ? 'var(--accent)' : 'var(--divider-strong)' }} />}
+              <button onClick={() => done && setStep(s)} disabled={!done && !active}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', padding: '0 4px', cursor: done ? 'pointer' : 'default' }}>
+                <span style={{
+                  width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: active ? 'var(--accent)' : done ? 'var(--accent-tint2)' : 'var(--cream-inset)',
+                  fontSize: 11.5, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace",
+                  color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
-                  {done ? '✓' : s}
-                </div>
-                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: active ? 600 : 400, color: active ? '#1a1410' : 'rgba(26,20,16,0.45)' }}>
+                  {done ? <Icon name="check" size={13} /> : s}
+                </span>
+                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
                   {labels[i]}
                 </span>
-              </div>
+              </button>
             </div>
           )
         })}
@@ -380,33 +449,30 @@ export default function PageAthleteNewContract() {
 
       {/* ── Step 1: Contract ── */}
       {step === 1 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {existingContracts.length > 0 && (
             <div style={cardStyle}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 12 }}>
-                Contrato relacionado (opcional)
-              </div>
+              <div style={{ ...sectionTitle, marginBottom: 12 }}>Contrato relacionado (opcional)</div>
               <label style={labelStyle}>Atrelar este contrato a um vínculo existente</label>
               <select value={relatedId} onChange={e => setRelatedId(e.target.value)} style={inputStyle}>
                 <option value="">— nenhum (contrato independente) —</option>
                 {existingContracts.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
               </select>
-              <div style={{ marginTop: 10, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.50)', lineHeight: 1.5 }}>
+              <div style={{ ...hintStyle, marginTop: 10 }}>
                 Use quando este contrato deriva de outro — ex.: o <strong>contrato de intermediação</strong> de
                 uma compra/venda, ou uma cláusula de <strong>Sell-on Fee</strong> ligada à transferência. O novo
                 contrato fica agrupado sob o vínculo escolhido no histórico do atleta.
               </div>
               {relatedContract && (
-                <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34' }}>
-                  ↳ vinculado a: {contractLabel(relatedContract)}
+                <div style={{ ...noteBox, marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="link" size={13} /> vinculado a: {contractLabel(relatedContract)}
                 </div>
               )}
             </div>
           )}
+
           <div style={cardStyle}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
-              Dados do Vínculo
-            </div>
+            <div style={{ ...sectionTitle, marginBottom: 16 }}>Dados do vínculo</div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
@@ -429,7 +495,7 @@ export default function PageAthleteNewContract() {
                 </select>
               </div>
               {hideClub ? (
-                <div style={{ gridColumn: '1 / -1', padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.06)', border: '1px solid rgba(190,140,74,0.18)', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'rgba(26,20,16,0.60)' }}>
+                <div style={{ gridColumn: '1 / -1', ...noteBox, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12 }}>
                   Contraparte herdada do vínculo: <strong>{relatedContract?.counterpart_club || '—'}</strong>. O agente/intermediário é informado na seção abaixo.
                 </div>
               ) : (
@@ -464,10 +530,12 @@ export default function PageAthleteNewContract() {
 
           {isTransferContractType(contract.type) && (<>
           <div style={cardStyle}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
-              Compra / Transferência em parcelas
+            <div style={{ ...sectionTitle, marginBottom: 6 }}>Transferência e parcelas</div>
+            <div style={{ ...hintStyle, marginBottom: 14 }}>
+              Informe o valor total e gere as parcelas — cada vencimento e valor fica editável abaixo.
+              Deixe em branco se não houver taxa de transferência.
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.7fr 0.8fr 1fr 1.2fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, alignItems: 'end' }}>
               <div>
                 <label style={labelStyle}>Valor total</label>
                 <NumberInput
@@ -498,26 +566,36 @@ export default function PageAthleteNewContract() {
                 <label style={labelStyle}>1ª parcela</label>
                 <input type="date" value={transferFirstDate} onChange={e => setTransferFirst(e.target.value)} style={inputStyle} />
               </div>
+              <button type="button" onClick={generateTransferLines} className="btn btn-outline"
+                disabled={!transferTotalField} style={{ justifyContent: 'center', whiteSpace: 'nowrap' }}>
+                <Icon name="flow" size={14} /> Gerar parcelas
+              </button>
             </div>
-            {willGenTransfer ? (
-              <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34', display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-                <span><strong>{transferInst}×</strong> {contract.transfer_currency} {fmtNum(transferPerParcel)}</span>
+
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
+              <FlowBuilder
+                currency={contract.transfer_currency}
+                onCurrencyChange={c => setContractField('transfer_currency', c)}
+                lines={transferLines} onChange={setTransferLines}
+                defaultFirst={transferFirstDate}
+                periodicity={transferPeriod}
+                title="Parcelas da transferência"
+                showGenerator={false}
+              />
+            </div>
+            {willGenTransfer && (
+              <div style={{ ...noteBox, marginTop: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <span><strong>{transferValid.length || 1}×</strong></span>
                 <span>Total {contract.transfer_currency} {fmtNum(transferTotal)}</span>
-                <span>1º venc. {fmtDateBR(transferFirstDate)}</span>
-                {transferInst > 1 && <span>último {fmtDateBR(transferLastDate)}</span>}
-              </div>
-            ) : (
-              <div style={{ marginTop: 10, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)' }}>
-                Informe o valor total para gerar o cronograma de parcelas da compra. Deixe em branco se não houver taxa de transferência.
+                <span>1º venc. {fmtDateBR(transferValid[0]?.due_date ?? transferFirstDate)}</span>
+                {transferValid.length > 1 && <span>último {fmtDateBR(transferValid[transferValid.length - 1].due_date)}</span>}
               </div>
             )}
           </div>
 
           <div style={cardStyle}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 16 }}>
-              Remuneração mensal (paga pelo Botafogo)
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 0.8fr', gap: 12 }}>
+            <div style={{ ...sectionTitle, marginBottom: 16 }}>Remuneração mensal (paga pelo Botafogo)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <div>
                 <label style={labelStyle}>Salário CLT</label>
                 <NumberInput value={contract.base_salary ?? ''}
@@ -540,24 +618,24 @@ export default function PageAthleteNewContract() {
                 </select>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <button type="button"
                 onClick={() => {
                   const total = (contract.base_salary ?? 0) + (contract.image_value ?? 0)
                   const base = total || (contract.base_salary ?? 0)
                   if (base > 0) { setContractField('base_salary', base / 2); setContractField('image_value', base / 2) }
                 }}
-                style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(190,140,74,0.40)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 11.5 }}>
                 Dividir 50% CLT / 50% imagem
               </button>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.55)' }}>
-                Total: {(( (contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0) )).toLocaleString('pt-BR')} {contract.salary_currency}/mês
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: 'var(--ink-secondary)' }}>
+                Total: {(((contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0))).toLocaleString('pt-BR')} {contract.salary_currency}/mês
               </span>
             </div>
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(190,140,74,0.18)' }}>
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
-                <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: '#be8c4a', width: 16, height: 16 }} />
-                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'rgba(26,20,16,0.70)' }}>
+                <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--text-secondary)' }}>
                   <strong>Gerar o fluxo mensal automaticamente</strong> pela vigência do contrato — uma parcela por mês, sem lançar mês a mês.
                   Salário CLT vence <strong>dia {SALARY_DUE_DAY}</strong> e imagem vence <strong>dia {IMAGE_DUE_DAY}</strong> do mês subsequente.
                 </span>
@@ -566,18 +644,18 @@ export default function PageAthleteNewContract() {
               {autoRemFlow && vigMonths > 0 && (salaryMonthly > 0 || imageMonthly > 0) ? (
                 <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   {willGenSalary && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34' }}>
+                    <div style={noteBox}>
                       Salário: {vigMonths}× {contract.salary_currency} {fmtNum(salaryMonthly)} · venc. dia {SALARY_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, SALARY_DUE_DAY))}
                     </div>
                   )}
                   {willGenImage && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.22)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#8a6a34' }}>
+                    <div style={noteBox}>
                       Imagem: {vigMonths}× {contract.salary_currency} {fmtNum(imageMonthly)} · venc. dia {IMAGE_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, IMAGE_DUE_DAY))}
                     </div>
                   )}
                 </div>
               ) : autoRemFlow ? (
-                <div style={{ marginTop: 8, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)' }}>
+                <div style={{ ...hintStyle, marginTop: 8 }}>
                   Preencha salário e/ou imagem e as <strong>datas de início e término</strong> para gerar o fluxo.
                 </div>
               ) : null}
@@ -586,62 +664,91 @@ export default function PageAthleteNewContract() {
           </>)}
 
           <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10, flexWrap: 'wrap' }}>
+              <div style={sectionTitle}>
                 {isTransferContractType(contract.type) ? 'Agentes desta transação' : 'Agentes / intermediários'}
               </div>
-              <button type="button" onClick={addAgent}
-                style={{ padding: '6px 14px', borderRadius: 7, border: '1px dashed rgba(190,140,74,0.45)', background: 'rgba(190,140,74,0.08)', color: '#be8c4a', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                + Adicionar agente
+              <button type="button" onClick={addAgent} className="btn btn-outline">
+                <Icon name="plus" size={14} /> Adicionar agente
               </button>
             </div>
 
             {agents.length === 0 && (
-              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'rgba(26,20,16,0.45)' }}>
-                Nenhum agente nesta transação. Um vínculo pode ter vários agentes, com valores iguais ou diferentes.
+              <div style={hintStyle}>
+                Nenhum agente nesta transação. Um vínculo pode ter vários agentes, com valores e fluxos diferentes.
               </div>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {agents.map((ag, i) => (
-                <div key={i} style={{ padding: 14, borderRadius: 8, border: '1px solid rgba(190,140,74,0.20)', background: 'rgba(190,140,74,0.04)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)' }}>Agente {i + 1}</span>
-                    <button type="button" onClick={() => removeAgent(i)} style={{ background: 'none', border: 'none', color: 'rgba(122,63,44,0.75)', cursor: 'pointer', fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>Remover</button>
+              {agents.map((ag, i) => {
+                const agValid = validLines(ag.lines)
+                const agTotal = agValid.length ? agValid.reduce((s, l) => s + l.value, 0) : (ag.amount ? parseFloat(ag.amount) : 0)
+                return (
+                  <div key={i} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--divider)', background: 'var(--bg-subtle)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
+                      <IconButton icon="trash" label={`Remover agente ${i + 1}`} tone="danger" onClick={() => removeAgent(i)} />
+                    </div>
+                    <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginTop: 12 }}>
+                      <div>
+                        <label style={labelStyle}>Comissão / valor</label>
+                        <NumberInput value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle}
+                          disabled={agValid.length > 0} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Moeda</label>
+                        <select value={ag.currency} onChange={e => setAgent(i, { currency: e.target.value as Currency })} style={inputStyle}>
+                          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Direção</label>
+                        <select value={ag.direction} onChange={e => setAgent(i, { direction: e.target.value as LiabilityDirection })} style={inputStyle}>
+                          <option value="A_PAGAR">A pagar</option>
+                          <option value="A_RECEBER">A receber</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Fluxo de parcelas do agente — direto aqui */}
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--divider)' }}>
+                      {!ag.flowOpen ? (
+                        <button type="button" onClick={() => setAgent(i, { flowOpen: true })} className="btn btn-outline">
+                          <Icon name="flow" size={14} /> Parcelar esta comissão
+                        </button>
+                      ) : (
+                        <>
+                          <FlowBuilder
+                            currency={ag.currency}
+                            onCurrencyChange={c => setAgent(i, { currency: c })}
+                            lines={ag.lines} onChange={lines => setAgent(i, { lines })}
+                            defaultFirst={contract.start_date} seedRows={4}
+                            title={`Parcelas do agente ${i + 1}`}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 10, flexWrap: 'wrap' }}>
+                            <span style={hintStyle}>
+                              Com parcelas, o valor da comissão passa a ser a soma delas: <strong>{fmtCurrencyShort(agTotal, ag.currency)}</strong>.
+                            </span>
+                            <button type="button" onClick={() => setAgent(i, { flowOpen: false, lines: [] })} className="btn btn-ghost">
+                              Remover parcelamento
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginTop: 12 }}>
-                    <div>
-                      <label style={labelStyle}>Comissão / valor</label>
-                      <NumberInput value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Moeda</label>
-                      <select value={ag.currency} onChange={e => setAgent(i, { currency: e.target.value as Currency })} style={inputStyle}>
-                        {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Direção</label>
-                      <select value={ag.direction} onChange={e => setAgent(i, { direction: e.target.value as LiabilityDirection })} style={inputStyle}>
-                        <option value="A_PAGAR">A pagar</option>
-                        <option value="A_RECEBER">A receber</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'rgba(26,20,16,0.45)', marginTop: 12 }}>
-              Cada agente fica vinculado a este atleta e aparece no cadastro de Agentes e no relatório.
+            <div style={{ ...hintStyle, marginTop: 12 }}>
+              Cada agente fica vinculado a este atleta, aparece no cadastro de Agentes e no relatório — e cada parcela entra no consolidado.
             </div>
           </div>
 
           <div style={cardStyle}>
-            <div>
-              <label style={labelStyle}>Descrição / observações</label>
-              <textarea value={contract.description} onChange={e => setContractField('description', e.target.value)} rows={3} placeholder="Notas gerais sobre o vínculo..." style={{ ...inputStyle, resize: 'vertical' }} />
-            </div>
+            <label style={labelStyle}>Descrição / observações</label>
+            <textarea value={contract.description} onChange={e => setContractField('description', e.target.value)} rows={3} placeholder="Notas gerais sobre o vínculo..." style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
         </div>
       )}
@@ -650,150 +757,158 @@ export default function PageAthleteNewContract() {
       {step === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {conflict && (
-            <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: '#92400e' }}>
-                <strong>Atenção — conflito Sell-On:</strong> Você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
+            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
+              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--warn)' }}>
+                <strong>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
               </div>
             </div>
           )}
 
           {clauses.length === 0 && (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'rgba(26,20,16,0.40)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
-              Nenhuma cláusula adicionada. Clique em "+ Cláusula" para começar.
+            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-muted)', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13 }}>
+              Nenhuma cláusula extra. Salário, imagem, transferência e agentes já foram tratados no passo anterior —
+              use este passo para sell-on, bônus, solidariedade, rescisória e afins.
             </div>
           )}
 
-          {clauses.map((cl, idx) => (
-            <div key={idx} style={{ ...cardStyle, position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a' }}>
-                  Cláusula {idx + 1}
+          {clauses.map((cl, idx) => {
+            const clValid = validLines(cl.lines)
+            const clTotal = clValid.length ? clValid.reduce((s, l) => s + l.value, 0) : (cl.original_value ?? 0)
+            return (
+              <div key={idx} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <div style={sectionTitle}>Cláusula {idx + 1}</div>
+                  <IconButton icon="trash" label={`Remover cláusula ${idx + 1}`} tone="danger" onClick={() => removeClause(idx)} />
                 </div>
-                <button onClick={() => removeClause(idx)} style={{ background: 'none', border: 'none', color: 'rgba(122,63,44,0.70)', cursor: 'pointer', fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>
-                  Remover
-                </button>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={labelStyle}>Tipo</label>
-                  <select value={cl.clause_type} onChange={e => setClauseField(idx, 'clause_type', e.target.value as ClauseType)} style={inputStyle}>
-                    {CLAUSE_TYPES.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
-                  </select>
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={labelStyle}>Descrição *</label>
-                  <input value={cl.description ?? ''} onChange={e => setClauseField(idx, 'description', e.target.value)} placeholder="Descreva a cláusula..." style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Credor</label>
-                  <input value={cl.creditor_party ?? ''} onChange={e => setClauseField(idx, 'creditor_party', e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Devedor</label>
-                  <input value={cl.debtor_party ?? ''} onChange={e => setClauseField(idx, 'debtor_party', e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Valor</label>
-                  <NumberInput value={cl.original_value ?? ''} onChange={v => setClauseField(idx, 'original_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Moeda</label>
-                  <select value={cl.currency ?? 'EUR'} onChange={e => setClauseField(idx, 'currency', e.target.value as Currency)} style={inputStyle}>
-                    {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>% (se aplicável)</label>
-                  <NumberInput decimals={2} grouping={false} value={cl.percentage_value ?? ''} onChange={v => setClauseField(idx, 'percentage_value', v ? parseFloat(v) : null)} placeholder="Ex: 15" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Parcelas</label>
-                  <input type="number" min={1} max={60} value={cl.installments_total ?? 1} onChange={e => setClauseField(idx, 'installments_total', parseInt(e.target.value) || 1)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Vencimento / 1ª parcela</label>
-                  <input type="date" value={cl.due_date ?? ''} onChange={e => setClauseField(idx, 'due_date', e.target.value)} style={inputStyle} />
-                </div>
-                {SELL_ON_CLAUSE_TYPES.includes(cl.clause_type as ClauseType) ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Base de cálculo do Sell-on</label>
-                    <select value={cl.condition_description === sellOnConditionText('VALOR_TOTAL') ? 'VALOR_TOTAL' : 'MAIS_VALIA'} onChange={e => setClauseField(idx, 'condition_description', sellOnConditionText(e.target.value as SellOnBasis))} style={inputStyle}>
-                      {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+                    <label style={labelStyle}>Tipo</label>
+                    <select value={cl.clause_type} onChange={e => setClauseField(idx, 'clause_type', e.target.value as ClauseType)} style={inputStyle}>
+                      {CLAUSE_TYPES.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
                     </select>
                   </div>
-                ) : (
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Condição / gatilho</label>
-                    <input value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder="Ex: Aprovação em 25 jogos na liga" style={inputStyle} />
+                    <label style={labelStyle}>Descrição *</label>
+                    <input value={cl.description ?? ''} onChange={e => setClauseField(idx, 'description', e.target.value)} placeholder="Descreva a cláusula..." style={inputStyle} />
                   </div>
-                )}
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={labelStyle}>Notas</label>
-                  <input value={cl.notes ?? ''} onChange={e => setClauseField(idx, 'notes', e.target.value)} style={inputStyle} />
+                  <div>
+                    <label style={labelStyle}>Credor</label>
+                    <input value={cl.creditor_party ?? ''} onChange={e => setClauseField(idx, 'creditor_party', e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Devedor</label>
+                    <input value={cl.debtor_party ?? ''} onChange={e => setClauseField(idx, 'debtor_party', e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Valor</label>
+                    <NumberInput value={cl.original_value ?? ''} onChange={v => setClauseField(idx, 'original_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} disabled={clValid.length > 0} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Moeda</label>
+                    <select value={cl.currency ?? 'EUR'} onChange={e => setClauseField(idx, 'currency', e.target.value as Currency)} style={inputStyle}>
+                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>% (se aplicável)</label>
+                    <NumberInput decimals={2} grouping={false} value={cl.percentage_value ?? ''} onChange={v => setClauseField(idx, 'percentage_value', v ? parseFloat(v) : null)} placeholder="Ex: 15" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Vencimento (parcela única)</label>
+                    <input type="date" value={cl.due_date ?? ''} onChange={e => setClauseField(idx, 'due_date', e.target.value)} style={inputStyle} disabled={clValid.length > 0} />
+                  </div>
+                  {SELL_ON_CLAUSE_TYPES.includes(cl.clause_type as ClauseType) ? (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={labelStyle}>Base de cálculo do Sell-on</label>
+                      <select value={cl.condition_description === sellOnConditionText('VALOR_TOTAL') ? 'VALOR_TOTAL' : 'MAIS_VALIA'} onChange={e => setClauseField(idx, 'condition_description', sellOnConditionText(e.target.value as SellOnBasis))} style={inputStyle}>
+                        {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={labelStyle}>Condição / gatilho</label>
+                      <input value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder="Ex: Aprovação em 25 jogos na liga" style={inputStyle} />
+                    </div>
+                  )}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Notas</label>
+                    <input value={cl.notes ?? ''} onChange={e => setClauseField(idx, 'notes', e.target.value)} style={inputStyle} />
+                  </div>
+                </div>
+
+                {/* Fluxo de parcelas da cláusula — direto aqui */}
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
+                  {!cl.flowOpen ? (
+                    <button type="button" onClick={() => setClauseRow(idx, { flowOpen: true })} className="btn btn-outline">
+                      <Icon name="flow" size={14} /> Parcelar esta cláusula
+                    </button>
+                  ) : (
+                    <>
+                      <FlowBuilder
+                        currency={(cl.currency ?? 'EUR') as Currency}
+                        onCurrencyChange={c => setClauseField(idx, 'currency', c)}
+                        lines={cl.lines} onChange={lines => setClauseRow(idx, { lines })}
+                        defaultFirst={cl.due_date || contract.start_date} seedRows={4}
+                        title={`Parcelas da cláusula ${idx + 1}`}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 10, flexWrap: 'wrap' }}>
+                        <span style={hintStyle}>Valor da cláusula = soma das parcelas: <strong>{fmtCurrencyShort(clTotal, (cl.currency ?? 'EUR') as Currency)}</strong>.</span>
+                        <button type="button" onClick={() => setClauseRow(idx, { flowOpen: false, lines: [] })} className="btn btn-ghost">Remover parcelamento</button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
-          <button
-            onClick={addClause}
+          <button onClick={addClause}
             style={{
-              background: 'rgba(190,140,74,0.10)', border: '1px dashed rgba(190,140,74,0.40)',
-              borderRadius: 8, padding: '12px 0', width: '100%',
+              background: 'transparent', border: '1px dashed var(--divider-strong)',
+              borderRadius: 10, padding: '12px 0', width: '100%',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 600,
-              color: '#be8c4a', cursor: 'pointer',
+              color: 'var(--ink-primary)', cursor: 'pointer',
             }}
           >
-            + Adicionar Cláusula
+            <Icon name="plus" size={15} /> Adicionar cláusula
           </button>
         </div>
       )}
 
       {/* ── Step 3: Review ── */}
       {step === 3 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {conflict && (
-            <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10 }}>
-              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: '#92400e' }}>
+            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
+              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--warn)' }}>
                 <strong>Conflito Sell-On detectado.</strong> Revise antes de salvar.
               </div>
             </div>
           )}
 
           <div style={cardStyle}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 14 }}>
-              Vínculo
-            </div>
-            <dl style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '6px 16px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, margin: 0 }}>
-              {relatedContract && (
-                <>
-                  <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Vinculado a</dt>
-                  <dd style={{ margin: 0 }}>{contractLabel(relatedContract)}</dd>
-                </>
-              )}
-              <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Tipo</dt><dd style={{ margin: 0 }}>{CONTRACT_TYPE_LABELS[contract.type]}</dd>
-              <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Clube</dt><dd style={{ margin: 0 }}>{contract.counterpart_club || '—'}</dd>
-              <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>País</dt><dd style={{ margin: 0 }}>{contract.counterpart_country || '—'}</dd>
-              <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Início</dt><dd style={{ margin: 0 }}>{contract.start_date}</dd>
-              <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Término</dt><dd style={{ margin: 0 }}>{contract.end_date || '—'}</dd>
-              {contract.transfer_fee_gross && (
-                <>
-                  <dt style={{ color: 'rgba(26,20,16,0.45)', fontWeight: 500 }}>Valor</dt>
-                  <dd style={{ margin: 0 }}>{contract.transfer_currency} {contract.transfer_fee_gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</dd>
-                </>
-              )}
+            <div style={{ ...sectionTitle, marginBottom: 14 }}>Vínculo</div>
+            <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '6px 16px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, margin: 0 }}>
+              {relatedContract && (<>
+                <dt style={dtStyle}>Vinculado a</dt><dd style={ddStyle}>{contractLabel(relatedContract)}</dd>
+              </>)}
+              <dt style={dtStyle}>Tipo</dt><dd style={ddStyle}>{CONTRACT_TYPE_LABELS[contract.type]}</dd>
+              <dt style={dtStyle}>Clube</dt><dd style={ddStyle}>{contract.counterpart_club || '—'}</dd>
+              <dt style={dtStyle}>País</dt><dd style={ddStyle}>{contract.counterpart_country || '—'}</dd>
+              <dt style={dtStyle}>Início</dt><dd style={ddStyle}>{fmtDateBR(contract.start_date)}</dd>
+              <dt style={dtStyle}>Término</dt><dd style={ddStyle}>{contract.end_date ? fmtDateBR(contract.end_date) : '—'}</dd>
             </dl>
           </div>
 
-          {(willGenTransfer || willGenSalary || willGenImage) && (
+          {(willGenTransfer || willGenSalary || willGenImage || agents.some(a => a.name.trim()) || clauses.length > 0) && (
             <div style={cardStyle}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 10 }}>
-                Fluxos que serão gerados
-              </div>
-              <ul style={{ margin: 0, paddingLeft: 18, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#1a1410', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ ...sectionTitle, marginBottom: 10 }}>Fluxos que serão gerados</div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: 'var(--ink-primary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {willGenTransfer && (
-                  <li>Compra: <strong>{transferInst}× {contract.transfer_currency} {fmtNum(transferPerParcel)}</strong> ({PERIOD_LABEL[transferPeriod].toLowerCase()}, total {contract.transfer_currency} {fmtNum(transferTotal)}), 1º venc. {fmtDateBR(transferFirstDate)}.</li>
+                  <li>Transferência: <strong>{transferValid.length || 1}× </strong>
+                    total {contract.transfer_currency} {fmtNum(transferTotal)}, 1º venc. {fmtDateBR(transferValid[0]?.due_date ?? transferFirstDate)}.</li>
                 )}
                 {willGenSalary && (
                   <li>Salário CLT: <strong>{vigMonths}× {contract.salary_currency} {fmtNum(salaryMonthly)}/mês</strong>, vencimento dia {SALARY_DUE_DAY} (total {contract.salary_currency} {fmtNum(salaryMonthly * vigMonths)}).</li>
@@ -801,35 +916,29 @@ export default function PageAthleteNewContract() {
                 {willGenImage && (
                   <li>Direito de imagem: <strong>{vigMonths}× {contract.salary_currency} {fmtNum(imageMonthly)}/mês</strong>, vencimento dia {IMAGE_DUE_DAY} (total {contract.salary_currency} {fmtNum(imageMonthly * vigMonths)}).</li>
                 )}
+                {agents.filter(a => a.name.trim()).map((a, i) => {
+                  const v = validLines(a.lines)
+                  const total = v.length ? v.reduce((s, l) => s + l.value, 0) : (a.amount ? parseFloat(a.amount) : 0)
+                  return (
+                    <li key={i}>Agente <strong>{a.name}</strong>: {v.length ? `${v.length}× ` : 'parcela única · '}
+                      {fmtCurrencyShort(total, a.currency)} ({a.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}).</li>
+                  )
+                })}
+                {clauses.filter(c => c.description?.trim()).map((c, i) => {
+                  const v = validLines(c.lines)
+                  const total = v.length ? v.reduce((s, l) => s + l.value, 0) : (c.original_value ?? 0)
+                  return (
+                    <li key={`c${i}`}>{CLAUSE_TYPE_LABELS[c.clause_type!]}: {c.description}
+                      {total ? ` — ${v.length ? `${v.length}× ` : ''}${fmtCurrencyShort(total, (c.currency ?? 'EUR') as Currency)}` : ''}
+                      {c.percentage_value != null ? ` · ${c.percentage_value}%` : ''}</li>
+                  )
+                })}
               </ul>
             </div>
           )}
 
-          {clauses.length > 0 && (
-            <div style={cardStyle}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#be8c4a', marginBottom: 14 }}>
-                Cláusulas ({clauses.length})
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {clauses.map((cl, idx) => (
-                  <div key={idx} style={{ borderBottom: idx < clauses.length - 1 ? '1px solid rgba(26,20,16,0.08)' : 'none', paddingBottom: idx < clauses.length - 1 ? 10 : 0 }}>
-                    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 600, color: '#1a1410', marginBottom: 2 }}>
-                      {CLAUSE_TYPE_LABELS[cl.clause_type!]} — {cl.description || 'sem descrição'}
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.45)', display: 'flex', gap: 16 }}>
-                      {cl.original_value != null && <span>{cl.currency} {cl.original_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
-                      {cl.percentage_value != null && <span>{cl.percentage_value}%</span>}
-                      {cl.installments_total && cl.installments_total > 1 && <span>{cl.installments_total}x</span>}
-                      {cl.due_date && <span>Vence: {cl.due_date}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {error && (
-            <div style={{ background: 'rgba(122,63,44,0.10)', border: '1px solid rgba(122,63,44,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#7a3f2c' }}>
+            <div style={{ background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: 'var(--neg)' }}>
               {error}
             </div>
           )}
@@ -837,32 +946,21 @@ export default function PageAthleteNewContract() {
       )}
 
       {/* ── Navigation buttons ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 26, gap: 10, flexWrap: 'wrap' }}>
         <div>
           {step > 1 && (
-            <button onClick={() => setStep(s => (s - 1) as Step)}
-              style={{ background: 'transparent', border: '1px solid rgba(26,20,16,0.15)', borderRadius: 7, padding: '9px 20px', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer', color: 'rgba(26,20,16,0.55)' }}>
-              ← Voltar
-            </button>
+            <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline">← Voltar</button>
           )}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link to={`/atletas/${id}`} style={{ background: 'transparent', border: '1px solid rgba(26,20,16,0.15)', borderRadius: 7, padding: '9px 20px', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", color: 'rgba(26,20,16,0.55)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            Cancelar
-          </Link>
+          <Link to={`/atletas/${id}`} className="btn btn-ghost">Cancelar</Link>
           {step < 3 ? (
-            <button
-              onClick={() => setStep(s => (s + 1) as Step)}
-              disabled={step === 1 && !step1Valid}
-              style={{ background: '#be8c4a', border: 'none', borderRadius: 7, padding: '9px 24px', fontSize: 13, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer', color: '#fff', opacity: (step === 1 && !step1Valid) ? 0.5 : 1 }}>
+            <button onClick={() => setStep(s => (s + 1) as Step)} disabled={step === 1 && !step1Valid} className="btn btn-primary">
               Próximo →
             </button>
           ) : (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{ background: '#be8c4a', border: 'none', borderRadius: 7, padding: '9px 24px', fontSize: 13, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer', color: '#fff', opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'Salvando...' : 'Salvar Vínculo'}
+            <button onClick={handleSave} disabled={saving} className="btn btn-primary">
+              {saving ? 'Salvando...' : 'Salvar vínculo'}
             </button>
           )}
         </div>
@@ -870,3 +968,6 @@ export default function PageAthleteNewContract() {
     </div>
   )
 }
+
+const dtStyle: React.CSSProperties = { color: 'var(--text-muted)', fontWeight: 500 }
+const ddStyle: React.CSSProperties = { margin: 0, color: 'var(--ink-primary)' }

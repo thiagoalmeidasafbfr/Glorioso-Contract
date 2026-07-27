@@ -107,18 +107,18 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
 
         {segs.map((s, i) => (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round"
+            stroke="var(--ink-primary)" strokeWidth="2.5" strokeLinecap="round"
             strokeDasharray={s.dashed ? '4 4' : undefined} opacity={s.dashed ? 0.6 : 1} />
         ))}
 
         {/* guia + ponto do hover */}
         {hv && (
           <>
-            <line x1={X(hv.t)} x2={X(hv.t)} y1={padT} y2={padT + ih} stroke="var(--gold)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
-            <circle cx={X(hv.t)} cy={Y(hv.total)} r="4.5" fill="var(--gold)" stroke="#fff" strokeWidth="1.5" />
+            <line x1={X(hv.t)} x2={X(hv.t)} y1={padT} y2={padT + ih} stroke="var(--ink-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+            <circle cx={X(hv.t)} cy={Y(hv.total)} r="4.5" fill="var(--ink-primary)" stroke="#fff" strokeWidth="1.5" />
           </>
         )}
-        <circle cx={X(todayT)} cy={Y(currentTotal)} r="4" fill="var(--gold)" opacity={hv ? 0.4 : 1} />
+        <circle cx={X(todayT)} cy={Y(currentTotal)} r="4" fill="var(--ink-primary)" opacity={hv ? 0.4 : 1} />
       </svg>
 
       {/* tooltip */}
@@ -138,8 +138,8 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
         <span><span style={{ display: 'inline-block', width: 16, height: 0, borderTop: '2px dashed var(--gold)', verticalAlign: 'middle', marginRight: 6, opacity: 0.6 }} />Projeção</span>
         <span style={{ fontFamily: fontMono, color: 'var(--ink-primary)' }}>Hoje: {fmtCurrencyShort(currentTotal, contract.salary_currency)}/mês</span>
       </div>
-      <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--gold-tint, rgba(190,140,74,0.10))', border: '1px solid rgba(190,140,74,0.25)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-deep, #8a6a34)' }}>
+      <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+        <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-deep, var(--ink-secondary))' }}>
           Total até o fim do contrato ({nMonths} {nMonths === 1 ? 'mês' : 'meses'})
         </span>
         <span style={{ fontFamily: fontMono, fontSize: 18, fontWeight: 700, color: 'var(--ink-primary)' }}>

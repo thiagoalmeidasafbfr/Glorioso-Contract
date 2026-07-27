@@ -79,19 +79,19 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
             {list.map(x => <option key={x.id} value={x.name}>{x.name}{x.sub ? ` (${x.sub})` : ''}</option>)}
           </select>
           <button type="button" onClick={() => { setCreating(true); setNewName('') }}
-            style={{ flexShrink: 0, padding: '0 14px', borderRadius: 7, border: '1px solid rgba(190,140,74,0.40)', background: 'rgba(190,140,74,0.10)', color: '#be8c4a', fontFamily: fontBody, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            style={{ flexShrink: 0, padding: '0 14px', borderRadius: 7, border: '1px solid var(--divider-strong)', background: 'var(--accent-tint2)', color: 'var(--accent)', fontFamily: fontBody, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             + Novo
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 8, border: '1px solid rgba(190,140,74,0.30)', background: 'rgba(190,140,74,0.06)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 8, border: '1px solid var(--divider-strong)', background: 'var(--accent-tint)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <input autoFocus style={inp} value={newName} onChange={e => setNewName(e.target.value)} placeholder={isClube ? 'Nome do clube' : 'Nome do agente'} />
             <input style={inp} value={newSub} onChange={e => setNewSub(e.target.value)} placeholder={isClube ? 'País (opcional)' : 'Contato (opcional)'} />
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button type="button" onClick={() => setCreating(false)} style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(26,20,16,0.15)', background: 'transparent', color: 'rgba(26,20,16,0.55)', fontSize: 12, fontFamily: fontBody, cursor: 'pointer' }}>Cancelar</button>
-            <button type="button" onClick={createNow} disabled={!newName.trim() || busy} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: newName.trim() ? '#be8c4a' : '#ccc', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: fontBody, cursor: newName.trim() ? 'pointer' : 'not-allowed' }}>{busy ? 'Criando...' : 'Criar e selecionar'}</button>
+            <button type="button" onClick={createNow} disabled={!newName.trim() || busy} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: newName.trim() ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: fontBody, cursor: newName.trim() ? 'pointer' : 'not-allowed' }}>{busy ? 'Criando...' : 'Criar e selecionar'}</button>
           </div>
         </div>
       )}

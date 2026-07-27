@@ -62,7 +62,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        background: 'var(--cream-card, #faf6ed)', border: '1px solid var(--gold-line, rgba(190,140,74,0.25))',
+        background: 'var(--cream-card, #faf6ed)', border: '1px solid var(--gold-line, var(--divider-strong))',
         borderRadius: 12, padding: 28, width: 420, maxWidth: '95vw',
         boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
       }}>
@@ -70,7 +70,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 500,
             letterSpacing: '0.18em', textTransform: 'uppercase',
-            color: '#be8c4a', marginBottom: 4,
+            color: 'var(--accent)', marginBottom: 4,
           }}>
             Registrar Pagamento
           </div>
@@ -116,9 +116,9 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
 
           {currency !== 'BRL' && (
             <div style={{
-              background: 'rgba(190,140,74,0.08)', border: '1px solid rgba(190,140,74,0.20)',
+              background: 'var(--accent-tint)', border: '1px solid var(--divider-strong)',
               borderRadius: 7, padding: '8px 12px',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#be8c4a',
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'var(--accent)',
             }}>
               R$ {valueBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
@@ -152,7 +152,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             onClick={handleSave}
             disabled={!date || valueCurrency <= 0}
             style={{
-              background: '#be8c4a', border: 'none', borderRadius: 7,
+              background: 'var(--accent)', border: 'none', borderRadius: 7,
               padding: '8px 22px', fontSize: 12, fontWeight: 600,
               fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
               color: '#fff', opacity: (!date || valueCurrency <= 0) ? 0.5 : 1,

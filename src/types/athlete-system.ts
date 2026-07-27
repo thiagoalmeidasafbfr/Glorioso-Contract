@@ -329,13 +329,13 @@ export const HOLDER_TYPE_LABELS: Record<HolderType, string> = {
   TERCEIRO: 'Terceiro',
 }
 
-// Cores da barra de titularidade — alinhadas ao tema (dourado = Botafogo).
+// Cores da barra de titularidade — rampa preto→cinza (tema Botafogo).
 export const HOLDER_TYPE_COLORS: Record<HolderType, string> = {
-  BFR:      '#be8c4a',
-  CLUBE:    '#7a6244',
-  AGENTE:   '#a07d3c',
-  ATLETA:   '#3a2e1c',
-  TERCEIRO: '#b9a88a',
+  BFR:      '#14110d',
+  CLUBE:    '#4c4640',
+  AGENTE:   '#7d746a',
+  ATLETA:   '#a8a099',
+  TERCEIRO: '#cdc7bf',
 }
 
 // ── Gatilhos de mudança salarial por meta ──────────────────────────────────

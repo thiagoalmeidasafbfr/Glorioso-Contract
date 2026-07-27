@@ -70,7 +70,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
             onClick={() => fileRef.current?.click()}
             disabled={parsing}
             title="Importar dados de um arquivo XLSX"
-            style={btnStyle('rgba(190,140,74,0.15)', '#be8c4a', 'rgba(190,140,74,0.40)')}
+            style={btnStyle('var(--accent-tint2)', 'var(--accent)', 'var(--divider-strong)')}
           >
             {parsing ? '…' : '↑ Importar'}
           </button>

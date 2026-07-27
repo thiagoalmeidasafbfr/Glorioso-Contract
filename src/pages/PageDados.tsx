@@ -415,6 +415,6 @@ function btn(kind: 'solid' | 'outline'): React.CSSProperties {
     padding: '7px 14px', borderRadius: 7, fontFamily: fontBody, fontSize: 12, fontWeight: 600, cursor: 'pointer',
   }
   return kind === 'solid'
-    ? { ...base, background: 'var(--gold-tint)', border: '1px solid rgba(190,140,74,0.40)', color: '#be8c4a' }
+    ? { ...base, background: 'var(--gold-tint)', border: '1px solid var(--divider-strong)', color: 'var(--accent)' }
     : { ...base, background: 'transparent', border: '1px solid var(--divider-strong)', color: 'var(--text-secondary)' }
 }

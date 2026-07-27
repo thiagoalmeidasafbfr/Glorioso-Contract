@@ -7,12 +7,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchAthletes, fetchAllClauses, fetchAllInstallments,
 } from '../lib/athleteQueries'
-import type { Athlete, ClauseInstallment, Currency } from '../types/athlete-system'
+import type { Athlete, Clause, ClauseInstallment, Currency } from '../types/athlete-system'
 import { decodeAcordo, isAcordo } from '../lib/renegotiation'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
+import { Icon, IconButton, IconRow } from '../components/Icon'
+import { ClauseEditModal, ClauseFlowModal } from '../components/modals/EditModals'
+import { useAuth } from '../context/AuthContext'
 
 const fontBody = "'Inter', system-ui, sans-serif"
 const fontMono = "'IBM Plex Mono', monospace"
@@ -44,7 +47,12 @@ interface Row {
 }
 
 export default function PageAcordos() {
+  const { profile } = useAuth()
+  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
   const [rows, setRows] = useState<Row[]>([])
+  const [acordoClauses, setAcordoClauses] = useState<Clause[]>([])
+  const [editId, setEditId] = useState<string | null>(null)
+  const [flowId, setFlowId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [atletaFilter, setAtletaFilter] = useState('Todos')
@@ -57,7 +65,9 @@ export default function PageAcordos() {
     ])
     const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
     const built: Row[] = []
-    for (const c of clauses.filter(isAcordo)) {
+    const acordos = clauses.filter(isAcordo)
+    setAcordoClauses(acordos)
+    for (const c of acordos) {
       const meta = decodeAcordo(c.notes)
       const parc = installments.filter((i: ClauseInstallment) => i.clause_id === c.id)
       const paid = parc.filter(p => p.payment_status === 'PAGA').length
@@ -119,7 +129,7 @@ export default function PageAcordos() {
     <div style={{ padding: '24px 28px', maxWidth: 1500, margin: '0 auto' }}>
       <PageHero title="Acordos e Renegociações" subtitle="Relatório de dívidas reabertas em novos fluxos" />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button onClick={exportXlsx} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: fontBody, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↓ Exportar</button>
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={14} /> Exportar</button>
       </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
@@ -161,11 +171,12 @@ export default function PageAcordos() {
                 <th style={{ ...th, textAlign: 'right' }}>Desconto</th>
                 <th style={{ ...th, textAlign: 'center' }}>Parcelas</th>
                 <th style={th}>Andamento</th>
+                <th style={{ ...th, textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum acordo registrado.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum acordo registrado.</td></tr>}
               {filtered.map(r => {
                 const st = AND_STYLE[r.andamento]
                 return (
@@ -178,6 +189,13 @@ export default function PageAcordos() {
                     <td style={{ ...tdNum, color: r.discount > 0 ? 'var(--pos)' : r.discount < 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{r.discount ? fmtCurrencyShort(r.discount, r.currency) : '—'}</td>
                     <td style={{ ...td, textAlign: 'center', fontFamily: fontMono }}>{r.paid}/{r.count}</td>
                     <td style={td}><span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span></td>
+                    <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <IconRow>
+                        <IconButton icon="open" label="Abrir o acordo" small to={`/obrigacoes/${r.id}`} />
+                        {canEdit && <IconButton icon="edit" label="Editar acordo" small onClick={() => setEditId(r.id)} />}
+                        {canEdit && <IconButton icon="flow" label="Editar fluxo do acordo" small onClick={() => setFlowId(r.id)} />}
+                      </IconRow>
+                    </td>
                   </tr>
                 )
               })}
@@ -188,6 +206,15 @@ export default function PageAcordos() {
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length === 1 ? 'acordo' : 'acordos'}
       </div>
+
+      {editId && (() => {
+        const cl = acordoClauses.find(c => c.id === editId)
+        return cl ? <ClauseEditModal clause={cl} onClose={() => setEditId(null)} onSaved={() => { setEditId(null); load() }} /> : null
+      })()}
+      {flowId && (() => {
+        const cl = acordoClauses.find(c => c.id === flowId)
+        return cl ? <ClauseFlowModal clause={cl} onClose={() => setFlowId(null)} onSaved={() => { setFlowId(null); load() }} /> : null
+      })()}
     </div>
   )
 }
