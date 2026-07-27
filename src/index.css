@@ -48,6 +48,9 @@
   --info:           #1f5673;
   --info-tint:      rgba(31,86,115,0.10);
   --icon-off:       #b9b4ad;
+  /* Botão "cinza escuro com letra dourada" (exportar e afins). */
+  --btn-dark-bg:    #3b3630;
+  --gold-on-dark:   #dcc89a;
 
   /* Structure — bordas neutras */
   --divider:        rgba(20,17,13,0.10);
@@ -252,23 +255,42 @@ select:focus, input[type="text"]:focus, input[type="date"]:focus, input[type="nu
 
 .icon-btn.sm { width: 22px; height: 22px; border-radius: 5px; }
 
-/* ── Botões de texto ── */
+/* ── Botões de ação ───────────────────────────────────────────────────────
+   UMA forma para todos os botões de ação do sistema (toolbars, modais, cards):
+   pílula pequena, fonte mono em caixa alta. Só a COR muda:
+     .btn-primary → preto com letra branca      (ação principal)
+     .btn-dark    → cinza escuro com dourado    (exportar / ação secundária forte)
+     .btn-outline → cinza claro com letra preta (ação neutra: importar, cancelar)
+     .btn-ghost   → sem preenchimento           (ação terciária)
+     .btn-danger  → vermelho                    (excluir)                        */
 .btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border-radius: 8px;
-  font-family: var(--font-body); font-size: 12px; font-weight: 600;
-  cursor: pointer; border: 1px solid transparent; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-family: var(--font-label);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
-.btn-primary { background: var(--accent); color: var(--accent-on); }
+.btn-primary { background: var(--accent); color: #ffffff; }
 .btn-primary:hover { background: var(--accent-hover); }
-.btn-outline { background: transparent; border-color: var(--divider-strong); color: var(--ink-primary); }
-.btn-outline:hover { background: var(--accent-tint); }
-.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-dark { background: var(--btn-dark-bg); color: var(--gold-on-dark); }
+.btn-dark:hover { background: #4a443c; }
+.btn-outline { background: var(--cream-inset); border-color: var(--divider-strong); color: var(--ink-primary); }
+.btn-outline:hover { background: #dedad2; }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--ink-secondary); }
 .btn-ghost:hover { background: var(--accent-tint); }
 .btn-danger { background: transparent; border-color: rgba(138,53,36,0.35); color: var(--neg); }
 .btn-danger:hover { background: var(--neg-tint); }
 .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+/* Variação de tamanho para toolbars densas — mantém a mesma forma. */
+.btn-sm { padding: 6px 14px; font-size: 9px; }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }

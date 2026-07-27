@@ -21,8 +21,11 @@ export type IconName =
   | 'chevronRight'
   | 'link'        // vínculo
   | 'download'
+  | 'upload'
   | 'search'
   | 'dots'        // mais ações
+  | 'alert'       // vencimento em atraso (vermelho)
+  | 'clock'       // vencimento próximo (amarelo)
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // Quadrado com seta saindo — "abrir página" (padrão external-link).
@@ -117,6 +120,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M4.5 15.5h11" />
     </>
   ),
+  upload: (
+    <>
+      <path d="M10 12V4" />
+      <path d="M6.5 7.5L10 4l3.5 3.5" />
+      <path d="M4.5 15.5h11" />
+    </>
+  ),
   search: (
     <>
       <circle cx="9" cy="9" r="4.5" />
@@ -128,6 +138,21 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <circle cx="5" cy="10" r="1.1" />
       <circle cx="10" cy="10" r="1.1" />
       <circle cx="15" cy="10" r="1.1" />
+    </>
+  ),
+  // Triângulo de atenção — parcelas vencidas.
+  alert: (
+    <>
+      <path d="M10 3.8L17 15.8H3L10 3.8Z" />
+      <path d="M10 8.2v3.4" />
+      <path d="M10 13.6h0.01" />
+    </>
+  ),
+  // Relógio — vencimentos próximos.
+  clock: (
+    <>
+      <circle cx="10" cy="10" r="6.5" />
+      <path d="M10 6.4V10l2.6 1.6" />
     </>
   ),
 }

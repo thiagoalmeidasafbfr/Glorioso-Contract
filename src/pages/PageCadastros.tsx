@@ -90,9 +90,8 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
       <PageHero title={title} subtitle="Cadastro · Botafogo SAF">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar"
           style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', fontSize: 13, fontFamily: fontBody, color: 'var(--on-dark)' }} />
-        <button onClick={() => setShowNew(true)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: 'var(--on-dark)', border: 'none', borderRadius: 8, color: 'var(--ink-primary)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          <Icon name="plus" size={14} /> {isClube ? 'Clube' : 'Agente'}
+        <button onClick={() => setShowNew(true)} className="btn btn-outline">
+          <Icon name="plus" size={13} /> {isClube ? 'Novo clube' : 'Novo agente'}
         </button>
       </PageHero>
 
@@ -105,12 +104,9 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
           <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
           {(['nome', 'valor'] as const).map(s => (
             <button key={s} onClick={() => setSort(s)}
-              style={{
-                padding: '5px 12px', borderRadius: 7, fontSize: 11.5, fontFamily: fontBody, fontWeight: 600, cursor: 'pointer',
-                border: '1px solid var(--divider-strong)',
-                background: sort === s ? 'var(--accent)' : 'transparent',
-                color: sort === s ? 'var(--accent-on)' : 'var(--ink-primary)',
-              }}>{s === 'nome' ? 'Nome' : 'Valor em aberto'}</button>
+              className={`btn btn-sm ${sort === s ? 'btn-primary' : 'btn-outline'}`}>
+              {s === 'nome' ? 'Nome' : 'Valor em aberto'}
+            </button>
           ))}
         </div>
       </div>

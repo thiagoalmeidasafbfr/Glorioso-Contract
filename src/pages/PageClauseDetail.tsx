@@ -47,8 +47,6 @@ function Badge({ status }: { status: string }) {
 
 const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 7, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
 const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
-const btnSolid: React.CSSProperties = { padding: '8px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--accent-on)', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }
-const btnOutline: React.CSSProperties = { padding: '8px 16px', borderRadius: 8, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--ink-primary)', fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }
 
 export default function PageClauseDetail() {
   const { clauseId } = useParams<{ clauseId: string }>()
@@ -302,8 +300,8 @@ function ClauseFields({ clause, onSaved, onCancel }: { clause: Clause; onSaved: 
         </select>
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <button onClick={onCancel} style={btnOutline}>Cancelar</button>
-        <button onClick={save} disabled={saving} style={btnSolid}>{saving ? 'Salvando…' : 'Salvar'}</button>
+        <button onClick={onCancel} className="btn btn-outline">Cancelar</button>
+        <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
       </div>
     </div>
   )
@@ -334,7 +332,7 @@ function FlowEditor({ clause, installments, onSaved }: { clause: Clause; install
       <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} defaultFirst={clause.due_date ?? ''} seedRows={4} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>Salvar substitui as parcelas atuais. Total: <strong>{fmtCurrencyShort(total, currency)}</strong>.</span>
-        <button onClick={save} disabled={saving} style={btnSolid}>{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
+        <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
       </div>
     </div>
   )

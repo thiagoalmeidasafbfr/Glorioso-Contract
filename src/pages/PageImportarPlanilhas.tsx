@@ -87,7 +87,7 @@ export default function PageImportarPlanilhas() {
               style={{ padding: '10px 22px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               {busy ? 'Importando...' : 'Confirmar importação'}
             </button>
-            <button onClick={reset} style={{ padding: '10px 18px', background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 8, color: 'var(--text-secondary)', fontFamily: fontBody, fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+            <button onClick={reset} className="btn btn-outline">Cancelar</button>
           </div>
         </div>
       )}
@@ -131,7 +131,7 @@ export default function PageImportarPlanilhas() {
             </div>
           )}
 
-          <div><button onClick={reset} style={{ padding: '10px 22px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Importar outro arquivo</button></div>
+          <div><button onClick={reset} className="btn btn-primary">Importar outro arquivo</button></div>
         </div>
       )}
 
