@@ -9,7 +9,9 @@ import type {
   Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause, ClauseInstallment, Alert,
 } from '../types/athlete-system'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
-import OwnershipBar, { OwnershipBadge } from '../components/OwnershipBar'
+import { OwnershipBadge } from '../components/OwnershipBar'
+import { sortRights, sumOwnership } from '../lib/ownership'
+import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import { Icon, IconButton } from '../components/Icon'
 import SheetIO from '../components/SheetIO'
@@ -262,10 +264,27 @@ export default function PageAthletesList() {
     background: 'var(--tbl-head)', color: 'var(--ink-secondary)',
     borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono,
     letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1,
+    textAlign: 'center',
   }
   const td: React.CSSProperties = {
     padding: '11px 12px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font,
     borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle',
+    textAlign: 'center',
+  }
+
+  // Texto de titularidade — ex.: "100% BFR" ou "80% BFR · 20% Clube X".
+  function ownershipText(rights: EconomicRight[]): string {
+    if (!rights || rights.length === 0) return '—'
+    const parts = sortRights(rights)
+      .filter(r => r.percentage > 0)
+      .map(r => {
+        const label = r.holder_type === 'BFR' ? 'BFR' : (r.holder_name || HOLDER_TYPE_LABELS[r.holder_type])
+        const pct = Number.isInteger(r.percentage) ? r.percentage : r.percentage.toFixed(1).replace('.', ',')
+        return `${pct}% ${label}`
+      })
+    const total = sumOwnership(rights)
+    if (total < 99.9) parts.push(`${(100 - total).toFixed(1).replace('.', ',')}% n/atrib.`)
+    return parts.join(' · ')
   }
 
   return (
@@ -351,12 +370,12 @@ export default function PageAthletesList() {
                 <th style={{ ...th, width: 52 }}></th>
                 <th style={{ ...th, width: 200, textAlign: 'left' }}>Nome</th>
                 <th style={{ ...th, width: 110 }}>Status</th>
-                <th style={{ ...th, width: 80 }}>País</th>
-                <th style={{ ...th, width: 180, textAlign: 'left' }}>Detentores</th>
-                <th style={{ ...th, width: 130, textAlign: 'left' }}>Posição</th>
-                <th style={{ ...th, width: 120, textAlign: 'right' }}>Próx. Venc.</th>
-                <th style={{ ...th, width: 100 }}>Alertas</th>
-                <th style={{ ...th, width: 90, textAlign: 'right' }}></th>
+                <th style={{ ...th, width: 90 }}>País</th>
+                <th style={{ ...th, width: 220 }}>Detentores</th>
+                <th style={{ ...th, width: 140 }}>Posição</th>
+                <th style={{ ...th, width: 120 }}>Próx. Venc.</th>
+                <th style={{ ...th, width: 110 }}>Alertas</th>
+                <th style={{ ...th, width: 70 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -386,9 +405,11 @@ export default function PageAthletesList() {
                     onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'var(--table-row-hover)'}
                     onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}>
                     <td style={{ ...td, width: 52 }}>
-                      <AthleteAvatar athlete={a} size={36} />
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <AthleteAvatar athlete={a} size={36} />
+                      </div>
                     </td>
-                    <td style={{ ...td, width: 200 }}>
+                    <td style={{ ...td, width: 200, textAlign: 'left' }}>
                       <div style={{ fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.short_name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
                     </td>
@@ -397,31 +418,33 @@ export default function PageAthletesList() {
                         {STATUS_LABELS[a.current_status]}
                       </span>
                     </td>
-                    <td style={{ ...td, width: 80, color: 'var(--text-secondary)', fontSize: 12 }}>{a.nationality ?? '—'}</td>
-                    <td style={{ ...td, width: 180 }}>
+                    <td style={{ ...td, width: 90, color: 'var(--text-secondary)', fontSize: 12 }}>{a.nationality ?? '—'}</td>
+                    <td style={{ ...td, width: 220, fontSize: 12 }}>
                       {(rightsByAthlete[a.id]?.length ?? 0) > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <OwnershipBar rights={rightsByAthlete[a.id]} compact showLegend={false} />
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                          <span style={{ fontFamily: fontMono, color: 'var(--ink-primary)' }}>
+                            {ownershipText(rightsByAthlete[a.id])}
+                          </span>
                           <OwnershipBadge rights={rightsByAthlete[a.id]} />
                         </div>
                       ) : (
                         <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
                       )}
                     </td>
-                    <td style={{ ...td, width: 130, color: a.position ? 'var(--ink-primary)' : 'var(--text-muted)', fontSize: 12 }}>
+                    <td style={{ ...td, width: 140, color: a.position ? 'var(--ink-primary)' : 'var(--text-muted)', fontSize: 12 }}>
                       {a.position || '—'}
                     </td>
-                    <td style={{ ...td, width: 120, textAlign: 'right', fontFamily: fontMono, fontSize: 12, color: stats.nextDue ? (isOverdue(stats.nextDue, 'PENDENTE') ? 'var(--neg)' : 'var(--ink-secondary)') : 'var(--text-muted)' }}>
+                    <td style={{ ...td, width: 120, fontFamily: fontMono, fontSize: 12, color: stats.nextDue ? (isOverdue(stats.nextDue, 'PENDENTE') ? 'var(--neg)' : 'var(--ink-secondary)') : 'var(--text-muted)' }}>
                       {stats.nextDue ? fmtDate(stats.nextDue) : '—'}
                     </td>
-                    <td style={{ ...td, width: 100 }}>
-                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <td style={{ ...td, width: 110 }}>
+                      <div style={{ display: 'inline-flex', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
                         {stats.overdue > 0 && <AlertCount kind="atraso" count={stats.overdue} />}
                         {stats.soon > 0 && <AlertCount kind="breve" count={stats.soon} />}
                         {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
                       </div>
                     </td>
-                    <td style={{ ...td, width: 70, textAlign: 'right' }}>
+                    <td style={{ ...td, width: 70 }}>
                       <IconButton icon="open" label={`Abrir a ficha de ${a.short_name || a.full_name}`} to={`/atletas/${a.id}`} />
                     </td>
                   </tr>

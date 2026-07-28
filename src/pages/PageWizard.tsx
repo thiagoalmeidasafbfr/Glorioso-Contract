@@ -80,8 +80,8 @@ const input: React.CSSProperties = {
   borderRadius: 7, padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
 }
 const sectionTitle: React.CSSProperties = {
-  fontFamily: mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em',
-  textTransform: 'uppercase', color: 'var(--ink-secondary)',
+  fontFamily: mono, fontSize: 11, fontWeight: 800, letterSpacing: '0.16em',
+  textTransform: 'uppercase', color: 'var(--ink-primary)',
 }
 const hint: React.CSSProperties = { fontFamily: font, fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }
 

@@ -70,6 +70,11 @@ interface ClauseRow extends Partial<NewClauseInput> {
 interface AgentRow {
   name: string; amount: string; currency: Currency; direction: LiabilityDirection
   lines: FlowLine[]; flowOpen: boolean
+  // Comissão sobre a próxima venda deste atleta (ex.: 10% do valor da venda
+  // futura para o agente que intermediou a compra). Análogo ao Sell-On do clube.
+  futureSale: boolean
+  futurePct: string
+  futureBasis: SellOnBasis
 }
 
 function isSellOnConflict(clauses: ClauseRow[]): boolean {
@@ -101,8 +106,8 @@ const cardStyle: React.CSSProperties = {
 }
 
 const sectionTitle: React.CSSProperties = {
-  fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 700,
-  letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)',
+  fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 800,
+  letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-primary)',
 }
 
 const hintStyle: React.CSSProperties = {
@@ -157,7 +162,7 @@ export default function PageAthleteNewContract() {
   })
 
   // Agentes desta transação (um vínculo pode ter vários, com valores distintos).
-  const emptyAgent: AgentRow = { name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR', lines: [], flowOpen: false }
+  const emptyAgent: AgentRow = { name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR', lines: [], flowOpen: false, futureSale: false, futurePct: '', futureBasis: 'MAIS_VALIA' }
   const [agents, setAgents] = useState<AgentRow[]>(initialAgente ? [{ ...emptyAgent, name: initialAgente }] : [])
   const addAgent = () => setAgents(prev => [...prev, { ...emptyAgent }])
   const removeAgent = (i: number) => setAgents(prev => prev.filter((_, idx) => idx !== i))
@@ -344,11 +349,29 @@ export default function PageAthleteNewContract() {
       if (willGenSalary) await genRemFlow('SALARIO_CETD', 'Salário CLT', salaryMonthly, SALARY_DUE_DAY)
       if (willGenImage) await genRemFlow('DIREITO_IMAGEM', 'Direito de imagem', imageMonthly, IMAGE_DUE_DAY)
 
-      // Agentes → uma cláusula de INTERMEDIAÇÃO por agente, com o fluxo de
-      // parcelas informado aqui (ou uma parcela única com o valor total).
+      // Agentes → uma cláusula por agente. Se marcado "comissão sobre venda
+      // futura", cria uma INTERMEDIACAO_VENDA_FUTURA com % (análogo ao Sell-On
+      // do clube). Senão, cria uma INTERMEDIACAO com valor + fluxo de parcelas.
       for (const ag of agents) {
         if (!ag.name.trim()) continue
         const payable = ag.direction === 'A_PAGAR'
+        if (ag.futureSale) {
+          const pct = ag.futurePct ? parseFloat(ag.futurePct) : null
+          await createClause(savedContract.id, id, {
+            clause_type: 'INTERMEDIACAO_VENDA_FUTURA',
+            description: `Comissão de intermediação sobre venda futura — ${ag.name.trim()}${pct != null ? ` (${pct}%)` : ''}`,
+            creditor_party: payable ? ag.name.trim() : 'Botafogo SAF',
+            debtor_party: payable ? 'Botafogo SAF' : ag.name.trim(),
+            currency: ag.currency,
+            original_value: null,
+            percentage_value: pct,
+            condition_description: sellOnConditionText(ag.futureBasis),
+            due_date: contract.start_date,
+            installments_total: 1,
+            notes: 'Gerada automaticamente quando ocorrer a venda do atleta.',
+          })
+          continue
+        }
         const sched = validLines(ag.lines)
         const total = sched.length ? sched.reduce((s, l) => s + l.value, 0) : (ag.amount ? parseFloat(ag.amount) : null)
         const clause = await createClause(savedContract.id, id, {
@@ -691,11 +714,19 @@ export default function PageAthleteNewContract() {
                     </div>
                     <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginTop: 12 }}>
-                      <div>
-                        <label style={labelStyle}>Comissão / valor</label>
-                        <NumberInput value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle}
-                          disabled={agValid.length > 0} />
-                      </div>
+                      {!ag.futureSale && (
+                        <div>
+                          <label style={labelStyle}>Comissão / valor</label>
+                          <NumberInput value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle}
+                            disabled={agValid.length > 0} />
+                        </div>
+                      )}
+                      {ag.futureSale && (
+                        <div>
+                          <label style={labelStyle}>% da venda futura</label>
+                          <NumberInput decimals={2} grouping={false} value={ag.futurePct} onChange={v => setAgent(i, { futurePct: v })} placeholder="Ex: 10" style={inputStyle} />
+                        </div>
+                      )}
                       <div>
                         <label style={labelStyle}>Moeda</label>
                         <select value={ag.currency} onChange={e => setAgent(i, { currency: e.target.value as Currency })} style={inputStyle}>
@@ -709,10 +740,31 @@ export default function PageAthleteNewContract() {
                           <option value="A_RECEBER">A receber</option>
                         </select>
                       </div>
+                      {ag.futureSale && (
+                        <div>
+                          <label style={labelStyle}>Base de cálculo</label>
+                          <select value={ag.futureBasis} onChange={e => setAgent(i, { futureBasis: e.target.value as SellOnBasis })} style={inputStyle}>
+                            {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Fluxo de parcelas do agente — direto aqui */}
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--divider)' }}>
+                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--accent-tint)', border: '1px solid var(--divider)' }}>
+                      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ag.futureSale}
+                          onChange={e => setAgent(i, { futureSale: e.target.checked, amount: e.target.checked ? '' : ag.amount, lines: e.target.checked ? [] : ag.lines, flowOpen: e.target.checked ? false : ag.flowOpen })}
+                          style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                        <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
+                          <strong>Comissão sobre a venda futura deste atleta.</strong> Igual ao mecanismo de Sell-On do clube:
+                          se este atleta for vendido, o agente recebe a % informada sobre o valor (ou mais-valia) da transferência.
+                          Nada é gerado agora — a cláusula fica registrada e é acionada quando ocorrer a venda.
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Fluxo de parcelas do agente — só para comissão à vista/parcelada */}
+                    {!ag.futureSale && <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--divider)' }}>
                       {!ag.flowOpen ? (
                         <button type="button" onClick={() => setAgent(i, { flowOpen: true })} className="btn btn-outline">
                           <Icon name="flow" size={14} /> Parcelar esta comissão
@@ -736,7 +788,7 @@ export default function PageAthleteNewContract() {
                           </div>
                         </>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 )
               })}
@@ -917,6 +969,12 @@ export default function PageAthleteNewContract() {
                   <li>Direito de imagem: <strong>{vigMonths}× {contract.salary_currency} {fmtNum(imageMonthly)}/mês</strong>, vencimento dia {IMAGE_DUE_DAY} (total {contract.salary_currency} {fmtNum(imageMonthly * vigMonths)}).</li>
                 )}
                 {agents.filter(a => a.name.trim()).map((a, i) => {
+                  if (a.futureSale) {
+                    return (
+                      <li key={i}>Agente <strong>{a.name}</strong>: <strong>{a.futurePct || '—'}%</strong> sobre a <em>venda futura</em> deste atleta
+                        {' '}({SELLON_BASIS_LABELS[a.futureBasis]}, {a.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}).</li>
+                    )
+                  }
                   const v = validLines(a.lines)
                   const total = v.length ? v.reduce((s, l) => s + l.value, 0) : (a.amount ? parseFloat(a.amount) : 0)
                   return (

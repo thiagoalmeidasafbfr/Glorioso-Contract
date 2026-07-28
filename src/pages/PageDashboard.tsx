@@ -146,8 +146,8 @@ export default function PageDashboard() {
   }
 
   const sectionTitle: React.CSSProperties = {
-    fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 600,
-    letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 14,
+    fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 800,
+    letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-primary)', marginBottom: 14,
   }
 
   if (loading) {
@@ -325,7 +325,7 @@ export default function PageDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
                 { to: '/atletas', label: 'Lista de Atletas' },
-                { to: '/album', label: 'Álbum de Figurinhas' },
+                { to: '/album', label: 'Portfolio de Atletas' },
                 { to: '/relatorios/consolidado', label: 'Relatório Consolidado' },
                 { to: '/clubes', label: 'Obrigações — Clubes' },
                 { to: '/intermediarios', label: 'Obrigações — Agentes' },

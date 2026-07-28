@@ -283,9 +283,9 @@ export default function PageAlbum() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Álbum de Figurinhas" subtitle="Plantel · Botafogo SAF" />
+      <PageHero title="Portfolio de Atletas" subtitle="Plantel · Botafogo SAF" />
       <div style={{ marginTop: -4, marginBottom: 24, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, maxWidth: 620 }}>
-        Cada figurinha traz a foto do atleta e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.
+        Cada atleta traz foto e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.
       </div>
 
       {/* Toolbar de filtros */}
