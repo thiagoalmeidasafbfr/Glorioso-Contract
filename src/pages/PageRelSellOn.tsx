@@ -129,13 +129,6 @@ export default function PageRelSellOn() {
   const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
-  const kpi = (label: string, value: string, tone?: 'pos' | 'neg') => (
-    <div className="card" style={{ padding: '10px 18px' }}>
-      <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: tone ? `var(--${tone})` : 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'var(--font-data)', color: tone ? `var(--${tone})` : 'var(--ink-primary)' }}>{value}</div>
-    </div>
-  )
-
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Vendas Futuras (Sell-on)" subtitle="Consolidado de % de vendas futuras · a pagar e a receber" />
@@ -167,11 +160,6 @@ export default function PageRelSellOn() {
               <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
             ))}
           </select>
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
-          {kpi('Atletas', String(stats.atletas))}
-          {kpi('% a receber (soma)', `${stats.pctSum.toFixed(1)}%`, 'pos')}
-          {kpi('Cláusulas', `${stats.aPagar} · ${stats.aReceber}`)}
         </div>
       </div>
 

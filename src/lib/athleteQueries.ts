@@ -934,7 +934,7 @@ export async function createInstallments(clauseId: string, athleteId: string, in
 // (dia 20) mês a mês pela vigência do contrato.
 export async function createClauseInstallments(
   clauseId: string, athleteId: string,
-  rows: { installment_number: number; due_date: string; original_value: number; currency: Currency }[],
+  rows: { installment_number: number; due_date: string; original_value: number; currency: Currency; fixed_exchange_rate?: number | null }[],
 ): Promise<ClauseInstallment[]> {
   if (rows.length === 0) return []
   const installments: Omit<ClauseInstallment, 'id' | 'created_at' | 'updated_at'>[] = rows.map(r => ({
@@ -943,6 +943,7 @@ export async function createClauseInstallments(
     original_value: r.original_value, currency: r.currency,
     payment_status: 'PENDENTE', payment_date: null,
     amount_paid_brl: null, exchange_rate: null, notes: null,
+    fixed_exchange_rate: r.fixed_exchange_rate ?? null,
   }))
   if (!USE_SUPABASE) return local.insertMany<ClauseInstallment>(T.installments, installments)
   const { data, error } = await supabase.from(AC.installments).insert(nn(installments.map(toAcFK))).select()

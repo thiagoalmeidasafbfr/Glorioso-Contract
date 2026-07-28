@@ -20,15 +20,14 @@ interface AthleteRow {
   athlete: Athlete
   holders: HolderRow[]
   total: number
-  status: 'FECHADO' | 'PARCIAL' | 'EXCEDIDO' | 'SEM_LANCAMENTO'
+  status: 'OK' | 'PARCIAL' | 'SEM_LANCAMENTO'
   bfrPct: number
 }
 
 const STATUS_STYLE: Record<AthleteRow['status'], { bg: string; fg: string; label: string }> = {
-  FECHADO:        { bg: 'var(--pos-tint)',    fg: 'var(--pos)',            label: '100% fechado' },
-  PARCIAL:        { bg: 'var(--warn-tint)',   fg: 'var(--warn)',           label: 'Parcial'      },
-  EXCEDIDO:       { bg: 'var(--neg-tint)',    fg: 'var(--neg)',            label: 'Excede 100%'  },
-  SEM_LANCAMENTO: { bg: 'var(--cream-inset)', fg: 'var(--text-muted)',     label: 'Sem lançamento' },
+  OK:             { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)', label: '—' },
+  PARCIAL:        { bg: 'var(--warn-tint)',   fg: 'var(--warn)',          label: 'Parcial' },
+  SEM_LANCAMENTO: { bg: 'var(--cream-inset)', fg: 'var(--text-muted)',    label: 'Sem lançamento' },
 }
 
 const HOLDER_COLOR: Record<HolderType, string> = {
@@ -65,9 +64,8 @@ export default function PageRelDirEconomicos() {
       const total = holders.reduce((s, h) => s + h.percentage, 0)
       const bfrPct = holders.filter(h => h.holderType === 'BFR').reduce((s, h) => s + h.percentage, 0)
       const status: AthleteRow['status'] = holders.length === 0 ? 'SEM_LANCAMENTO'
-        : total > 100.01 ? 'EXCEDIDO'
         : total < 99.99 ? 'PARCIAL'
-        : 'FECHADO'
+        : 'OK'
       return { athlete: a, holders, total, status, bfrPct }
     })
     // Botafogo primeiro (%), depois quem tem parceria (BFR<100), depois quem
@@ -92,9 +90,7 @@ export default function PageRelDirEconomicos() {
 
   const stats = useMemo(() => ({
     atletas: filtered.length,
-    fechado: filtered.filter(r => r.status === 'FECHADO').length,
     parcial: filtered.filter(r => r.status === 'PARCIAL').length,
-    excedido: filtered.filter(r => r.status === 'EXCEDIDO').length,
     bfr100: filtered.filter(r => r.bfrPct >= 99.99).length,
   }), [filtered])
 
@@ -124,13 +120,6 @@ export default function PageRelDirEconomicos() {
   const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
-  const kpi = (label: string, value: string, tone?: 'pos' | 'neg' | 'warn') => (
-    <div className="card" style={{ padding: '10px 18px' }}>
-      <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: tone ? `var(--${tone})` : 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'var(--font-data)', color: tone ? `var(--${tone})` : 'var(--ink-primary)' }}>{value}</div>
-    </div>
-  )
-
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Direitos Econômicos" subtitle="Consolidado de titularidade por atleta · Botafogo, parceiros, agentes e terceiros">
@@ -148,19 +137,14 @@ export default function PageRelDirEconomicos() {
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
-            {(['FECHADO', 'PARCIAL', 'EXCEDIDO', 'SEM_LANCAMENTO'] as const).map(s => (
+            {(['PARCIAL', 'SEM_LANCAMENTO'] as const).map(s => (
               <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
             ))}
           </select>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+        <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
           <button onClick={expandAll} className="btn btn-outline btn-sm">Expandir tudo</button>
           <button onClick={collapseAll} className="btn btn-outline btn-sm">Recolher</button>
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
-          {kpi('Atletas', String(stats.atletas))}
-          {kpi('BFR 100%', String(stats.bfr100), 'pos')}
-          {kpi('Excede 100%', String(stats.excedido), stats.excedido > 0 ? 'neg' : undefined)}
         </div>
       </div>
 
@@ -198,10 +182,14 @@ export default function PageRelDirEconomicos() {
                         <RefLink to={`/atletas/${r.athlete.id}`} title={`Abrir ${r.athlete.full_name}`}>{r.athlete.full_name}</RefLink>
                       </td>
                       <td style={td}>
-                        <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: 'var(--font-label)', letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span>
+                        {r.status === 'OK' ? (
+                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
+                        ) : (
+                          <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: 'var(--font-label)', letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span>
+                        )}
                       </td>
                       <td style={{ ...tdNum, color: r.bfrPct >= 99.99 ? 'var(--pos)' : 'var(--ink-primary)' }}>{r.bfrPct.toFixed(0)}%</td>
-                      <td style={{ ...tdNum, color: r.status === 'EXCEDIDO' ? 'var(--neg)' : r.status === 'PARCIAL' ? 'var(--warn)' : 'var(--ink-primary)' }}>{r.total.toFixed(0)}%</td>
+                      <td style={{ ...tdNum, color: r.status === 'PARCIAL' ? 'var(--warn)' : 'var(--ink-primary)' }}>{r.total.toFixed(0)}%</td>
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {r.holders.slice(0, 3).map((h, i) => (
@@ -239,7 +227,7 @@ export default function PageRelDirEconomicos() {
         </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>
-        {filtered.length} atleta(s) · {stats.fechado} com 100% fechado · {stats.parcial} parcial · {stats.excedido} excedendo
+        {filtered.length} atleta(s){stats.parcial > 0 ? ` · ${stats.parcial} parcial(is)` : ''}
       </div>
     </div>
   )

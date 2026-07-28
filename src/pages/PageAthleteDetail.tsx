@@ -250,6 +250,10 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
 
   async function save() {
     if (!f.full_name.trim()) return
+    if (sum > 100.01) {
+      alert(`A soma dos detentores é ${sum.toFixed(2)}%. O total não pode passar de 100%.`)
+      return
+    }
     setSaving(true)
     try {
       await updateAthlete(athlete.id, {
@@ -301,7 +305,9 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
         <div style={{ borderTop: '1px solid var(--divider)', paddingTop: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>Detentores</div>
-            <span style={{ fontSize: 11, fontFamily: fontMono, color: Math.abs(sum - 100) < 0.1 ? 'var(--pos)' : 'var(--neg)' }}>Soma: {sum.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</span>
+            <span style={{ fontSize: 11, fontFamily: fontMono, color: sum > 100.01 ? 'var(--neg)' : Math.abs(sum - 100) < 0.1 ? 'var(--pos)' : 'var(--warn)' }}>
+              Soma: {sum.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%{sum > 100.01 ? ' — passa de 100%' : ''}
+            </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map((r, i) => (
@@ -545,10 +551,25 @@ export default function PageAthleteDetail() {
       await deleteAthlete(id)
       navigate('/atletas')
     } catch (e) {
-      // Antes o erro caía silenciosamente e o atleta parecia "não ter sido excluído".
-      // Agora mostramos o motivo — quase sempre uma FK/policy que a UI não pode resolver sozinha.
-      const msg = e instanceof Error ? e.message : String(e)
-      window.alert(`Não foi possível excluir o atleta.\n\n${msg}`)
+      // Supabase devolve objetos { message, details, hint, code } — não são Error.
+      // Extrai a informação útil para o usuário em vez de mostrar "[object Object]".
+      const err = e as { message?: string; details?: string; hint?: string; code?: string } | Error | string | null | undefined
+      const parts: string[] = []
+      if (err instanceof Error) parts.push(err.message)
+      else if (typeof err === 'string') parts.push(err)
+      else if (err && typeof err === 'object') {
+        if (err.message) parts.push(err.message)
+        if (err.details) parts.push(err.details)
+        if (err.hint) parts.push(`Dica: ${err.hint}`)
+        if (err.code) parts.push(`(código ${err.code})`)
+        if (parts.length === 0) parts.push(JSON.stringify(err))
+      } else {
+        parts.push(String(err))
+      }
+      const msg = parts.join('\n')
+      // eslint-disable-next-line no-console
+      console.error('deleteAthlete falhou:', e)
+      window.alert(`Não foi possível excluir o atleta.\n\n${msg}\n\nAbra o console do navegador para ver o objeto completo do erro.`)
     }
   }
 
