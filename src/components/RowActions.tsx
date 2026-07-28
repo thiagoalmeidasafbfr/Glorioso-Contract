@@ -111,9 +111,12 @@ export function ActionLegend({ items = ['open', 'edit', 'schedule', 'markPaid', 
     revert:   { icon: 'undo',     tone: 'warn',    short: 'desfazer' },
     remove:   { icon: 'trash',    tone: 'danger',  short: 'excluir' },
   }
+  // A legenda vive alinhada à direita, colada na coluna de Ações — assim o
+  // olho do usuário faz a associação ícone → ação sem varrer a linha inteira.
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+      justifyContent: 'flex-end',
       fontFamily: "var(--font-body)", fontSize: 11, color: 'var(--text-muted)',
     }}>
       {items.map(k => (

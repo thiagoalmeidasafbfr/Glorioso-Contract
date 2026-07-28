@@ -155,18 +155,15 @@ export default function PageRelDirEconomicos() {
               <tr>
                 <th style={{ ...th, width: 36 }} aria-label="Expandir" />
                 <th style={th}>Atleta</th>
-                <th style={th}>Status</th>
-                <th style={{ ...th, textAlign: 'right' }}>Botafogo</th>
                 <th style={{ ...th, textAlign: 'right' }}>Total</th>
                 <th style={{ ...th }}>Detentores</th>
                 <th style={{ ...th, textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta.</td></tr>}
+              {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta.</td></tr>}
               {filtered.map(r => {
-                const st = STATUS_STYLE[r.status]
                 const isOpen = expanded.has(r.athlete.id)
                 const canExpand = r.holders.length > 0
                 return (
@@ -181,14 +178,6 @@ export default function PageRelDirEconomicos() {
                       <td style={{ ...td, fontWeight: 600 }}>
                         <RefLink to={`/atletas/${r.athlete.id}`} title={`Abrir ${r.athlete.full_name}`}>{r.athlete.full_name}</RefLink>
                       </td>
-                      <td style={td}>
-                        {r.status === 'OK' ? (
-                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
-                        ) : (
-                          <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: 'var(--font-label)', letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span>
-                        )}
-                      </td>
-                      <td style={{ ...tdNum, color: r.bfrPct >= 99.99 ? 'var(--pos)' : 'var(--ink-primary)' }}>{r.bfrPct.toFixed(0)}%</td>
                       <td style={{ ...tdNum, color: r.status === 'PARCIAL' ? 'var(--warn)' : 'var(--ink-primary)' }}>{r.total.toFixed(0)}%</td>
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -210,11 +199,10 @@ export default function PageRelDirEconomicos() {
                     {isOpen && r.holders.map((h, i) => (
                       <tr key={`${r.athlete.id}-${i}`} style={{ background: 'var(--cream-page)' }}>
                         <td style={td} />
-                        <td colSpan={2} style={{ ...td, paddingLeft: 40, color: 'var(--text-secondary)' }}>
+                        <td style={{ ...td, paddingLeft: 40, color: 'var(--text-secondary)' }}>
                           <span style={{ fontSize: 11, fontFamily: 'var(--font-label)', color: HOLDER_COLOR[h.holderType], letterSpacing: '0.10em', textTransform: 'uppercase', marginRight: 8 }}>{HOLDER_TYPE_LABELS[h.holderType]}</span>
                           {h.holderName}
                         </td>
-                        <td style={tdNum} />
                         <td style={{ ...tdNum, fontWeight: 600, color: HOLDER_COLOR[h.holderType] }}>{h.percentage.toFixed(2)}%</td>
                         <td colSpan={2} style={td} />
                       </tr>

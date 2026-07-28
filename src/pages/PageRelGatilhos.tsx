@@ -24,6 +24,7 @@ import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
+import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
 
 const METRIC_LABEL: Record<TriggerMetric, string> = {
@@ -165,13 +166,6 @@ export default function PageRelGatilhos() {
   const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdMono: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)' }
-  const kpi = (label: string, value: string, tone?: 'pos' | 'neg' | 'warn') => (
-    <div className="card" style={{ padding: '10px 18px' }}>
-      <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: tone ? `var(--${tone})` : 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 600, fontFamily: 'var(--font-data)', color: tone ? `var(--${tone})` : 'var(--ink-primary)' }}>{value}</div>
-    </div>
-  )
-
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Gatilhos e Metas" subtitle="Consolidado de metas esportivas, bônus de performance e cláusulas rescisórias">
@@ -202,10 +196,10 @@ export default function PageRelGatilhos() {
             ))}
           </select>
         </div>
-        <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
-          {kpi('Pendentes', String(stats.pendente), stats.pendente > 0 ? 'warn' : undefined)}
-          {kpi('Atingidas', String(stats.atingida), 'pos')}
-          {kpi('Não atingidas', String(stats.naoAtingida), stats.naoAtingida > 0 ? 'neg' : undefined)}
+        <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'flex-end' }}>
+          <KpiPill label="Pendentes" value={String(stats.pendente)} tone={stats.pendente > 0 ? 'warn' : 'neutral'} />
+          <KpiPill label="Atingidas" value={String(stats.atingida)} tone="pos" />
+          <KpiPill label="Não atingidas" value={String(stats.naoAtingida)} tone={stats.naoAtingida > 0 ? 'neg' : 'neutral'} />
         </div>
       </div>
 

@@ -20,6 +20,7 @@ import { buildNameIndex, norm } from '../lib/importHelpers'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import { fetchPtaxRates, toBRL, ptaxRateFor } from '../lib/ptax'
 import PageHero from '../components/PageHero'
+import KpiPill from '../components/KpiPill'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import RowActions, { ActionLegend } from '../components/RowActions'
@@ -271,14 +272,8 @@ export default function PageConsolidado() {
             {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--neg-tint)', border: '1px solid rgba(122,63,44,0.25)' }}>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--neg)' }}>A pagar (BRL PTAX)</div>
-          <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: 'var(--neg)' }}>{fmtCurrencyShort(totals.pay, 'BRL')}</div>
-        </div>
-        <div style={{ padding: '8px 14px', borderRadius: 8, background: '#e6ece2', border: '1px solid rgba(58,111,58,0.25)' }}>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#3a6f3a' }}>A receber (BRL PTAX)</div>
-          <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: '#3a6f3a' }}>{fmtCurrencyShort(totals.rec, 'BRL')}</div>
-        </div>
+        <KpiPill label="A pagar (BRL PTAX)" value={fmtCurrencyShort(totals.pay, 'BRL')} tone="neg" />
+        <KpiPill label="A receber (BRL PTAX)" value={fmtCurrencyShort(totals.rec, 'BRL')} tone="pos" />
       </div>
 
       <div style={{ marginBottom: 8 }}>
