@@ -28,8 +28,8 @@ import EntityPicker from '../components/EntityPicker'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
 
 type BenefKind = 'atleta' | 'clube' | 'agente' | 'livre'
 type Dir = 'A_PAGAR' | 'A_RECEBER'

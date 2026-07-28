@@ -10,8 +10,8 @@ import {
 } from '../lib/athleteQueries'
 import type { Club, Intermediary } from '../types/athlete-system'
 
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', monospace"
+const fontBody = "var(--font-body)"
+const fontMono = "var(--font-label)"
 
 type Kind = 'clube' | 'intermediario'
 interface Entity { id: string; name: string; sub: string }

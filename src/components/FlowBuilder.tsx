@@ -25,8 +25,8 @@ const PERIOD_LABEL: Record<Period, string> = {
   MENSAL: 'Mensal', BIMESTRAL: 'Bimestral', TRIMESTRAL: 'Trimestral', SEMESTRAL: 'Semestral', ANUAL: 'Anual',
 }
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
 
 const input: React.CSSProperties = {
   width: '100%', background: 'var(--cream-card)', border: '1px solid var(--input-border)',

@@ -3,8 +3,8 @@ import { useApp, CURRENCY_OPTIONS, type AppCurrency } from '../context/AppContex
 import { useAuth } from '../context/AuthContext'
 import { USE_SUPABASE } from '../lib/supabase'
 
-const fontBody  = "'Inter', system-ui, sans-serif"
-const fontMono  = "'IBM Plex Mono', monospace"
+const fontBody  = "var(--font-body)"
+const fontMono  = "var(--font-label)"
 
 const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }[] }[] = [
   {
@@ -21,14 +21,12 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
   {
     label: 'Relatórios',
     items: [
-      { to: '/relatorios/visao-atletas', label: 'Visão por Atleta' },
-      { to: '/relatorios/imagem',        label: 'Direito de Imagem' },
-      { to: '/relatorios/luvas',         label: 'Luvas' },
-      { to: '/relatorios/intermediarios', label: 'Agentes' },
-      { to: '/relatorios/clubes',        label: 'Clubes' },
-      { to: '/relatorios/salarios',      label: 'Salários' },
-      { to: '/relatorios/acordos',       label: 'Acordos e Renegociações' },
-      { to: '/relatorios/consolidado',   label: 'Consolidado' },
+      { to: '/relatorios/visao-atletas',        label: 'Visão por Atleta' },
+      { to: '/relatorios/consolidado',          label: 'Consolidado' },
+      { to: '/relatorios/acordos',              label: 'Acordos e Renegociações' },
+      { to: '/relatorios/sell-on',              label: 'Vendas Futuras' },
+      { to: '/relatorios/direitos-economicos',  label: 'Direitos Econômicos' },
+      { to: '/relatorios/gatilhos',             label: 'Gatilhos e Metas' },
     ],
   },
   {

@@ -6,7 +6,7 @@ import type { EconomicRight } from '../types/athlete-system'
 import { HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS } from '../types/athlete-system'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 
-const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
+const fontMono = "var(--font-label)"
 
 function fmtPct(v: number): string {
   return `${Number.isInteger(v) ? v : v.toFixed(1).replace('.', ',')}%`

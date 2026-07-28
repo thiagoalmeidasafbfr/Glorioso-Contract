@@ -24,7 +24,7 @@ export default function PageHero({ title, subtitle, children }: Props) {
     }}>
       <div style={{ minWidth: 0 }}>
         <div style={{
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontFamily: "var(--font-label)",
           fontSize: 10,
           fontWeight: 500,
           letterSpacing: '0.2em',
@@ -39,7 +39,7 @@ export default function PageHero({ title, subtitle, children }: Props) {
           {subtitle}
         </div>
         <h1 style={{
-          fontFamily: "'Fraunces', 'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-display)",
           fontSize: 'clamp(1.6rem, 3.2vw, 2.35rem)',
           fontWeight: 700,
           lineHeight: 1.06,

@@ -21,10 +21,12 @@ import PageCadastros from './pages/PageCadastros'
 import PageCadastroDetail from './pages/PageCadastroDetail'
 
 // Relatórios
-import PageRelatorio from './pages/PageRelatorio'
 import PageAcordos from './pages/PageAcordos'
 import PageConsolidado from './pages/PageConsolidado'
 import PageVisaoAtletas from './pages/PageVisaoAtletas'
+import PageRelSellOn from './pages/PageRelSellOn'
+import PageRelDirEconomicos from './pages/PageRelDirEconomicos'
+import PageRelGatilhos from './pages/PageRelGatilhos'
 import PageDados from './pages/PageDados'
 import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
 
@@ -36,7 +38,7 @@ function AppRoutes() {
       <div style={{
         minHeight: '100vh', background: '#1a1410',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
+        fontFamily: "var(--font-label)", fontSize: 11,
         color: 'rgba(243,238,226,0.40)', letterSpacing: '0.14em',
       }}>
         CARREGANDO...
@@ -78,7 +80,11 @@ function AppRoutes() {
           <Route path="/relatorios/visao-atletas" element={<PageVisaoAtletas />} />
           <Route path="/relatorios/consolidado" element={<PageConsolidado />} />
           <Route path="/relatorios/acordos" element={<PageAcordos />} />
-          <Route path="/relatorios/:kind" element={<PageRelatorio />} />
+          <Route path="/relatorios/sell-on" element={<PageRelSellOn />} />
+          <Route path="/relatorios/direitos-economicos" element={<PageRelDirEconomicos />} />
+          <Route path="/relatorios/gatilhos" element={<PageRelGatilhos />} />
+          {/* Compat: redireciona os relatórios antigos por natureza ao consolidado. */}
+          <Route path="/relatorios/:kind" element={<Navigate to="/relatorios/consolidado" replace />} />
 
           {/* Importar / Exportar */}
           <Route path="/dados" element={<PageDados />} />

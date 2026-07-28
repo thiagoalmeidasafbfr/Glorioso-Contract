@@ -17,8 +17,8 @@ import NumberInput from '../NumberInput'
 import { ModalShell } from './EditModals'
 import { modalInput, modalLabel } from './styles'
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
 
 /** Atalhos dos casos mais comuns na prática. */
 const PRESETS: { label: string; salary: number; image: number }[] = [

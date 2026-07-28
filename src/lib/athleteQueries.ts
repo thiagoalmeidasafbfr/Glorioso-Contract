@@ -347,11 +347,23 @@ export async function deleteAthlete(id: string): Promise<void> {
     }
     return local.remove(T.athletes, id)
   }
-  // Supabase: apagar o atleta cascateia contratos/cláusulas/parcelas/passivos/
-  // imagem/gatilhos/alertas/titularidade. As PJs (ac_entidades tipo PJ_IMAGEM)
-  // NÃO caem por cascata — só a extensão pj_imagem — então limpamos antes.
+  // Supabase: em teoria as FKs em ac_* têm ON DELETE CASCADE, mas na prática
+  // policies de RLS ou migrações pendentes podem bloquear a cascata e um único
+  // filho remanescente derruba o DELETE do atleta com erro genérico. Apagamos
+  // os filhos EXPLICITAMENTE (idempotente — quem já caiu por cascata é no-op)
+  // para que o botão de excluir "simplesmente funcione".
   const pjs = await loadPJs({ athleteId: id })
   for (const pj of pjs) await deletePJ(pj.id)
+  // Parcelas caem por FK das cláusulas; se a policy não permitir apagar
+  // cláusula com parcelas, matamos as parcelas primeiro via cláusulas do atleta.
+  const clauseIds = (await supabase.from(AC.clauses).select('id').eq('atleta_id', id)).data?.map(r => r.id) ?? []
+  if (clauseIds.length) {
+    await supabase.from(AC.installments).delete().in('clausula_id', clauseIds)
+  }
+  // Filhos diretos do atleta.
+  for (const table of [AC.installments, AC.clauses, AC.titular, AC.triggers, AC.clubLiab, AC.interLiab, AC.image, AC.alerts, AC.contracts]) {
+    await supabase.from(table).delete().eq('atleta_id', id)
+  }
   const { error } = await supabase.from(AC.athletes).delete().eq('id', id)
   if (error) throw error
 }

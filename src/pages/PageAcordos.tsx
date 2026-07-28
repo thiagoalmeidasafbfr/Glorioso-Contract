@@ -19,8 +19,8 @@ import { ClauseFlowModal } from '../components/modals/EditModals'
 import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import { useAuth } from '../context/AuthContext'
 
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', monospace"
+const fontBody = "var(--font-body)"
+const fontMono = "var(--font-label)"
 const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 
 type Andamento = 'QUITADO' | 'EM_ANDAMENTO' | 'PENDENTE' | 'EM_ATRASO'

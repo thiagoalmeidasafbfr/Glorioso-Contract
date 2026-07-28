@@ -16,7 +16,7 @@ import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { ModalShell } from './EditModals'
 import { modalInput, modalLabel } from './styles'
 
-const font = "'Inter', system-ui, sans-serif"
+const font = "var(--font-body)"
 
 const contractLabel = (c: Contract) =>
   `${CONTRACT_TYPE_LABELS[c.type]} · ${c.counterpart_club || '—'}${c.start_date ? ` · ${fmtDate(c.start_date)}` : ''}`

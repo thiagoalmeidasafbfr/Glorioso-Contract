@@ -23,8 +23,8 @@ import NumberInput from '../NumberInput'
 import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { modalInput, modalLabel } from './styles'
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
 const CUR: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
 
 /** Casca do modal: overlay, painel, título/subtítulo e rodapé de ações. */

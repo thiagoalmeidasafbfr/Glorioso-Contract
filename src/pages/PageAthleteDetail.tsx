@@ -54,8 +54,8 @@ import { useAuth } from '../context/AuthContext'
 import { exportWorkbook } from '../lib/xlsx-utils'
 import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteConsolidado'
 
-const font     = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
+const font     = "var(--font-body)"
+const fontMono = "var(--font-label)"
 const isBFRparty = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
 
 const ATHLETE_STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string; label: string }> = {
@@ -541,8 +541,15 @@ export default function PageAthleteDetail() {
   async function handleDeleteAthlete() {
     if (!id || !athlete) return
     if (!window.confirm(`Excluir o atleta "${athlete.full_name}" e TODOS os seus vínculos (contratos, salário, luvas, agentes, gatilhos, transferências, parcelas, PJs)? Esta ação é irreversível.`)) return
-    await deleteAthlete(id)
-    navigate('/atletas')
+    try {
+      await deleteAthlete(id)
+      navigate('/atletas')
+    } catch (e) {
+      // Antes o erro caía silenciosamente e o atleta parecia "não ter sido excluído".
+      // Agora mostramos o motivo — quase sempre uma FK/policy que a UI não pode resolver sozinha.
+      const msg = e instanceof Error ? e.message : String(e)
+      window.alert(`Não foi possível excluir o atleta.\n\n${msg}`)
+    }
   }
 
   // ── PJs ──
@@ -745,8 +752,15 @@ export default function PageAthleteDetail() {
       {tab === 'salario' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!emp ? (
-            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>
-              Nenhum vínculo de trabalho com remuneração cadastrado. Crie um contrato de entrada com salário base — o fluxo mensal é gerado automaticamente.
+            <div className="card" style={{ padding: 32, textAlign: 'center', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <div style={{ fontSize: 14, color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
+                Nenhum vínculo de trabalho com remuneração cadastrado. Cadastre um contrato de entrada com salário base — o fluxo mensal é gerado automaticamente.
+              </div>
+              {canEdit && athlete && (
+                <button className="btn btn-primary" onClick={() => navigate(`/atletas/${athlete.id}/contratos/novo`)}>
+                  <Icon name="plus" size={13} /> Cadastrar vínculo de trabalho
+                </button>
+              )}
             </div>
           ) : (
             <SalaryImageEditor contract={emp} triggers={empTriggers} clauses={clauses} installments={installments} pjs={pjs} athleteName={athlete?.full_name ?? 'Atleta'} canEdit={canEdit} onSaved={loadData} />
@@ -1564,7 +1578,16 @@ function AccessoryFlowTab({
               <th style={{ ...th, textAlign: 'right' }}>Ações</th>
             </tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum fluxo de {title.toLowerCase()} cadastrado.</td></tr>}
+              {rows.length === 0 && (
+                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>
+                  <div style={{ marginBottom: 10 }}>Nenhum fluxo de {title.toLowerCase()} cadastrado.</div>
+                  {canEdit && (
+                    <button className="btn btn-primary" onClick={() => setShowNew(true)}>
+                      <Icon name="plus" size={13} /> Criar fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}
+                    </button>
+                  )}
+                </td></tr>
+              )}
               {rows.map(r => {
                 const late = r.venc && isOverdue(r.venc, r.status)
                 const inst = r.kind === 'inst' ? installments.find(i => i.id === r.id) : null
@@ -1729,7 +1752,9 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
       <div className="card" style={{ padding: '18px 20px' }}>
         <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Gatilhos de salário / imagem</div>
         {!emp ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>Cadastre o salário do atleta (aba Salário) para criar gatilhos de aumento.</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
+            Cadastre um vínculo de trabalho com salário na aba <strong>Salário</strong> para criar gatilhos de aumento.
+          </div>
         ) : (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
@@ -1758,7 +1783,16 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
               <th style={{ ...th, textAlign: 'center' }}>Ações</th>
             </tr></thead>
             <tbody>
-              {diverse.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma cláusula de performance. Ex.: 10k por gol, 10k por clean sheet, bônus de convocação.</td></tr>}
+              {diverse.length === 0 && (
+                <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>
+                  <div style={{ marginBottom: 10 }}>Nenhuma cláusula de performance. Ex.: 10k por gol, 10k por clean sheet, bônus de convocação.</div>
+                  {canEdit && umbrella && (
+                    <button className="btn btn-primary" onClick={() => onNewClause(umbrella.id)}>
+                      <Icon name="plus" size={13} /> Criar cláusula de performance
+                    </button>
+                  )}
+                </td></tr>
+              )}
               {diverse.map(c => {
                 const parc = installments.filter(i => i.clause_id === c.id)
                 const tot = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
@@ -2138,7 +2172,16 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
       </div>
 
       {acordos.length === 0 && (
-        <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhum acordo registrado.</div>
+        <div className="card" style={{ padding: 32, textAlign: 'center', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{ fontSize: 14, color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
+            Nenhuma renegociação registrada para este atleta. Uma renegociação reabre parcelas ou obrigações vencidas em um novo fluxo, mantendo o rastreio das originais.
+          </div>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={onNew}>
+              <Icon name="plus" size={13} /> Registrar renegociação
+            </button>
+          )}
+        </div>
       )}
 
       {acordos.map(ac => {

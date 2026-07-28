@@ -6,7 +6,7 @@
 import { useRef, useState } from 'react'
 import { fileToResizedDataUrl } from '../lib/image'
 
-const fontMono = "'IBM Plex Mono', monospace"
+const fontMono = "var(--font-label)"
 
 interface Props {
   value: string | null

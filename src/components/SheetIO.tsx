@@ -14,9 +14,9 @@ interface Props {
   onImport?: (sheets: Record<string, Record<string, string>[]>) => void
 }
 
-const fontMono = "'IBM Plex Mono', monospace"
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontDisplay = "'Fraunces', 'Cormorant Garamond', Georgia, serif"
+const fontMono = "var(--font-label)"
+const fontBody = "var(--font-body)"
+const fontDisplay = "var(--font-display)"
 
 export default function SheetIO({ exportSheets, exportFilename, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)

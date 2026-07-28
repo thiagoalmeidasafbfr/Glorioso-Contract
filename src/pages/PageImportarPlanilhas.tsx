@@ -8,8 +8,8 @@ import { parseWorkbookFile } from '../lib/xlsx-utils'
 import { importWorkbook, type ImportReport } from '../lib/importSheets'
 import PageHero from '../components/PageHero'
 
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', monospace"
+const fontBody = "var(--font-body)"
+const fontMono = "var(--font-label)"
 
 const KNOWN = ['Ativos', 'Federativos e Econômicos', 'Intermediários', 'Luvas e Prêmios', 'Controle de Imagem 2025', 'Controle de Imagem 2026', 'Direito de Imagem', 'Solidariedade e Compensação']
 

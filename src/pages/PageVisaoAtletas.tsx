@@ -26,8 +26,8 @@ import RefLink from '../components/RefLink'
 import { Icon, IconButton } from '../components/Icon'
 import RowActions from '../components/RowActions'
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
 
 const STATUS_STYLE: Record<NatureStatus, { label: string; bg: string; fg: string }> = {
   EM_DIA:         { label: 'Em dia',        bg: 'var(--pos-tint)',    fg: 'var(--pos)' },

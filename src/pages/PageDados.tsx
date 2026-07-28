@@ -40,8 +40,8 @@ function parseCategory(v: unknown): AthleteCategory {
   return 'PROFISSIONAL'
 }
 
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', monospace"
+const fontBody = "var(--font-body)"
+const fontMono = "var(--font-label)"
 
 interface Descriptor {
   key: string

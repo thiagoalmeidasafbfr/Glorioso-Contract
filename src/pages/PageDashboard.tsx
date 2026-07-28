@@ -146,13 +146,13 @@ export default function PageDashboard() {
   }
 
   const sectionTitle: React.CSSProperties = {
-    fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600,
+    fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 600,
     letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 14,
   }
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.40)', letterSpacing: '0.14em' }}>
+      <div style={{ padding: '40px', fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.40)', letterSpacing: '0.14em' }}>
         CARREGANDO...
       </div>
     )
@@ -172,10 +172,10 @@ export default function PageDashboard() {
           { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#7a3f2c' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
           <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
+            <div style={{ fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
               {kpi.label}
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: kpi.color }}>
+            <div style={{ fontFamily: "var(--font-label)", fontSize: 18, fontWeight: 700, color: kpi.color }}>
               {kpi.value}
             </div>
           </div>
@@ -194,11 +194,11 @@ export default function PageDashboard() {
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,20,16,0.08)" />
-                <XAxis dataKey="label" tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false}
+                <XAxis dataKey="label" tick={{ fontFamily: "var(--font-label)", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontFamily: "var(--font-label)", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false}
                   tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
                 <Tooltip
-                  contentStyle={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, background: '#1a1410', border: 'none', borderRadius: 7, color: '#f3ede2' }}
+                  contentStyle={{ fontFamily: "var(--font-label)", fontSize: 11, background: '#1a1410', border: 'none', borderRadius: 7, color: '#f3ede2' }}
                   formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString('pt-BR')}`, name === 'receivable' ? 'A Receber' : 'A Pagar']}
                 />
                 <Bar dataKey="receivable" fill="#059669" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
@@ -212,7 +212,7 @@ export default function PageDashboard() {
             <div style={sectionTitle}>Vencimentos — próximos 60 dias ({dueClauses.length})</div>
             {overdueClauses.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'rgba(122,63,44,0.70)', marginBottom: 6 }}>
+                <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(122,63,44,0.70)', marginBottom: 6 }}>
                   EM ATRASO ({overdueClauses.length})
                 </div>
                 {overdueClauses.map(c => (
@@ -221,7 +221,7 @@ export default function PageDashboard() {
               </div>
             )}
             {dueClauses.length === 0 && overdueClauses.length === 0 && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
                 Nenhum vencimento nos próximos 60 dias
               </div>
             )}
@@ -229,7 +229,7 @@ export default function PageDashboard() {
               <DueRow key={c.id} clause={c} athleteName={athleteName(athleteIdForClause(c))} />
             ))}
             {dueClauses.length > 10 && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'rgba(26,20,16,0.35)', marginTop: 8, textAlign: 'center' }}>
+              <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(26,20,16,0.35)', marginTop: 8, textAlign: 'center' }}>
                 +{dueClauses.length - 10} mais
               </div>
             )}
@@ -238,7 +238,7 @@ export default function PageDashboard() {
           {/* Currency exposure */}
           <div style={cardStyle}>
             <div style={sectionTitle}>Exposição Cambial</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: "var(--font-label)", fontSize: 12 }}>
               <thead>
                 <tr>
                   {['Moeda', 'A Receber', 'A Pagar', 'Líquido', 'Em R$'].map(h => (
@@ -282,7 +282,7 @@ export default function PageDashboard() {
             </div>
 
             {unreadAlerts.length === 0 && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
                 Nenhum alerta ativo
               </div>
             )}
@@ -298,17 +298,17 @@ export default function PageDashboard() {
                       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0, marginTop: 4 }} />
                         <div>
-                          <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: '#1a1410', marginBottom: 2 }}>
+                          <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', marginBottom: 2 }}>
                             {alert.message}
                           </div>
-                          <Link to={`/atletas/${alert.athlete_id}`} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'var(--accent)', textDecoration: 'none' }}>
+                          <Link to={`/atletas/${alert.athlete_id}`} style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'var(--accent)', textDecoration: 'none' }}>
                             {athleteName(alert.athlete_id)} →
                           </Link>
                         </div>
                       </div>
                       <button
                         onClick={() => handleMarkRead(alert.id)}
-                        style={{ background: 'none', border: 'none', color: 'rgba(26,20,16,0.35)', fontSize: 10, cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", whiteSpace: 'nowrap', flexShrink: 0 }}
+                        style={{ background: 'none', border: 'none', color: 'rgba(26,20,16,0.35)', fontSize: 10, cursor: 'pointer', fontFamily: "var(--font-label)", whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
                         lido
                       </button>
@@ -336,7 +336,7 @@ export default function PageDashboard() {
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '8px 10px', borderRadius: 7, textDecoration: 'none',
-                    fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#1a1410',
+                    fontFamily: "var(--font-body)", fontSize: 13, color: '#1a1410',
                     background: 'var(--accent-tint)', border: '1px solid var(--accent-tint2)',
                   }}
                 >
@@ -368,14 +368,14 @@ function DueRow({ clause, athleteName, overdue = false }: { clause: Clause; athl
       }}
     >
       <div>
-        <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: '#1a1410', fontWeight: 500 }}>
+        <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', fontWeight: 500 }}>
           {athleteName} — {clause.description}
         </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'rgba(26,20,16,0.45)', marginTop: 1 }}>
+        <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(26,20,16,0.45)', marginTop: 1 }}>
           {clause.due_date ? fmtDate(clause.due_date) : '—'}
         </div>
       </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: overdue ? '#7a3f2c' : '#1a1410', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: 8 }}>
+      <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: overdue ? '#7a3f2c' : '#1a1410', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: 8 }}>
         {clause.original_value != null ? `${s} ${clause.original_value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` : '—'}
       </div>
     </Link>
