@@ -21,6 +21,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string }
   {
     label: 'Relatórios',
     items: [
+      { to: '/relatorios/visao-atletas', label: 'Visão por Atleta' },
       { to: '/relatorios/imagem',        label: 'Direito de Imagem' },
       { to: '/relatorios/luvas',         label: 'Luvas' },
       { to: '/relatorios/intermediarios', label: 'Agentes' },
