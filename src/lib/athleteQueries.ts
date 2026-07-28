@@ -162,6 +162,9 @@ function fromAcContract(r: Row): Contract {
     image_value: r.image_value ?? null,
     other_value: r.other_value ?? null,
     description: r.descricao ?? null,
+    trigger_cap_amount: r.trigger_cap_amount ?? null,
+    trigger_cap_currency: r.trigger_cap_currency ?? null,
+    trigger_cap_notes: r.trigger_cap_notes ?? null,
     created_by: r.created_by ?? null,
     created_at: r.created_at, updated_at: r.updated_at,
   }
@@ -185,6 +188,11 @@ function toAcContract(c: Partial<Contract>): Row {
   if (c.image_value !== undefined) o.image_value = c.image_value
   if (c.other_value !== undefined) o.other_value = c.other_value
   if (c.description !== undefined) o.descricao = c.description
+  // Só grava as colunas do teto quando informadas — evita crash se a migration
+  // 018 ainda não estiver aplicada em contratos sem cap.
+  if (c.trigger_cap_amount !== undefined) o.trigger_cap_amount = c.trigger_cap_amount
+  if (c.trigger_cap_currency !== undefined) o.trigger_cap_currency = c.trigger_cap_currency
+  if (c.trigger_cap_notes !== undefined) o.trigger_cap_notes = c.trigger_cap_notes
   if (c.created_by !== undefined) o.created_by = c.created_by
   return o
 }

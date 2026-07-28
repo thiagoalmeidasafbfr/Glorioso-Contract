@@ -8,8 +8,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  fetchAthletes, fetchAllClauses,
+  fetchAthletes, fetchAllClauses, fetchClubs, fetchIntermediaries,
 } from '../lib/athleteQueries'
+import { buildNameIndex, matchEntity } from '../lib/importHelpers'
 import type { Athlete, Clause } from '../types/athlete-system'
 import { SELL_ON_CLAUSE_TYPES, CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import { fmtCurrencyShort, fmtDate } from '../lib/format'
@@ -53,10 +54,19 @@ export default function PageRelSellOn() {
   const [search, setSearch] = useState('')
   const [dirFilter, setDirFilter] = useState<'Todos' | Dir>('Todos')
   const [statusFilter, setStatusFilter] = useState<'Todos' | Clause['achievement_status']>('Todos')
+  const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
+  const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
+  const [clubList, setClubList] = useState<{ id: string; name: string }[]>([])
+  const [agentList, setAgentList] = useState<{ id: string; name: string }[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, clauses] = await Promise.all([fetchAthletes(), fetchAllClauses()])
+    const [athletes, clauses, clubs, agents] = await Promise.all([
+      fetchAthletes(), fetchAllClauses(), fetchClubs(), fetchIntermediaries(),
+    ])
+    setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
+    setClubList(clubs.map(c => ({ id: c.id, name: c.name })))
+    setAgentList(agents.map(a => ({ id: a.id, name: a.name })))
     const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
     const built: Row[] = clauses
       .filter(c => SELL_ON_CLAUSE_TYPES.includes(c.clause_type))
@@ -188,7 +198,15 @@ export default function PageRelSellOn() {
                   <tr key={r.id}>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
                     <td style={{ ...td, fontSize: 10, fontFamily: 'var(--font-label)', color: r.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{r.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.contraparte}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)' }}>
+                      {(() => {
+                        const club = matchEntity(r.contraparte, clubIdx, clubList)
+                        if (club) return <RefLink to={`/clubes/${club}`} title="Abrir cadastro do clube">{r.contraparte}</RefLink>
+                        const ag = matchEntity(r.contraparte, agentIdx, agentList)
+                        if (ag) return <RefLink to={`/intermediarios/${ag}`} title="Abrir cadastro do agente">{r.contraparte}</RefLink>
+                        return r.contraparte
+                      })()}
+                    </td>
                     <td style={tdNum}>{r.percentage != null ? `${r.percentage}%` : '—'}</td>
                     <td style={tdNum}>{r.fixedValue != null ? fmtCurrencyShort(r.fixedValue, r.currency) : '—'}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.basis}</td>

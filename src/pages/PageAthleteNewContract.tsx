@@ -159,7 +159,12 @@ export default function PageAthleteNewContract() {
     other_value: null,
     description: '',
     status: 'ATIVO',
+    trigger_cap_amount: null,
+    trigger_cap_currency: null,
+    trigger_cap_notes: null,
   })
+  // Toggle do teto de gatilhos — o valor real fica em contract.trigger_cap_*.
+  const [capOpen, setCapOpen] = useState(false)
 
   // Agentes desta transação (um vínculo pode ter vários, com valores distintos).
   const emptyAgent: AgentRow = { name: '', amount: '', currency: 'EUR', direction: 'A_PAGAR', lines: [], flowOpen: false, futureSale: false, futurePct: '', futureBasis: 'MAIS_VALIA' }
@@ -710,6 +715,56 @@ export default function PageAthleteNewContract() {
             </div>
           </div>
           </>)}
+
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
+              <div style={sectionTitle}>Limitador de bônus / gatilhos (opcional)</div>
+              {!capOpen && (
+                <button type="button" onClick={() => { setCapOpen(true); setContractField('trigger_cap_currency', 'BRL') }} className="btn btn-outline">
+                  <Icon name="plus" size={14} /> Adicionar teto
+                </button>
+              )}
+            </div>
+            {!capOpen ? (
+              <div style={hintStyle}>
+                Use quando o contrato tem várias cláusulas de bônus/gatilho mas com um <strong>teto agregado</strong>.
+                Ex.: 10 gatilhos de R$1M cada, mas o pagamento total não pode ultrapassar R$5M.
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>Teto (valor)</label>
+                    <NumberInput
+                      value={contract.trigger_cap_amount ?? ''}
+                      onChange={v => setContractField('trigger_cap_amount', v ? parseFloat(v) : null)}
+                      placeholder="Ex: 5.000.000" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Moeda</label>
+                    <select value={contract.trigger_cap_currency ?? 'BRL'}
+                      onChange={e => setContractField('trigger_cap_currency', e.target.value as Currency)} style={inputStyle}>
+                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Notas sobre o teto</label>
+                    <input value={contract.trigger_cap_notes ?? ''} onChange={e => setContractField('trigger_cap_notes', e.target.value)}
+                      placeholder="Ex: cláusula 8.2 — aplicável apenas à temporada 26/27" style={inputStyle} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                  <button type="button" className="btn btn-ghost"
+                    onClick={() => { setCapOpen(false); setContractField('trigger_cap_amount', null); setContractField('trigger_cap_currency', null); setContractField('trigger_cap_notes', null) }}>
+                    Remover teto
+                  </button>
+                </div>
+                <div style={{ ...noteBox, marginTop: 10, fontFamily: "var(--font-body)", fontSize: 12 }}>
+                  As cláusulas continuam existindo individualmente. O teto aparece no relatório de <strong>Gatilhos</strong> com o quanto já foi atingido vs. o limite.
+                </div>
+              </>
+            )}
+          </div>
 
           {hasFxCurrency && (
             <div style={cardStyle}>

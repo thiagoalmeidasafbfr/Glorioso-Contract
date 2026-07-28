@@ -12,10 +12,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  fetchAthletes, fetchAllSalaryTriggers, fetchAllClauses,
+  fetchAthletes, fetchAllSalaryTriggers, fetchAllClauses, fetchAllContracts,
 } from '../lib/athleteQueries'
 import type {
-  Athlete, Clause, SalaryTrigger, TriggerStatus, TriggerMetric, Currency,
+  Athlete, Clause, Contract, SalaryTrigger, TriggerStatus, TriggerMetric, Currency,
 } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import { isLoanShareTrigger } from '../lib/loanSalary'
@@ -60,8 +60,21 @@ interface Row {
   currency: Currency | null
 }
 
+interface CapSummary {
+  contractId: string
+  athleteId: string
+  atleta: string
+  counterpart: string
+  cap: number
+  currency: Currency
+  achieved: number
+  clauseCount: number
+  notes: string | null
+}
+
 export default function PageRelGatilhos() {
   const [rows, setRows] = useState<Row[]>([])
+  const [caps, setCaps] = useState<CapSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'Todos' | TriggerStatus>('Todos')
@@ -69,8 +82,8 @@ export default function PageRelGatilhos() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, triggers, clauses] = await Promise.all([
-      fetchAthletes(), fetchAllSalaryTriggers(), fetchAllClauses(),
+    const [athletes, triggers, clauses, contracts] = await Promise.all([
+      fetchAthletes(), fetchAllSalaryTriggers(), fetchAllClauses(), fetchAllContracts(),
     ])
     const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
     const built: Row[] = []
@@ -123,6 +136,38 @@ export default function PageRelGatilhos() {
       || a.atleta.localeCompare(b.atleta))
 
     setRows(built)
+
+    // Consolidação dos tetos de gatilhos por contrato — soma quanto já foi
+    // atingido (achievement_status === 'ATINGIDA') dentre as cláusulas do
+    // contrato para dizer o quanto ainda cabe no teto.
+    const clausesByContract = new Map<string, Clause[]>()
+    for (const c of clauses as Clause[]) {
+      const arr = clausesByContract.get(c.contract_id) ?? []
+      arr.push(c); clausesByContract.set(c.contract_id, arr)
+    }
+    const capList: CapSummary[] = []
+    for (const k of contracts as Contract[]) {
+      const cap = k.trigger_cap_amount ?? null
+      if (cap == null || cap <= 0) continue
+      const cur = (k.trigger_cap_currency ?? 'BRL') as Currency
+      const clausesForK = clausesByContract.get(k.id) ?? []
+      // Só cláusulas na mesma moeda do teto contam para a soma (evita conversão
+      // aproximada aqui — se a moeda divergir, o usuário revê no cadastro).
+      const achieved = clausesForK
+        .filter(c => c.achievement_status === 'ATINGIDA' && c.currency === cur && c.original_value != null)
+        .reduce((s, c) => s + (c.original_value ?? 0), 0)
+      capList.push({
+        contractId: k.id, athleteId: k.athlete_id,
+        atleta: nameOf.get(k.athlete_id) ?? '—',
+        counterpart: k.counterpart_club || '—',
+        cap, currency: cur, achieved,
+        clauseCount: clausesForK.filter(c => c.achievement_status !== 'NAO_APLICAVEL').length,
+        notes: k.trigger_cap_notes ?? null,
+      })
+    }
+    capList.sort((a, b) => b.achieved / b.cap - a.achieved / a.cap)
+    setCaps(capList)
+
     setLoading(false)
   }, [])
 
@@ -202,6 +247,47 @@ export default function PageRelGatilhos() {
           <KpiPill label="Não atingidas" value={String(stats.naoAtingida)} tone={stats.naoAtingida > 0 ? 'neg' : 'neutral'} />
         </div>
       </div>
+
+      {caps.length > 0 && (
+        <div className="card" style={{ padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontFamily: 'var(--font-label)', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-primary)', marginBottom: 10 }}>
+            Tetos de gatilhos ativos
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 10 }}>
+            {caps.map(c => {
+              const pct = Math.min(100, (c.achieved / c.cap) * 100)
+              const remaining = Math.max(0, c.cap - c.achieved)
+              const tone = pct >= 100 ? 'var(--neg)' : pct >= 80 ? 'var(--warn)' : 'var(--pos)'
+              return (
+                <div key={c.contractId} style={{ padding: 12, borderRadius: 8, background: 'var(--cream-canvas)', border: '1px solid var(--divider-soft)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4, gap: 8 }}>
+                    <RefLink to={`/atletas/${c.athleteId}`} title="Abrir atleta">
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink-primary)' }}>{c.atleta}</span>
+                    </RefLink>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{c.counterpart}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-data)', fontSize: 12, color: 'var(--ink-secondary)', marginBottom: 6 }}>
+                    <span><strong style={{ color: tone }}>{fmtCurrencyShort(c.achieved, c.currency)}</strong> atingido</span>
+                    <span>Teto <strong>{fmtCurrencyShort(c.cap, c.currency)}</strong></span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: 'var(--cream-inset)', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: tone, transition: 'width 0.18s' }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+                    <span>{pct.toFixed(0)}% usado · restam <strong style={{ color: 'var(--ink-primary)' }}>{fmtCurrencyShort(remaining, c.currency)}</strong></span>
+                    <span>{c.clauseCount} cláusula(s)</span>
+                  </div>
+                  {c.notes && (
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, fontStyle: 'italic' }}>
+                      {c.notes}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' }}>

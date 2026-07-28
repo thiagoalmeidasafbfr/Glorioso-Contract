@@ -16,7 +16,7 @@ import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import type {
   Currency, Clause, ClauseInstallment, ClubLiability, IntermediaryLiability,
 } from '../types/athlete-system'
-import { buildNameIndex, norm } from '../lib/importHelpers'
+import { buildNameIndex, matchEntity } from '../lib/importHelpers'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import { fetchPtaxRates, toBRL, ptaxRateFor } from '../lib/ptax'
 import PageHero from '../components/PageHero'
@@ -53,7 +53,22 @@ interface Mov {
   status: string
   // PTAX fixada na cláusula ou parcela (quando o contrato prevê); NULL usa PTAX do dia.
   fixedRate: number | null
+  // Cláusula condicional: só se materializa após atingir um gatilho (bônus,
+  // sell-on, rescisória etc.). Não tem vencimento pré-definido.
+  conditional: boolean
 }
+
+// Tipos inerentemente condicionais — dependem de gatilho externo, não têm data.
+const CONDITIONAL_CLAUSE_TYPES: string[] = [
+  'BONUS_PERFORMANCE_ATLETA',
+  'BONUS_PERFORMANCE_TIME',
+  'BONUS_ASSINATURA_CONDICIONAL',
+  'SELL_ON_FEE',
+  'SELL_ON_FEE_RECEBER',
+  'INTERMEDIACAO_VENDA_FUTURA',
+  'CLAUSULA_RESCISORIA',
+  'SOLIDARIEDADE_FIFA',
+]
 
 const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
 
@@ -68,6 +83,10 @@ export default function PageConsolidado() {
   const [iLiabs, setILiabs] = useState<IntermediaryLiability[]>([])
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
+  // Também guardamos a lista bruta para fazer matching tolerante (sem acento,
+  // sem sufixo societário, substring) quando o nome gravado divergir do cadastro.
+  const [clubList, setClubList] = useState<{ id: string; name: string }[]>([])
+  const [agentList, setAgentList] = useState<{ id: string; name: string }[]>([])
   const [editInstId, setEditInstId] = useState<string | null>(null)
   const [payInstId, setPayInstId] = useState<string | null>(null)
   const [editClauseId, setEditClauseId] = useState<string | null>(null)
@@ -94,6 +113,8 @@ export default function PageConsolidado() {
       ])
       setClauses(clauses); setInsts(installments); setCLiabs(clubLiabs); setILiabs(interLiabs)
       setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
+      setClubList(clubs.map(c => ({ id: c.id, name: c.name })))
+      setAgentList(agents.map(a => ({ id: a.id, name: a.name })))
       const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
       setPosByAth(new Map(athletes.map(a => [a.id, a.position ?? '—'])))
       const clauseById = new Map(clauses.map(c => [c.id, c]))
@@ -112,19 +133,22 @@ export default function PageConsolidado() {
           descricao: c ? `${c.description} — parc. ${it.installment_number}` : `Parcela ${it.installment_number}`,
           dir, valor: it.original_value, moeda: it.currency, status: it.payment_status,
           fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
+          conditional: false,
         })
       }
       // Cláusulas de pagamento único (sem parcelas geradas)
       for (const c of clauses) {
         if (withInst.has(c.id)) continue
-        if (c.original_value == null) continue
+        if (c.original_value == null && c.percentage_value == null) continue
         const dir: Mov['dir'] = isBFR(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
+        const conditional = !c.due_date || CONDITIONAL_CLAUSE_TYPES.includes(c.clause_type) || c.achievement_status === 'PENDENTE'
         list.push({
           id: c.id, kind: 'clause', clauseId: c.id,
           date: c.due_date, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
           natureza: CLAUSE_TYPE_LABELS[c.clause_type], contraparte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party,
-          descricao: c.description, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status,
+          descricao: c.description, dir, valor: c.original_value ?? 0, moeda: c.currency, status: c.payment_status,
           fixedRate: c.fixed_exchange_rate ?? null,
+          conditional,
         })
       }
       // Obrigações com clube / agente
@@ -134,6 +158,7 @@ export default function PageConsolidado() {
         natureza: 'Obrigação clube', contraparte: l.club_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
         fixedRate: null,
+        conditional: false,
       })
       for (const l of interLiabs) list.push({
         id: l.id, kind: 'agent', clauseId: l.contract_id ? null : null,
@@ -141,6 +166,7 @@ export default function PageConsolidado() {
         natureza: 'Intermediação', contraparte: l.intermediary_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
         fixedRate: null,
+        conditional: false,
       })
 
       list.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
@@ -153,10 +179,9 @@ export default function PageConsolidado() {
   useEffect(() => { load() }, [load])
 
   const entityLink = (parte: string): string | null => {
-    const k = norm(parte)
-    const club = clubIdx.get(k)
+    const club = matchEntity(parte, clubIdx, clubList)
     if (club) return `/clubes/${club}`
-    const agent = agentIdx.get(k)
+    const agent = matchEntity(parte, agentIdx, agentList)
     if (agent) return `/intermediarios/${agent}`
     return null
   }
@@ -206,9 +231,10 @@ export default function PageConsolidado() {
   }
 
   // Totais por direção (em aberto), convertidos para BRL via PTAX efetiva.
+  // Cláusulas condicionais NÃO entram nos totais — ainda não viraram dívida.
   const totals = useMemo(() => {
     let pay = 0, rec = 0
-    for (const m of filtered) if (OPEN.includes(m.status)) {
+    for (const m of filtered) if (OPEN.includes(m.status) && !m.conditional) {
       const brl = effectiveBRL(m)
       if (m.dir === 'A_PAGAR') pay += brl; else rec += brl
     }
@@ -300,7 +326,10 @@ export default function PageConsolidado() {
                 const late = isOverdue(m.date, m.status)
                 return (
                   <tr key={m.id} style={{ background: late ? 'var(--row-late-bg)' : 'transparent' }}>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : m.conditional ? 'var(--warn)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}
+                      title={m.conditional ? 'Cláusula condicional — só vence após o gatilho ser atingido' : undefined}>
+                      {m.date ? fmtDate(m.date) : m.conditional ? 'condicional' : '—'}
+                    </td>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
@@ -319,12 +348,20 @@ export default function PageConsolidado() {
                       {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--warn)', fontWeight: 600 }}>fx</span>}
                     </td>
                     <td style={td}>
-                      <span style={{
-                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
-                        fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
-                        background: m.status === 'PAGA' ? 'var(--pos-tint)' : m.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
-                        color: m.status === 'PAGA' ? 'var(--pos)' : m.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
-                      }}>{m.status.replace(/_/g, ' ')}</span>
+                      {m.conditional && m.status !== 'PAGA' ? (
+                        <span style={{
+                          display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
+                          fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
+                          background: 'var(--warn-tint)', color: 'var(--warn)',
+                        }} title="Aguardando o gatilho ser atingido para virar dívida">Aguardando gatilho</span>
+                      ) : (
+                        <span style={{
+                          display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
+                          fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
+                          background: m.status === 'PAGA' ? 'var(--pos-tint)' : m.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
+                          color: m.status === 'PAGA' ? 'var(--pos)' : m.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
+                        }}>{m.status.replace(/_/g, ' ')}</span>
+                      )}
                     </td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions

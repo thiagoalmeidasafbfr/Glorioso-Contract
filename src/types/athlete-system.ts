@@ -140,6 +140,11 @@ export interface Contract {
   image_value: number | null    // imagem mensal
   other_value: number | null    // outros mensais (moradia, auxílios)
   description: string | null
+  // Teto agregado de bônus/gatilhos (opcional). Ex.: cada uma das 10 cláusulas
+  // vale R$1M, mas a soma paga não pode passar de R$5M.
+  trigger_cap_amount?: number | null
+  trigger_cap_currency?: Currency | null
+  trigger_cap_notes?: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -252,6 +257,9 @@ export interface NewContractInput {
   other_value: number | null
   description: string
   status: ContractStatus
+  trigger_cap_amount?: number | null
+  trigger_cap_currency?: Currency | null
+  trigger_cap_notes?: string | null
 }
 
 export interface NewClauseInput {

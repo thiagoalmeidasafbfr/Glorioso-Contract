@@ -60,6 +60,61 @@ export function buildNameIndex(list: { id: string; name: string }[]): Map<string
   return m
 }
 
+// ── Casamento tolerante de nomes (contraparte) ─────────────────────────────
+// A contraparte gravada na cláusula pode divergir da forma cadastrada em
+// Clubes/Agentes: acentos, LTDA/S.A./EIRELI, espaço extra, hífens, "&" vs "e".
+// Aqui removemos esse ruído para casar por prefixo/substring sem falso-match.
+
+const SUFFIX_RE = new RegExp(
+  '\\b(ltda|s\\.?a\\.?|sa|s/a|eireli|me|epp|inc|llc|lda|s\\.?l\\.?|gmbh|ag|bv|nv|srl|ltd|corp|co|s\\.?p\\.?a\\.?|cia|corporation)\\b\\.?',
+  'g',
+)
+
+/** Normalização agressiva: sem acentos, sem sufixos societários, sem pontuação. */
+export function entityKey(v: unknown): string {
+  const raw = norm(v).normalize('NFD').replace(/[̀-ͯ]/g, '')
+  return raw
+    .replace(SUFFIX_RE, ' ')
+    .replace(/[.,/&+()"'\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Casa uma contraparte (nome livre gravado numa cláusula) contra o índice de
+ * clubes/agentes. Tenta em ordem:
+ *   1. Igualdade estrita (norm) — preserva o comportamento atual;
+ *   2. Igualdade sob entityKey (sem acento/sufixo/pontuação);
+ *   3. Substring: um lado contido no outro após entityKey.
+ * Devolve o id ou `null` quando ninguém bate.
+ */
+export function matchEntity(
+  name: string | null | undefined,
+  index: Map<string, string>,
+  entries?: { id: string; name: string }[],
+): string | null {
+  if (!name) return null
+  const n1 = norm(name)
+  const hit1 = index.get(n1); if (hit1) return hit1
+  const k = entityKey(name)
+  if (!k) return null
+  if (!entries) return null
+  let bestId: string | null = null
+  let bestLen = 0
+  for (const e of entries) {
+    const ek = entityKey(e.name)
+    if (!ek) continue
+    if (ek === k) return e.id
+    // Substring nos dois sentidos, exigindo pelo menos 4 chars pra evitar
+    // pegar "SA" ou "LTDA" quando os sufixos sobreviveram por acidente.
+    if (k.length >= 4 && ek.length >= 4 && (k.includes(ek) || ek.includes(k))) {
+      const len = Math.min(k.length, ek.length)
+      if (len > bestLen) { bestLen = len; bestId = e.id }
+    }
+  }
+  return bestId
+}
+
 // ── Deduplicação ──────────────────────────────────────────────────────────
 
 /** Chave natural composta, normalizada, para detectar duplicatas. */
