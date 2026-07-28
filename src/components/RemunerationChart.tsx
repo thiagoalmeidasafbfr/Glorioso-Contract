@@ -9,8 +9,8 @@ import type { Contract, SalaryTrigger } from '../types/athlete-system'
 import { salarySteps } from '../lib/salary'
 import { fmtCurrencyShort, fmtDate, todayISO } from '../lib/format'
 
-const fontMono = "'IBM Plex Mono', monospace"
-const fontBody = "'Inter', system-ui, sans-serif"
+const fontMono = "var(--font-label)"
+const fontBody = "var(--font-body)"
 
 function monthsBetween(a: string, b: string): number {
   const da = new Date(a + 'T00:00:00'), db = new Date(b + 'T00:00:00')

@@ -86,11 +86,11 @@ const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--cream-card)',
   border: '1px solid var(--input-border)', borderRadius: 7,
   padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)',
-  fontFamily: "'Inter', system-ui, sans-serif", boxSizing: 'border-box',
+  fontFamily: "var(--font-body)", boxSizing: 'border-box',
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+  fontFamily: "var(--font-label)", fontSize: 9,
   fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
   color: 'var(--text-muted)', display: 'block', marginBottom: 4,
 }
@@ -101,17 +101,17 @@ const cardStyle: React.CSSProperties = {
 }
 
 const sectionTitle: React.CSSProperties = {
-  fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 700,
+  fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 700,
   letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)',
 }
 
 const hintStyle: React.CSSProperties = {
-  fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5,
+  fontFamily: "var(--font-body)", fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5,
 }
 
 const noteBox: React.CSSProperties = {
   padding: '9px 13px', borderRadius: 8, background: 'var(--bg-subtle)',
-  border: '1px solid var(--divider)', fontFamily: "'IBM Plex Mono', monospace",
+  border: '1px solid var(--divider)', fontFamily: "var(--font-label)",
   fontSize: 11, color: 'var(--ink-secondary)',
 }
 
@@ -411,7 +411,7 @@ export default function PageAthleteNewContract() {
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
       <PageHero title="Novo Contrato" subtitle={athlete?.full_name ?? 'Novo contrato · Botafogo SAF'} />
       {/* Breadcrumb */}
-      <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
         <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
         <span>/</span>
         <Link to={`/atletas/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete?.short_name ?? '...'}</Link>
@@ -433,12 +433,12 @@ export default function PageAthleteNewContract() {
                 <span style={{
                   width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: active ? 'var(--accent)' : done ? 'var(--accent-tint2)' : 'var(--cream-inset)',
-                  fontSize: 11.5, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 11.5, fontWeight: 700, fontFamily: "var(--font-label)",
                   color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
                   {done ? <Icon name="check" size={13} /> : s}
                 </span>
-                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
                   {labels[i]}
                 </span>
               </button>
@@ -495,7 +495,7 @@ export default function PageAthleteNewContract() {
                 </select>
               </div>
               {hideClub ? (
-                <div style={{ gridColumn: '1 / -1', ...noteBox, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12 }}>
+                <div style={{ gridColumn: '1 / -1', ...noteBox, fontFamily: "var(--font-body)", fontSize: 12 }}>
                   Contraparte herdada do vínculo: <strong>{relatedContract?.counterpart_club || '—'}</strong>. O agente/intermediário é informado na seção abaixo.
                 </div>
               ) : (
@@ -628,14 +628,14 @@ export default function PageAthleteNewContract() {
                 className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 11.5 }}>
                 Dividir 50% CLT / 50% imagem
               </button>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: 'var(--ink-secondary)' }}>
+              <span style={{ fontFamily: "var(--font-label)", fontSize: 11.5, color: 'var(--ink-secondary)' }}>
                 Total: {(((contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0))).toLocaleString('pt-BR')} {contract.salary_currency}/mês
               </span>
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                 <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
-                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--text-secondary)' }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
                   <strong>Gerar o fluxo mensal automaticamente</strong> pela vigência do contrato — uma parcela por mês, sem lançar mês a mês.
                   Salário CLT vence <strong>dia {SALARY_DUE_DAY}</strong> e imagem vence <strong>dia {IMAGE_DUE_DAY}</strong> do mês subsequente.
                 </span>
@@ -686,7 +686,7 @@ export default function PageAthleteNewContract() {
                 return (
                   <div key={i} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--divider)', background: 'var(--bg-subtle)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
+                      <span style={{ fontFamily: "var(--font-label)", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
                       <IconButton icon="trash" label={`Remover agente ${i + 1}`} tone="danger" onClick={() => removeAgent(i)} />
                     </div>
                     <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
@@ -758,14 +758,14 @@ export default function PageAthleteNewContract() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {conflict && (
             <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
-              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--warn)' }}>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
                 <strong>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
               </div>
             </div>
           )}
 
           {clauses.length === 0 && (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-muted)', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13 }}>
+            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-muted)', fontFamily: "var(--font-body)", fontSize: 13 }}>
               Nenhuma cláusula extra. Salário, imagem, transferência e agentes já foram tratados no passo anterior —
               use este passo para sell-on, bônus, solidariedade, rescisória e afins.
             </div>
@@ -868,7 +868,7 @@ export default function PageAthleteNewContract() {
               background: 'transparent', border: '1px dashed var(--divider-strong)',
               borderRadius: 10, padding: '12px 0', width: '100%',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 600,
+              fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600,
               color: 'var(--ink-primary)', cursor: 'pointer',
             }}
           >
@@ -882,7 +882,7 @@ export default function PageAthleteNewContract() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {conflict && (
             <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
-              <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: 'var(--warn)' }}>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
                 <strong>Conflito Sell-On detectado.</strong> Revise antes de salvar.
               </div>
             </div>
@@ -890,7 +890,7 @@ export default function PageAthleteNewContract() {
 
           <div style={cardStyle}>
             <div style={{ ...sectionTitle, marginBottom: 14 }}>Vínculo</div>
-            <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '6px 16px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, margin: 0 }}>
+            <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '6px 16px', fontFamily: "var(--font-body)", fontSize: 13, margin: 0 }}>
               {relatedContract && (<>
                 <dt style={dtStyle}>Vinculado a</dt><dd style={ddStyle}>{contractLabel(relatedContract)}</dd>
               </>)}
@@ -905,7 +905,7 @@ export default function PageAthleteNewContract() {
           {(willGenTransfer || willGenSalary || willGenImage || agents.some(a => a.name.trim()) || clauses.length > 0) && (
             <div style={cardStyle}>
               <div style={{ ...sectionTitle, marginBottom: 10 }}>Fluxos que serão gerados</div>
-              <ul style={{ margin: 0, paddingLeft: 18, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: 'var(--ink-primary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <ul style={{ margin: 0, paddingLeft: 18, fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--ink-primary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {willGenTransfer && (
                   <li>Transferência: <strong>{transferValid.length || 1}× </strong>
                     total {contract.transfer_currency} {fmtNum(transferTotal)}, 1º venc. {fmtDateBR(transferValid[0]?.due_date ?? transferFirstDate)}.</li>
@@ -938,7 +938,7 @@ export default function PageAthleteNewContract() {
           )}
 
           {error && (
-            <div style={{ background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: 'var(--neg)' }}>
+            <div style={{ background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--neg)' }}>
               {error}
             </div>
           )}

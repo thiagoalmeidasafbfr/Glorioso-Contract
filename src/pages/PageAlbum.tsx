@@ -9,8 +9,8 @@ import PageHero from '../components/PageHero'
 import type { Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause } from '../types/athlete-system'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 
-const font     = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
+const font     = "var(--font-body)"
+const fontMono = "var(--font-label)"
 
 const STATUS_LABELS: Record<AthleteStatus, string> = {
   ATIVO:      'Ativo',

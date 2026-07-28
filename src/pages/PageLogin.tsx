@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
-const fontLabel = "'IBM Plex Mono', 'JetBrains Mono', monospace"
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontDisplay = "'Fraunces', 'Cormorant Garamond', Georgia, serif"
+const fontLabel = "var(--font-label)"
+const fontBody = "var(--font-body)"
+const fontDisplay = "var(--font-display)"
 
 export default function PageLogin() {
   const { signIn } = useAuth()

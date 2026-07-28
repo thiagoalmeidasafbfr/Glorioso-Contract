@@ -15,8 +15,8 @@ import { IconButton } from '../Icon'
 import { ModalShell } from './EditModals'
 import { modalInput, modalLabel } from './styles'
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
 const CUR: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
 
 export default function RenegotiationEditModal({ acordo, onClose, onSaved, onDeleted }: {

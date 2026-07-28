@@ -27,8 +27,8 @@ import RowActions, { ActionLegend } from '../components/RowActions'
 import { InstallmentEditModal } from '../components/modals/EditModals'
 import { useAuth } from '../context/AuthContext'
 
-const font = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const fontMono = "var(--font-label)"
 const CUR: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
 const CLAUSE_TYPES = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
 

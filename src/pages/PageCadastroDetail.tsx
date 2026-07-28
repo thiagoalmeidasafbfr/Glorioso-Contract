@@ -40,8 +40,8 @@ import NewObligationModal from '../components/modals/NewObligationModal'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', monospace"
+const fontBody = "var(--font-body)"
+const fontMono = "var(--font-label)"
 
 type Kind = 'clube' | 'intermediario'
 

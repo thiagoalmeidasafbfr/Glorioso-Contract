@@ -21,9 +21,9 @@ import { fmtCurrencyShort, fmtCurrencyParts, isOverdue, todayISO } from '../lib/
 import type { Currency } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
-const display = "'Fraunces', 'Cormorant Garamond', Georgia, serif"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
+const display = "var(--font-display)"
 
 // Paleta dos gráficos — preto/grafite para as séries de estrutura e gasto;
 // vermelho/verde só para o veredicto direcional (saída x entrada). Valores
@@ -267,10 +267,10 @@ export default function PageDashboards() {
           <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {[
               { l: 'Consolidado', to: '/relatorios/consolidado' },
-              { l: 'Salários', to: '/relatorios/salarios' },
-              { l: 'Imagem', to: '/relatorios/imagem' },
-              { l: 'Clubes', to: '/relatorios/clubes' },
-              { l: 'Agentes', to: '/relatorios/intermediarios' },
+              { l: 'Visão por Atleta', to: '/relatorios/visao-atletas' },
+              { l: 'Vendas Futuras', to: '/relatorios/sell-on' },
+              { l: 'Direitos Econômicos', to: '/relatorios/direitos-economicos' },
+              { l: 'Gatilhos e Metas', to: '/relatorios/gatilhos' },
             ].map(x => (
               <button key={x.to} onClick={() => navigate(x.to)} className="btn btn-outline">{x.l} →</button>
             ))}

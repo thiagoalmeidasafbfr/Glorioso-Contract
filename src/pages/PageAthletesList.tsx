@@ -16,8 +16,8 @@ import SheetIO from '../components/SheetIO'
 import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
 
-const font     = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', 'JetBrains Mono', monospace"
+const font     = "var(--font-body)"
+const fontMono = "var(--font-label)"
 
 // Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
 function parseImportCategory(v: unknown): AthleteCategory {
@@ -364,7 +364,18 @@ export default function PageAthletesList() {
                 <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta encontrado.</td></tr>
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+                  <div style={{ marginBottom: 12 }}>
+                    {athletes.length === 0
+                      ? 'Nenhum atleta cadastrado ainda.'
+                      : 'Nenhum atleta corresponde aos filtros.'}
+                  </div>
+                  {athletes.length === 0 && (
+                    <button className="btn btn-primary" onClick={() => setShowNew(true)}>
+                      <Icon name="plus" size={13} /> Cadastrar o primeiro atleta
+                    </button>
+                  )}
+                </td></tr>
               )}
               {filtered.map(a => {
                 const stats = getAthleteStats(a.id)

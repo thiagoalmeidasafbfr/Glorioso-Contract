@@ -2,8 +2,8 @@
 // Estilos compartilhados pelos formulários dos modais (input e rótulo). Ficam
 // fora do arquivo de componentes para não quebrar o fast-refresh do Vite.
 
-const font = "'Inter', system-ui, sans-serif"
-const mono = "'IBM Plex Mono', monospace"
+const font = "var(--font-body)"
+const mono = "var(--font-label)"
 
 export const modalInput: React.CSSProperties = {
   width: '100%', padding: '8px 10px', borderRadius: 7, fontSize: 13, background: 'var(--cream-card)',

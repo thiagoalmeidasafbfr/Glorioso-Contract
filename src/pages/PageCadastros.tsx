@@ -24,8 +24,8 @@ import { fmtCurrencyShort } from '../lib/format'
 import { ModalShell } from '../components/modals/EditModals'
 import { modalInput, modalLabel } from '../components/modals/styles'
 
-const fontBody = "'Inter', system-ui, sans-serif"
-const fontMono = "'IBM Plex Mono', monospace"
+const fontBody = "var(--font-body)"
+const fontMono = "var(--font-label)"
 
 type Kind = 'clube' | 'intermediario'
 

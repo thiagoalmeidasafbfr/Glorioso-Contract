@@ -114,7 +114,7 @@ export function ActionLegend({ items = ['open', 'edit', 'schedule', 'markPaid', 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-      fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, color: 'var(--text-muted)',
+      fontFamily: "var(--font-body)", fontSize: 11, color: 'var(--text-muted)',
     }}>
       {items.map(k => (
         <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>

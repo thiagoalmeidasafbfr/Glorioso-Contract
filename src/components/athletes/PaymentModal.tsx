@@ -44,11 +44,11 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
     width: '100%', background: 'rgba(255,255,255,0.06)',
     border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7,
     padding: '8px 10px', fontSize: 13, color: 'var(--ink)',
-    fontFamily: "'Inter', system-ui, sans-serif", boxSizing: 'border-box',
+    fontFamily: "var(--font-body)", boxSizing: 'border-box',
   }
 
   const labelStyle: React.CSSProperties = {
-    fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+    fontFamily: "var(--font-label)", fontSize: 10,
     fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
     color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
   }
@@ -68,16 +68,16 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
       }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 500,
+            fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500,
             letterSpacing: '0.18em', textTransform: 'uppercase',
             color: 'var(--accent)', marginBottom: 4,
           }}>
             Registrar Pagamento
           </div>
-          <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 15, fontWeight: 600, color: 'var(--ink, #1a1410)' }}>
+          <div style={{ fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: 'var(--ink, #1a1410)' }}>
             {label}
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: 'rgba(26,20,16,0.55)', marginTop: 2 }}>
+          <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'rgba(26,20,16,0.55)', marginTop: 2 }}>
             Valor previsto: {sym} {value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             <div style={{
               background: 'var(--accent-tint)', border: '1px solid var(--divider-strong)',
               borderRadius: 7, padding: '8px 12px',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'var(--accent)',
+              fontFamily: "var(--font-label)", fontSize: 11, color: 'var(--accent)',
             }}>
               R$ {valueBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
@@ -142,7 +142,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             style={{
               background: 'transparent', border: '1px solid rgba(26,20,16,0.15)',
               borderRadius: 7, padding: '8px 18px', fontSize: 12,
-              fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
+              fontFamily: "var(--font-body)", cursor: 'pointer',
               color: 'rgba(26,20,16,0.55)',
             }}
           >
@@ -154,7 +154,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             style={{
               background: 'var(--accent)', border: 'none', borderRadius: 7,
               padding: '8px 22px', fontSize: 12, fontWeight: 600,
-              fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
+              fontFamily: "var(--font-body)", cursor: 'pointer',
               color: '#fff', opacity: (!date || valueCurrency <= 0) ? 0.5 : 1,
             }}
           >

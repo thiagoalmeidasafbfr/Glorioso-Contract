@@ -63,12 +63,24 @@
   --shadow-card:    0 1px 2px rgba(16,13,10,0.05), 0 8px 20px -16px rgba(16,13,10,0.30);
   --shadow-panel:   0 4px 10px -6px rgba(16,13,10,0.12), 0 20px 40px -20px rgba(16,13,10,0.34);
 
-  /* Fonts */
-  --font-display:   'Fraunces', 'Cormorant Garamond', Georgia, serif;
-  --font-serif:     'Cormorant Garamond', Georgia, serif;
+  /* ── Sistema tipográfico (rebranding 2026) ─────────────────────────────
+     Regra única: NÃO usar nomes de fonte hardcoded em componentes ou
+     páginas — sempre var(--font-*). A hierarquia divide o texto em cinco
+     papéis semânticos, e o papel decide fonte, peso e tratamento:
+
+     • display  → grandes cabeçalhos (heros, títulos de página). Manrope 700–800.
+     • body     → texto corrido, campos, botões, células de descrição. Inter 400–600.
+     • label    → micro-rótulos maiúsculos com letter-spacing (eyebrow, headers de
+                  tabela, badges). JetBrains Mono 500, uppercase.
+     • data     → conteúdo numérico (moeda, %, datas, contagens). JetBrains Mono com
+                  font-variant-numeric: tabular-nums.
+     • serif    → alias de compatibilidade — hoje aponta pro display; se um dia
+                  voltar um par serif, muda só aqui. */
+  --font-display:   'Manrope', 'Inter', system-ui, sans-serif;
   --font-body:      'Inter', system-ui, sans-serif;
-  --font-label:     'IBM Plex Mono', 'JetBrains Mono', monospace;
-  --font-data:      'JetBrains Mono', ui-monospace, monospace;
+  --font-label:     'JetBrains Mono', ui-monospace, 'IBM Plex Mono', monospace;
+  --font-data:      'JetBrains Mono', ui-monospace, 'IBM Plex Mono', monospace;
+  --font-serif:     var(--font-display);
 
   /* Aliases used by page inline styles */
   --page-bg:            var(--cream-page);
