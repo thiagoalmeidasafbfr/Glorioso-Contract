@@ -106,6 +106,13 @@ export function todayISO(): string {
   return new Date().toISOString().split('T')[0]
 }
 
+// Adiciona N dias a uma data ISO
+export function addDays(iso: string, n: number): string {
+  const d = new Date(iso + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().split('T')[0]
+}
+
 // Adiciona N meses a uma data ISO
 export function addMonths(iso: string, n: number): string {
   const d = new Date(iso + 'T12:00:00Z')

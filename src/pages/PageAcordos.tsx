@@ -15,7 +15,8 @@ import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import RowActions from '../components/RowActions'
-import { ClauseEditModal, ClauseFlowModal } from '../components/modals/EditModals'
+import { ClauseFlowModal } from '../components/modals/EditModals'
+import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import { useAuth } from '../context/AuthContext'
 
 const fontBody = "'Inter', system-ui, sans-serif"
@@ -154,8 +155,12 @@ export default function PageAcordos() {
           </select>
         </div>
         <div className="card" style={{ padding: '10px 18px', marginLeft: 'auto' }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }}>Desconto total (aprox. BRL)</div>
-          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: fontMono, color: 'var(--pos)' }}>{fmtCurrencyShort(totalDiscountBRL, 'BRL')}</div>
+          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }}>
+            {totalDiscountBRL < 0 ? 'Acréscimo total (aprox. BRL)' : 'Desconto total (aprox. BRL)'}
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: fontMono, color: totalDiscountBRL < 0 ? 'var(--neg)' : 'var(--pos)' }}>
+            {fmtCurrencyShort(Math.abs(totalDiscountBRL), 'BRL')}
+          </div>
         </div>
       </div>
 
@@ -187,13 +192,20 @@ export default function PageAcordos() {
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: 'var(--text-secondary)' }}>{r.data ? fmtDate(r.data) : '—'}</td>
                     <td style={tdNum}>{fmtCurrencyShort(r.originalTotal, r.currency)}</td>
                     <td style={tdNum}>{fmtCurrencyShort(r.newTotal, r.currency)}</td>
-                    <td style={{ ...tdNum, color: r.discount > 0 ? 'var(--pos)' : r.discount < 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{r.discount ? fmtCurrencyShort(r.discount, r.currency) : '—'}</td>
+                    <td style={{ ...tdNum, color: r.discount > 0 ? 'var(--pos)' : r.discount < 0 ? 'var(--neg)' : 'var(--text-muted)' }}
+                      title={r.discount < 0 ? 'Acréscimo: o novo fluxo é maior que a dívida de origem' : undefined}>
+                      {r.discount
+                        ? (r.discount < 0
+                          ? `+ ${fmtCurrencyShort(-r.discount, r.currency)}`
+                          : fmtCurrencyShort(r.discount, r.currency))
+                        : '—'}
+                    </td>
                     <td style={{ ...td, textAlign: 'center', fontFamily: fontMono }}>{r.paid}/{r.count}</td>
                     <td style={td}><span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions
                         open={{ to: `/obrigacoes/${r.id}`, label: 'Abrir o acordo' }}
-                        edit={{ onClick: canEdit ? () => setEditId(r.id) : undefined, label: 'Editar acordo', reason: 'sem permissão de edição' }}
+                        edit={{ onClick: canEdit ? () => setEditId(r.id) : undefined, label: 'Editar / desfazer a renegociação', reason: 'sem permissão de edição' }}
                         schedule={{ onClick: canEdit ? () => setFlowId(r.id) : undefined, label: 'Ver / editar as parcelas do acordo', reason: 'sem permissão de edição' }}
                       />
                     </td>
@@ -210,7 +222,12 @@ export default function PageAcordos() {
 
       {editId && (() => {
         const cl = acordoClauses.find(c => c.id === editId)
-        return cl ? <ClauseEditModal clause={cl} onClose={() => setEditId(null)} onSaved={() => { setEditId(null); load() }} /> : null
+        return cl ? (
+          <RenegotiationEditModal acordo={cl}
+            onClose={() => setEditId(null)}
+            onSaved={() => { setEditId(null); load() }}
+            onDeleted={() => { setEditId(null); load() }} />
+        ) : null
       })()}
       {flowId && (() => {
         const cl = acordoClauses.find(c => c.id === flowId)

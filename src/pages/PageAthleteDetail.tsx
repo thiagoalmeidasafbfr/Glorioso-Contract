@@ -45,6 +45,9 @@ import {
 } from '../types/athlete-system'
 import { regenerateSalaryFlow } from '../lib/salaryFlow'
 import { createRenegotiation, decodeAcordo, isAcordo, type AcordoSource, type RenegotiationInput } from '../lib/renegotiation'
+import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
+import LoanShareModal from '../components/modals/LoanShareModal'
+import { loanShareTriggers, decodeLoanShare, splitLoanSalary } from '../lib/loanSalary'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
@@ -411,6 +414,8 @@ export default function PageAthleteDetail() {
   const [editInstId, setEditInstId] = useState<string | null>(null)
   const [editClauseId, setEditClauseId] = useState<string | null>(null)
   const [showReneg, setShowReneg] = useState(false)
+  const [editAcordoId, setEditAcordoId] = useState<string | null>(null)
+  const [loanShareContractId, setLoanShareContractId] = useState<string | null>(null)
   const [highlightAcordo, setHighlightAcordo] = useState<string | null>(null)
   const [showEdit, setShowEdit] = useState(false)
   const [editContractId, setEditContractId] = useState<string | null>(null)
@@ -746,6 +751,12 @@ export default function PageAthleteDetail() {
           ) : (
             <SalaryImageEditor contract={emp} triggers={empTriggers} clauses={clauses} installments={installments} pjs={pjs} athleteName={athlete?.full_name ?? 'Atleta'} canEdit={canEdit} onSaved={loadData} />
           )}
+          {emp && (
+            <LoanShareSection
+              workContract={emp} contracts={contracts} triggers={triggers} canEdit={canEdit}
+              onConfigure={cid => setLoanShareContractId(cid)}
+            />
+          )}
           <FlowList title="Fluxo mensal — Salário CLT + Imagem" installments={installments} clauses={clauses}
             types={['SALARIO_CETD', 'DIREITO_IMAGEM']} canEdit={canEdit}
             onEditInst={id => setEditInstId(id)} onPayInst={id => setPayInstId(id)}
@@ -804,6 +815,8 @@ export default function PageAthleteDetail() {
           clauses={clauses} installments={installments} canEdit={canEdit}
           highlight={highlightAcordo} onHighlighted={() => setHighlightAcordo(null)}
           onNew={() => setShowReneg(true)}
+          onEditAcordo={cid => setEditAcordoId(cid)}
+          onFlowAcordo={cid => setFlowClauseId(cid)}
           onEditInst={id => setEditInstId(id)}
           onPayInst={id => setPayInstId(id)}
           onQuickPayInst={id => handleMarkInstallmentPaidQuick(id)}
@@ -842,6 +855,17 @@ export default function PageAthleteDetail() {
                   {canEdit && (
                     <div style={{ marginLeft: 'auto' }}>
                       <IconRow>
+                        {ct.type === 'EMPRESTIMO_SAIDA' && (
+                          <IconButton icon="split"
+                            label={emp
+                              ? (loanShareTriggers(triggers, ct.id).length > 0
+                                ? 'Editar o rateio de salário deste empréstimo'
+                                : 'Ratear o salário deste empréstimo (quanto o clube assume)')
+                              : 'Cadastre o vínculo de trabalho para ratear o salário'}
+                            tone={loanShareTriggers(triggers, ct.id).length > 0 ? 'default' : 'info'}
+                            onClick={emp ? () => setLoanShareContractId(ct.id) : undefined}
+                            disabled={!emp} disabledReason="sem vínculo de trabalho ativo" />
+                        )}
                         <IconButton icon="plus" label="Adicionar cláusula a este vínculo (ex.: Sell-on Fee, intermediação)" tone="info" onClick={() => setNewClauseContractId(ct.id)} />
                         <IconButton icon="link" label="Criar um contrato atrelado a este vínculo (ex.: intermediação)" tone="info" onClick={() => navigate(`/atletas/${ct.athlete_id}/contratos/novo?rel=${ct.id}`)} />
                         <IconButton icon="edit" label="Editar vínculo" onClick={() => setEditContractId(ct.id)} />
@@ -920,6 +944,25 @@ export default function PageAthleteDetail() {
       {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
       {editInst && <InstallmentEditModal inst={editInst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); loadData() }} />}
       {editClause && <ClauseEditModal clause={editClause} onClose={() => setEditClauseId(null)} onSaved={() => { setEditClauseId(null); loadData() }} />}
+      {editAcordoId && (() => {
+        const ac = clauses.find(c => c.id === editAcordoId)
+        return ac ? (
+          <RenegotiationEditModal acordo={ac}
+            onClose={() => setEditAcordoId(null)}
+            onSaved={() => { setEditAcordoId(null); loadData() }}
+            onDeleted={() => { setEditAcordoId(null); loadData() }} />
+        ) : null
+      })()}
+      {loanShareContractId && athlete && emp && (() => {
+        const loan = contracts.find(c => c.id === loanShareContractId)
+        return loan ? (
+          <LoanShareModal workContract={emp} loanContract={loan}
+            triggers={triggers} clauses={clauses} installments={installments} pjs={pjs}
+            athleteName={athlete.full_name}
+            onClose={() => setLoanShareContractId(null)}
+            onSaved={() => { setLoanShareContractId(null); loadData() }} />
+        ) : null
+      })()}
       {showReneg && athlete && <RenegotiationModal athleteId={athlete.id} clauses={clauses} installments={installments} clubLiabs={clubLiabs} intermLiabs={intermLiabs} onClose={() => setShowReneg(false)} onSave={handleRenegotiate} />}
       {showEdit && athlete && <EditAthleteModal athlete={athlete} rights={rights} pjs={pjs} canEdit={canEdit} onAddPJ={handleAddPJ} onUpdatePJ={handleUpdatePJ} onDeletePJ={handleDeletePJ} imageCountByPj={imageRights.reduce((m, ir) => { if (ir.pj_id) m[ir.pj_id] = (m[ir.pj_id] ?? 0) + 1; return m }, {} as Record<string, number>)} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); loadData() }} />}
       {editContractId && (() => {
@@ -1121,6 +1164,89 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
 
       <div style={{ marginBottom: 8, fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Evolução da remuneração</div>
       <RemunerationChart contract={contract} triggers={triggers} />
+    </div>
+  )
+}
+
+// ── LoanShareSection — rateio de salário nos empréstimos de saída ─────────────
+// Quando o atleta é emprestado, o clube que o recebe pode assumir parte (ou tudo)
+// do CLT e/ou da imagem. Aqui se vê e se configura esse rateio; o fluxo mensal é
+// regerado a partir da data do empréstimo.
+function LoanShareSection({ workContract, contracts, triggers, canEdit, onConfigure }: {
+  workContract: Contract
+  contracts: Contract[]
+  triggers: SalaryTrigger[]
+  canEdit: boolean
+  onConfigure: (loanContractId: string) => void
+}) {
+  const loans = contracts
+    .filter(c => c.type === 'EMPRESTIMO_SAIDA')
+    .sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? ''))
+  const fullSalary = workContract.base_salary ?? 0
+  const fullImage = workContract.image_value ?? 0
+  const currency = workContract.salary_currency ?? 'BRL'
+
+  return (
+    <div className="card" style={{ padding: '16px 20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)' }}>
+            Empréstimos — rateio de salário
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: font, marginTop: 3 }}>
+            O clube que recebe o atleta pode arcar com parte do CLT e/ou da imagem. O fluxo mensal passa a
+            considerar só a parte do Botafogo a partir da data do empréstimo.
+          </div>
+        </div>
+      </div>
+
+      {loans.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: font }}>
+          Nenhum empréstimo de saída cadastrado. Registre o empréstimo em “+ Novo contrato” para configurar o rateio.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {loans.map(loan => {
+            const share = loanShareTriggers(triggers, loan.id)
+              .map(t => decodeLoanShare(t.notes))
+              .find(m => m?.role === 'RATEIO') ?? null
+            const split = splitLoanSalary(fullSalary, fullImage, share?.clubSalaryPct ?? 0, share?.clubImagePct ?? 0)
+            const botafogo = split.botafogoSalary + split.botafogoImage
+            return (
+              <div key={loan.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                <div style={{ minWidth: 200, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{loan.counterpart_club || '—'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 2 }}>
+                    {fmtDate(loan.start_date)}{loan.end_date ? ` → ${fmtDate(loan.end_date)}` : ''}
+                  </div>
+                </div>
+                {share ? (
+                  <>
+                    <span style={{ padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: 'var(--info-tint)', color: 'var(--info)' }}>
+                      rateio ativo
+                    </span>
+                    <span style={{ fontSize: 11.5, fontFamily: fontMono, color: 'var(--text-secondary)' }}>
+                      clube arca {share.clubSalaryPct}% CLT · {share.clubImagePct}% imagem
+                    </span>
+                    <span style={{ fontSize: 12.5, fontFamily: fontMono, fontWeight: 700, color: 'var(--ink-primary)' }}>
+                      Botafogo {fmtCurrencyShort(botafogo, currency)}/mês
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 11.5, fontFamily: font, color: 'var(--text-muted)' }}>
+                    sem rateio — Botafogo paga integral ({fmtCurrencyShort(fullSalary + fullImage, currency)}/mês)
+                  </span>
+                )}
+                {canEdit && (
+                  <IconButton icon={share ? 'edit' : 'split'} tone={share ? 'default' : 'info'}
+                    label={share ? 'Editar o rateio deste empréstimo' : 'Configurar o rateio deste empréstimo'}
+                    onClick={() => onConfigure(loan.id)} />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -1980,10 +2106,12 @@ function InstallmentActions({ inst, canEdit, onEdit, onPay, onQuickPay, onRevert
 }
 
 // ── AcordosTab — acordos e renegociações do atleta ──────────────────────────
-function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, onNew, onEditInst, onPayInst, onQuickPayInst, onRevertInst }: {
+function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, onNew, onEditAcordo, onFlowAcordo, onEditInst, onPayInst, onQuickPayInst, onRevertInst }: {
   clauses: Clause[]; installments: ClauseInstallment[]; canEdit: boolean
   highlight?: string | null; onHighlighted?: () => void
   onNew: () => void
+  onEditAcordo: (clauseId: string) => void
+  onFlowAcordo: (clauseId: string) => void
   onEditInst: (id: string) => void; onPayInst: (id: string) => void; onQuickPayInst: (id: string) => void; onRevertInst: (id: string) => void
 }) {
   const acordos = clauses.filter(isAcordo).sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
@@ -2022,7 +2150,14 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
           <div key={ac.id} id={`acordo-${ac.id}`} className="card" style={{ padding: '18px 20px', border: isHi ? '1px solid var(--gold-ring)' : undefined, boxShadow: isHi ? '0 0 0 3px var(--divider-strong)' : undefined, transition: 'box-shadow 0.4s, border-color 0.4s' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{meta?.creditor ?? ac.creditor_party}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>{meta ? `acordado em ${fmtDate(meta.createdAt)}` : ''}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>{meta ? `acordado em ${fmtDate(meta.createdAt)}` : ''}</span>
+                <RowActions small={false}
+                  open={{ to: `/obrigacoes/${ac.id}` }}
+                  edit={{ onClick: canEdit ? () => onEditAcordo(ac.id) : undefined, label: 'Editar / desfazer a renegociação', reason: 'sem permissão de edição' }}
+                  schedule={{ onClick: canEdit ? () => onFlowAcordo(ac.id) : undefined, label: 'Ver / editar as parcelas do acordo', reason: 'sem permissão de edição' }}
+                />
+              </div>
             </div>
 
             {meta && (

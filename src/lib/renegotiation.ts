@@ -19,6 +19,7 @@ import type { Clause, ClauseInstallment, Currency } from '../types/athlete-syste
 import {
   createClause, createClauseInstallments, updateClause, updateInstallment,
   updateClubLiability, updateIntermediaryLiability,
+  deleteClause, fetchClauseInstallments, fetchAllInstallments,
 } from './athleteQueries'
 import { addMonths, todayISO } from './format'
 
@@ -191,4 +192,115 @@ export async function createRenegotiation(input: RenegotiationInput): Promise<Re
   }
 
   return { acordo, installments }
+}
+
+// ── Desfazer / excluir uma renegociação ─────────────────────────────────────
+// Renegociar não apaga nada: os itens de origem ficam CANCELADA com uma nota
+// apontando para o acordo. Desfazer é, portanto, reversível de verdade:
+//   1) cada item de origem volta a PENDENTE e perde a nota de rastreio;
+//   2) o acordo (e o novo fluxo dele) é apagado.
+
+/** Remove do texto a marca "· Renegociado no acordo <id> em <data>". */
+export function stripAcordoNote(notes: string | null | undefined, acordoId?: string): string | null {
+  if (!notes) return null
+  const re = acordoId
+    ? new RegExp(`\\s*·?\\s*Renegociado no acordo ${acordoId} em \\S+`, 'g')
+    : /\s*·?\s*Renegociado no acordo \S+ em \S+/g
+  const cleaned = notes.replace(re, '').trim()
+  return cleaned === '' ? null : cleaned
+}
+
+/** Devolve UM item de origem ao estado em aberto (usado ao desfazer/editar). */
+export async function restoreSource(src: AcordoSource, acordoId?: string): Promise<void> {
+  if (src.installmentId) {
+    const inst = await fetchInstallmentSafe(src.installmentId)
+    await updateInstallment(src.installmentId, {
+      payment_status: 'PENDENTE', payment_date: null,
+      notes: stripAcordoNote(inst?.notes, acordoId),
+    })
+  } else if (src.clauseId) {
+    await updateClause(src.clauseId, { payment_status: 'PENDENTE', payment_date: null })
+  } else if (src.clubLiabId) {
+    await updateClubLiability(src.clubLiabId, { status: 'PENDENTE', settled_date: null })
+  } else if (src.intermLiabId) {
+    await updateIntermediaryLiability(src.intermLiabId, { status: 'PENDENTE', settled_date: null })
+  }
+}
+
+// A parcela pode não existir mais (fluxo regerado); nesse caso o restore é no-op
+// quanto à nota, mas o status ainda é normalizado.
+async function fetchInstallmentSafe(id: string): Promise<ClauseInstallment | null> {
+  try {
+    const all = await fetchAllInstallments()
+    return all.find(i => i.id === id) ?? null
+  } catch {
+    return null
+  }
+}
+
+export interface RevertCheck {
+  paidInNewFlow: number
+  totalInNewFlow: number
+}
+
+/** Quantas parcelas do NOVO fluxo já foram pagas (avisar antes de desfazer). */
+export async function checkRenegotiation(acordo: Clause): Promise<RevertCheck> {
+  const insts = await fetchClauseInstallments(acordo.id)
+  return {
+    paidInNewFlow: insts.filter(i => i.payment_status === 'PAGA' || !!i.payment_date).length,
+    totalInNewFlow: insts.length,
+  }
+}
+
+/**
+ * Desfaz a renegociação: devolve as parcelas/obrigações de origem ao estado em
+ * aberto e apaga o acordo com o novo fluxo.
+ */
+export async function revertRenegotiation(acordo: Clause): Promise<void> {
+  const meta = decodeAcordo(acordo.notes)
+  for (const src of meta?.sources ?? []) await restoreSource(src, acordo.id)
+  await deleteClause(acordo.id)
+}
+
+/**
+ * Remove UM item de origem do acordo: a parcela volta ao normal e o acordo passa
+ * a valer apenas pelos itens restantes (metadados atualizados). O novo fluxo NÃO
+ * é recalculado — quem edita decide se ajusta as parcelas do acordo depois.
+ */
+export async function removeAcordoSource(acordo: Clause, index: number): Promise<void> {
+  const meta = decodeAcordo(acordo.notes)
+  if (!meta || !meta.sources[index]) return
+  const src = meta.sources[index]
+  await restoreSource(src, acordo.id)
+  const sources = meta.sources.filter((_, i) => i !== index)
+  const originalTotal = Math.round(sources.reduce((s, x) => s + x.value, 0) * 100) / 100
+  const next: AcordoMeta = {
+    ...meta, sources, originalTotal,
+    discount: Math.round((originalTotal - meta.newTotal) * 100) / 100,
+  }
+  await updateClause(acordo.id, { notes: encodeAcordo(next) })
+}
+
+/** Atualiza os dados editáveis do acordo (credor/devedor, observação, moeda). */
+export async function updateRenegotiation(acordo: Clause, patch: {
+  creditor?: string
+  debtor?: string
+  currency?: Currency
+  userNote?: string
+}): Promise<void> {
+  const meta = decodeAcordo(acordo.notes)
+  const next: AcordoMeta | null = meta ? {
+    ...meta,
+    creditor: patch.creditor ?? meta.creditor,
+    debtor: patch.debtor ?? meta.debtor,
+    currency: patch.currency ?? meta.currency,
+    userNote: patch.userNote ?? meta.userNote,
+  } : null
+  await updateClause(acordo.id, {
+    creditor_party: patch.creditor ?? acordo.creditor_party,
+    debtor_party: patch.debtor ?? acordo.debtor_party,
+    currency: patch.currency ?? acordo.currency,
+    condition_description: patch.userNote ?? acordo.condition_description,
+    ...(next ? { notes: encodeAcordo(next) } : {}),
+  })
 }
