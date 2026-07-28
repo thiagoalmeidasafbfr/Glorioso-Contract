@@ -15,6 +15,7 @@ import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import RowActions from '../components/RowActions'
+import KpiPill from '../components/KpiPill'
 import { ClauseFlowModal } from '../components/modals/EditModals'
 import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import { useAuth } from '../context/AuthContext'
@@ -154,13 +155,12 @@ export default function PageAcordos() {
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div className="card" style={{ padding: '10px 18px', marginLeft: 'auto' }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }}>
-            {totalDiscountBRL < 0 ? 'Acréscimo total (aprox. BRL)' : 'Desconto total (aprox. BRL)'}
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 600, fontFamily: fontMono, color: totalDiscountBRL < 0 ? 'var(--neg)' : 'var(--pos)' }}>
-            {fmtCurrencyShort(Math.abs(totalDiscountBRL), 'BRL')}
-          </div>
+        <div style={{ marginLeft: 'auto' }}>
+          <KpiPill
+            label={totalDiscountBRL < 0 ? 'Acréscimo total (aprox. BRL)' : 'Desconto total (aprox. BRL)'}
+            value={fmtCurrencyShort(Math.abs(totalDiscountBRL), 'BRL')}
+            tone={totalDiscountBRL < 0 ? 'neg' : 'pos'}
+          />
         </div>
       </div>
 

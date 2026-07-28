@@ -24,6 +24,7 @@ import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon, IconButton } from '../components/Icon'
+import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
 
 const font = "var(--font-body)"
@@ -167,14 +168,8 @@ export default function PageVisaoAtletas() {
           <button onClick={expandAll} className="btn btn-sm btn-ghost">Expandir tudo</button>
           <button onClick={collapseAll} className="btn btn-sm btn-ghost">Recolher</button>
         </div>
-        <div style={{ padding: '8px 14px', borderRadius: 9, background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.22)' }}>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--neg)' }}>Em atraso (aprox. BRL)</div>
-          <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: 'var(--neg)' }}>{fmtCurrencyShort(totals.overdue, 'BRL')}</div>
-        </div>
-        <div style={{ padding: '8px 14px', borderRadius: 9, background: 'var(--bg-subtle)', border: '1px solid var(--divider)' }}>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Em aberto (aprox. BRL)</div>
-          <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)' }}>{fmtCurrencyShort(totals.open, 'BRL')}</div>
-        </div>
+        <KpiPill label="Em atraso (aprox. BRL)" value={fmtCurrencyShort(totals.overdue, 'BRL')} tone="neg" />
+        <KpiPill label="Em aberto (aprox. BRL)" value={fmtCurrencyShort(totals.open, 'BRL')} tone="neutral" />
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
