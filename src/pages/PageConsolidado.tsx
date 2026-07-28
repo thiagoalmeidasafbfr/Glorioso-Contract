@@ -50,6 +50,8 @@ interface Mov {
   valor: number
   moeda: Currency
   status: string
+  // PTAX fixada na cláusula ou parcela (quando o contrato prevê); NULL usa PTAX do dia.
+  fixedRate: number | null
 }
 
 const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
@@ -108,6 +110,7 @@ export default function PageConsolidado() {
           contraparte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—',
           descricao: c ? `${c.description} — parc. ${it.installment_number}` : `Parcela ${it.installment_number}`,
           dir, valor: it.original_value, moeda: it.currency, status: it.payment_status,
+          fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
         })
       }
       // Cláusulas de pagamento único (sem parcelas geradas)
@@ -120,6 +123,7 @@ export default function PageConsolidado() {
           date: c.due_date, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
           natureza: CLAUSE_TYPE_LABELS[c.clause_type], contraparte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party,
           descricao: c.description, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status,
+          fixedRate: c.fixed_exchange_rate ?? null,
         })
       }
       // Obrigações com clube / agente
@@ -128,12 +132,14 @@ export default function PageConsolidado() {
         date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
         natureza: 'Obrigação clube', contraparte: l.club_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
+        fixedRate: null,
       })
       for (const l of interLiabs) list.push({
         id: l.id, kind: 'agent', clauseId: l.contract_id ? null : null,
         date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
         natureza: 'Intermediação', contraparte: l.intermediary_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
+        fixedRate: null,
       })
 
       list.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
@@ -186,14 +192,27 @@ export default function PageConsolidado() {
     })
   }, [movs, q, status, atletaF, naturezaF, posF, posByAth])
 
-  // Totais por direção (em aberto), convertidos para BRL via PTAX atual.
+  // Rate efetivo: PTAX fixada no contrato, quando houver; senão, PTAX do dia.
+  function effectiveBRL(m: Mov): number {
+    if (m.moeda === 'BRL') return m.valor
+    if (m.fixedRate != null && m.fixedRate > 0) return m.valor * m.fixedRate
+    return toBRL(m.valor, m.moeda, ptax)
+  }
+  function effectiveRate(m: Mov): number {
+    if (m.moeda === 'BRL') return 1
+    if (m.fixedRate != null && m.fixedRate > 0) return m.fixedRate
+    return ptaxRateFor(m.moeda, ptax)
+  }
+
+  // Totais por direção (em aberto), convertidos para BRL via PTAX efetiva.
   const totals = useMemo(() => {
     let pay = 0, rec = 0
     for (const m of filtered) if (OPEN.includes(m.status)) {
-      const brl = toBRL(m.valor, m.moeda, ptax)
+      const brl = effectiveBRL(m)
       if (m.dir === 'A_PAGAR') pay += brl; else rec += brl
     }
     return { pay, rec }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, ptax])
 
   function exportAll() {
@@ -207,8 +226,8 @@ export default function PageConsolidado() {
     const rows = filtered.map(m => ({
       ...m,
       dir: m.dir === 'A_PAGAR' ? 'A pagar' : 'A receber',
-      valorBRL: toBRL(m.valor, m.moeda, ptax),
-      ptaxRate: ptaxRateFor(m.moeda, ptax),
+      valorBRL: effectiveBRL(m),
+      ptaxRate: effectiveRate(m),
       vencimento: m.date ?? '',
     }))
     exportWorkbook([{ name: 'Consolidado', cols, rows }], 'consolidado-movimentacoes.xlsx')
@@ -297,8 +316,12 @@ export default function PageConsolidado() {
                     <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}
-                      title={m.moeda === 'BRL' ? 'BRL' : `PTAX ${m.moeda}/BRL: ${ptaxRateFor(m.moeda, ptax).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}>
-                      {fmtCurrencyShort(toBRL(m.valor, m.moeda, ptax), 'BRL')}
+                      title={m.moeda === 'BRL' ? 'BRL'
+                        : m.fixedRate != null
+                          ? `PTAX FIXADA ${m.moeda}/BRL: ${m.fixedRate.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`
+                          : `PTAX ${m.moeda}/BRL: ${ptaxRateFor(m.moeda, ptax).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}>
+                      {fmtCurrencyShort(effectiveBRL(m), 'BRL')}
+                      {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--warn)', fontWeight: 600 }}>fx</span>}
                     </td>
                     <td style={td}>
                       <span style={{

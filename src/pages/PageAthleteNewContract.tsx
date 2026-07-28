@@ -180,6 +180,18 @@ export default function PageAthleteNewContract() {
   // Gerar fluxo mensal de remuneração (salário + imagem) pela vigência.
   const [autoRemFlow, setAutoRemFlow] = useState(true)
 
+  // PTAX fixada — quando o contrato é em moeda estrangeira, permite travar a
+  // taxa BRL para toda a vida do contrato (transferência, salário, imagem,
+  // agentes e cláusulas geradas por este vínculo).
+  const [fixPtax, setFixPtax] = useState(false)
+  const [fixPtaxRate, setFixPtaxRate] = useState('')
+  const fixedRate = fixPtax && fixPtaxRate ? parseFloat(fixPtaxRate) : null
+  const hasFxCurrency =
+    contract.transfer_currency !== 'BRL' ||
+    contract.salary_currency !== 'BRL' ||
+    agents.some(a => a.currency !== 'BRL') ||
+    clauses.some(c => (c.currency ?? 'EUR') !== 'BRL')
+
   useEffect(() => {
     if (!id) return
     fetchAthlete(id).then(setAthlete)
@@ -303,6 +315,10 @@ export default function PageAthleteNewContract() {
       })
       const buying = contract.type === 'ENTRADA' || contract.type === 'EMPRESTIMO_ENTRADA'
 
+      // Rate para gravar em cada cláusula/parcela criada abaixo (só quando a
+      // moeda é estrangeira e o usuário marcou "PTAX fixada").
+      const fxRateFor = (cur: Currency): number | null => (fixedRate != null && cur !== 'BRL' ? fixedRate : null)
+
       // ── Compra / transferência (com o cronograma definido nesta tela) ────
       if (willGenTransfer) {
         const sched = transferValid.length
@@ -317,11 +333,13 @@ export default function PageAthleteNewContract() {
           original_value: transferTotal, percentage_value: null,
           condition_description: '', due_date: sched[0].due_date,
           installments_total: sched.length, notes: '',
+          fixed_exchange_rate: fxRateFor(contract.transfer_currency),
         })
         if (sched.length > 1) {
           await createClauseInstallments(clause.id, id, sched.map((l, i) => ({
             installment_number: i + 1, due_date: l.due_date,
             original_value: l.value, currency: contract.transfer_currency,
+            fixed_exchange_rate: fxRateFor(contract.transfer_currency),
           })))
         }
       }
@@ -338,12 +356,14 @@ export default function PageAthleteNewContract() {
           original_value: monthly * vigMonths, percentage_value: null,
           condition_description: '', due_date: dueDayOf(contract.start_date, 0, day),
           installments_total: vigMonths, notes: '',
+          fixed_exchange_rate: fxRateFor(contract.salary_currency),
         })
         await createClauseInstallments(clause.id, id!, Array.from({ length: vigMonths }, (_, i) => ({
           installment_number: i + 1,
           due_date: dueDayOf(contract.start_date, i, day),
           original_value: monthly,
           currency: contract.salary_currency,
+          fixed_exchange_rate: fxRateFor(contract.salary_currency),
         })))
       }
       if (willGenSalary) await genRemFlow('SALARIO_CETD', 'Salário CLT', salaryMonthly, SALARY_DUE_DAY)
@@ -369,6 +389,7 @@ export default function PageAthleteNewContract() {
             due_date: contract.start_date,
             installments_total: 1,
             notes: 'Gerada automaticamente quando ocorrer a venda do atleta.',
+            fixed_exchange_rate: fxRateFor(ag.currency),
           })
           continue
         }
@@ -386,10 +407,12 @@ export default function PageAthleteNewContract() {
           due_date: sched[0]?.due_date ?? contract.start_date,
           installments_total: sched.length || 1,
           notes: '',
+          fixed_exchange_rate: fxRateFor(ag.currency),
         })
         if (sched.length > 1) {
           await createClauseInstallments(clause.id, id, sched.map((l, i) => ({
             installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: ag.currency,
+            fixed_exchange_rate: fxRateFor(ag.currency),
           })))
         }
       }
@@ -410,11 +433,13 @@ export default function PageAthleteNewContract() {
           due_date: sched[0]?.due_date ?? cl.due_date ?? todayISO(),
           installments_total: sched.length || 1,
           notes: cl.notes || '',
+          fixed_exchange_rate: fxRateFor((cl.currency ?? 'EUR') as Currency),
         }
         const savedClause = await createClause(savedContract.id, id, full)
         if (sched.length > 1) {
           await createClauseInstallments(savedClause.id, id, sched.map((l, i) => ({
             installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency: full.currency,
+            fixed_exchange_rate: fxRateFor(full.currency),
           })))
         }
       }
@@ -685,6 +710,34 @@ export default function PageAthleteNewContract() {
             </div>
           </div>
           </>)}
+
+          {hasFxCurrency && (
+            <div style={cardStyle}>
+              <div style={{ ...sectionTitle, marginBottom: 10 }}>PTAX do contrato</div>
+              <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                <input type="checkbox" checked={fixPtax} onChange={e => setFixPtax(e.target.checked)}
+                  style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <strong>PTAX fixada</strong> — trava a taxa de câmbio deste contrato para evitar distorções cambiais.
+                  Quando marcada, todos os valores em moeda estrangeira geradas por este vínculo (transferência,
+                  salário, imagem, agentes e cláusulas) usam a taxa informada abaixo na conversão para BRL nos
+                  relatórios. Se desmarcada, o sistema usa a PTAX corrente do Banco Central (dia atual).
+                </span>
+              </label>
+              {fixPtax && (
+                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>PTAX (moeda/BRL)</label>
+                    <NumberInput decimals={4} grouping={false} value={fixPtaxRate}
+                      onChange={v => setFixPtaxRate(v)} placeholder="Ex: 5,5000" style={inputStyle} />
+                  </div>
+                  <div style={{ ...noteBox, fontFamily: "var(--font-body)", fontSize: 12 }}>
+                    Exemplo: contrato em EUR com PTAX fixada em <strong>6,10</strong> — 1 EUR sempre valerá R$ 6,10 nos relatórios.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10, flexWrap: 'wrap' }}>

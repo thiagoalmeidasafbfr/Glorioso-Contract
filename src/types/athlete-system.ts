@@ -168,6 +168,9 @@ export interface Clause {
   amount_paid_currency: number | null
   amount_paid_brl: number | null
   exchange_rate: number | null
+  // PTAX fixada no contrato — quando preenchida, os relatórios usam essa taxa
+  // para converter para BRL em vez da PTAX do dia. NULL = PTAX corrente.
+  fixed_exchange_rate?: number | null
   notes: string | null
   created_by: string | null
   created_at: string
@@ -186,6 +189,7 @@ export interface ClauseInstallment {
   payment_date: string | null
   amount_paid_brl: number | null
   exchange_rate: number | null
+  fixed_exchange_rate?: number | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -262,6 +266,8 @@ export interface NewClauseInput {
   due_date: string
   installments_total: number
   notes: string
+  // Se preenchido, a conversão BRL da cláusula (e das parcelas geradas) usa esta PTAX
+  fixed_exchange_rate?: number | null
 }
 
 export interface PaymentInput {
