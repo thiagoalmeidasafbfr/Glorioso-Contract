@@ -146,7 +146,7 @@ export default function PageVisaoAtletas() {
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1500, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Visão por Atleta" subtitle="Consolidado por natureza · Botafogo SAF">
         <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={13} /> Exportar</button>
       </PageHero>

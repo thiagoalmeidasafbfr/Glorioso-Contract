@@ -623,7 +623,7 @@ export default function PageAthleteDetail() {
   const salImgCurrency: Currency = emp?.salary_currency ?? 'BRL'
 
   return (
-    <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title={athlete.short_name || athlete.full_name} subtitle="Ficha do atleta · Botafogo SAF" />
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>
         <Link to="/atletas" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Atletas</Link>
