@@ -76,10 +76,14 @@
                   font-variant-numeric: tabular-nums.
      • serif    → alias de compatibilidade — hoje aponta pro display; se um dia
                   voltar um par serif, muda só aqui. */
-  --font-display:   'Manrope', 'Inter', system-ui, sans-serif;
-  --font-body:      'Inter', system-ui, sans-serif;
-  --font-label:     'JetBrains Mono', ui-monospace, 'IBM Plex Mono', monospace;
-  --font-data:      'JetBrains Mono', ui-monospace, 'IBM Plex Mono', monospace;
+  /* Rebrand 2026-07: unifica toda a UI em Manrope (o usuário preferiu esse
+     look mais moderno; JetBrains Mono e Inter foram descontinuadas). Para
+     números tabulares, usamos font-variant-numeric: tabular-nums no CSS de
+     cada bloco de dados (Manrope suporta o feature). */
+  --font-display:   'Manrope', system-ui, sans-serif;
+  --font-body:      'Manrope', system-ui, sans-serif;
+  --font-label:     'Manrope', system-ui, sans-serif;
+  --font-data:      'Manrope', system-ui, sans-serif;
   --font-serif:     var(--font-display);
 
   /* Aliases used by page inline styles */
