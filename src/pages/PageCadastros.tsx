@@ -86,7 +86,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
   const totalOpen = filtered.reduce((s, e) => s + e.openBRL, 0)
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1300, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title={title} subtitle="Cadastro · Botafogo SAF">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar"
           style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', fontSize: 13, fontFamily: fontBody, color: 'var(--on-dark)' }} />

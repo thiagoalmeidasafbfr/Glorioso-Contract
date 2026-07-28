@@ -173,7 +173,7 @@ export default function PageRelGatilhos() {
   )
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1500, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Gatilhos e Metas" subtitle="Consolidado de metas esportivas, bônus de performance e cláusulas rescisórias">
         <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={14} /> Exportar</button>
       </PageHero>

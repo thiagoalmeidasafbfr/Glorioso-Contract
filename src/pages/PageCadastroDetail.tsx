@@ -181,7 +181,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1300, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title={name} subtitle={isClube ? 'Clube · Botafogo SAF' : 'Agente · Botafogo SAF'} />
       <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody }}>
         <Link to={basePath} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{isClube ? 'Clubes' : 'Agentes'}</Link>

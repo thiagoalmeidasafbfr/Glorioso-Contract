@@ -317,7 +317,7 @@ export default function PageDados() {
   }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Dados & Modelos" subtitle="Importar / Exportar · Botafogo SAF">
         <button onClick={exportAll} disabled={exportingAll}
           style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, color: 'var(--on-dark)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: exportingAll ? 'default' : 'pointer', opacity: exportingAll ? 0.6 : 1 }}>

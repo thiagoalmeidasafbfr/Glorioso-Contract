@@ -137,7 +137,7 @@ export default function PageRelSellOn() {
   )
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1500, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Vendas Futuras (Sell-on)" subtitle="Consolidado de % de vendas futuras · a pagar e a receber" />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={14} /> Exportar</button>

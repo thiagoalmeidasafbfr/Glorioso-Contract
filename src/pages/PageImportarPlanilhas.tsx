@@ -51,7 +51,7 @@ export default function PageImportarPlanilhas() {
   const num: React.CSSProperties = { fontFamily: fontMono, fontWeight: 600 }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Importar planilhas (Ativos / Passivos)" subtitle="Importar / Exportar · Botafogo SAF" />
       <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: -4, marginBottom: 22, maxWidth: 760 }}>
         Importa os workbooks brutos que alimentavam o Power BI. Os atletas são reconhecidos pela chave natural (CPF/passaporte),

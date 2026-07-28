@@ -128,7 +128,7 @@ export default function PageAcordos() {
   const tdNum: React.CSSProperties = { ...td, fontFamily: fontMono, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1500, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Acordos e Renegociações" subtitle="Relatório de dívidas reabertas em novos fluxos" />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={14} /> Exportar</button>

@@ -18,6 +18,7 @@ import type {
 } from '../types/athlete-system'
 import { buildNameIndex, norm } from '../lib/importHelpers'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
+import { fetchPtaxRates, toBRL, ptaxRateFor } from '../lib/ptax'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
@@ -32,7 +33,6 @@ import { useAuth } from '../context/AuthContext'
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
 
-const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 const OPEN = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'VENCIDA']
 const STATUS_OPTS = ['Todos', 'PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA']
 
@@ -77,6 +77,9 @@ export default function PageConsolidado() {
   const [naturezaF, setNaturezaF] = useState('Todos')
   const [posF, setPosF] = useState('Todos')
   const [posByAth, setPosByAth] = useState<Map<string, string>>(new Map())
+  const [ptax, setPtax] = useState<Record<string, number>>({})
+
+  useEffect(() => { fetchPtaxRates().then(setPtax).catch(() => setPtax({})) }, [])
 
   const load = useCallback(async () => {
     {
@@ -183,24 +186,31 @@ export default function PageConsolidado() {
     })
   }, [movs, q, status, atletaF, naturezaF, posF, posByAth])
 
-  // Totais por direção (em aberto), aproximados em BRL.
+  // Totais por direção (em aberto), convertidos para BRL via PTAX atual.
   const totals = useMemo(() => {
     let pay = 0, rec = 0
     for (const m of filtered) if (OPEN.includes(m.status)) {
-      const brl = m.valor * (APPROX_BRL[m.moeda] ?? 1)
+      const brl = toBRL(m.valor, m.moeda, ptax)
       if (m.dir === 'A_PAGAR') pay += brl; else rec += brl
     }
     return { pay, rec }
-  }, [filtered])
+  }, [filtered, ptax])
 
   function exportAll() {
     const cols: ColDef[] = [
       { key: 'atleta', header: 'Atleta' }, { key: 'natureza', header: 'Natureza' },
       { key: 'contraparte', header: 'Contraparte' }, { key: 'descricao', header: 'Descrição' },
       { key: 'dir', header: 'Direção' }, { key: 'valor', header: 'Valor' }, { key: 'moeda', header: 'Moeda' },
+      { key: 'valorBRL', header: 'Valor (BRL PTAX)' }, { key: 'ptaxRate', header: 'PTAX' },
       { key: 'vencimento', header: 'Vencimento' }, { key: 'status', header: 'Status' },
     ]
-    const rows = filtered.map(m => ({ ...m, dir: m.dir === 'A_PAGAR' ? 'A pagar' : 'A receber', vencimento: m.date ?? '' }))
+    const rows = filtered.map(m => ({
+      ...m,
+      dir: m.dir === 'A_PAGAR' ? 'A pagar' : 'A receber',
+      valorBRL: toBRL(m.valor, m.moeda, ptax),
+      ptaxRate: ptaxRateFor(m.moeda, ptax),
+      vencimento: m.date ?? '',
+    }))
     exportWorkbook([{ name: 'Consolidado', cols, rows }], 'consolidado-movimentacoes.xlsx')
   }
 
@@ -208,7 +218,7 @@ export default function PageConsolidado() {
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1280, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Consolidado" subtitle="Todas as movimentações financeiras · Botafogo SAF">
         <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={13} /> Exportar</button>
       </PageHero>
@@ -243,11 +253,11 @@ export default function PageConsolidado() {
           </select>
         </div>
         <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--neg-tint)', border: '1px solid rgba(122,63,44,0.25)' }}>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--neg)' }}>A pagar (aprox. BRL)</div>
+          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--neg)' }}>A pagar (BRL PTAX)</div>
           <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: 'var(--neg)' }}>{fmtCurrencyShort(totals.pay, 'BRL')}</div>
         </div>
         <div style={{ padding: '8px 14px', borderRadius: 8, background: '#e6ece2', border: '1px solid rgba(58,111,58,0.25)' }}>
-          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#3a6f3a' }}>A receber (aprox. BRL)</div>
+          <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#3a6f3a' }}>A receber (BRL PTAX)</div>
           <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: '#3a6f3a' }}>{fmtCurrencyShort(totals.rec, 'BRL')}</div>
         </div>
       </div>
@@ -265,12 +275,13 @@ export default function PageConsolidado() {
               <th style={{ ...th, minWidth: 150 }}>Contraparte</th>
               <th style={{ ...th, minWidth: 80 }}>Direção</th>
               <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 120 }} title="Convertido pela PTAX atual do Banco Central">Valor (BRL PTAX)</th>
               <th style={{ ...th, minWidth: 90 }}>Status</th>
               <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>Ações</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
               {filtered.map(m => {
                 const late = isOverdue(m.date, m.status)
                 return (
@@ -285,6 +296,10 @@ export default function PageConsolidado() {
                     </td>
                     <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}
+                      title={m.moeda === 'BRL' ? 'BRL' : `PTAX ${m.moeda}/BRL: ${ptaxRateFor(m.moeda, ptax).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}>
+                      {fmtCurrencyShort(toBRL(m.valor, m.moeda, ptax), 'BRL')}
+                    </td>
                     <td style={td}>
                       <span style={{
                         display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,

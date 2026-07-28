@@ -269,7 +269,7 @@ export default function PageAthletesList() {
   }
 
   return (
-    <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Atletas" subtitle="Gestão de plantel · Botafogo SAF" />
 
       {/* Toolbar */}

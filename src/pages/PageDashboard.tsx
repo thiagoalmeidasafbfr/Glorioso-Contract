@@ -159,7 +159,7 @@ export default function PageDashboard() {
   }
 
   return (
-    <div style={{ padding: '32px 40px' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Visão Geral" subtitle="Dashboard · Botafogo SAF" />
 
       {/* KPI strip */}

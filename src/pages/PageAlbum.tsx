@@ -282,7 +282,7 @@ export default function PageAlbum() {
   const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
 
   return (
-    <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Álbum de Figurinhas" subtitle="Plantel · Botafogo SAF" />
       <div style={{ marginTop: -4, marginBottom: 24, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, maxWidth: 620 }}>
         Cada figurinha traz a foto do atleta e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.

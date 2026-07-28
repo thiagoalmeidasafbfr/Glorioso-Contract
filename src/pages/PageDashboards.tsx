@@ -127,7 +127,7 @@ export default function PageDashboards() {
   ]
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1360, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Painel executivo" subtitle="Controle financeiro · Botafogo SAF" />
 
       {loading ? (
