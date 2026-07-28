@@ -18,7 +18,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; 
       { to: '/criar',          label: '+ Criar (Assistente)', short: '+' },
       { to: '/dashboards',     label: 'Dashboards',           short: 'DB' },
       { to: '/atletas',        label: 'Atletas',              short: 'AT' },
-      { to: '/album',          label: 'Álbum de Figurinhas',  short: 'AL' },
+      { to: '/album',          label: 'Portfolio de Atletas', short: 'PA' },
       { to: '/clubes',         label: 'Clubes',               short: 'CL' },
       { to: '/intermediarios', label: 'Agentes',              short: 'AG' },
     ],
