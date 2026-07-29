@@ -26,6 +26,7 @@ import {
 import {
   fmtCurrencyShort, fmtCurrencyParts, isOverdue, todayISO, daysFromToday,
 } from '../lib/format'
+import { parseRJ } from '../lib/judicialRecovery'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import type { Currency, ClauseType } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
@@ -68,6 +69,8 @@ interface Item {
   late: boolean
   dueDate: string | null
   paidDate: string | null
+  /** true quando o próprio item ou sua cláusula-mãe está em Recuperação Judicial. */
+  rj: boolean
 }
 
 function groupOf(t: string): Group {
@@ -92,70 +95,85 @@ export default function PageDashboards() {
       const clauseById = new Map(clauses.map(c => [c.id, c]))
       const withInst = new Set(installments.map(i => i.clause_id))
       const list: Item[] = []
+      // RJ é regra-mestra: um item em RJ nunca é "late" e não entra nas
+      // agregações de A pagar/A receber (viraria dupla contagem).
       for (const it of installments) {
         const c = clauseById.get(it.clause_id); if (!c) continue
         const pagar = isBFR(c.debtor_party)
+        const rj = !!parseRJ(it.notes) || !!parseRJ(c.notes)
         list.push({
           ym: (it.due_date ?? '').slice(0, 7),
           group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
           dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
           brl: brlOf(it.original_value, it.currency), status: it.payment_status,
           parte: pagar ? c.creditor_party : c.debtor_party,
-          late: isOverdue(it.due_date, it.payment_status),
-          dueDate: it.due_date, paidDate: it.payment_date,
+          late: !rj && isOverdue(it.due_date, it.payment_status),
+          dueDate: it.due_date, paidDate: it.payment_date, rj,
         })
       }
       for (const c of clauses) {
         if (withInst.has(c.id) || c.original_value == null) continue
         const pagar = isBFR(c.debtor_party)
+        const rj = !!parseRJ(c.notes)
         list.push({
           ym: (c.due_date ?? '').slice(0, 7),
           group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
           dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
           brl: brlOf(c.original_value, c.currency), status: c.payment_status,
           parte: pagar ? c.creditor_party : c.debtor_party,
-          late: isOverdue(c.due_date, c.payment_status),
-          dueDate: c.due_date, paidDate: c.payment_date,
+          late: !rj && isOverdue(c.due_date, c.payment_status),
+          dueDate: c.due_date, paidDate: c.payment_date, rj,
         })
       }
-      for (const l of clubLiabs) list.push({
-        ym: (l.due_date ?? '').slice(0, 7),
-        group: 'clube', natureza: 'Obrigação clube',
-        dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
-        parte: l.club_name, late: isOverdue(l.due_date, l.status),
-        dueDate: l.due_date, paidDate: l.settled_date,
-      })
-      for (const l of interLiabs) list.push({
-        ym: (l.due_date ?? '').slice(0, 7),
-        group: 'agente', natureza: 'Intermediação',
-        dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
-        parte: l.intermediary_name, late: isOverdue(l.due_date, l.status),
-        dueDate: l.due_date, paidDate: l.settled_date,
-      })
+      for (const l of clubLiabs) {
+        const rj = !!parseRJ(l.notes)
+        list.push({
+          ym: (l.due_date ?? '').slice(0, 7),
+          group: 'clube', natureza: 'Obrigação clube',
+          dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+          parte: l.club_name, late: !rj && isOverdue(l.due_date, l.status),
+          dueDate: l.due_date, paidDate: l.settled_date, rj,
+        })
+      }
+      for (const l of interLiabs) {
+        const rj = !!parseRJ(l.notes)
+        list.push({
+          ym: (l.due_date ?? '').slice(0, 7),
+          group: 'agente', natureza: 'Intermediação',
+          dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+          parte: l.intermediary_name, late: !rj && isOverdue(l.due_date, l.status),
+          dueDate: l.due_date, paidDate: l.settled_date, rj,
+        })
+      }
       setItems(list)
       setLoading(false)
     })()
   }, [])
 
   const big = useMemo(() => {
-    let aPagar = 0, aReceber = 0, overdue = 0, pago = 0
+    let aPagar = 0, aReceber = 0, overdue = 0, pago = 0, rjExpo = 0
     const nowYM = todayISO().slice(0, 7)
     let mesAtual = 0
     for (const i of items) {
-      if (OPEN.includes(i.status)) { if (i.dir === 'A_PAGAR') aPagar += i.brl; else aReceber += i.brl }
-      if (i.late) overdue += i.brl
+      if (OPEN.includes(i.status)) {
+        // Regra-mestra: em RJ nunca soma como A pagar/A receber corrente.
+        if (i.rj) { if (i.dir === 'A_PAGAR') rjExpo += i.brl }
+        else if (i.dir === 'A_PAGAR') aPagar += i.brl
+        else aReceber += i.brl
+      }
+      if (i.late) overdue += i.brl                 // late já ignora RJ
       if (i.status === 'PAGA') pago += i.brl
       if (i.ym === nowYM && (i.group === 'salario' || i.group === 'imagem')) mesAtual += i.brl
     }
-    return { aPagar, aReceber, overdue, pago, mesAtual }
+    return { aPagar, aReceber, overdue, pago, mesAtual, rjExpo }
   }, [items])
 
   // ── 1) Gráfico principal — todas as obrigações mensal (pagar vs receber),
-  //       exceto salário CLT e imagem (que têm painel próprio). ──
-  const allDir = useMemo(() => monthlyDirDetailed(items.filter(i => i.group !== 'salario' && i.group !== 'imagem')), [items])
+  //       exceto salário CLT/imagem (painel próprio) e itens em RJ (bucket separado). ──
+  const allDir = useMemo(() => monthlyDirDetailed(items.filter(i => !i.rj && i.group !== 'salario' && i.group !== 'imagem')), [items])
 
-  // ── 2) Clubes — a pagar vs a receber (mensal) ──
-  const clube = useMemo(() => monthlyDirDetailed(items.filter(i => i.group === 'clube')), [items])
+  // ── 2) Clubes — a pagar vs a receber (mensal), exclui RJ ──
+  const clube = useMemo(() => monthlyDirDetailed(items.filter(i => !i.rj && i.group === 'clube')), [items])
 
   // ── 3) Fluxo salarial (Salário CLT + Imagem, área única, custo mensal) ──
   const salImg = useMemo(() => {
@@ -179,14 +197,14 @@ export default function PageDashboards() {
   const topPayClube90 = useMemo(() => rankMap(paidLast(items, 90).filter(i => i.group === 'clube').map(i => [i.parte, i.brl] as const)), [items])
   const topPayAgente90 = useMemo(() => rankMap(paidLast(items, 90).filter(i => i.group === 'agente').map(i => [i.parte, i.brl] as const)), [items])
 
-  // ── 9) Aging da lista de vencidos ──
+  // ── 9) Aging da lista de vencidos — total por faixa + decomposição por natureza ──
   const aging = useMemo(() => {
-    const buckets = [
-      { name: '0-30 dias',    min: 1,   max: 30,    total: 0 },
-      { name: '31-60 dias',   min: 31,  max: 60,    total: 0 },
-      { name: '61-90 dias',   min: 61,  max: 90,    total: 0 },
-      { name: '91-180 dias',  min: 91,  max: 180,   total: 0 },
-      { name: 'Acima de 180', min: 181, max: 99999, total: 0 },
+    const buckets: { name: string; min: number; max: number; total: number; byNat: Record<string, number> }[] = [
+      { name: '0-30 dias',    min: 1,   max: 30,    total: 0, byNat: {} },
+      { name: '31-60 dias',   min: 31,  max: 60,    total: 0, byNat: {} },
+      { name: '61-90 dias',   min: 61,  max: 90,    total: 0, byNat: {} },
+      { name: '91-180 dias',  min: 91,  max: 180,   total: 0, byNat: {} },
+      { name: 'Acima de 180', min: 181, max: 99999, total: 0, byNat: {} },
     ]
     for (const i of items) {
       if (!i.late || !i.dueDate) continue
@@ -194,15 +212,19 @@ export default function PageDashboards() {
       if (d === null || d >= 0) continue
       const abs = -d
       const b = buckets.find(x => abs >= x.min && abs <= x.max)
-      if (b) b.total += i.brl
+      if (b) {
+        b.total += i.brl
+        b.byNat[i.natureza] = (b.byNat[i.natureza] ?? 0) + i.brl
+      }
     }
     return buckets.filter(b => b.total > 0)
   }, [items])
 
   const tiles = [
-    { label: 'A pagar · aberto', value: big.aPagar, dot: C.pay, sub: 'Obrigações em aberto' },
+    { label: 'A pagar · aberto', value: big.aPagar, dot: C.pay, sub: 'Fora da RJ · em aberto' },
     { label: 'A receber · aberto', value: big.aReceber, dot: C.recv, sub: 'Direitos em aberto' },
-    { label: 'Em atraso', value: big.overdue, dot: C.pay, sub: 'Exposição vencida', alarm: true },
+    { label: 'Em atraso', value: big.overdue, dot: C.pay, sub: 'Vencido fora da RJ', alarm: true },
+    { label: 'Em Rec. Judicial', value: big.rjExpo, dot: C.warn, sub: 'Devido dentro do processo' },
     { label: 'Salário + imagem · mês atual', value: big.mesAtual, dot: C.gold, sub: 'Custo do mês corrente' },
     { label: 'Já pago · acumulado', value: big.pago, dot: C.ink, sub: 'Total liquidado' },
   ]
@@ -577,11 +599,29 @@ function PieTip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const p = payload[0]
   const pct = typeof p.percent === 'number' ? p.percent * 100 : 0
+  const byNat: Record<string, number> | undefined = p.payload?.byNat
+  const rows = byNat ? Object.entries(byNat).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0) : []
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '9px 12px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)' }}>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 220, maxWidth: 300 }}>
       <div style={{ opacity: 0.7, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
-      <div style={{ fontFamily: display, fontSize: 18, fontWeight: 700 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
-      {pct > 0 && <div style={{ opacity: 0.6, marginTop: 3 }}>{pct.toFixed(1)}%</div>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+        <div style={{ fontFamily: display, fontSize: 18, fontWeight: 700 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
+        {pct > 0 && <div style={{ opacity: 0.6 }}>{pct.toFixed(1)}%</div>}
+      </div>
+      {rows.length > 0 && (
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0' }} />
+          <div style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginBottom: 4 }}>Por natureza</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {rows.map(([nat, v]) => (
+              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10.5, opacity: 0.85 }}>
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nat}</span>
+                <span style={{ fontWeight: 600 }}>{fmtCurrencyShort(v, 'BRL')}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

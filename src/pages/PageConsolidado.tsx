@@ -257,13 +257,17 @@ export default function PageConsolidado() {
   }
 
   // Totais por direção (em aberto), convertidos para BRL via PTAX efetiva.
+  // Itens em Recuperação Judicial contam num bucket próprio — não entram
+  // em "A pagar" para evitar dupla contagem/leitura equivocada.
   const totals = useMemo(() => {
-    let pay = 0, rec = 0
+    let pay = 0, rec = 0, rj = 0
     for (const m of filtered) if (OPEN.includes(m.status)) {
       const brl = effectiveBRL(m)
-      if (m.dir === 'A_PAGAR') pay += brl; else rec += brl
+      if (m.rjFiledAt) { if (m.dir === 'A_PAGAR') rj += brl }
+      else if (m.dir === 'A_PAGAR') pay += brl
+      else rec += brl
     }
-    return { pay, rec }
+    return { pay, rec, rj }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, ptax])
 
@@ -331,6 +335,7 @@ export default function PageConsolidado() {
         </div>
         <KpiPill label="A pagar (BRL PTAX)" value={fmtCurrencyShort(totals.pay, 'BRL')} tone="neg" />
         <KpiPill label="A receber (BRL PTAX)" value={fmtCurrencyShort(totals.rec, 'BRL')} tone="pos" />
+        <KpiPill label="Em Rec. Judicial (BRL PTAX)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
       </div>
 
       {someSelected && canEdit && (

@@ -109,6 +109,7 @@ export default function PageVisaoAtletas() {
   const totals = useMemo(() => ({
     open: visible.reduce((s, r) => s + r.openBRL, 0),
     overdue: visible.reduce((s, r) => s + r.overdueBRL, 0),
+    rj: visible.reduce((s, r) => s + r.rjBRL, 0),
     late: visible.filter(r => r.overdueCount > 0).length,
   }), [visible])
 
@@ -116,7 +117,8 @@ export default function PageVisaoAtletas() {
     const cols: ColDef[] = [
       { key: 'atleta', header: 'Atleta' }, { key: 'natureza', header: 'Natureza' },
       { key: 'situacao', header: 'Situação' }, { key: 'emAberto', header: 'Em aberto (aprox. BRL)' },
-      { key: 'emAtraso', header: 'Em atraso (aprox. BRL)' }, { key: 'parcelasAtraso', header: 'Parcelas em atraso' },
+      { key: 'emAtraso', header: 'Em atraso (aprox. BRL)' }, { key: 'emRJ', header: 'Em Rec. Judicial (aprox. BRL)' },
+      { key: 'parcelasAtraso', header: 'Parcelas em atraso' },
       { key: 'atrasoDesde', header: 'Atraso desde' }, { key: 'diasAtraso', header: 'Dias de atraso' },
       { key: 'proximo', header: 'Próximo vencimento' },
     ]
@@ -125,7 +127,7 @@ export default function PageVisaoAtletas() {
       out.push({
         atleta: r.athlete.full_name, natureza: 'TOTAL DO ATLETA',
         situacao: STATUS_STYLE[r.status].label,
-        emAberto: Math.round(r.openBRL), emAtraso: Math.round(r.overdueBRL),
+        emAberto: Math.round(r.openBRL), emAtraso: Math.round(r.overdueBRL), emRJ: Math.round(r.rjBRL),
         parcelasAtraso: r.overdueCount, atrasoDesde: '', diasAtraso: r.daysLate,
         proximo: r.nextDue ?? '',
       })
@@ -134,7 +136,7 @@ export default function PageVisaoAtletas() {
         out.push({
           atleta: r.athlete.full_name, natureza: n.label,
           situacao: STATUS_STYLE[n.status].label,
-          emAberto: Math.round(n.openBRL), emAtraso: Math.round(n.overdueBRL),
+          emAberto: Math.round(n.openBRL), emAtraso: Math.round(n.overdueBRL), emRJ: Math.round(n.rjBRL),
           parcelasAtraso: n.overdueCount, atrasoDesde: n.oldestOverdue ?? '',
           diasAtraso: n.daysLate, proximo: n.nextDue ?? '',
         })
@@ -170,6 +172,7 @@ export default function PageVisaoAtletas() {
         </div>
         <KpiPill label="Em atraso (aprox. BRL)" value={fmtCurrencyShort(totals.overdue, 'BRL')} tone="neg" />
         <KpiPill label="Em aberto (aprox. BRL)" value={fmtCurrencyShort(totals.open, 'BRL')} tone="neutral" />
+        <KpiPill label="Em Rec. Judicial (aprox. BRL)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -181,13 +184,14 @@ export default function PageVisaoAtletas() {
               <th style={{ ...th, minWidth: 110 }}>Situação</th>
               <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em aberto</th>
               <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em atraso (aprox. BRL)</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 140 }} title="Obrigações incluídas no processo de Recuperação Judicial — devidas mas fora do em atraso.">Em Rec. Judicial</th>
               <th style={{ ...th, minWidth: 130 }}>Atraso desde</th>
               <th style={{ ...th, minWidth: 110 }}>Próx. venc.</th>
               <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && visible.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
               {visible.map(r => {
                 const open = expanded.has(r.athlete.id)
                 const shown = r.natures.filter(n => n.totalCount > 0)
@@ -210,6 +214,10 @@ export default function PageVisaoAtletas() {
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700, color: r.overdueBRL > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
                       {r.overdueBRL > 0 ? fmtCurrencyShort(r.overdueBRL, 'BRL') : '—'}
                       {r.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.overdueCount} parcela(s)</div>}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700, color: r.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+                      {r.rjBRL > 0 ? fmtCurrencyShort(r.rjBRL, 'BRL') : '—'}
+                      {r.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.rjCount} lançamento(s)</div>}
                     </td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: r.daysLate > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
                       {r.daysLate > 0 ? lateLabel(r.daysLate) : '—'}
@@ -263,6 +271,10 @@ function NatureRow({ n, td, onOpen }: {
       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 700 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
         {n.overdueBRL > 0 ? fmtCurrencyShort(n.overdueBRL, 'BRL') : '—'}
         {n.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.overdueCount} parcela(s)</div>}
+      </td>
+      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 700 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+        {n.rjBRL > 0 ? fmtCurrencyShort(n.rjBRL, 'BRL') : '—'}
+        {n.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.rjCount} lançamento(s)</div>}
       </td>
       <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
         {n.oldestOverdue ? <>{fmtDate(n.oldestOverdue)}<div style={{ fontSize: 10 }}>{lateLabel(n.daysLate)}</div></> : '—'}
