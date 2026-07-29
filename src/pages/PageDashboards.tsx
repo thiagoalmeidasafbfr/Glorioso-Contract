@@ -150,11 +150,12 @@ export default function PageDashboards() {
     return { aPagar, aReceber, overdue, pago, mesAtual }
   }, [items])
 
-  // ── 1) Gráfico principal — todas as obrigações mensal (pagar vs receber) ──
-  const allDir = useMemo(() => monthlyDir(items), [items])
+  // ── 1) Gráfico principal — todas as obrigações mensal (pagar vs receber),
+  //       exceto salário CLT e imagem (que têm painel próprio). ──
+  const allDir = useMemo(() => monthlyDirDetailed(items.filter(i => i.group !== 'salario' && i.group !== 'imagem')), [items])
 
   // ── 2) Clubes — a pagar vs a receber (mensal) ──
-  const clube = useMemo(() => monthlyDir(items.filter(i => i.group === 'clube')), [items])
+  const clube = useMemo(() => monthlyDirDetailed(items.filter(i => i.group === 'clube')), [items])
 
   // ── 3) Fluxo salarial (Salário CLT + Imagem, área única, custo mensal) ──
   const salImg = useMemo(() => {
@@ -240,7 +241,7 @@ export default function PageDashboards() {
           </div>
 
           {/* ── PRINCIPAL — todas as obrigações a pagar vs a receber ── */}
-          <Panel eyebrow="Panorama" title="Todas as obrigações — a pagar vs a receber" subtitle="Fluxo mensal consolidado de todas as naturezas (aprox. BRL)" tall>
+          <Panel eyebrow="Panorama" title="Obrigações — a pagar vs a receber" subtitle="Fluxo mensal consolidado exceto salário CLT e imagem (aprox. BRL)" tall>
             {allDir.length === 0 ? <Empty /> : (
               <>
                 <ChartLegend items={[{ name: 'A pagar', color: C.pay, dash: false }, { name: 'A receber', color: C.recv, dash: true }]} />
@@ -249,7 +250,7 @@ export default function PageDashboards() {
                     <CartesianGrid vertical={false} stroke={C.grid} />
                     <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={18} tickMargin={10} />
                     <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
-                    <Tooltip content={<MoneyTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
+                    <Tooltip content={<BreakdownTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
                     <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2.4} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
                       <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={allDir.length} />} />
                     </Line>
@@ -275,7 +276,7 @@ export default function PageDashboards() {
                       <CartesianGrid vertical={false} stroke={C.grid} />
                       <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
                       <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
-                      <Tooltip content={<MoneyTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
+                      <Tooltip content={<BreakdownTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
                       <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
                         <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={clube.length} />} />
                       </Line>
@@ -390,13 +391,23 @@ function rankMap(pairs: ReadonlyArray<readonly [string, number]>) {
     .slice(0, 6)
 }
 
-// Agrega direção A_PAGAR × A_RECEBER por mês.
-function monthlyDir(items: Item[]) {
-  const m = new Map<string, { pagar: number; receber: number }>()
+// Agrega direção A_PAGAR × A_RECEBER por mês, mantendo a decomposição por
+// natureza — o tooltip usa `pagarBy`/`receberBy` para listar "X de <natureza>".
+interface MonthRow {
+  mes: string
+  pagar: number
+  receber: number
+  pagarBy: Record<string, number>
+  receberBy: Record<string, number>
+}
+function monthlyDirDetailed(items: Item[]): MonthRow[] {
+  const m = new Map<string, { pagar: number; receber: number; pagarBy: Record<string, number>; receberBy: Record<string, number> }>()
   for (const i of items) {
     if (!i.ym) continue
-    if (!m.has(i.ym)) m.set(i.ym, { pagar: 0, receber: 0 })
+    if (!m.has(i.ym)) m.set(i.ym, { pagar: 0, receber: 0, pagarBy: {}, receberBy: {} })
     const b = m.get(i.ym)!
+    const bucket = i.dir === 'A_PAGAR' ? b.pagarBy : b.receberBy
+    bucket[i.natureza] = (bucket[i.natureza] ?? 0) + i.brl
     if (i.dir === 'A_PAGAR') b.pagar += i.brl; else b.receber += i.brl
   }
   return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([ym, v]) => ({ mes: monthLabel(ym), ...v }))
@@ -480,6 +491,52 @@ function EndValueTag({ x, y, value, index, color, total }: any) {
         {fmtCurrencyShort(Number(value), 'BRL')}
       </text>
     </g>
+  )
+}
+
+// Tooltip com decomposição por natureza — lista, por direção, "X de <natureza>".
+// Usa `pagarBy`/`receberBy` que vêm anexados a cada ponto por monthlyDirDetailed.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function BreakdownTip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  // Dois pontos por mês (pagar/receber) — os dois compartilham o mesmo payload
+  // subjacente, então pegamos o primeiro só para os breakdowns.
+  const raw = payload[0]?.payload as MonthRow | undefined
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const seriesColor = (dk: string) => payload.find((p: any) => p.dataKey === dk)?.color ?? C.ink
+  const section = (title: string, total: number, by: Record<string, number> | undefined, color: string) => {
+    const rows = Object.entries(by ?? {}).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0)
+    return (
+      <div style={{ marginTop: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.75 }}>
+            <svg width="14" height="6" aria-hidden><line x1="0" y1="3" x2="14" y2="3" stroke={color} strokeWidth="2" strokeLinecap="round" /></svg>
+            {title}
+          </span>
+          <strong style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: '#f3eee2' }}>{fmtCurrencyShort(total, 'BRL')}</strong>
+        </div>
+        {rows.length === 0 ? (
+          <div style={{ opacity: 0.4, fontSize: 10 }}>—</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {rows.map(([nat, v]) => (
+              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10.5, opacity: 0.82 }}>
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nat}</span>
+                <span style={{ fontWeight: 600, opacity: 0.95 }}>{fmtCurrencyShort(v, 'BRL')}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+  return (
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 240, maxWidth: 320 }}>
+      <div style={{ opacity: 0.55, marginBottom: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 9 }}>{label}</div>
+      {raw && section('A pagar', raw.pagar, raw.pagarBy, seriesColor('pagar'))}
+      {raw && <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0 0' }} />}
+      {raw && section('A receber', raw.receber, raw.receberBy, seriesColor('receber'))}
+    </div>
   )
 }
 
