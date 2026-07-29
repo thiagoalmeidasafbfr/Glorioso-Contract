@@ -453,11 +453,53 @@ export default function PageAthleteDetail() {
 
   const openStatuses = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO']
   const RATE: Record<Currency, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
-  const receivable = clauses.filter(c => c.creditor_party.toLowerCase().includes('botafogo') && openStatuses.includes(c.payment_status) && c.original_value).reduce((s, c) => s + (c.original_value ?? 0) * RATE[c.currency], 0)
-  const payable = clauses.filter(c => c.debtor_party.toLowerCase().includes('botafogo') && openStatuses.includes(c.payment_status) && c.original_value).reduce((s, c) => s + (c.original_value ?? 0) * RATE[c.currency], 0)
-  const paid = clauses.reduce((s, c) => s + (c.amount_paid_brl ?? 0), 0)
+  // Cálculo consolidado: parcelas + cláusulas de valor único + passivos.
+  // Itens marcados como Recuperação Judicial SAEM de "A pagar" (e de "Em atraso")
+  // e vão para o bucket rjPayable — mesma regra em todo o sistema.
+  const isBFRparty2 = (s: string | null | undefined) => !!s && s.toLowerCase().includes('botafogo')
+  const clauseById2 = new Map(clauses.map(c => [c.id, c]))
+  const withInstSet = new Set(installments.map(i => i.clause_id))
+  let receivable = 0, payable = 0, rjPayable = 0
   const exposure: Partial<Record<Currency, number>> = {}
-  clauses.filter(c => c.currency !== 'BRL' && openStatuses.includes(c.payment_status) && c.original_value).forEach(c => { exposure[c.currency] = (exposure[c.currency] ?? 0) + (c.original_value ?? 0) })
+  const rjExposure: Partial<Record<Currency, number>> = {}
+  for (const it of installments) {
+    const c = clauseById2.get(it.clause_id); if (!c) continue
+    if (!openStatuses.includes(it.payment_status)) continue
+    const dir = isBFRparty2(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
+    const brl = it.original_value * RATE[it.currency]
+    const isRJ = !!parseRJ(it.notes) || !!parseRJ(c.notes)
+    if (dir === 'A_PAGAR') {
+      if (isRJ) { rjPayable += brl; if (it.currency !== 'BRL') rjExposure[it.currency] = (rjExposure[it.currency] ?? 0) + it.original_value }
+      else { payable += brl; if (it.currency !== 'BRL') exposure[it.currency] = (exposure[it.currency] ?? 0) + it.original_value }
+    } else receivable += brl
+  }
+  for (const c of clauses) {
+    if (withInstSet.has(c.id) || !c.original_value || !openStatuses.includes(c.payment_status)) continue
+    const dir = isBFRparty2(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
+    const brl = (c.original_value ?? 0) * RATE[c.currency]
+    const isRJ = !!parseRJ(c.notes)
+    if (dir === 'A_PAGAR') {
+      if (isRJ) { rjPayable += brl; if (c.currency !== 'BRL') rjExposure[c.currency] = (rjExposure[c.currency] ?? 0) + (c.original_value ?? 0) }
+      else { payable += brl; if (c.currency !== 'BRL') exposure[c.currency] = (exposure[c.currency] ?? 0) + (c.original_value ?? 0) }
+    } else receivable += brl
+  }
+  for (const l of clubLiabs) {
+    if (!openStatuses.includes(l.status)) continue
+    const brl = l.amount * RATE[l.currency]
+    if (l.direction === 'A_PAGAR') {
+      if (parseRJ(l.notes)) { rjPayable += brl; if (l.currency !== 'BRL') rjExposure[l.currency] = (rjExposure[l.currency] ?? 0) + l.amount }
+      else { payable += brl; if (l.currency !== 'BRL') exposure[l.currency] = (exposure[l.currency] ?? 0) + l.amount }
+    } else receivable += brl
+  }
+  for (const l of intermLiabs) {
+    if (!openStatuses.includes(l.status)) continue
+    const brl = l.amount * RATE[l.currency]
+    if (l.direction === 'A_PAGAR') {
+      if (parseRJ(l.notes)) { rjPayable += brl; if (l.currency !== 'BRL') rjExposure[l.currency] = (rjExposure[l.currency] ?? 0) + l.amount }
+      else { payable += brl; if (l.currency !== 'BRL') exposure[l.currency] = (exposure[l.currency] ?? 0) + l.amount }
+    } else receivable += brl
+  }
+  const paid = clauses.reduce((s, c) => s + (c.amount_paid_brl ?? 0), 0) + installments.reduce((s, i) => s + (i.amount_paid_brl ?? 0), 0)
 
   const warnCount = alerts.filter(a => a.alert_type === 'VENCIMENTO_PROXIMO' && !a.is_read).length
   const unreadCrit = alerts.filter(a => a.severity === 'RED' && !a.is_read).length
@@ -714,13 +756,39 @@ export default function PageAthleteDetail() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <IconButton icon="download" label="Exportar dados deste atleta (XLSX)" onClick={exportAthlete} />
-            {canEdit && <IconButton icon="edit" label="Editar atleta" onClick={() => setShowEdit(true)} />}
-            <Link to={`/atletas/${athlete.id}/contratos/novo`} className="btn btn-primary">
-              <Icon name="plus" size={14} /> Novo contrato
-            </Link>
-            {canEdit && <IconButton icon="trash" label="Excluir atleta e todos os vínculos" tone="danger" onClick={handleDeleteAthlete} />}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <IconButton icon="download" label="Exportar dados deste atleta (XLSX)" onClick={exportAthlete} />
+              {canEdit && <IconButton icon="edit" label="Editar atleta" onClick={() => setShowEdit(true)} />}
+              <Link to={`/atletas/${athlete.id}/contratos/novo`} className="btn btn-primary">
+                <Icon name="plus" size={14} /> Novo contrato
+              </Link>
+              {canEdit && <IconButton icon="trash" label="Excluir atleta e todos os vínculos" tone="danger" onClick={handleDeleteAthlete} />}
+            </div>
+            {(Object.keys(exposure).length > 0 || Object.keys(rjExposure).length > 0) && (
+              <div style={{ minWidth: 180, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                <div style={{ fontSize: 8.5, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 5 }}>Exposição cambial</div>
+                {Object.entries(exposure).length === 0 && Object.entries(rjExposure).length === 0
+                  ? <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</div>
+                  : Object.entries(exposure).map(([c, v]) => (
+                    <div key={c} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontFamily: fontMono, fontSize: 11 }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{c}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--ink-primary)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
+                    </div>
+                  ))}
+                {Object.entries(rjExposure).length > 0 && (
+                  <>
+                    <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px dashed var(--divider)', fontSize: 8, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--warn)' }}>Em RJ</div>
+                    {Object.entries(rjExposure).map(([c, v]) => (
+                      <div key={`rj-${c}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontFamily: fontMono, fontSize: 11 }}>
+                        <span style={{ color: 'var(--warn)' }}>{c}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--warn)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -728,17 +796,9 @@ export default function PageAthleteDetail() {
       {/* Resumo financeiro */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
         <FinancialCard label="A Receber" value={fmtCurrencyShort(receivable, 'BRL')} sub="Botafogo como credor" color="var(--pos)" />
-        <FinancialCard label="A Pagar" value={fmtCurrencyShort(payable, 'BRL')} sub="Botafogo como devedor" color="var(--neg)" />
+        <FinancialCard label="A Pagar" value={fmtCurrencyShort(payable, 'BRL')} sub="Botafogo como devedor · exclui RJ" color="var(--neg)" />
+        <FinancialCard label="Recuperação Judicial" value={fmtCurrencyShort(rjPayable, 'BRL')} sub="Devido dentro do processo" color="var(--warn)" />
         <FinancialCard label="Já Recebido / Pago" value={fmtCurrencyShort(paid, 'BRL')} />
-        <div className="card" style={{ padding: '14px 18px' }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>Exposição Cambial</div>
-          {Object.entries(exposure).length === 0 ? <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>—</div> : Object.entries(exposure).map(([c, v]) => (
-            <div key={c} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-muted)' }}>{c}</span>
-              <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Big numbers — custos consolidados por natureza */}
@@ -893,6 +953,16 @@ export default function PageAthleteDetail() {
             return (
               <div key={ct.id} className="card" style={{ padding: '18px 22px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                  {ctClauses.length > 0 && (
+                    <IconButton
+                      icon={expandedContracts.has(ct.id) ? 'chevronDown' : 'chevronRight'}
+                      small
+                      label={expandedContracts.has(ct.id)
+                        ? `Recolher vencimentos de ${CONTRACT_TYPE_LABELS[ct.type]}`
+                        : `Ver vencimentos de ${CONTRACT_TYPE_LABELS[ct.type]} (${ctClauses.length} cláusula${ctClauses.length !== 1 ? 's' : ''})`}
+                      onClick={() => toggleExpand(ct.id)}
+                    />
+                  )}
                   <span style={{ padding: '3px 8px', borderRadius: 5, background: ts.bg, color: ts.fg, fontSize: 9, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase' }}>{CONTRACT_TYPE_LABELS[ct.type]}</span>
                   <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>
                     {(() => { const cid = clubIdx.get(norm(ct.counterpart_club)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${ct.counterpart_club}`}>{ct.counterpart_club}</RefLink> : ct.counterpart_club })()}
@@ -931,9 +1001,7 @@ export default function PageAthleteDetail() {
                   {ct.end_date && <span>Fim: {fmtDate(ct.end_date)}</span>}
                   {ct.transfer_fee_gross && <span style={{ fontWeight: 600, color: 'var(--ink-primary)' }}>{CURRENCY_SYMBOLS[ct.transfer_currency]} {ct.transfer_fee_gross.toLocaleString('pt-BR')}</span>}
                   {ctClauses.length > 0 && (
-                    <button onClick={() => toggleExpand(ct.id)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                      {expandedContracts.has(ct.id) ? '▾' : '▸'} {ctClauses.length} cláusula{ctClauses.length !== 1 ? 's' : ''} — ver vencimentos
-                    </button>
+                    <span style={{ color: 'var(--text-muted)' }}>{ctClauses.length} cláusula{ctClauses.length !== 1 ? 's' : ''} — {expandedContracts.has(ct.id) ? 'ocultar' : 'ver'} vencimentos</span>
                   )}
                   {ctClauses.length === 0 && <span style={{ color: 'var(--text-muted)' }}>0 cláusulas</span>}
                   {children.length > 0 && <span style={{ color: 'var(--ink-secondary)', fontWeight: 600 }}>· {children.length} contrato{children.length !== 1 ? 's' : ''} vinculado{children.length !== 1 ? 's' : ''}</span>}
@@ -1435,13 +1503,23 @@ function ConsolidadoTab({
   items.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
 
   const open = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO']
+  // Segregamos os totais por direção/moeda em dois grupos: "em aberto"
+  // (comum) e "Em RJ" (dívida travada em Recuperação Judicial). Itens em RJ
+  // NÃO contam como A pagar/A receber correntes.
   const tot: Record<string, number> = {}
-  for (const it of items) if (open.includes(it.status)) { const k = `${it.dir}|${it.moeda}`; tot[k] = (tot[k] ?? 0) + it.valor }
+  const totRJ: Record<string, number> = {}
+  for (const it of items) {
+    if (!open.includes(it.status)) continue
+    const k = `${it.dir}|${it.moeda}`
+    if (parseRJ(it.notes)) totRJ[k] = (totRJ[k] ?? 0) + it.valor
+    else tot[k] = (tot[k] ?? 0) + it.valor
+  }
   const totEntries = Object.entries(tot)
+  const rjEntries = Object.entries(totRJ)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {totEntries.length > 0 && (
+      {(totEntries.length > 0 || rjEntries.length > 0) && (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {totEntries.sort().map(([k, v]) => {
             const [dir, moeda] = k.split('|')
@@ -1450,6 +1528,15 @@ function ConsolidadoTab({
               <div key={k} style={{ padding: '10px 14px', borderRadius: 8, background: pay ? 'var(--neg-tint)' : '#e6ece2', border: `1px solid ${pay ? 'rgba(122,63,44,0.25)' : 'rgba(58,111,58,0.25)'}` }}>
                 <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: pay ? 'var(--neg)' : '#3a6f3a', marginBottom: 4 }}>{pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)</div>
                 <div style={{ fontSize: 17, fontWeight: 700, fontFamily: fontMono, color: pay ? 'var(--neg)' : '#3a6f3a' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
+              </div>
+            )
+          })}
+          {rjEntries.sort().map(([k, v]) => {
+            const [, moeda] = k.split('|')
+            return (
+              <div key={`rj-${k}`} style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.28)' }}>
+                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--warn)', marginBottom: 4 }}>Em RJ · {moeda}</div>
+                <div style={{ fontSize: 17, fontWeight: 700, fontFamily: fontMono, color: 'var(--warn)' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
               </div>
             )
           })}

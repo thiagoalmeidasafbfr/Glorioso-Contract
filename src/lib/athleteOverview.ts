@@ -11,6 +11,7 @@ import type {
   ClauseType, Currency,
 } from '../types/athlete-system'
 import { daysFromToday, isOverdue } from './format'
+import { parseRJ } from './judicialRecovery'
 
 export type NatureKey =
   | 'SALARIO' | 'IMAGEM' | 'LUVAS' | 'AGENTES' | 'TRANSFER' | 'GATILHOS' | 'ACORDOS' | 'CLUBES'
@@ -76,6 +77,11 @@ export interface NatureSummary {
   totalCount: number
   /** obrigação a abrir ao clicar na linha (a mais atrasada; senão a próxima). */
   focusClauseId: string | null
+  /** Valores travados em Recuperação Judicial — saem de "em aberto" e "em atraso"
+   *  (viram um bucket próprio para leitura, cálculo e relatórios). */
+  rjBRL: number
+  rjCount: number
+  rjByCurrency: Partial<Record<Currency, number>>
 }
 
 export interface AthleteOverview {
@@ -86,6 +92,9 @@ export interface AthleteOverview {
   overdueCount: number
   daysLate: number
   nextDue: string | null
+  /** Exposição travada em Recuperação Judicial (agregada). */
+  rjBRL: number
+  rjCount: number
   /** pior situação entre as naturezas — define o status da linha do atleta. */
   status: NatureStatus
 }
@@ -97,19 +106,24 @@ interface Item {
   amount: number
   currency: Currency
   status: string
+  /** true quando o item — ou sua cláusula-mãe — foi marcado como RJ. */
+  rj: boolean
 }
 
 function summarize(key: NatureKey, items: Item[]): NatureSummary {
   const label = NATURE_LABEL[key]
-  if (items.length === 0) {
-    return {
-      key, label, status: 'SEM_LANCAMENTO', openCount: 0, openBRL: 0, openByCurrency: {},
-      overdueCount: 0, overdueBRL: 0, oldestOverdue: null, daysLate: 0, nextDue: null,
-      paidCount: 0, totalCount: 0, focusClauseId: null,
-    }
+  const empty: NatureSummary = {
+    key, label, status: 'SEM_LANCAMENTO', openCount: 0, openBRL: 0, openByCurrency: {},
+    overdueCount: 0, overdueBRL: 0, oldestOverdue: null, daysLate: 0, nextDue: null,
+    paidCount: 0, totalCount: 0, focusClauseId: null,
+    rjBRL: 0, rjCount: 0, rjByCurrency: {},
   }
+  if (items.length === 0) return empty
   const openByCurrency: Partial<Record<Currency, number>> = {}
-  let openCount = 0, openBRL = 0, overdueCount = 0, overdueBRL = 0, paidCount = 0, canceledCount = 0
+  const rjByCurrency: Partial<Record<Currency, number>> = {}
+  let openCount = 0, openBRL = 0, overdueCount = 0, overdueBRL = 0
+  let paidCount = 0, canceledCount = 0
+  let rjBRL = 0, rjCount = 0
   let oldestOverdue: string | null = null
   let nextDue: string | null = null
   let focusOverdue: string | null = null
@@ -119,6 +133,15 @@ function summarize(key: NatureKey, items: Item[]): NatureSummary {
     if (it.status === 'PAGA') { paidCount++; continue }
     if (it.status === 'CANCELADA') { canceledCount++; continue }
     if (!OPEN.includes(it.status)) continue
+    // Regra-mestra do sistema: itens marcados como Recuperação Judicial
+    // continuam sendo obrigações, mas SAEM de "em aberto" e "em atraso" —
+    // viram um bucket próprio (rjBRL) contabilizado à parte em toda a app.
+    if (it.rj) {
+      rjCount++
+      rjBRL += toBRL(it.amount, it.currency)
+      rjByCurrency[it.currency] = (rjByCurrency[it.currency] ?? 0) + it.amount
+      continue
+    }
     openCount++
     openBRL += toBRL(it.amount, it.currency)
     openByCurrency[it.currency] = (openByCurrency[it.currency] ?? 0) + it.amount
@@ -138,6 +161,7 @@ function summarize(key: NatureKey, items: Item[]): NatureSummary {
     : openCount > 0 ? 'EM_DIA'
     : paidCount > 0 ? 'QUITADO'
     : canceledCount > 0 ? 'RENEGOCIADO'   // tudo virou acordo/renegociação
+    : rjCount > 0 ? 'EM_DIA'               // só RJ pendente ainda é "em dia"
     : 'SEM_LANCAMENTO'
 
   return {
@@ -146,6 +170,7 @@ function summarize(key: NatureKey, items: Item[]): NatureSummary {
     daysLate: oldestOverdue ? Math.max(0, -(daysFromToday(oldestOverdue) ?? 0)) : 0,
     nextDue, paidCount, totalCount: items.length,
     focusClauseId: focusOverdue ?? focusNext ?? null,
+    rjBRL, rjCount, rjByCurrency,
   }
 }
 
@@ -170,12 +195,14 @@ export function buildAthleteOverview({
   }
 
   // Parcelas (o vencimento real) e cláusulas de pagamento único.
+  // Um item vira RJ quando a parcela OU a cláusula-mãe carrega o marcador.
   for (const i of installments) {
     const c = clauseById.get(i.clause_id)
     if (!c) continue
+    const rj = !!parseRJ(i.notes) || !!parseRJ(c.notes)
     push(c.athlete_id, {
       nature: natureOf(c.clause_type), clauseId: c.id,
-      due: i.due_date, amount: i.original_value, currency: i.currency, status: i.payment_status,
+      due: i.due_date, amount: i.original_value, currency: i.currency, status: i.payment_status, rj,
     })
   }
   for (const c of clauses) {
@@ -184,6 +211,7 @@ export function buildAthleteOverview({
     push(c.athlete_id, {
       nature: natureOf(c.clause_type), clauseId: c.id,
       due: c.due_date, amount: c.original_value, currency: c.currency, status: c.payment_status,
+      rj: !!parseRJ(c.notes),
     })
   }
   // Passivos importados (sem parcelas).
@@ -191,12 +219,14 @@ export function buildAthleteOverview({
     push(l.athlete_id, {
       nature: 'CLUBES', clauseId: null,
       due: l.due_date, amount: l.amount, currency: l.currency, status: l.status,
+      rj: !!parseRJ(l.notes),
     })
   }
   for (const l of intermLiabs) {
     push(l.athlete_id, {
       nature: 'AGENTES', clauseId: null,
       due: l.due_date, amount: l.amount, currency: l.currency, status: l.status,
+      rj: !!parseRJ(l.notes),
     })
   }
 
@@ -206,17 +236,20 @@ export function buildAthleteOverview({
     const openBRL = natures.reduce((s, n) => s + n.openBRL, 0)
     const overdueBRL = natures.reduce((s, n) => s + n.overdueBRL, 0)
     const overdueCount = natures.reduce((s, n) => s + n.overdueCount, 0)
+    const rjBRL = natures.reduce((s, n) => s + n.rjBRL, 0)
+    const rjCount = natures.reduce((s, n) => s + n.rjCount, 0)
     const daysLate = natures.reduce((s, n) => Math.max(s, n.daysLate), 0)
     const nextDue = natures
       .map(n => n.nextDue).filter((d): d is string => !!d)
       .sort()[0] ?? null
     const hasOpen = natures.some(n => n.openCount > 0)
     const hasPaid = natures.some(n => n.paidCount > 0)
+    const hasRJ = rjCount > 0
     const status: NatureStatus = overdueCount > 0 ? 'EM_ATRASO'
-      : hasOpen ? 'EM_DIA' : hasPaid ? 'QUITADO'
+      : hasOpen || hasRJ ? 'EM_DIA' : hasPaid ? 'QUITADO'
       : natures.some(n => n.status === 'RENEGOCIADO') ? 'RENEGOCIADO'
       : 'SEM_LANCAMENTO'
-    return { athlete: a, natures, openBRL, overdueBRL, overdueCount, daysLate, nextDue, status }
+    return { athlete: a, natures, openBRL, overdueBRL, overdueCount, rjBRL, rjCount, daysLate, nextDue, status }
   })
 }
 

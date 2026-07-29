@@ -26,6 +26,7 @@ import {
 import {
   fmtCurrencyShort, fmtCurrencyParts, isOverdue, todayISO, daysFromToday,
 } from '../lib/format'
+import { parseRJ } from '../lib/judicialRecovery'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import type { Currency, ClauseType } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
@@ -68,6 +69,8 @@ interface Item {
   late: boolean
   dueDate: string | null
   paidDate: string | null
+  /** true quando o próprio item ou sua cláusula-mãe está em Recuperação Judicial. */
+  rj: boolean
 }
 
 function groupOf(t: string): Group {
@@ -92,70 +95,85 @@ export default function PageDashboards() {
       const clauseById = new Map(clauses.map(c => [c.id, c]))
       const withInst = new Set(installments.map(i => i.clause_id))
       const list: Item[] = []
+      // RJ é regra-mestra: um item em RJ nunca é "late" e não entra nas
+      // agregações de A pagar/A receber (viraria dupla contagem).
       for (const it of installments) {
         const c = clauseById.get(it.clause_id); if (!c) continue
         const pagar = isBFR(c.debtor_party)
+        const rj = !!parseRJ(it.notes) || !!parseRJ(c.notes)
         list.push({
           ym: (it.due_date ?? '').slice(0, 7),
           group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
           dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
           brl: brlOf(it.original_value, it.currency), status: it.payment_status,
           parte: pagar ? c.creditor_party : c.debtor_party,
-          late: isOverdue(it.due_date, it.payment_status),
-          dueDate: it.due_date, paidDate: it.payment_date,
+          late: !rj && isOverdue(it.due_date, it.payment_status),
+          dueDate: it.due_date, paidDate: it.payment_date, rj,
         })
       }
       for (const c of clauses) {
         if (withInst.has(c.id) || c.original_value == null) continue
         const pagar = isBFR(c.debtor_party)
+        const rj = !!parseRJ(c.notes)
         list.push({
           ym: (c.due_date ?? '').slice(0, 7),
           group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
           dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
           brl: brlOf(c.original_value, c.currency), status: c.payment_status,
           parte: pagar ? c.creditor_party : c.debtor_party,
-          late: isOverdue(c.due_date, c.payment_status),
-          dueDate: c.due_date, paidDate: c.payment_date,
+          late: !rj && isOverdue(c.due_date, c.payment_status),
+          dueDate: c.due_date, paidDate: c.payment_date, rj,
         })
       }
-      for (const l of clubLiabs) list.push({
-        ym: (l.due_date ?? '').slice(0, 7),
-        group: 'clube', natureza: 'Obrigação clube',
-        dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
-        parte: l.club_name, late: isOverdue(l.due_date, l.status),
-        dueDate: l.due_date, paidDate: l.settled_date,
-      })
-      for (const l of interLiabs) list.push({
-        ym: (l.due_date ?? '').slice(0, 7),
-        group: 'agente', natureza: 'Intermediação',
-        dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
-        parte: l.intermediary_name, late: isOverdue(l.due_date, l.status),
-        dueDate: l.due_date, paidDate: l.settled_date,
-      })
+      for (const l of clubLiabs) {
+        const rj = !!parseRJ(l.notes)
+        list.push({
+          ym: (l.due_date ?? '').slice(0, 7),
+          group: 'clube', natureza: 'Obrigação clube',
+          dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+          parte: l.club_name, late: !rj && isOverdue(l.due_date, l.status),
+          dueDate: l.due_date, paidDate: l.settled_date, rj,
+        })
+      }
+      for (const l of interLiabs) {
+        const rj = !!parseRJ(l.notes)
+        list.push({
+          ym: (l.due_date ?? '').slice(0, 7),
+          group: 'agente', natureza: 'Intermediação',
+          dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+          parte: l.intermediary_name, late: !rj && isOverdue(l.due_date, l.status),
+          dueDate: l.due_date, paidDate: l.settled_date, rj,
+        })
+      }
       setItems(list)
       setLoading(false)
     })()
   }, [])
 
   const big = useMemo(() => {
-    let aPagar = 0, aReceber = 0, overdue = 0, pago = 0
+    let aPagar = 0, aReceber = 0, overdue = 0, pago = 0, rjExpo = 0
     const nowYM = todayISO().slice(0, 7)
     let mesAtual = 0
     for (const i of items) {
-      if (OPEN.includes(i.status)) { if (i.dir === 'A_PAGAR') aPagar += i.brl; else aReceber += i.brl }
-      if (i.late) overdue += i.brl
+      if (OPEN.includes(i.status)) {
+        // Regra-mestra: em RJ nunca soma como A pagar/A receber corrente.
+        if (i.rj) { if (i.dir === 'A_PAGAR') rjExpo += i.brl }
+        else if (i.dir === 'A_PAGAR') aPagar += i.brl
+        else aReceber += i.brl
+      }
+      if (i.late) overdue += i.brl                 // late já ignora RJ
       if (i.status === 'PAGA') pago += i.brl
       if (i.ym === nowYM && (i.group === 'salario' || i.group === 'imagem')) mesAtual += i.brl
     }
-    return { aPagar, aReceber, overdue, pago, mesAtual }
+    return { aPagar, aReceber, overdue, pago, mesAtual, rjExpo }
   }, [items])
 
   // ── 1) Gráfico principal — todas as obrigações mensal (pagar vs receber),
-  //       exceto salário CLT e imagem (que têm painel próprio). ──
-  const allDir = useMemo(() => monthlyDirDetailed(items.filter(i => i.group !== 'salario' && i.group !== 'imagem')), [items])
+  //       exceto salário CLT/imagem (painel próprio) e itens em RJ (bucket separado). ──
+  const allDir = useMemo(() => monthlyDirDetailed(items.filter(i => !i.rj && i.group !== 'salario' && i.group !== 'imagem')), [items])
 
-  // ── 2) Clubes — a pagar vs a receber (mensal) ──
-  const clube = useMemo(() => monthlyDirDetailed(items.filter(i => i.group === 'clube')), [items])
+  // ── 2) Clubes — a pagar vs a receber (mensal), exclui RJ ──
+  const clube = useMemo(() => monthlyDirDetailed(items.filter(i => !i.rj && i.group === 'clube')), [items])
 
   // ── 3) Fluxo salarial (Salário CLT + Imagem, área única, custo mensal) ──
   const salImg = useMemo(() => {
@@ -203,9 +221,10 @@ export default function PageDashboards() {
   }, [items])
 
   const tiles = [
-    { label: 'A pagar · aberto', value: big.aPagar, dot: C.pay, sub: 'Obrigações em aberto' },
+    { label: 'A pagar · aberto', value: big.aPagar, dot: C.pay, sub: 'Fora da RJ · em aberto' },
     { label: 'A receber · aberto', value: big.aReceber, dot: C.recv, sub: 'Direitos em aberto' },
-    { label: 'Em atraso', value: big.overdue, dot: C.pay, sub: 'Exposição vencida', alarm: true },
+    { label: 'Em atraso', value: big.overdue, dot: C.pay, sub: 'Vencido fora da RJ', alarm: true },
+    { label: 'Em Rec. Judicial', value: big.rjExpo, dot: C.warn, sub: 'Devido dentro do processo' },
     { label: 'Salário + imagem · mês atual', value: big.mesAtual, dot: C.gold, sub: 'Custo do mês corrente' },
     { label: 'Já pago · acumulado', value: big.pago, dot: C.ink, sub: 'Total liquidado' },
   ]

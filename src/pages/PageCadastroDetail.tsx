@@ -10,7 +10,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
-  fetchClub, updateClub, fetchIntermediary, updateIntermediary,
+  fetchClub, updateClub, fetchIntermediary, updateIntermediary, deleteClub, deleteIntermediary,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities, fetchAthletes,
   fetchAllClauses, fetchAllInstallments, fetchAllContracts, fetchAthleteContracts,
   markInstallmentPaid, revertInstallment, registerInstallmentPayment,
@@ -170,6 +170,22 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
     await toggleItemRJ({ kind: l.kind, id: l.id }, l.notes)
     await load()
   }
+  async function handleDeleteEntity() {
+    if (!id) return
+    const label = isClube ? 'clube' : 'agente'
+    const blocking = entityContracts.length + rows.length
+    const extra = blocking > 0
+      ? `\n\nATENÇÃO: existem ${entityContracts.length} contrato(s) e ${rows.length} obrigação/parcela(s) apontando para este ${label}. Exclusão só será permitida se nada mais estiver vinculado.`
+      : ''
+    if (!window.confirm(`Excluir permanentemente este ${label}? Esta ação não pode ser desfeita.${extra}`)) return
+    try {
+      if (isClube) await deleteClub(id); else await deleteIntermediary(id)
+      navigate(basePath)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      window.alert(`Não foi possível excluir o ${label}. Verifique se há contratos ou obrigações vinculados.\n\n${msg}`)
+    }
+  }
   async function registerPayment(instId: string, pmt: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
     await registerInstallmentPayment(instId, {
       payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
@@ -216,6 +232,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <h1 style={{ fontFamily: fontBody, fontSize: 23, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
                 {canEdit && <IconButton icon="edit" label="Editar cadastro" onClick={() => setEditing(true)} />}
+                {canEdit && <IconButton icon="trash" label={`Excluir ${isClube ? 'clube' : 'agente'}`} tone="danger" onClick={handleDeleteEntity} />}
               </div>
               {sub && <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: 2 }}>{isClube ? sub : `Contato: ${sub}`}</div>}
               {notes && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, background: 'var(--bg-subtle)', borderRadius: 6, padding: '6px 10px' }}>{notes}</div>}

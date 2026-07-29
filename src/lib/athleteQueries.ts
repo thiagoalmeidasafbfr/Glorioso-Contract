@@ -352,18 +352,22 @@ export async function deleteAthlete(id: string): Promise<void> {
   // filho remanescente derruba o DELETE do atleta com erro genérico. Apagamos
   // os filhos EXPLICITAMENTE (idempotente — quem já caiu por cascata é no-op)
   // para que o botão de excluir "simplesmente funcione".
-  const pjs = await loadPJs({ athleteId: id })
-  for (const pj of pjs) await deletePJ(pj.id)
   // Parcelas caem por FK das cláusulas; se a policy não permitir apagar
   // cláusula com parcelas, matamos as parcelas primeiro via cláusulas do atleta.
   const clauseIds = (await supabase.from(AC.clauses).select('id').eq('atleta_id', id)).data?.map(r => r.id) ?? []
   if (clauseIds.length) {
     await supabase.from(AC.installments).delete().in('clausula_id', clauseIds)
   }
-  // Filhos diretos do atleta.
+  // Filhos diretos do atleta — inclui CONTRATOS, que precisam sair ANTES das PJs
+  // porque ac_contratos.entidade_contraparte_id → ac_entidades tem ON DELETE
+  // RESTRICT: se o contrato de imagem ainda apontar para a PJ, o delete da PJ
+  // (ac_entidades) explode com FK 23503.
   for (const table of [AC.installments, AC.clauses, AC.titular, AC.triggers, AC.clubLiab, AC.interLiab, AC.image, AC.alerts, AC.contracts]) {
     await supabase.from(table).delete().eq('atleta_id', id)
   }
+  // Agora sim as PJs do atleta (que também são ac_entidades) podem ser apagadas.
+  const pjs = await loadPJs({ athleteId: id })
+  for (const pj of pjs) await deletePJ(pj.id)
   const { error } = await supabase.from(AC.athletes).delete().eq('id', id)
   if (error) throw error
 }
