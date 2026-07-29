@@ -26,6 +26,7 @@ export type IconName =
   | 'dots'        // mais ações
   | 'alert'       // vencimento em atraso (vermelho)
   | 'clock'       // vencimento próximo (amarelo)
+  | 'gavel'       // recuperação judicial (balança/martelo)
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // Quadrado com seta saindo — "abrir página" (padrão external-link).
@@ -153,6 +154,16 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <circle cx="10" cy="10" r="6.5" />
       <path d="M10 6.4V10l2.6 1.6" />
+    </>
+  ),
+  // Balança da Justiça — Recuperação Judicial.
+  gavel: (
+    <>
+      <path d="M10 4v12" />
+      <path d="M4 6h12" />
+      <path d="M4 6L2.4 10h3.2z" />
+      <path d="M16 6l-1.6 4h3.2z" />
+      <path d="M7 16h6" />
     </>
   ),
 }

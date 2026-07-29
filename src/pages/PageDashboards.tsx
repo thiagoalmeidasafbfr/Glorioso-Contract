@@ -1,60 +1,80 @@
 // src/pages/PageDashboards.tsx
-// Painel de controle financeiro (todos os atletas), nível executivo.
-//  • Big numbers editoriais (Fraunces) no estilo "Counting House".
-//  • Fluxo consolidado Salário CLT + Imagem: UMA linha (total), tooltip no hover.
-//  • Clubes: a pagar vs a receber — DUAS linhas (fluxo, valores absolutos).
-//  • Agentes: pagamentos por mês (área, série única).
-//  • Rankings (top): barras horizontais — em atraso / já pago.
-// Valores agregados aproximados em BRL (câmbio de referência).
+// Painel executivo financeiro — visão consolidada.
+//
+// Layout: um gráfico principal (todas as obrigações a pagar × a receber por mês),
+// depois uma grade com os secundários:
+//   • Clubes — a pagar vs a receber (mensal)
+//   • Fluxo salarial (Salário CLT + Imagem, área)
+//   • Top overdue por natureza (barras)
+//   • Top overdue por clubes / por agentes
+//   • Top clubes / agentes mais pagos nos últimos 90 dias
+//   • Aging list — pizza dos vencidos por faixa (0-30, 31-60, 61-90, 91-180, 180+)
+//
+// Todos os valores em BRL aproximado (câmbio de referência fixo — não usa PTAX
+// do dia para não gerar oscilações visuais no dashboard).
 
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, LabelList,
+  ResponsiveContainer, CartesianGrid, LabelList, PieChart, Pie, Cell,
 } from 'recharts'
 import {
   fetchAllClauses, fetchAllInstallments,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
 } from '../lib/athleteQueries'
-import { fmtCurrencyShort, fmtCurrencyParts, isOverdue, todayISO } from '../lib/format'
-import type { Currency } from '../types/athlete-system'
+import {
+  fmtCurrencyShort, fmtCurrencyParts, isOverdue, todayISO, daysFromToday,
+} from '../lib/format'
+import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
+import type { Currency, ClauseType } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 
-const font = "var(--font-body)"
-const mono = "var(--font-label)"
-const display = "var(--font-display)"
+const font = 'var(--font-body)'
+const mono = 'var(--font-label)'
+const display = 'var(--font-display)'
 
-// Paleta dos gráficos — preto/grafite para as séries de estrutura e gasto;
-// vermelho/verde só para o veredicto direcional (saída x entrada). Valores
-// literais porque atributos SVG não resolvem variáveis CSS.
+// Paleta — série "estrutural" preta, direção pagar/receber vermelho/verde.
 const C = {
-  goldLine: '#14110d', goldFill: '#14110d',
   ink: '#2a2521',
-  pay: '#8a3524', recv: '#2f6b3a',
-  gold: '#14110d',
+  pay: '#8a3524', recv: '#2f6b3a', warn: '#c98a1a',
+  gold: '#14110d', goldLine: '#14110d', goldFill: '#14110d',
   surface: '#ffffff',
   grid: 'rgba(20,17,13,0.07)', axis: 'rgba(20,17,13,0.45)',
   crosshair: 'rgba(20,17,13,0.35)',
 }
 
+// Cores da pizza de aging — do dourado ao vermelho profundo.
+const AGING_COLORS = ['#a6803d', '#c98a1a', '#d16a2c', '#a6462d', '#5c1f14']
+
 const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 const brlOf = (v: number, c: Currency) => v * (APPROX_BRL[c] ?? 1)
 const OPEN = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'VENCIDA']
-const CLUB_TYPES = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
-const AGENT_TYPES = ['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA']
+const CLUB_TYPES: ClauseType[] = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
+const AGENT_TYPES: ClauseType[] = ['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA']
 const isBFR = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
 const MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const monthLabel = (ym: string) => { const [y, m] = ym.split('-'); return `${MES_ABREV[(+m) - 1] ?? m}/${y.slice(2)}` }
 
 type Group = 'salario' | 'imagem' | 'clube' | 'agente' | 'outro'
-interface Item { ym: string; group: Group; dir: 'A_PAGAR' | 'A_RECEBER'; brl: number; status: string; parte: string; late: boolean }
+interface Item {
+  ym: string
+  group: Group
+  natureza: string
+  dir: 'A_PAGAR' | 'A_RECEBER'
+  brl: number
+  status: string
+  parte: string
+  late: boolean
+  dueDate: string | null
+  paidDate: string | null
+}
 
 function groupOf(t: string): Group {
   if (t === 'SALARIO_CETD') return 'salario'
   if (t === 'DIREITO_IMAGEM') return 'imagem'
-  if (CLUB_TYPES.includes(t)) return 'clube'
-  if (AGENT_TYPES.includes(t)) return 'agente'
+  if (CLUB_TYPES.includes(t as ClauseType)) return 'clube'
+  if (AGENT_TYPES.includes(t as ClauseType)) return 'agente'
   return 'outro'
 }
 
@@ -75,15 +95,43 @@ export default function PageDashboards() {
       for (const it of installments) {
         const c = clauseById.get(it.clause_id); if (!c) continue
         const pagar = isBFR(c.debtor_party)
-        list.push({ ym: (it.due_date ?? '').slice(0, 7), group: groupOf(c.clause_type), dir: pagar ? 'A_PAGAR' : 'A_RECEBER', brl: brlOf(it.original_value, it.currency), status: it.payment_status, parte: pagar ? c.creditor_party : c.debtor_party, late: isOverdue(it.due_date, it.payment_status) })
+        list.push({
+          ym: (it.due_date ?? '').slice(0, 7),
+          group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
+          dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
+          brl: brlOf(it.original_value, it.currency), status: it.payment_status,
+          parte: pagar ? c.creditor_party : c.debtor_party,
+          late: isOverdue(it.due_date, it.payment_status),
+          dueDate: it.due_date, paidDate: it.payment_date,
+        })
       }
       for (const c of clauses) {
         if (withInst.has(c.id) || c.original_value == null) continue
         const pagar = isBFR(c.debtor_party)
-        list.push({ ym: (c.due_date ?? '').slice(0, 7), group: groupOf(c.clause_type), dir: pagar ? 'A_PAGAR' : 'A_RECEBER', brl: brlOf(c.original_value, c.currency), status: c.payment_status, parte: pagar ? c.creditor_party : c.debtor_party, late: isOverdue(c.due_date, c.payment_status) })
+        list.push({
+          ym: (c.due_date ?? '').slice(0, 7),
+          group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
+          dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
+          brl: brlOf(c.original_value, c.currency), status: c.payment_status,
+          parte: pagar ? c.creditor_party : c.debtor_party,
+          late: isOverdue(c.due_date, c.payment_status),
+          dueDate: c.due_date, paidDate: c.payment_date,
+        })
       }
-      for (const l of clubLiabs) list.push({ ym: (l.due_date ?? '').slice(0, 7), group: 'clube', dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status, parte: l.club_name, late: isOverdue(l.due_date, l.status) })
-      for (const l of interLiabs) list.push({ ym: (l.due_date ?? '').slice(0, 7), group: 'agente', dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status, parte: l.intermediary_name, late: isOverdue(l.due_date, l.status) })
+      for (const l of clubLiabs) list.push({
+        ym: (l.due_date ?? '').slice(0, 7),
+        group: 'clube', natureza: 'Obrigação clube',
+        dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+        parte: l.club_name, late: isOverdue(l.due_date, l.status),
+        dueDate: l.due_date, paidDate: l.settled_date,
+      })
+      for (const l of interLiabs) list.push({
+        ym: (l.due_date ?? '').slice(0, 7),
+        group: 'agente', natureza: 'Intermediação',
+        dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+        parte: l.intermediary_name, late: isOverdue(l.due_date, l.status),
+        dueDate: l.due_date, paidDate: l.settled_date,
+      })
       setItems(list)
       setLoading(false)
     })()
@@ -102,21 +150,53 @@ export default function PageDashboards() {
     return { aPagar, aReceber, overdue, pago, mesAtual }
   }, [items])
 
+  // ── 1) Gráfico principal — todas as obrigações mensal (pagar vs receber) ──
+  const allDir = useMemo(() => monthlyDir(items), [items])
+
+  // ── 2) Clubes — a pagar vs a receber (mensal) ──
+  const clube = useMemo(() => monthlyDir(items.filter(i => i.group === 'clube')), [items])
+
+  // ── 3) Fluxo salarial (Salário CLT + Imagem, área única, custo mensal) ──
   const salImg = useMemo(() => {
-    const m = new Map<string, { salario: number; imagem: number }>()
+    const m = new Map<string, number>()
     for (const i of items) {
       if ((i.group !== 'salario' && i.group !== 'imagem') || !i.ym) continue
-      if (!m.has(i.ym)) m.set(i.ym, { salario: 0, imagem: 0 })
-      m.get(i.ym)![i.group] += i.brl
+      m.set(i.ym, (m.get(i.ym) ?? 0) + i.brl)
     }
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([ym, v]) => ({ mes: monthLabel(ym), salario: v.salario, imagem: v.imagem, total: v.salario + v.imagem }))
+      .map(([ym, v]) => ({ mes: monthLabel(ym), total: v }))
   }, [items])
 
-  const clube = useMemo(() => monthlyByDir(items, 'clube'), [items])
-  const agente = useMemo(() => monthlyByDir(items, 'agente'), [items])
-  const overdueRank = useMemo(() => rankByParte(items.filter(i => i.late && (i.group === 'clube' || i.group === 'agente'))), [items])
-  const paidRank = useMemo(() => rankByParte(items.filter(i => i.status === 'PAGA' && (i.group === 'clube' || i.group === 'agente'))), [items])
+  // ── 4) Top overdue por natureza ──
+  const overdueByNat = useMemo(() => rankMap(items.filter(i => i.late).map(i => [i.natureza, i.brl] as const)), [items])
+  // ── 5) Top overdue por clubes ──
+  const overdueByClube = useMemo(() => rankMap(items.filter(i => i.late && i.group === 'clube').map(i => [i.parte, i.brl] as const)), [items])
+  // ── 6) Top overdue por agentes ──
+  const overdueByAgente = useMemo(() => rankMap(items.filter(i => i.late && i.group === 'agente').map(i => [i.parte, i.brl] as const)), [items])
+
+  // ── 7-8) Top pagos nos últimos 90 dias — clubes / agentes ──
+  const topPayClube90 = useMemo(() => rankMap(paidLast(items, 90).filter(i => i.group === 'clube').map(i => [i.parte, i.brl] as const)), [items])
+  const topPayAgente90 = useMemo(() => rankMap(paidLast(items, 90).filter(i => i.group === 'agente').map(i => [i.parte, i.brl] as const)), [items])
+
+  // ── 9) Aging da lista de vencidos ──
+  const aging = useMemo(() => {
+    const buckets = [
+      { name: '0-30 dias',    min: 1,   max: 30,    total: 0 },
+      { name: '31-60 dias',   min: 31,  max: 60,    total: 0 },
+      { name: '61-90 dias',   min: 61,  max: 90,    total: 0 },
+      { name: '91-180 dias',  min: 91,  max: 180,   total: 0 },
+      { name: 'Acima de 180', min: 181, max: 99999, total: 0 },
+    ]
+    for (const i of items) {
+      if (!i.late || !i.dueDate) continue
+      const d = daysFromToday(i.dueDate)
+      if (d === null || d >= 0) continue
+      const abs = -d
+      const b = buckets.find(x => abs >= x.min && abs <= x.max)
+      if (b) b.total += i.brl
+    }
+    return buckets.filter(b => b.total > 0)
+  }, [items])
 
   const tiles = [
     { label: 'A pagar · aberto', value: big.aPagar, dot: C.pay, sub: 'Obrigações em aberto' },
@@ -159,35 +239,33 @@ export default function PageDashboards() {
             })}
           </div>
 
-          {/* ── Fluxo consolidado — UMA linha (total CLT + imagem) ── */}
-          <Panel eyebrow="Remuneração" title="Fluxo consolidado — Salário CLT + Imagem" subtitle="Custo mensal consolidado ao longo da vigência dos contratos (aprox. BRL)" tall>
-            {salImg.length === 0 ? <Empty /> : (
-              <ResponsiveContainer width="100%" height={296}>
-                <AreaChart data={salImg} margin={{ top: 16, right: 22, bottom: 4, left: 8 }}>
-                  <defs>
-                    <linearGradient id="gTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.goldFill} stopOpacity={0.20} />
-                      <stop offset="100%" stopColor={C.goldFill} stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} stroke={C.grid} />
-                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={18} tickMargin={10} />
-                  <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
-                  <Tooltip content={<MoneyTip leadKey="total" />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
-                  <Area
-                    type="monotone" dataKey="total" name="Total consolidado"
-                    stroke={C.goldLine} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-                    fill="url(#gTotal)" dot={false} isAnimationActive={false}
-                    activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+          {/* ── PRINCIPAL — todas as obrigações a pagar vs a receber ── */}
+          <Panel eyebrow="Panorama" title="Todas as obrigações — a pagar vs a receber" subtitle="Fluxo mensal consolidado de todas as naturezas (aprox. BRL)" tall>
+            {allDir.length === 0 ? <Empty /> : (
+              <>
+                <ChartLegend items={[{ name: 'A pagar', color: C.pay, dash: false }, { name: 'A receber', color: C.recv, dash: true }]} />
+                <ResponsiveContainer width="100%" height={340}>
+                  <LineChart data={allDir} margin={{ top: 16, right: 56, bottom: 4, left: 8 }}>
+                    <CartesianGrid vertical={false} stroke={C.grid} />
+                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={18} tickMargin={10} />
+                    <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
+                    <Tooltip content={<MoneyTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
+                    <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2.4} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
+                      <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={allDir.length} />} />
+                    </Line>
+                    <Line type="monotone" dataKey="receber" name="A receber" stroke={C.recv} strokeWidth={2.4} strokeDasharray="6 4" strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.recv, stroke: C.surface, strokeWidth: 2 }}>
+                      <LabelList dataKey="receber" content={<EndValueTag color={C.recv} total={allDir.length} />} />
+                    </Line>
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
             )}
           </Panel>
 
+          {/* ── Grade de gráficos secundários ── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: 18, marginTop: 18 }}>
 
-            {/* ── Clubes — DUAS linhas (fluxo pagar vs receber) ── */}
+            {/* Clubes — pagar vs receber */}
             <Panel eyebrow="Clubes" title="A pagar vs a receber" subtitle="Transfer fee, sell-on, solidariedade — fluxo mensal (aprox. BRL)">
               {clube.length === 0 ? <Empty /> : (
                 <>
@@ -210,63 +288,82 @@ export default function PageDashboards() {
               )}
             </Panel>
 
-            {/* ── Agentes — série única (área) ── */}
-            <Panel eyebrow="Agentes" title="Pagamentos por mês" subtitle="Comissões de intermediação (aprox. BRL)">
-              {agente.length === 0 ? <Empty /> : (
+            {/* Fluxo salarial (área única) */}
+            <Panel eyebrow="Remuneração" title="Fluxo salarial (CLT + Imagem)" subtitle="Custo mensal consolidado dos elencos (aprox. BRL)">
+              {salImg.length === 0 ? <Empty /> : (
                 <ResponsiveContainer width="100%" height={244}>
-                  <AreaChart data={agente} margin={{ top: 16, right: 22, bottom: 4, left: 8 }}>
+                  <AreaChart data={salImg} margin={{ top: 16, right: 22, bottom: 4, left: 8 }}>
                     <defs>
-                      <linearGradient id="gAg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={C.goldFill} stopOpacity={0.18} />
+                      <linearGradient id="gSal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={C.goldFill} stopOpacity={0.20} />
                         <stop offset="100%" stopColor={C.goldFill} stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} stroke={C.grid} />
                     <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
                     <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
-                    <Tooltip content={<MoneyTip leadKey="pagar" />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
-                    <Area type="monotone" dataKey="pagar" name="A pagar" stroke={C.goldLine} strokeWidth={2} strokeLinecap="round" fill="url(#gAg)" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }} />
+                    <Tooltip content={<MoneyTip leadKey="total" />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
+                    <Area type="monotone" dataKey="total" name="Custo mensal" stroke={C.goldLine} strokeWidth={2} strokeLinecap="round" fill="url(#gSal)" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
             </Panel>
 
-            {/* ── Top em atraso — barras horizontais ── */}
-            <Panel eyebrow="Ranking" title="Top clubes/agentes em atraso" subtitle="Maior exposição vencida (overdue)">
-              {overdueRank.length === 0 ? <Empty msg="Nada em atraso 🎉" /> : (
-                <ResponsiveContainer width="100%" height={Math.max(160, overdueRank.length * 36 + 20)}>
-                  <BarChart layout="vertical" data={overdueRank} margin={{ top: 6, right: 96, bottom: 4, left: 8 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="parte" width={132} tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: font, fill: 'var(--ink-secondary)' }} />
-                    <Tooltip content={<MoneyTip />} cursor={{ fill: 'rgba(26,20,16,0.04)' }} />
-                    <Bar dataKey="valor" name="Em atraso" fill={C.pay} radius={[0, 4, 4, 0]} maxBarSize={22} barSize={20} isAnimationActive={false}>
-                      <LabelList dataKey="valor" position="right" formatter={(v: unknown) => fmtCurrencyShort(Number(v), 'BRL')} style={{ fontFamily: mono, fontSize: 10, fill: 'var(--ink-secondary)' }} />
-                    </Bar>
-                  </BarChart>
+            {/* Top overdue por natureza */}
+            <Panel eyebrow="Ranking" title="Top overdue por natureza" subtitle="Exposição vencida agrupada por tipo de obrigação">
+              <HRank data={overdueByNat} color={C.pay} empty="Nada em atraso 🎉" />
+            </Panel>
+
+            {/* Aging pie */}
+            <Panel eyebrow="Ranking" title="Aging da lista de vencidos" subtitle="Distribuição da exposição por faixa de atraso">
+              {aging.length === 0 ? <Empty msg="Nada em atraso 🎉" /> : (
+                <ResponsiveContainer width="100%" height={Math.max(240, aging.length * 20 + 200)}>
+                  <PieChart>
+                    <Pie data={aging} dataKey="total" nameKey="name" cx="50%" cy="50%" innerRadius={54} outerRadius={92} paddingAngle={2} isAnimationActive={false} stroke={C.surface} strokeWidth={2}>
+                      {aging.map((_b, i) => <Cell key={i} fill={AGING_COLORS[i % AGING_COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip content={<PieTip />} />
+                  </PieChart>
                 </ResponsiveContainer>
+              )}
+              {aging.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6, marginTop: 8 }}>
+                  {aging.map((b, i) => (
+                    <span key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: mono, fontSize: 10.5, color: 'var(--ink-secondary)' }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: AGING_COLORS[i % AGING_COLORS.length] }} />
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</span>
+                      <strong style={{ marginLeft: 'auto', fontWeight: 700 }}>{fmtCurrencyShort(b.total, 'BRL')}</strong>
+                    </span>
+                  ))}
+                </div>
               )}
             </Panel>
 
-            {/* ── Top já pago — barras horizontais ── */}
-            <Panel eyebrow="Ranking" title="Top clubes/agentes já pagos" subtitle="Maior volume liquidado">
-              {paidRank.length === 0 ? <Empty /> : (
-                <ResponsiveContainer width="100%" height={Math.max(160, paidRank.length * 36 + 20)}>
-                  <BarChart layout="vertical" data={paidRank} margin={{ top: 6, right: 96, bottom: 4, left: 8 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="parte" width={132} tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: font, fill: 'var(--ink-secondary)' }} />
-                    <Tooltip content={<MoneyTip />} cursor={{ fill: 'rgba(26,20,16,0.04)' }} />
-                    <Bar dataKey="valor" name="Pago" fill={C.recv} radius={[0, 4, 4, 0]} maxBarSize={22} barSize={20} isAnimationActive={false}>
-                      <LabelList dataKey="valor" position="right" formatter={(v: unknown) => fmtCurrencyShort(Number(v), 'BRL')} style={{ fontFamily: mono, fontSize: 10, fill: 'var(--ink-secondary)' }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
+            {/* Top overdue por clubes */}
+            <Panel eyebrow="Ranking" title="Top overdue por clubes" subtitle="Clubes com maior exposição vencida">
+              <HRank data={overdueByClube} color={C.pay} empty="Nada em atraso com clubes" />
+            </Panel>
+
+            {/* Top overdue por agentes */}
+            <Panel eyebrow="Ranking" title="Top overdue por agentes" subtitle="Intermediários com maior exposição vencida">
+              <HRank data={overdueByAgente} color={C.pay} empty="Nada em atraso com agentes" />
+            </Panel>
+
+            {/* Top clubes mais pagos últimos 90 dias */}
+            <Panel eyebrow="Ranking" title="Top clubes mais pagos · 90 dias" subtitle="Volume liquidado nos últimos 90 dias">
+              <HRank data={topPayClube90} color={C.recv} empty="Sem pagamentos a clubes nos últimos 90 dias" />
+            </Panel>
+
+            {/* Top agentes mais pagos últimos 90 dias */}
+            <Panel eyebrow="Ranking" title="Top agentes mais pagos · 90 dias" subtitle="Volume liquidado nos últimos 90 dias">
+              <HRank data={topPayAgente90} color={C.recv} empty="Sem pagamentos a agentes nos últimos 90 dias" />
             </Panel>
           </div>
 
           <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {[
               { l: 'Consolidado', to: '/relatorios/consolidado' },
+              { l: 'Recuperação Judicial', to: '/relatorios/recuperacao-judicial' },
               { l: 'Visão por Atleta', to: '/relatorios/visao-atletas' },
               { l: 'Vendas Futuras', to: '/relatorios/sell-on' },
               { l: 'Direitos Econômicos', to: '/relatorios/direitos-economicos' },
@@ -281,7 +378,43 @@ export default function PageDashboards() {
   )
 }
 
-// ── Componentes ──────────────────────────────────────────────────────────────
+// ── Utilidades de agregação ──────────────────────────────────────────────────
+
+// Agrega valores por parte (rótulo) e devolve os 6 maiores.
+function rankMap(pairs: ReadonlyArray<readonly [string, number]>) {
+  const m = new Map<string, number>()
+  for (const [k, v] of pairs) m.set(k, (m.get(k) ?? 0) + v)
+  return [...m.entries()]
+    .map(([parte, valor]) => ({ parte, valor }))
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 6)
+}
+
+// Agrega direção A_PAGAR × A_RECEBER por mês.
+function monthlyDir(items: Item[]) {
+  const m = new Map<string, { pagar: number; receber: number }>()
+  for (const i of items) {
+    if (!i.ym) continue
+    if (!m.has(i.ym)) m.set(i.ym, { pagar: 0, receber: 0 })
+    const b = m.get(i.ym)!
+    if (i.dir === 'A_PAGAR') b.pagar += i.brl; else b.receber += i.brl
+  }
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([ym, v]) => ({ mes: monthLabel(ym), ...v }))
+}
+
+// Itens PAGA cuja data de pagamento cai nos últimos N dias.
+function paidLast(items: Item[], days: number) {
+  const now = new Date()
+  const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - days)
+  return items.filter(i => {
+    if (i.status !== 'PAGA' || !i.paidDate) return false
+    const d = new Date(i.paidDate + 'T12:00:00Z')
+    return d >= cutoff && d <= now
+  })
+}
+
+// ── Componentes visuais ─────────────────────────────────────────────────────
+
 function Panel({ eyebrow, title, subtitle, tall, children }: { eyebrow?: string; title: string; subtitle?: string; tall?: boolean; children: React.ReactNode }) {
   return (
     <div className="panel-card" style={{ padding: tall ? '20px 22px' : '18px 20px' }}>
@@ -319,6 +452,23 @@ function Empty({ msg = 'Sem dados.' }: { msg?: string }) {
   return <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>{msg}</div>
 }
 
+// Ranking horizontal reutilizável.
+function HRank({ data, color, empty }: { data: { parte: string; valor: number }[]; color: string; empty: string }) {
+  if (data.length === 0) return <Empty msg={empty} />
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(160, data.length * 36 + 20)}>
+      <BarChart layout="vertical" data={data} margin={{ top: 6, right: 96, bottom: 4, left: 8 }}>
+        <XAxis type="number" hide />
+        <YAxis type="category" dataKey="parte" width={132} tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: font, fill: 'var(--ink-secondary)' }} />
+        <Tooltip content={<MoneyTip />} cursor={{ fill: 'rgba(26,20,16,0.04)' }} />
+        <Bar dataKey="valor" name="Valor" fill={color} radius={[0, 4, 4, 0]} maxBarSize={22} barSize={20} isAnimationActive={false}>
+          <LabelList dataKey="valor" position="right" formatter={(v: unknown) => fmtCurrencyShort(Number(v), 'BRL')} style={{ fontFamily: mono, fontSize: 10, fill: 'var(--ink-secondary)' }} />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
 // Rótulo apenas no último ponto da linha: bolinha (cor da série) + valor (tinta).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function EndValueTag({ x, y, value, index, color, total }: any) {
@@ -333,7 +483,7 @@ function EndValueTag({ x, y, value, index, color, total }: any) {
   )
 }
 
-// Tooltip: valor em destaque, nome secundário, chave em traço (não caixa).
+// Tooltip escuro em BRL para line/bar charts.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MoneyTip({ active, payload, label, leadKey }: any) {
   if (!active || !payload?.length) return null
@@ -364,20 +514,19 @@ function MoneyTip({ active, payload, label, leadKey }: any) {
   )
 }
 
-function monthlyByDir(items: Item[], group: Group) {
-  const m = new Map<string, { pagar: number; receber: number }>()
-  for (const i of items) {
-    if (i.group !== group || !i.ym) continue
-    if (!m.has(i.ym)) m.set(i.ym, { pagar: 0, receber: 0 })
-    const b = m.get(i.ym)!
-    if (i.dir === 'A_PAGAR') b.pagar += i.brl; else b.receber += i.brl
-  }
-  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([ym, v]) => ({ mes: monthLabel(ym), ...v }))
-}
-function rankByParte(items: Item[]) {
-  const m = new Map<string, number>()
-  for (const i of items) m.set(i.parte, (m.get(i.parte) ?? 0) + i.brl)
-  return [...m.entries()].map(([parte, valor]) => ({ parte, valor })).sort((a, b) => b.valor - a.valor).slice(0, 6)
+// Tooltip da pizza — mostra faixa + valor + %.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PieTip({ active, payload }: any) {
+  if (!active || !payload?.length) return null
+  const p = payload[0]
+  const pct = typeof p.percent === 'number' ? p.percent * 100 : 0
+  return (
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '9px 12px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ opacity: 0.7, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
+      <div style={{ fontFamily: display, fontSize: 18, fontWeight: 700 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
+      {pct > 0 && <div style={{ opacity: 0.6, marginTop: 3 }}>{pct.toFixed(1)}%</div>}
+    </div>
+  )
 }
 
 // rgba a partir de hex (#rrggbb) para halos suaves das bolinhas de status.
