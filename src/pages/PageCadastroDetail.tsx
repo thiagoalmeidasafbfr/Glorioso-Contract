@@ -38,6 +38,7 @@ import {
 import { modalInput, modalLabel } from '../components/modals/styles'
 import NewObligationModal from '../components/modals/NewObligationModal'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
+import { parseRJ, toggleItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 
 const fontBody = "var(--font-body)"
@@ -165,6 +166,10 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
 
   async function quickPay(instId: string) { await markInstallmentPaid(instId, new Date().toISOString().slice(0, 10)); await load() }
   async function quickRevert(instId: string) { await revertInstallment(instId); await load() }
+  async function toggleRJ(l: EntityObligation) {
+    await toggleItemRJ({ kind: l.kind, id: l.id }, l.notes)
+    await load()
+  }
   async function registerPayment(instId: string, pmt: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
     await registerInstallmentPayment(instId, {
       payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
@@ -305,7 +310,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
           </div>
         </div>
         <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--divider-soft)', background: 'var(--bg-subtle)' }}>
-          <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert']} />
+          <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert', 'rj']} />
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
@@ -335,11 +340,14 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                   : l.kind === 'agent' ? intermLiabs.find(x => x.id === l.id) : null
                 const inst = l.kind === 'inst' ? installments.find(i => i.id === l.id) : null
                 return (
-                  <tr key={`${l.kind}:${l.id}`} style={{ background: late ? 'var(--row-late-bg)' : undefined }}>
+                  <tr key={`${l.kind}:${l.id}`} style={{ background: parseRJ(l.notes) ? 'var(--warn-tint, #fff4e0)' : late ? 'var(--row-late-bg)' : undefined }}>
                     <td style={{ ...td, fontWeight: 600 }}>
                       <RefLink to={`/atletas/${l.athlete_id}`} title="Abrir atleta">{nameOf.get(l.athlete_id) ?? '—'}</RefLink>
                     </td>
-                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>{l.natureza}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>
+                      {l.natureza}
+                      {parseRJ(l.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(parseRJ(l.notes)!.filedAt)}`}>RJ</span>}
+                    </td>
                     <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 330 }}>
                       {l.clauseId
                         ? <RefLink to={`/obrigacoes/${l.clauseId}`} title="Abrir a obrigação">{l.description}</RefLink>
@@ -375,6 +383,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                           onClick: canEdit && inst && inst.payment_status === 'PAGA' ? () => quickRevert(inst.id) : undefined,
                           reason: 'a parcela não está paga',
                         }}
+                        rj={canEdit && l.direction === 'A_PAGAR' ? { onClick: () => toggleRJ(l), marked: !!parseRJ(l.notes) } : undefined}
                       />
                     </td>
                   </tr>

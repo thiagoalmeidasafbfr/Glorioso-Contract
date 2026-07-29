@@ -81,6 +81,13 @@ export async function unmarkItemRJ(target: RJTarget, currentNotes: string | null
   }
 }
 
+/** Alterna a marcação de RJ em um item, com base nas notas atuais. */
+export async function toggleItemRJ(target: RJTarget, currentNotes: string | null | undefined, filedAt = todayISO()): Promise<'marked' | 'unmarked'> {
+  if (parseRJ(currentNotes)) { await unmarkItemRJ(target, currentNotes); return 'unmarked' }
+  await markItemRJ(target, currentNotes, filedAt)
+  return 'marked'
+}
+
 /** Marca vários itens de uma vez. */
 export async function markManyRJ(
   items: (RJTarget & { notes: string | null | undefined })[],

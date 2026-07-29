@@ -25,6 +25,7 @@ import PaymentModal from '../components/athletes/PaymentModal'
 import { Icon, IconButton, IconRow } from '../components/Icon'
 import RowActions, { ActionLegend } from '../components/RowActions'
 import { InstallmentEditModal } from '../components/modals/EditModals'
+import { parseRJ, toggleItemRJ, markManyRJ, unmarkItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 
 const font = "var(--font-body)"
@@ -67,6 +68,8 @@ export default function PageClauseDetail() {
   const [editInstId, setEditInstId] = useState<string | null>(null)
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
+  const [selectedRJ, setSelectedRJ] = useState<Set<string>>(new Set())
+  const [rjDate, setRjDate] = useState<string>(todayISO())
 
   const load = useCallback(async () => {
     if (!clauseId) return
@@ -126,6 +129,53 @@ export default function PageClauseDetail() {
     await deleteClause(clause.id)
     navigate(athlete ? `/atletas/${athlete.id}` : '/atletas')
   }
+  const parcRJ = installments.filter(p => parseRJ(p.notes))
+  const selectableParcIds = installments.filter(p => !parseRJ(p.notes) && p.payment_status !== 'PAGA' && p.payment_status !== 'CANCELADA').map(p => p.id)
+  const allParcSelected = selectableParcIds.length > 0 && selectableParcIds.every(pid => selectedRJ.has(pid))
+  function toggleParcSel(pid: string) {
+    setSelectedRJ(prev => {
+      const next = new Set(prev)
+      if (next.has(pid)) next.delete(pid); else next.add(pid)
+      return next
+    })
+  }
+  function toggleAllParcSel() {
+    setSelectedRJ(prev => {
+      if (allParcSelected) {
+        const next = new Set(prev)
+        for (const pid of selectableParcIds) next.delete(pid)
+        return next
+      }
+      const next = new Set(prev)
+      for (const pid of selectableParcIds) next.add(pid)
+      return next
+    })
+  }
+  async function bulkMarkParcRJ() {
+    const chosen = installments.filter(p => selectedRJ.has(p.id) && !parseRJ(p.notes))
+    if (chosen.length === 0) return
+    if (!window.confirm(`Incluir ${chosen.length} parcela(s) na Recuperação Judicial em ${fmtDate(rjDate)}?`)) return
+    await markManyRJ(chosen.map(p => ({ kind: 'inst' as const, id: p.id, notes: p.notes })), rjDate)
+    setSelectedRJ(new Set())
+    await load()
+  }
+  async function unmarkParcRJ(pid: string) {
+    const p = installments.find(i => i.id === pid); if (!p) return
+    if (!window.confirm('Retirar esta parcela da Recuperação Judicial?')) return
+    await unmarkItemRJ({ kind: 'inst', id: pid }, p.notes)
+    await load()
+  }
+  async function toggleClauseRJ() {
+    if (!clause) return
+    const marked = !!parseRJ(clause.notes)
+    if (marked) {
+      if (!window.confirm('Retirar a obrigação inteira da Recuperação Judicial?')) return
+    } else {
+      if (!window.confirm(`Incluir a obrigação inteira na Recuperação Judicial em ${fmtDate(rjDate)}?`)) return
+    }
+    await toggleItemRJ({ kind: 'clause', id: clause.id }, clause.notes, rjDate)
+    await load()
+  }
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 920, margin: '0 auto' }}>
@@ -144,11 +194,24 @@ export default function PageClauseDetail() {
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', fontWeight: 700 }}>Dados da obrigação</div>
           {canEdit && (
             <IconRow>
+              <IconButton
+                icon="gavel"
+                label={parseRJ(clause.notes) ? 'Retirar obrigação da Recuperação Judicial' : 'Incluir obrigação inteira na Recuperação Judicial'}
+                tone={parseRJ(clause.notes) ? 'warn' : 'muted'}
+                onClick={toggleClauseRJ}
+              />
               <IconButton icon={editing ? 'x' : 'edit'} label={editing ? 'Fechar edição' : 'Editar dados da obrigação'} onClick={() => setEditing(e => !e)} />
               <IconButton icon="trash" label="Excluir obrigação" tone="danger" onClick={handleDelete} />
             </IconRow>
           )}
         </div>
+
+        {parseRJ(clause.notes) && (
+          <div style={{ marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)', fontFamily: fontMono, fontSize: 11, color: 'var(--ink-primary)' }}>
+            <strong style={{ letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--warn)' }}>Recuperação Judicial</strong>
+            {' — '}obrigação inteira incluída no processo em {fmtDate(parseRJ(clause.notes)!.filedAt)}.
+          </div>
+        )}
 
         {editing ? (
           <ClauseFields clause={clause} onSaved={() => { setEditing(false); load() }} onCancel={() => setEditing(false)} />
@@ -197,9 +260,31 @@ export default function PageClauseDetail() {
         )}
 
         {canEdit && installments.length > 0 && (
-          <div style={{ marginBottom: 10 }}>
-            <ActionLegend items={['edit', 'markPaid', 'pay', 'revert']} />
-          </div>
+          <>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+              <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontFamily: fontMono, fontSize: 11, color: 'var(--ink-secondary)', cursor: selectableParcIds.length ? 'pointer' : 'default' }}>
+                <input type="checkbox" checked={allParcSelected} disabled={selectableParcIds.length === 0} onChange={toggleAllParcSel} />
+                Selecionar todas
+              </label>
+              {selectedRJ.size > 0 && (
+                <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 6, background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn)' }}>
+                  <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{selectedRJ.size} parcela(s)</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Protocolo:</span>
+                  <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ padding: '3px 6px', border: '1px solid var(--divider-strong)', borderRadius: 4, fontFamily: fontMono, fontSize: 11 }} />
+                  <button onClick={bulkMarkParcRJ} className="btn btn-outline" style={{ padding: '3px 10px', borderColor: 'var(--warn)', color: 'var(--warn)', fontSize: 11 }}>
+                    Incluir na RJ
+                  </button>
+                  <button onClick={() => setSelectedRJ(new Set())} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 10 }}>limpar</button>
+                </span>
+              )}
+              {parcRJ.length > 0 && (
+                <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--warn)' }}>
+                  {parcRJ.length} parcela(s) em RJ
+                </span>
+              )}
+            </div>
+            <ActionLegend items={['edit', 'markPaid', 'pay', 'revert', 'rj']} />
+          </>
         )}
 
         {installments.length === 0 ? (
@@ -211,24 +296,45 @@ export default function PageClauseDetail() {
             {installments.slice().sort((a, b) => a.installment_number - b.installment_number).map(p => {
               const late = isOverdue(p.due_date, p.payment_status)
               const paid = p.payment_status === 'PAGA'
+              const cancelled = p.payment_status === 'CANCELADA'
+              const rj = parseRJ(p.notes)
               return (
-                <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '36px 120px 1fr 100px auto', gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                <div key={p.id} style={{
+                  display: 'grid',
+                  gridTemplateColumns: canEdit ? '28px 36px 120px 1fr 100px auto' : '36px 120px 1fr 100px auto',
+                  gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 8,
+                  background: rj ? 'var(--warn-tint, #fff4e0)' : 'var(--bg-subtle)',
+                  border: `1px solid ${rj ? 'var(--warn)' : 'var(--divider-soft)'}`,
+                }}>
+                  {canEdit && (
+                    <span style={{ textAlign: 'center' }}>
+                      {!rj && !paid && !cancelled
+                        ? <input type="checkbox" checked={selectedRJ.has(p.id)} onChange={() => toggleParcSel(p.id)} />
+                        : <span style={{ color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 10 }}>—</span>}
+                    </span>
+                  )}
                   <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{p.installment_number}</span>
                   <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
-                  <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>
+                    {fmtCurrencyShort(p.original_value, p.currency)}
+                    {rj && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
+                  </span>
                   <Badge status={p.payment_status} />
                   {canEdit && (
                     <RowActions small={false}
                       edit={{ onClick: () => setEditInstId(p.id), label: `Editar parcela ${p.installment_number}` }}
                       markPaid={{
-                        onClick: !paid && p.payment_status !== 'CANCELADA' ? () => handleQuickPay(p.id) : undefined,
+                        onClick: !paid && !cancelled ? () => handleQuickPay(p.id) : undefined,
                         reason: paid ? 'parcela já paga' : 'parcela cancelada',
                       }}
                       pay={{
-                        onClick: !paid && p.payment_status !== 'CANCELADA' ? () => setPayInstId(p.id) : undefined,
+                        onClick: !paid && !cancelled ? () => setPayInstId(p.id) : undefined,
                         reason: paid ? 'parcela já paga' : 'parcela cancelada',
                       }}
                       revert={{ onClick: paid ? () => handleRevert(p.id) : undefined, reason: 'a parcela não está paga' }}
+                      rj={rj
+                        ? { onClick: () => unmarkParcRJ(p.id), marked: true }
+                        : (!paid && !cancelled ? { onClick: async () => { await toggleItemRJ({ kind: 'inst', id: p.id }, p.notes, rjDate); await load() } } : undefined)}
                     />
                   )}
                 </div>

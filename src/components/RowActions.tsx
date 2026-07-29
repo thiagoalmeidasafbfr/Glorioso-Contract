@@ -38,6 +38,8 @@ export interface RowActionsProps {
   pay?: Action
   /** Desfazer o pagamento. */
   revert?: Action
+  /** Marcar / desmarcar como Recuperação Judicial. */
+  rj?: Action & { marked?: boolean }
   /** Excluir o registro. */
   remove?: Action
   small?: boolean
@@ -52,11 +54,13 @@ const LABELS = {
   markPaid: 'Marcar como paga',
   pay:      'Registrar pagamento (valores e câmbio)',
   revert:   'Desfazer pagamento',
+  rj:       'Incluir na Recuperação Judicial',
+  rjUnmark: 'Retirar da Recuperação Judicial',
   remove:   'Excluir',
 } as const
 
 export default function RowActions({
-  open, edit, schedule, generate, markPaid, pay, revert, remove, small = true, align = 'right',
+  open, edit, schedule, generate, markPaid, pay, revert, rj, remove, small = true, align = 'right',
 }: RowActionsProps) {
   // Cronograma e "gerar parcelas" ocupam o MESMO lugar na linha: são dois estados
   // do mesmo assunto (as parcelas da obrigação), com ícones e tooltips distintos.
@@ -92,6 +96,14 @@ export default function RowActions({
       {slot(markPaid, 'check', 'markPaid', 'success')}
       {slot(pay, 'money', 'pay', 'success')}
       {slot(revert, 'undo', 'revert', 'warn')}
+      {rj && slot(
+        rj.marked
+          ? { ...rj, label: rj.label ?? LABELS.rjUnmark }
+          : { ...rj, label: rj.label ?? LABELS.rj },
+        'gavel',
+        rj.marked ? 'rjUnmark' : 'rj',
+        rj.marked ? 'warn' : 'muted',
+      )}
       {slot(remove, 'trash', 'remove', 'danger')}
     </span>
   )
@@ -109,6 +121,8 @@ export function ActionLegend({ items = ['open', 'edit', 'schedule', 'markPaid', 
     markPaid: { icon: 'check',    tone: 'success', short: 'marcar paga' },
     pay:      { icon: 'money',    tone: 'success', short: 'registrar pagamento' },
     revert:   { icon: 'undo',     tone: 'warn',    short: 'desfazer' },
+    rj:       { icon: 'gavel',    tone: 'muted',   short: 'marcar RJ' },
+    rjUnmark: { icon: 'gavel',    tone: 'warn',    short: 'retirar RJ' },
     remove:   { icon: 'trash',    tone: 'danger',  short: 'excluir' },
   }
   // A legenda vive alinhada à direita, colada na coluna de Ações — assim o

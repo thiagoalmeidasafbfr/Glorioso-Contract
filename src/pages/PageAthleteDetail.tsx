@@ -45,6 +45,7 @@ import {
 } from '../types/athlete-system'
 import { regenerateSalaryFlow } from '../lib/salaryFlow'
 import { createRenegotiation, decodeAcordo, isAcordo, type AcordoSource, type RenegotiationInput } from '../lib/renegotiation'
+import { parseRJ, toggleItemRJ } from '../lib/judicialRecovery'
 import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import LoanShareModal from '../components/modals/LoanShareModal'
 import { loanShareTriggers, decodeLoanShare, splitLoanSalary } from '../lib/loanSalary'
@@ -505,6 +506,21 @@ export default function PageAthleteDetail() {
     const u = await markInstallmentPaid(instId, todayISO())
     setInstallments(prev => prev.map(i => i.id === instId ? u : i))
   }
+  async function handleToggleRJ(kind: 'inst' | 'clause' | 'club' | 'agent', ref: string) {
+    const notes =
+      kind === 'inst' ? (installments.find(i => i.id === ref)?.notes ?? null) :
+      kind === 'clause' ? (clauses.find(c => c.id === ref)?.notes ?? null) :
+      kind === 'club' ? (clubLiabs.find(l => l.id === ref)?.notes ?? null) :
+      (intermLiabs.find(l => l.id === ref)?.notes ?? null)
+    await toggleItemRJ({ kind, id: ref }, notes)
+    // Recarrega apenas o que mudou.
+    if (id) {
+      if (kind === 'inst') setInstallments(await fetchAthleteInstallments(id))
+      else if (kind === 'clause') setClauses(await fetchAthleteClauses(id))
+      else if (kind === 'club') setClubLiabs(await fetchAthleteClubLiabilities(id))
+      else setIntermLiabs(await fetchAthleteIntermediaryLiabilities(id))
+    }
+  }
   async function handleRenegotiate(input: RenegotiationInput) {
     await createRenegotiation(input)
     setShowReneg(false)
@@ -760,6 +776,7 @@ export default function PageAthleteDetail() {
           onQuickPayInst={handleMarkInstallmentPaidQuick}
           onRevertInst={handleRevertInstallment}
           onDeleteClause={handleDeleteClause}
+          onToggleRJ={handleToggleRJ}
           onEditLiab={(kind, lid) => {
             const liab = kind === 'club' ? clubLiabs.find(l => l.id === lid) : intermLiabs.find(l => l.id === lid)
             if (liab) setEditLiab({ kind, liab })
@@ -1366,7 +1383,7 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
 function ConsolidadoTab({
   clauses, installments, clubLiabs, intermLiabs, canEdit, clubIdx, agentIdx,
   onOpenClause, onEditInst, onEditClause, onFlowClause, onPayInst, onQuickPayInst, onRevertInst,
-  onDeleteClause, onEditLiab, onDeleteLiab, onConvertLiab,
+  onDeleteClause, onEditLiab, onDeleteLiab, onConvertLiab, onToggleRJ,
 }: {
   clauses: Clause[]; installments: ClauseInstallment[]; clubLiabs: ClubLiability[]; intermLiabs: IntermediaryLiability[]
   canEdit: boolean
@@ -1383,6 +1400,7 @@ function ConsolidadoTab({
   onEditLiab: (kind: 'club' | 'agent', id: string) => void
   onDeleteLiab: (kind: 'club' | 'agent', id: string) => void
   onConvertLiab: (kind: 'club' | 'agent', id: string) => void
+  onToggleRJ: (kind: 'inst' | 'clause' | 'club' | 'agent', ref: string) => void
 }) {
   // Link da contraparte para a página do clube/agente (amarração cruzada).
   const entityLink = (parte: string): string | null => {
@@ -1396,23 +1414,23 @@ function ConsolidadoTab({
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const clauseById = new Map(clauses.map(c => [c.id, c]))
-  type Item = { date: string | null; nat: string; parte: string; dir: 'A_PAGAR' | 'A_RECEBER'; valor: number; moeda: Currency; status: string; kind: 'inst' | 'clause' | 'club' | 'agent'; ref: string; clauseRef?: string }
+  type Item = { date: string | null; nat: string; parte: string; dir: 'A_PAGAR' | 'A_RECEBER'; valor: number; moeda: Currency; status: string; kind: 'inst' | 'clause' | 'club' | 'agent'; ref: string; clauseRef?: string; notes: string | null }
   const items: Item[] = []
   const isBFR = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
 
   for (const it of installments) {
     const c = clauseById.get(it.clause_id)
     const dir: Item['dir'] = c && isBFR(c.debtor_party) ? 'A_PAGAR' : c ? 'A_RECEBER' : 'A_PAGAR'
-    items.push({ date: it.due_date, nat: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela', parte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—', dir, valor: it.original_value, moeda: it.currency, status: it.payment_status, kind: 'inst', ref: it.id, clauseRef: it.clause_id })
+    items.push({ date: it.due_date, nat: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela', parte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—', dir, valor: it.original_value, moeda: it.currency, status: it.payment_status, kind: 'inst', ref: it.id, clauseRef: it.clause_id, notes: it.notes ?? null })
   }
   for (const c of clauses) {
     if ((c.installments_total ?? 1) > 1) continue
     if (c.original_value == null) continue
     const dir: Item['dir'] = isBFR(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
-    items.push({ date: c.due_date, nat: CLAUSE_TYPE_LABELS[c.clause_type], parte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status, kind: 'clause', ref: c.id, clauseRef: c.id })
+    items.push({ date: c.due_date, nat: CLAUSE_TYPE_LABELS[c.clause_type], parte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status, kind: 'clause', ref: c.id, clauseRef: c.id, notes: c.notes ?? null })
   }
-  for (const l of clubLiabs) items.push({ date: l.due_date, nat: 'Obrigação clube', parte: l.club_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status, kind: 'club', ref: l.id })
-  for (const l of intermLiabs) items.push({ date: l.due_date, nat: 'Obrigação agente', parte: l.intermediary_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status, kind: 'agent', ref: l.id })
+  for (const l of clubLiabs) items.push({ date: l.due_date, nat: 'Obrigação clube', parte: l.club_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status, kind: 'club', ref: l.id, notes: l.notes ?? null })
+  for (const l of intermLiabs) items.push({ date: l.due_date, nat: 'Obrigação agente', parte: l.intermediary_name, dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status, kind: 'agent', ref: l.id, notes: l.notes ?? null })
 
   items.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
 
@@ -1437,7 +1455,7 @@ function ConsolidadoTab({
           })}
         </div>
       )}
-      {canEdit && <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert', 'remove']} />}
+      {canEdit && <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert', 'rj', 'remove']} />}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1457,12 +1475,13 @@ function ConsolidadoTab({
                 const inst = it.kind === 'inst' ? installments.find(p => p.id === it.ref) : null
                 const link = entityLink(it.parte)
                 return (
-                  <tr key={i} style={{ background: late ? 'var(--row-late-bg)' : 'transparent' }}>
+                  <tr key={i} style={{ background: parseRJ(it.notes) ? 'var(--warn-tint, #fff4e0)' : late ? 'var(--row-late-bg)' : 'transparent' }}>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {it.clauseRef
                         ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir a obrigação">{it.nat}</button>
                         : it.nat}
+                      {parseRJ(it.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(parseRJ(it.notes)!.filedAt)}`}>RJ</span>}
                     </td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
                       {link ? <RefLink to={link} title="Abrir cadastro da contraparte">{it.parte}</RefLink> : it.parte}
@@ -1493,6 +1512,7 @@ function ConsolidadoTab({
                             onClick: inst && inst.payment_status === 'PAGA' ? () => onRevertInst(it.ref) : undefined,
                             reason: 'a parcela não está paga',
                           }}
+                          rj={it.dir === 'A_PAGAR' ? { onClick: () => onToggleRJ(it.kind, it.ref), marked: !!parseRJ(it.notes) } : undefined}
                           remove={{
                             onClick: it.kind === 'clause' ? () => onDeleteClause(it.ref)
                               : (it.kind === 'club' || it.kind === 'agent') ? () => onDeleteLiab(it.kind as 'club' | 'agent', it.ref)

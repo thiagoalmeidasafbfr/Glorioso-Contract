@@ -45,6 +45,7 @@ export interface EntityObligation {
   currency: Currency
   due_date: string | null
   status: string
+  notes: string | null
 }
 
 const OPEN_STATUSES = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'VENCIDA']
@@ -90,14 +91,14 @@ export function buildEntityObligations({
         id: p.id, kind: 'inst', athlete_id: c.athlete_id, clauseId: c.id, contractId: c.contract_id,
         natureza, description: `${c.description} — parcela ${p.installment_number}`,
         direction, amount: p.original_value, currency: p.currency,
-        due_date: p.due_date, status: p.payment_status,
+        due_date: p.due_date, status: p.payment_status, notes: p.notes ?? null,
       })
     } else {
       out.push({
         id: c.id, kind: 'clause', athlete_id: c.athlete_id, clauseId: c.id, contractId: c.contract_id,
         natureza, description: c.description, direction,
         amount: c.original_value ?? 0, currency: c.currency,
-        due_date: c.due_date, status: c.payment_status,
+        due_date: c.due_date, status: c.payment_status, notes: c.notes ?? null,
       })
     }
   }
@@ -109,7 +110,7 @@ export function buildEntityObligations({
         id: l.id, kind: 'club', athlete_id: l.athlete_id, clauseId: null, contractId: null,
         natureza: l.solidarity ? 'Solidariedade' : 'Obrigação clube',
         description: l.description ?? '—', direction: l.direction,
-        amount: l.amount, currency: l.currency, due_date: l.due_date, status: l.status,
+        amount: l.amount, currency: l.currency, due_date: l.due_date, status: l.status, notes: l.notes ?? null,
       })
     }
   } else {
@@ -118,7 +119,7 @@ export function buildEntityObligations({
       out.push({
         id: l.id, kind: 'agent', athlete_id: l.athlete_id, clauseId: null, contractId: l.contract_id,
         natureza: 'Obrigação agente', description: l.description ?? '—', direction: l.direction,
-        amount: l.amount, currency: l.currency, due_date: l.due_date, status: l.status,
+        amount: l.amount, currency: l.currency, due_date: l.due_date, status: l.status, notes: l.notes ?? null,
       })
     }
   }
