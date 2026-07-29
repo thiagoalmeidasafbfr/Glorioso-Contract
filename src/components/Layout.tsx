@@ -32,6 +32,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; 
       { to: '/relatorios/sell-on',              label: 'Vendas Futuras',         short: 'VF' },
       { to: '/relatorios/direitos-economicos',  label: 'Direitos Econômicos',    short: 'DE' },
       { to: '/relatorios/gatilhos',             label: 'Gatilhos e Metas',       short: 'GT' },
+      { to: '/relatorios/recuperacao-judicial', label: 'Recuperação Judicial',   short: 'RJ' },
     ],
   },
   {

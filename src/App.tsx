@@ -27,6 +27,7 @@ import PageVisaoAtletas from './pages/PageVisaoAtletas'
 import PageRelSellOn from './pages/PageRelSellOn'
 import PageRelDirEconomicos from './pages/PageRelDirEconomicos'
 import PageRelGatilhos from './pages/PageRelGatilhos'
+import PageRecuperacaoJudicial from './pages/PageRecuperacaoJudicial'
 import PageDados from './pages/PageDados'
 import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
 
@@ -83,6 +84,7 @@ function AppRoutes() {
           <Route path="/relatorios/sell-on" element={<PageRelSellOn />} />
           <Route path="/relatorios/direitos-economicos" element={<PageRelDirEconomicos />} />
           <Route path="/relatorios/gatilhos" element={<PageRelGatilhos />} />
+          <Route path="/relatorios/recuperacao-judicial" element={<PageRecuperacaoJudicial />} />
           {/* Compat: redireciona os relatórios antigos por natureza ao consolidado. */}
           <Route path="/relatorios/:kind" element={<Navigate to="/relatorios/consolidado" replace />} />
 
