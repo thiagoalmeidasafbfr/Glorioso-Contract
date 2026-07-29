@@ -29,6 +29,7 @@ import {
   InstallmentEditModal, ClauseEditModal, ClauseFlowModal, LiabilityEditModal,
 } from '../components/modals/EditModals'
 import { promoteLiabilityToClause } from '../lib/liabilityFlow'
+import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 
 const font = "var(--font-body)"
@@ -53,6 +54,8 @@ interface Mov {
   status: string
   // PTAX fixada na cláusula ou parcela (quando o contrato prevê); NULL usa PTAX do dia.
   fixedRate: number | null
+  notes: string | null
+  rjFiledAt: string | null
 }
 
 const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
@@ -81,6 +84,9 @@ export default function PageConsolidado() {
   const [posF, setPosF] = useState('Todos')
   const [posByAth, setPosByAth] = useState<Map<string, string>>(new Map())
   const [ptax, setPtax] = useState<Record<string, number>>({})
+  const [rjFilter, setRjFilter] = useState<'Todos' | 'Em RJ' | 'Fora da RJ'>('Todos')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [rjDate, setRjDate] = useState<string>(todayISO())
 
   useEffect(() => { fetchPtaxRates().then(setPtax).catch(() => setPtax({})) }, [])
 
@@ -112,6 +118,7 @@ export default function PageConsolidado() {
           descricao: c ? `${c.description} — parc. ${it.installment_number}` : `Parcela ${it.installment_number}`,
           dir, valor: it.original_value, moeda: it.currency, status: it.payment_status,
           fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
+          notes: it.notes ?? null, rjFiledAt: parseRJ(it.notes)?.filedAt ?? null,
         })
       }
       // Cláusulas de pagamento único (sem parcelas geradas)
@@ -125,6 +132,7 @@ export default function PageConsolidado() {
           natureza: CLAUSE_TYPE_LABELS[c.clause_type], contraparte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party,
           descricao: c.description, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status,
           fixedRate: c.fixed_exchange_rate ?? null,
+          notes: c.notes ?? null, rjFiledAt: parseRJ(c.notes)?.filedAt ?? null,
         })
       }
       // Obrigações com clube / agente
@@ -134,6 +142,7 @@ export default function PageConsolidado() {
         natureza: 'Obrigação clube', contraparte: l.club_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
         fixedRate: null,
+        notes: l.notes ?? null, rjFiledAt: parseRJ(l.notes)?.filedAt ?? null,
       })
       for (const l of interLiabs) list.push({
         id: l.id, kind: 'agent', clauseId: l.contract_id ? null : null,
@@ -141,6 +150,7 @@ export default function PageConsolidado() {
         natureza: 'Intermediação', contraparte: l.intermediary_name, descricao: l.description ?? '',
         dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
         fixedRate: null,
+        notes: l.notes ?? null, rjFiledAt: parseRJ(l.notes)?.filedAt ?? null,
       })
 
       list.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
@@ -188,10 +198,51 @@ export default function PageConsolidado() {
       if (atletaF !== 'Todos' && m.atleta !== atletaF) return false
       if (naturezaF !== 'Todos' && m.natureza !== naturezaF) return false
       if (posF !== 'Todos' && (posByAth.get(m.athleteId) ?? '—') !== posF) return false
+      if (rjFilter === 'Em RJ' && !m.rjFiledAt) return false
+      if (rjFilter === 'Fora da RJ' && m.rjFiledAt) return false
       if (!needle) return true
       return [m.atleta, m.natureza, m.contraparte, m.descricao].some(v => v.toLowerCase().includes(needle))
     })
-  }, [movs, q, status, atletaF, naturezaF, posF, posByAth])
+  }, [movs, q, status, atletaF, naturezaF, posF, posByAth, rjFilter])
+
+  // Só marcamos "a pagar" — RJ é sobre passivos do clube.
+  const canMarkRJ = (m: Mov) => m.dir === 'A_PAGAR' && !m.rjFiledAt
+  const selectableIds = useMemo(() => filtered.filter(canMarkRJ).map(m => m.id), [filtered])
+  const allSelected = selectableIds.length > 0 && selectableIds.every(id => selected.has(id))
+  const someSelected = selected.size > 0
+
+  function toggleOne(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  function toggleAll() {
+    setSelected(prev => {
+      if (allSelected) {
+        const next = new Set(prev)
+        for (const id of selectableIds) next.delete(id)
+        return next
+      }
+      const next = new Set(prev)
+      for (const id of selectableIds) next.add(id)
+      return next
+    })
+  }
+  async function bulkMarkRJ() {
+    const chosen = movs.filter(m => selected.has(m.id) && canMarkRJ(m))
+    if (chosen.length === 0) return
+    if (!confirm(`Marcar ${chosen.length} lançamento(s) como Recuperação Judicial em ${rjDate}?`)) return
+    await markManyRJ(chosen.map(m => ({ kind: m.kind, id: m.id, notes: m.notes })), rjDate)
+    setSelected(new Set())
+    await load()
+  }
+  async function unmarkRJ(m: Mov) {
+    if (!confirm('Remover a marcação de Recuperação Judicial deste lançamento?')) return
+    await unmarkItemRJ({ kind: m.kind, id: m.id }, m.notes)
+    await load()
+  }
 
   // Rate efetivo: PTAX fixada no contrato, quando houver; senão, PTAX do dia.
   function effectiveBRL(m: Mov): number {
@@ -272,10 +323,34 @@ export default function PageConsolidado() {
             {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
+        <div>
+          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
+          <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+            {['Todos', 'Em RJ', 'Fora da RJ'].map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
         <KpiPill label="A pagar (BRL PTAX)" value={fmtCurrencyShort(totals.pay, 'BRL')} tone="neg" />
         <KpiPill label="A receber (BRL PTAX)" value={fmtCurrencyShort(totals.rec, 'BRL')} tone="pos" />
       </div>
 
+      {someSelected && canEdit && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          padding: '10px 14px', marginBottom: 10, borderRadius: 8,
+          background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)',
+        }}>
+          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--ink-primary)', fontWeight: 600 }}>
+            {selected.size} lançamento(s) selecionado(s)
+          </span>
+          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>Data protocolo RJ:</span>
+          <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)}
+            style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid var(--divider-strong)', fontFamily: mono, fontSize: 12, background: '#fff' }} />
+          <button onClick={bulkMarkRJ} className="btn btn-outline" style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
+            Marcar como Recuperação Judicial
+          </button>
+          <button onClick={() => setSelected(new Set())} className="btn btn-outline">Limpar seleção</button>
+        </div>
+      )}
       <div style={{ marginBottom: 8 }}>
         <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert']} />
       </div>
@@ -283,6 +358,12 @@ export default function PageConsolidado() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
+              {canEdit && (
+                <th style={{ ...th, width: 34, textAlign: 'center' }}>
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    title="Selecionar todos os passivos elegíveis (a pagar, fora da RJ)" />
+                </th>
+              )}
               <th style={{ ...th, minWidth: 90 }}>Vencimento</th>
               <th style={{ ...th, minWidth: 140 }}>Atleta</th>
               <th style={{ ...th, minWidth: 150 }}>Natureza</th>
@@ -294,16 +375,28 @@ export default function PageConsolidado() {
               <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>Ações</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
+              {loading && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
               {filtered.map(m => {
                 const late = isOverdue(m.date, m.status)
                 return (
-                  <tr key={m.id} style={{ background: late ? 'var(--row-late-bg)' : 'transparent' }}>
+                  <tr key={m.id} style={{ background: m.rjFiledAt ? 'var(--warn-tint, #fff4e0)' : late ? 'var(--row-late-bg)' : 'transparent' }}>
+                    {canEdit && (
+                      <td style={{ ...td, textAlign: 'center', padding: '9px 6px' }}>
+                        {canMarkRJ(m) ? (
+                          <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleOne(m.id)} />
+                        ) : m.rjFiledAt ? (
+                          <button title={`Em RJ desde ${fmtDate(m.rjFiledAt)} — clique para remover`}
+                            onClick={() => unmarkRJ(m)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--warn)', fontFamily: mono, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em' }}>RJ</button>
+                        ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                      </td>
+                    )}
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
+                      {m.rjFiledAt && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: mono, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(m.rjFiledAt)}`}>RJ</span>}
                     </td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
                       {(() => { const to = entityLink(m.contraparte); return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{m.contraparte}</RefLink> : m.contraparte })()}
