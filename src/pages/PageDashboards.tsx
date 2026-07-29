@@ -179,14 +179,14 @@ export default function PageDashboards() {
   const topPayClube90 = useMemo(() => rankMap(paidLast(items, 90).filter(i => i.group === 'clube').map(i => [i.parte, i.brl] as const)), [items])
   const topPayAgente90 = useMemo(() => rankMap(paidLast(items, 90).filter(i => i.group === 'agente').map(i => [i.parte, i.brl] as const)), [items])
 
-  // ── 9) Aging da lista de vencidos ──
+  // ── 9) Aging da lista de vencidos — total por faixa + decomposição por natureza ──
   const aging = useMemo(() => {
-    const buckets = [
-      { name: '0-30 dias',    min: 1,   max: 30,    total: 0 },
-      { name: '31-60 dias',   min: 31,  max: 60,    total: 0 },
-      { name: '61-90 dias',   min: 61,  max: 90,    total: 0 },
-      { name: '91-180 dias',  min: 91,  max: 180,   total: 0 },
-      { name: 'Acima de 180', min: 181, max: 99999, total: 0 },
+    const buckets: { name: string; min: number; max: number; total: number; byNat: Record<string, number> }[] = [
+      { name: '0-30 dias',    min: 1,   max: 30,    total: 0, byNat: {} },
+      { name: '31-60 dias',   min: 31,  max: 60,    total: 0, byNat: {} },
+      { name: '61-90 dias',   min: 61,  max: 90,    total: 0, byNat: {} },
+      { name: '91-180 dias',  min: 91,  max: 180,   total: 0, byNat: {} },
+      { name: 'Acima de 180', min: 181, max: 99999, total: 0, byNat: {} },
     ]
     for (const i of items) {
       if (!i.late || !i.dueDate) continue
@@ -194,7 +194,10 @@ export default function PageDashboards() {
       if (d === null || d >= 0) continue
       const abs = -d
       const b = buckets.find(x => abs >= x.min && abs <= x.max)
-      if (b) b.total += i.brl
+      if (b) {
+        b.total += i.brl
+        b.byNat[i.natureza] = (b.byNat[i.natureza] ?? 0) + i.brl
+      }
     }
     return buckets.filter(b => b.total > 0)
   }, [items])
@@ -577,11 +580,29 @@ function PieTip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const p = payload[0]
   const pct = typeof p.percent === 'number' ? p.percent * 100 : 0
+  const byNat: Record<string, number> | undefined = p.payload?.byNat
+  const rows = byNat ? Object.entries(byNat).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0) : []
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '9px 12px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)' }}>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 220, maxWidth: 300 }}>
       <div style={{ opacity: 0.7, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
-      <div style={{ fontFamily: display, fontSize: 18, fontWeight: 700 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
-      {pct > 0 && <div style={{ opacity: 0.6, marginTop: 3 }}>{pct.toFixed(1)}%</div>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+        <div style={{ fontFamily: display, fontSize: 18, fontWeight: 700 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
+        {pct > 0 && <div style={{ opacity: 0.6 }}>{pct.toFixed(1)}%</div>}
+      </div>
+      {rows.length > 0 && (
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0' }} />
+          <div style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginBottom: 4 }}>Por natureza</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {rows.map(([nat, v]) => (
+              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10.5, opacity: 0.85 }}>
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nat}</span>
+                <span style={{ fontWeight: 600 }}>{fmtCurrencyShort(v, 'BRL')}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
