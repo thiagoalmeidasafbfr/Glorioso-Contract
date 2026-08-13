@@ -30,6 +30,7 @@ import PageRelGatilhos from './pages/PageRelGatilhos'
 import PageRecuperacaoJudicial from './pages/PageRecuperacaoJudicial'
 import PageDados from './pages/PageDados'
 import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
+import PageAmortizacao from './pages/PageAmortizacao'
 
 function AppRoutes() {
   const { session, loading } = useAuth()
@@ -85,6 +86,7 @@ function AppRoutes() {
           <Route path="/relatorios/direitos-economicos" element={<PageRelDirEconomicos />} />
           <Route path="/relatorios/gatilhos" element={<PageRelGatilhos />} />
           <Route path="/relatorios/recuperacao-judicial" element={<PageRecuperacaoJudicial />} />
+          <Route path="/relatorios/amortizacao" element={<PageAmortizacao />} />
           {/* Compat: redireciona os relatórios antigos por natureza ao consolidado. */}
           <Route path="/relatorios/:kind" element={<Navigate to="/relatorios/consolidado" replace />} />
 
