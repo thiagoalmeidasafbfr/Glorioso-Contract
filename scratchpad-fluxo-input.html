@@ -134,15 +134,49 @@
   /* Step (screen + explanation) */
   .step{
     display:grid;grid-template-columns:1.15fr 1fr;gap:32px;align-items:start;
-    margin-bottom:44px;
+    padding:32px 0;
+    border-top:1px solid var(--divider);
   }
-  .step:nth-child(even) .screen-wrap{order:2;}
-  .step:nth-child(even) .explain{order:1;}
+  .step:first-of-type{border-top:0;padding-top:8px;}
+  .step-notext{padding:28px 0;border-top:1px solid var(--divider);}
+  .step:nth-of-type(even) .screen-wrap{order:2;}
+  .step:nth-of-type(even) .explain{order:1;}
   .step .explain h3{font-size:20px;margin:0 0 6px;color:var(--ink);font-weight:700;}
   .step .explain .who{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px;}
   .step .explain p{font-size:14.5px;color:var(--ink-2);margin:0 0 12px;line-height:1.6;}
   .step .explain ul{margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px;}
   .step .explain ul li{margin-bottom:4px;}
+
+  /* Fase 0 — negociação (sem screen mockup) */
+  .fase-zero{
+    background:var(--canvas);border:1px dashed var(--divider-strong);border-radius:10px;
+    padding:22px 24px;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;
+  }
+  .fase-zero .badge-fase{
+    font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.08em;
+    padding:4px 10px;border:1px solid var(--divider-strong);border-radius:3px;
+    background:var(--card);white-space:nowrap;
+  }
+  .fase-zero h3{font-size:17px;margin:0 0 4px;color:var(--ink);font-weight:700;}
+  .fase-zero p{font-size:13.5px;color:var(--ink-2);margin:0;}
+
+  /* Fase 4 — consumo com 4 áreas */
+  .consumo-grid{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
+    margin-top:18px;
+  }
+  .consumo-card{
+    background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:16px 16px 18px;
+  }
+  .consumo-card .who{font-size:10.5px;color:var(--gold);font-weight:700;letter-spacing:0.08em;margin-bottom:8px;}
+  .consumo-card h4{font-size:15px;margin:0 0 4px;color:var(--ink);font-weight:700;}
+  .consumo-card .obj{font-size:12px;color:var(--ink-mute);margin:0 0 10px;line-height:1.45;}
+  .consumo-card ul{margin:0;padding-left:16px;color:var(--ink-2);font-size:12.5px;line-height:1.55;}
+  .consumo-card ul li{margin-bottom:3px;}
+  .consumo-card.tes{border-top:2px solid var(--pos);}
+  .consumo-card.con{border-top:2px solid var(--info);}
+  .consumo-card.jur{border-top:2px solid var(--gold);}
+  .consumo-card.ass{border-top:2px solid var(--warn);}
 
   /* RACI table */
   .raci-wrap{background:var(--card);border:1px solid var(--divider);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-card);}
@@ -224,128 +258,175 @@
     </p>
 
     <div class="flow-card">
-      <svg viewBox="0 0 1080 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fluxograma de informação">
+      <svg viewBox="0 0 1120 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fluxograma de informação em quatro fases">
         <defs>
-          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <marker id="arr" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" fill="#100d0a"/>
-          </marker>
-          <marker id="arrGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-            <path d="M0,0 L10,5 L0,10 z" fill="#8f6a2a"/>
-          </marker>
-          <marker id="arrMute" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-            <path d="M0,0 L10,5 L0,10 z" fill="#6b645d"/>
           </marker>
         </defs>
 
-        <!-- Origem: Contrato -->
-        <g>
-          <rect x="30" y="40" width="200" height="72" rx="6" fill="#eeedea" stroke="#100d0a" stroke-width="1.2"/>
-          <text x="130" y="70" text-anchor="middle" font-family="Manrope" font-size="11" fill="#6b645d" font-weight="600" letter-spacing="1">DOCUMENTO DE ORIGEM</text>
-          <text x="130" y="94" text-anchor="middle" font-family="Manrope" font-size="15" fill="#100d0a" font-weight="700">Contrato assinado</text>
-        </g>
-        <line x1="230" y1="76" x2="290" y2="76" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
+        <!-- ── LEFT COLUMN: STAGE LABELS ──────────────────────────────── -->
+        <g font-family="Manrope">
+          <text x="30" y="60"  font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 0</text>
+          <text x="30" y="80"  font-size="13" fill="#100d0a" font-weight="700">Negociação</text>
+          <text x="30" y="97"  font-size="11" fill="#6b645d">sigilo interno</text>
 
-        <!-- Jurídico -->
-        <g>
-          <rect x="290" y="30" width="220" height="92" rx="6" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.6"/>
-          <text x="400" y="56" text-anchor="middle" font-family="Manrope" font-size="11" fill="#8f6a2a" font-weight="700" letter-spacing="1">CARREGA</text>
-          <text x="400" y="80" text-anchor="middle" font-family="Manrope" font-size="17" fill="#100d0a" font-weight="700">Jurídico</text>
-          <text x="400" y="102" text-anchor="middle" font-family="Manrope" font-size="12" fill="#6b645d">Cláusulas, remuneração, aditivos</text>
-        </g>
-        <line x1="400" y1="122" x2="400" y2="200" stroke="#8f6a2a" stroke-width="1.4" marker-end="url(#arrGold)"/>
+          <text x="30" y="240" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 1</text>
+          <text x="30" y="260" font-size="13" fill="#100d0a" font-weight="700">Contrato</text>
+          <text x="30" y="277" font-size="11" fill="#6b645d">assinado &amp; registrado</text>
 
-        <!-- Banco de dados central -->
+          <text x="30" y="470" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 2</text>
+          <text x="30" y="490" font-size="13" fill="#100d0a" font-weight="700">Sanity check</text>
+          <text x="30" y="507" font-size="11" fill="#6b645d">validação do dado</text>
+
+          <text x="30" y="640" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 3</text>
+          <text x="30" y="660" font-size="13" fill="#100d0a" font-weight="700">Consumo</text>
+          <text x="30" y="677" font-size="11" fill="#6b645d">contínuo por área</text>
+        </g>
+
+        <!-- Divider column -->
+        <line x1="200" y1="20" x2="200" y2="820" stroke="#d9d6d0" stroke-width="1"/>
+
+        <!-- ══ FASE 0 · Negociação (invisível à companhia) ══ -->
         <g>
-          <rect x="240" y="205" width="600" height="128" rx="10" fill="#f3f2ef" stroke="#100d0a" stroke-width="1.6"/>
-          <text x="540" y="232" text-anchor="middle" font-family="Manrope" font-size="11" fill="#6b645d" font-weight="600" letter-spacing="1">BANCO DE DADOS · SCHEMA ATLETA-CENTRAL</text>
-          <line x1="270" y1="245" x2="810" y2="245" stroke="rgba(20,17,13,0.10)" stroke-width="1"/>
-          <g font-family="Manrope" font-size="12" fill="#100d0a" font-weight="600">
-            <text x="290" y="270">ac_atletas</text>
-            <text x="290" y="290">ac_contratos</text>
-            <text x="290" y="310">ac_clausulas</text>
-            <text x="500" y="270">ac_remuneracoes</text>
-            <text x="500" y="290">ac_obrigacoes_financeiras</text>
-            <text x="500" y="310">ac_parcelas</text>
-            <text x="740" y="270">ac_entidades</text>
-            <text x="740" y="290">ac_ativos_intangiveis</text>
-            <text x="740" y="310">ac_documentos</text>
+          <rect x="230" y="30" width="860" height="90" rx="6" fill="#eeedea" stroke="#bebab2" stroke-width="1" stroke-dasharray="5 4"/>
+          <text x="260" y="58" font-family="Manrope" font-size="10" fill="#6b645d" font-weight="700" letter-spacing="2">DEPARTAMENTO DE FUTEBOL · INTERNO</text>
+          <text x="260" y="82" font-family="Manrope" font-size="16" fill="#100d0a" font-weight="700">Negociação em andamento</text>
+          <text x="260" y="103" font-family="Manrope" font-size="12" fill="#6b645d">Informação sigilosa — para a companhia, essa negociação ainda não existe. Nenhum registro no sistema.</text>
+        </g>
+
+        <!-- Arrow 0 → 1 -->
+        <line x1="660" y1="120" x2="660" y2="165" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="672" y="147" font-family="Manrope" font-size="11" fill="#6b645d" font-style="normal">assinatura do contrato</text>
+
+        <!-- ══ FASE 1 · Jurídico registra ══ -->
+        <g>
+          <rect x="230" y="170" width="860" height="120" rx="6" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.6"/>
+          <text x="260" y="200" font-family="Manrope" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">CARREGA</text>
+          <text x="260" y="224" font-family="Manrope" font-size="17" fill="#100d0a" font-weight="700">Jurídico registra tudo</text>
+          <text x="260" y="245" font-family="Manrope" font-size="12" fill="#6b645d">Contrato assinado. Informação já pode ser compartilhada. Rota /criar.</text>
+
+          <!-- inline chips of what is written -->
+          <g font-family="Manrope" font-size="11" fill="#100d0a" font-weight="600">
+            <rect x="260" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="325" y="273" text-anchor="middle">Contrato + aditivos</text>
+            <rect x="398" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="463" y="273" text-anchor="middle">Cláusulas</text>
+            <rect x="536" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="601" y="273" text-anchor="middle">Remuneração</text>
+            <rect x="674" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="739" y="273" text-anchor="middle">Contrapartes</text>
+            <rect x="812" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="877" y="273" text-anchor="middle">PDF do contrato</text>
           </g>
         </g>
 
-        <!-- Tesouraria -->
-        <g>
-          <rect x="290" y="415" width="220" height="92" rx="6" fill="#ffffff" stroke="#2f6b3a" stroke-width="1.6"/>
-          <text x="400" y="441" text-anchor="middle" font-family="Manrope" font-size="11" fill="#2f6b3a" font-weight="700" letter-spacing="1">OPERA</text>
-          <text x="400" y="465" text-anchor="middle" font-family="Manrope" font-size="17" fill="#100d0a" font-weight="700">Tesouraria</text>
-          <text x="400" y="487" text-anchor="middle" font-family="Manrope" font-size="12" fill="#6b645d">Parcelas, câmbio, baixa</text>
-        </g>
-        <line x1="400" y1="415" x2="400" y2="337" stroke="#2f6b3a" stroke-width="1.4" marker-end="url(#arrGold)" style="marker-end:url(#arrGold);"/>
-        <line x1="400" y1="333" x2="400" y2="410" stroke="#2f6b3a" stroke-width="1.4"/>
-        <polygon points="395,412 400,422 405,412" fill="#2f6b3a"/>
+        <!-- Arrow 1 → DB -->
+        <line x1="660" y1="290" x2="660" y2="325" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
 
-        <!-- Consumidores à direita -->
+        <!-- ══ Banco de dados central ══ -->
         <g>
-          <rect x="640" y="30" width="200" height="72" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
-          <text x="740" y="56" text-anchor="middle" font-family="Manrope" font-size="10.5" fill="#1f5673" font-weight="700" letter-spacing="1">CONSOME</text>
-          <text x="740" y="76" text-anchor="middle" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Controladoria</text>
-          <text x="740" y="92" text-anchor="middle" font-family="Manrope" font-size="11.5" fill="#6b645d">Contábil, orçado × realizado</text>
+          <rect x="230" y="330" width="860" height="100" rx="8" fill="#f3f2ef" stroke="#100d0a" stroke-width="1.4"/>
+          <text x="260" y="358" font-family="Manrope" font-size="10" fill="#6b645d" font-weight="700" letter-spacing="2">BANCO DE DADOS · SCHEMA ATLETA-CENTRAL</text>
+          <line x1="250" y1="371" x2="1070" y2="371" stroke="#d9d6d0" stroke-width="1"/>
+          <g font-family="Manrope" font-size="12" fill="#100d0a" font-weight="600">
+            <text x="260" y="393">ac_atletas</text>
+            <text x="360" y="393">ac_contratos</text>
+            <text x="470" y="393">ac_clausulas</text>
+            <text x="580" y="393">ac_remuneracoes</text>
+            <text x="720" y="393">ac_obrigacoes_financeiras</text>
+            <text x="920" y="393">ac_parcelas</text>
+            <text x="260" y="414">ac_entidades</text>
+            <text x="380" y="414">ac_ativos_intangiveis</text>
+            <text x="550" y="414">ac_amortizacoes</text>
+            <text x="700" y="414">ac_documentos</text>
+            <text x="850" y="414">ac_taxas_cambio</text>
+          </g>
         </g>
-        <line x1="840" y1="70" x2="900" y2="70" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <line x1="900" y1="70" x2="900" y2="269" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <line x1="900" y1="269" x2="843" y2="269" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrMute)"/>
 
-        <g>
-          <rect x="640" y="140" width="200" height="72" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
-          <text x="740" y="166" text-anchor="middle" font-family="Manrope" font-size="10.5" fill="#1f5673" font-weight="700" letter-spacing="1">CONSOME</text>
-          <text x="740" y="186" text-anchor="middle" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Assessor Financeiro</text>
-          <text x="740" y="202" text-anchor="middle" font-family="Manrope" font-size="11.5" fill="#6b645d">Cenários, sell-on</text>
-        </g>
-        <line x1="840" y1="176" x2="880" y2="176" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <line x1="880" y1="176" x2="880" y2="269" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <line x1="880" y1="269" x2="843" y2="269" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <!-- Arrow DB → Fase 2 -->
+        <line x1="660" y1="430" x2="660" y2="465" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
 
-        <!-- Consumidor esquerdo: Jurídico lê contingente -->
+        <!-- ══ FASE 2 · Sanity check ══ -->
         <g>
-          <rect x="30" y="140" width="200" height="72" rx="6" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.2" stroke-dasharray="4 3"/>
-          <text x="130" y="166" text-anchor="middle" font-family="Manrope" font-size="10.5" fill="#8f6a2a" font-weight="700" letter-spacing="1">CONSOME</text>
-          <text x="130" y="186" text-anchor="middle" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Jurídico (leitura)</text>
-          <text x="130" y="202" text-anchor="middle" font-family="Manrope" font-size="11.5" fill="#6b645d">Contingente, RJ, gatilhos</text>
-        </g>
-        <line x1="230" y1="176" x2="240" y2="269" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrMute)"/>
+          <rect x="230" y="470" width="415" height="120" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="255" y="498" font-family="Manrope" font-size="10" fill="#1f5673" font-weight="700" letter-spacing="2">VALIDA</text>
+          <text x="255" y="522" font-family="Manrope" font-size="16" fill="#100d0a" font-weight="700">Controladoria</text>
+          <text x="255" y="544" font-family="Manrope" font-size="12" fill="#6b645d">Confere consistência do que foi registrado</text>
+          <text x="255" y="562" font-family="Manrope" font-size="11" fill="#6b645d">Valores, moeda, contraparte, cronograma,</text>
+          <text x="255" y="577" font-family="Manrope" font-size="11" fill="#6b645d">rubrica e tratamento contábil coerentes.</text>
 
-        <!-- Saída inferior: Relatórios -->
-        <g>
-          <rect x="30" y="415" width="200" height="92" rx="6" fill="#eeedea" stroke="#100d0a" stroke-width="1.2"/>
-          <text x="130" y="440" text-anchor="middle" font-family="Manrope" font-size="10.5" fill="#6b645d" font-weight="600" letter-spacing="1">SAÍDA</text>
-          <text x="130" y="463" text-anchor="middle" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Relatórios</text>
-          <text x="130" y="481" text-anchor="middle" font-family="Manrope" font-size="11" fill="#6b645d">Consolidado, Sell-on,</text>
-          <text x="130" y="495" text-anchor="middle" font-family="Manrope" font-size="11" fill="#6b645d">Direitos, Gatilhos, RJ</text>
+          <rect x="675" y="470" width="415" height="120" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="700" y="498" font-family="Manrope" font-size="10" fill="#1f5673" font-weight="700" letter-spacing="2">VALIDA</text>
+          <text x="700" y="522" font-family="Manrope" font-size="16" fill="#100d0a" font-weight="700">Assessor Financeiro</text>
+          <text x="700" y="544" font-family="Manrope" font-size="12" fill="#6b645d">Sanity check financeiro do dado</text>
+          <text x="700" y="562" font-family="Manrope" font-size="11" fill="#6b645d">Exposição total, moeda, ownership e</text>
+          <text x="700" y="577" font-family="Manrope" font-size="11" fill="#6b645d">gatilhos batem com a negociação fechada.</text>
         </g>
-        <line x1="240" y1="333" x2="130" y2="410" stroke="#100d0a" stroke-width="1.2" marker-end="url(#arr)"/>
 
+        <!-- Arrow 2 → 3 -->
+        <line x1="660" y1="590" x2="660" y2="620" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="672" y="609" font-family="Manrope" font-size="11" fill="#6b645d">dado governado</text>
+
+        <!-- ══ FASE 3 · Consumo por área ══ -->
         <g>
-          <rect x="640" y="415" width="200" height="92" rx="6" fill="#eeedea" stroke="#100d0a" stroke-width="1.2"/>
-          <text x="740" y="440" text-anchor="middle" font-family="Manrope" font-size="10.5" fill="#6b645d" font-weight="600" letter-spacing="1">SAÍDA</text>
-          <text x="740" y="463" text-anchor="middle" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Alertas</text>
-          <text x="740" y="481" text-anchor="middle" font-family="Manrope" font-size="11" fill="#6b645d">Vencimentos, gatilhos a</text>
-          <text x="740" y="495" text-anchor="middle" font-family="Manrope" font-size="11" fill="#6b645d">apurar, contingente</text>
+          <!-- Tesouraria -->
+          <rect x="230" y="630" width="200" height="170" rx="6" fill="#ffffff" stroke="#2f6b3a" stroke-width="1.4"/>
+          <text x="248" y="657" font-family="Manrope" font-size="10" fill="#2f6b3a" font-weight="700" letter-spacing="2">TESOURARIA</text>
+          <text x="248" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Caixa</text>
+          <line x1="248" y1="690" x2="278" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="248" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Projeção de fluxo</text>
+          <text x="248" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Câmbio e PTAX</text>
+          <text x="248" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Parcelas pagas</text>
+          <text x="248" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Baixas e overdue</text>
+          <text x="248" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Correção monetária</text>
+
+          <!-- Controladoria -->
+          <rect x="445" y="630" width="200" height="170" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="463" y="657" font-family="Manrope" font-size="10" fill="#1f5673" font-weight="700" letter-spacing="2">CONTROLADORIA</text>
+          <text x="463" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Resultado</text>
+          <line x1="463" y1="690" x2="493" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="463" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Forecast</text>
+          <text x="463" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Orçamentos futuros</text>
+          <text x="463" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Análise do realizado</text>
+          <text x="463" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Orçado × realizado</text>
+          <text x="463" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Amortização</text>
+
+          <!-- Jurídico -->
+          <rect x="660" y="630" width="200" height="170" rx="6" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.4"/>
+          <text x="678" y="657" font-family="Manrope" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">JURÍDICO</text>
+          <text x="678" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Risco</text>
+          <line x1="678" y1="690" x2="708" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="678" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Gatilhos próximos</text>
+          <text x="678" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Vencimentos críticos</text>
+          <text x="678" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Cláusulas de default</text>
+          <text x="678" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Passivo contingente</text>
+          <text x="678" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Recuperação judicial</text>
+
+          <!-- Assessor -->
+          <rect x="875" y="630" width="215" height="170" rx="6" fill="#ffffff" stroke="#8a6516" stroke-width="1.4"/>
+          <text x="893" y="657" font-family="Manrope" font-size="10" fill="#8a6516" font-weight="700" letter-spacing="2">ASSESSOR FINANCEIRO</text>
+          <text x="893" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Decisão</text>
+          <line x1="893" y1="690" x2="923" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="893" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Relatórios macro</text>
+          <text x="893" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Cenários e sell-on</text>
+          <text x="893" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Exposição consolidada</text>
+          <text x="893" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Submete ao CEO</text>
+          <text x="893" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Apoio à diretoria</text>
         </g>
-        <line x1="840" y1="333" x2="740" y2="410" stroke="#100d0a" stroke-width="1.2" marker-end="url(#arr)"/>
 
         <!-- Legenda -->
         <g font-family="Manrope" font-size="11" fill="#6b645d">
-          <line x1="30" y1="565" x2="60" y2="565" stroke="#100d0a" stroke-width="1.4"/>
-          <text x="66" y="569">escreve</text>
-          <line x1="140" y1="565" x2="170" y2="565" stroke="#6b645d" stroke-width="1.2" stroke-dasharray="4 3"/>
-          <text x="176" y="569">lê</text>
-          <rect x="220" y="558" width="18" height="14" rx="3" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.4"/>
-          <text x="242" y="569">área carregadora</text>
-          <rect x="370" y="558" width="18" height="14" rx="3" fill="#ffffff" stroke="#2f6b3a" stroke-width="1.4"/>
-          <text x="392" y="569">área operadora</text>
-          <rect x="510" y="558" width="18" height="14" rx="3" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
-          <text x="532" y="569">área consumidora</text>
-          <rect x="650" y="558" width="18" height="14" rx="3" fill="#eeedea" stroke="#100d0a" stroke-width="1.2"/>
-          <text x="672" y="569">documento / saída</text>
+          <rect x="230" y="848" width="14" height="12" rx="2" fill="#eeedea" stroke="#bebab2" stroke-width="1" stroke-dasharray="3 2"/>
+          <text x="252" y="859">interno (fora do sistema)</text>
+          <rect x="410" y="848" width="14" height="12" rx="2" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.4"/>
+          <text x="432" y="859">área carregadora</text>
+          <rect x="555" y="848" width="14" height="12" rx="2" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="577" y="859">área validadora</text>
+          <rect x="690" y="848" width="14" height="12" rx="2" fill="#ffffff" stroke="#2f6b3a" stroke-width="1.4"/>
+          <text x="712" y="859">área operadora</text>
+          <rect x="820" y="848" width="14" height="12" rx="2" fill="#f3f2ef" stroke="#100d0a" stroke-width="1.2"/>
+          <text x="842" y="859">banco de dados</text>
         </g>
       </svg>
     </div>
@@ -356,9 +437,24 @@
     <div class="lead">Passo a passo</div>
     <h2>O fluxo nas telas do sistema</h2>
     <p class="sub">
-      As telas abaixo ilustram o momento em que cada área toca o dado. Layout,
-      cores e tipografia seguem os tokens do próprio Glorioso Contract.
+      Quatro fases que vão da negociação sigilosa até o consumo contínuo do
+      dado governado. As telas ilustram o momento em que cada área toca a
+      informação.
     </p>
+
+    <!-- FASE 0 — Negociação (sem tela) -->
+    <div class="fase-zero" style="margin-bottom:8px;">
+      <div class="badge-fase">FASE 0 · NEGOCIAÇÃO</div>
+      <div>
+        <h3>Departamento de Futebol negocia — informação ainda não existe para a companhia</h3>
+        <p>
+          Enquanto a negociação está em andamento é conteúdo sigiloso. Nada é
+          registrado no sistema, nenhum relatório muda. Para efeito de
+          companhia, o atleta e a operação simplesmente <b>ainda não existem</b>.
+          O fluxo só começa quando o contrato é assinado.
+        </p>
+      </div>
+    </div>
 
     <!-- STEP 1: Jurídico — Wizard -->
     <div class="step">
@@ -409,14 +505,15 @@
         </div>
       </div>
       <div class="explain">
-        <div class="who">Passo 1 · Jurídico</div>
-        <h3>Registrar o contrato no Assistente</h3>
+        <div class="who">Fase 1 · Jurídico registra</div>
+        <h3>Contrato assinado, informação vai ao sistema</h3>
         <p>
-          Toda entrada passa pelo mesmo funil: <b>+ Criar (Assistente)</b>. É a
-          tela em que o Jurídico transforma o contrato em dados estruturados —
-          contrato de trabalho, cláusulas condição→efeito, remuneração inicial,
-          contrapartes e aditivos. Nenhum valor realizado é digitado aqui: só o
-          que está no papel.
+          Com o contrato assinado, o Jurídico já elaborou tudo — a informação
+          pode ser compartilhada. Toda entrada passa pelo mesmo funil:
+          <b>+ Criar (Assistente)</b>. O Jurídico transforma o contrato em
+          dados estruturados: contrato de trabalho, cláusulas condição→efeito,
+          remuneração inicial, contrapartes e aditivos. Nenhum valor realizado
+          é digitado aqui — só o que está no papel.
         </p>
         <ul>
           <li>Rota: <code>/criar</code></li>
@@ -426,8 +523,146 @@
       </div>
     </div>
 
-    <!-- STEP 2: Tesouraria — Consolidado / Parcelas -->
+    <!-- STEP 2: Sanity check — Controladoria + Assessor -->
     <div class="step">
+      <div class="screen-wrap">
+        <div class="screen">
+          <aside class="sb">
+            <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
+            <ul>
+              <li>+ Criar (Assistente)</li>
+              <li>Dashboards</li>
+              <li>Atletas</li>
+            </ul>
+            <div class="sec">Relatórios</div>
+            <ul>
+              <li class="active">Visão por Atleta</li>
+              <li>Consolidado</li>
+              <li>Direitos Econômicos</li>
+            </ul>
+          </aside>
+          <div class="main">
+            <div class="ph"><div class="t">Visão por Atleta</div><div class="s">Sanity check dos dados registrados · Botafogo SAF</div></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">EXPOSIÇÃO</div>
+                <div style="font-size:16px;font-weight:700;margin-top:2px;">€ 12,0 M</div>
+                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ bate com contrato</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">OWNERSHIP</div>
+                <div style="font-size:16px;font-weight:700;margin-top:2px;">100% BFR</div>
+                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ soma 100%</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">GATILHOS</div>
+                <div style="font-size:16px;font-weight:700;margin-top:2px;">2 registrados</div>
+                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ condição + efeito</div>
+              </div>
+            </div>
+            <table>
+              <thead><tr><th>Item</th><th>Contrato</th><th>Sistema</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Salário mensal</td><td>R$ 600.000</td><td>R$ 600.000</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Direito de imagem</td><td>R$ 600.000</td><td>R$ 600.000</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Transferência (5×)</td><td>€ 10,0 M</td><td>€ 10,0 M</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Comissão agente</td><td>€ 1,0 M</td><td>€ 1,0 M</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Gatilho 10 jogos</td><td>€ 500 k</td><td>€ 500 k</td><td><span class="badge b-warn">Contingente</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="explain">
+        <div class="who">Fase 2 · Controladoria + Assessor</div>
+        <h3>Sanity check antes de virar operação</h3>
+        <p>
+          Antes do dado ser consumido para caixa e para decisão, Controladoria e
+          Assessor Financeiro fazem uma leitura crítica do que o Jurídico
+          registrou. Objetivo: garantir que valor, moeda, contraparte,
+          cronograma e ownership espelham o contrato assinado. Nada é
+          reescrito — apenas confirmado ou devolvido ao Jurídico para ajuste.
+        </p>
+        <ul>
+          <li>Rotas: <code>/relatorios/visao-atletas</code>, <code>/atletas/:id</code></li>
+          <li>Verifica: exposição total, moeda, ownership 100%, gatilhos (condição + efeito)</li>
+          <li>Devolve ao Jurídico se algo divergir do contrato</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FASE 3 header (título do bloco de consumo) -->
+    <div class="step-notext" style="grid-column:1/-1;">
+      <div class="who" style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Fase 3 · Consumo contínuo</div>
+      <h3 style="font-size:22px;margin:0 0 10px;color:var(--ink);font-weight:700;">Quatro áreas, quatro propósitos, mesma base de dados</h3>
+      <p style="font-size:14.5px;color:var(--ink-2);margin:0;max-width:75ch;line-height:1.6;">
+        A partir da validação, o dado governado passa a ser consumido em
+        paralelo pelas quatro áreas. Cada uma lê o mesmo <code>ac_*</code>, mas
+        com objetivo distinto — caixa, resultado, risco jurídico e decisão executiva.
+      </p>
+
+      <div class="consumo-grid">
+        <div class="consumo-card tes">
+          <div class="who">TESOURARIA</div>
+          <h4>Caixa e realização</h4>
+          <p class="obj">Valida a informação a nível de caixa e cuida de todas as parcelas — pagas, baixas e em atraso.</p>
+          <ul>
+            <li>Projeção de fluxo de caixa</li>
+            <li>Validação de informações cambiais</li>
+            <li>PTAX aplicada por parcela</li>
+            <li>Baixa e status: paga, parcial, vencida</li>
+            <li>Correção monetária (SELIC/CDI/IPCA)</li>
+            <li>Alertas de overdue</li>
+          </ul>
+        </div>
+
+        <div class="consumo-card con">
+          <div class="who">CONTROLADORIA</div>
+          <h4>Forecast e realizado</h4>
+          <p class="obj">Usa a informação para projetar resultado e analisar o realizado da companhia.</p>
+          <ul>
+            <li>Forecasts financeiros</li>
+            <li>Orçamentos futuros</li>
+            <li>Análise do resultado realizado</li>
+            <li>Orçado × realizado por rubrica</li>
+            <li>Amortização do intangível</li>
+            <li>DRE gerencial por atleta</li>
+          </ul>
+        </div>
+
+        <div class="consumo-card jur">
+          <div class="who">JURÍDICO</div>
+          <h4>Risco contratual</h4>
+          <p class="obj">Checa gatilhos próximos, vencimentos e faz análise de risco sobre as obrigações.</p>
+          <ul>
+            <li>Gatilhos que estão se aproximando</li>
+            <li>Vencimentos com risco</li>
+            <li>Obrigações mais críticas de atrasar</li>
+            <li>Cláusulas de default (atraso × dias)</li>
+            <li>Passivo contingente por atleta</li>
+            <li>Recuperação judicial</li>
+          </ul>
+        </div>
+
+        <div class="consumo-card ass">
+          <div class="who">ASSESSOR FINANCEIRO</div>
+          <h4>Decisão executiva</h4>
+          <p class="obj">Cria relatórios mais macros e submete a informação para tomada de decisão do CEO e executivos.</p>
+          <ul>
+            <li>Relatórios executivos consolidados</li>
+            <li>Cenários e simulações</li>
+            <li>Sell-on e mais-valia</li>
+            <li>Exposição consolidada por moeda</li>
+            <li>Direitos econômicos</li>
+            <li>Apoio à diretoria e CEO</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela ilustrativa da Fase 3 — Consolidado da Tesouraria -->
+    <div class="step">
+      <div class="screen-wrap">
       <div class="screen-wrap">
         <div class="screen">
           <aside class="sb">
@@ -470,17 +705,18 @@
         </div>
       </div>
       <div class="explain">
-        <div class="who">Passo 2 · Tesouraria</div>
-        <h3>Operar as parcelas no Consolidado</h3>
+        <div class="who">Fase 3 · Tesouraria (exemplo)</div>
+        <h3>Consolidado — validação de caixa e overdue</h3>
         <p>
-          A Tesouraria não toca cláusula nem valor contratado — ela transforma
-          a obrigação em cronograma de pagamento. Aplica câmbio, fixa PTAX,
-          registra baixas e o efeito financeiro dos gatilhos apurados.
+          A Tesouraria opera o Consolidado como sua tela de trabalho.
+          Diariamente valida parcelas pagas, aplica câmbio e PTAX, marca
+          baixas e identifica overdue. É a única área que <b>escreve</b>
+          durante o consumo — todas as outras apenas leem.
         </p>
         <ul>
           <li>Rota: <code>/relatorios/consolidado</code></li>
           <li>Escreve: <code>ac_parcelas</code> (status, câmbio, correção)</li>
-          <li>Alertas: vencimento próximo, em atraso, gatilho a apurar</li>
+          <li>Objetivo: caixa em dia, projeção de fluxo, gestão de overdue</li>
         </ul>
       </div>
     </div>
@@ -536,19 +772,19 @@
         </div>
       </div>
       <div class="explain">
-        <div class="who">Passo 3 · Controladoria</div>
-        <h3>Reconciliar contábil e amortização</h3>
+        <div class="who">Fase 3 · Controladoria (exemplo)</div>
+        <h3>Ficha do Atleta — base para forecast e realizado</h3>
         <p>
-          A Controladoria lê o que Jurídico e Tesouraria escreveram e adiciona a
-          camada contábil: rubrica, conta, centro de custo, tratamento
-          (capitalizar ou despesa) e cronograma de amortização do intangível.
-          Consegue ver linha do tempo de remuneração e passivo firme × contingente
-          por atleta.
+          A Controladoria lê a ficha para projetar resultado e comparar com o
+          realizado. Timeline de remuneração, intangível e amortização
+          alimentam forecasts, orçamentos futuros e o orçado × realizado.
+          Adiciona a camada contábil (rubrica, conta, centro de custo,
+          tratamento) sem tocar em cláusula ou parcela.
         </p>
         <ul>
-          <li>Rota: <code>/relatorios/visao-atletas</code>, <code>/atletas/:id</code></li>
+          <li>Rotas: <code>/relatorios/visao-atletas</code>, <code>/atletas/:id</code></li>
           <li>Escreve: campos contábeis em <code>ac_obrigacoes_financeiras</code></li>
-          <li>Lê: intangível, amortização, DRE por atleta</li>
+          <li>Objetivo: forecast, orçamentos futuros, DRE por atleta</li>
         </ul>
       </div>
     </div>
@@ -598,18 +834,19 @@
         </div>
       </div>
       <div class="explain">
-        <div class="who">Passo 4 · Assessor Financeiro</div>
-        <h3>Analisar exposição e cenários</h3>
+        <div class="who">Fase 3 · Jurídico &amp; Assessor (exemplo)</div>
+        <h3>Recuperação Judicial — risco e decisão executiva</h3>
         <p>
-          O Assessor Financeiro não digita dado transacional. Lê os mesmos
-          relatórios da Controladoria e usa a base para simulações de sell-on,
-          mais-valia e cenários de renegociação. Recuperação Judicial e
-          exposição total por moeda saem daqui.
+          O Jurídico usa este relatório para gerir risco: quais obrigações são
+          mais críticas se atrasarem, quais disparam cláusulas de default,
+          qual o passivo contingente vinculado a gatilhos. O Assessor
+          Financeiro consome o mesmo dado no macro para submeter à decisão
+          do CEO e dos executivos.
         </p>
         <ul>
-          <li>Rotas: <code>/relatorios/consolidado</code>, <code>/relatorios/recuperacao-judicial</code>, <code>/relatorios/sell-on</code></li>
-          <li>Lê: passivo firme, contingente, ownership, timeline</li>
-          <li>Escreve: apenas anotações e cenários (sandbox futuro)</li>
+          <li>Rotas: <code>/relatorios/recuperacao-judicial</code>, <code>/relatorios/sell-on</code>, <code>/relatorios/gatilhos</code></li>
+          <li>Jurídico: gatilhos próximos, default por atraso, contingente</li>
+          <li>Assessor: relatórios macro, cenários, apoio à diretoria</li>
         </ul>
       </div>
     </div>
