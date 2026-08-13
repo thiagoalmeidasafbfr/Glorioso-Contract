@@ -1,667 +1,799 @@
-<title>Fluxo de Input — Glorioso</title>
+<title>Fluxo de Input — Glorioso Contract</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap">
+
 <style>
   :root{
-    --ground:#1a1410;
-    --surface:#221912;
-    --surface-2:#2b1f18;
-    --line:#3a2c22;
-    --line-2:#4a382b;
-    --ink:#F3EEE2;
-    --ink-mute:#c9b8a6;
-    --ink-dim:rgba(243,238,226,0.55);
-    --gold:#C9A961;
-    --gold-soft:#8a733e;
-    --legal:#8FB0D6;
-    --tesouraria:#8CC59A;
-    --control:#E0B37A;
-    --assessor:#C79BD3;
-    --font-display:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
-    --font-body:"Inter","Helvetica Neue",system-ui,-apple-system,sans-serif;
-    --font-label:ui-monospace,"SF Mono","Menlo",monospace;
+    --gold:#8f6a2a;
+    --gold-tint:rgba(143,106,42,0.10);
+    --ink:#100d0a;
+    --ink-2:#2a2521;
+    --ink-mute:#6b645d;
+    --ink-faint:rgba(16,13,10,0.38);
+    --page:#f3f2ef;
+    --canvas:#eeedea;
+    --card:#ffffff;
+    --inset:#e7e5e0;
+    --divider:rgba(20,17,13,0.10);
+    --divider-strong:rgba(20,17,13,0.18);
+    --pos:#2f6b3a;
+    --neg:#8a3524;
+    --warn:#8a6516;
+    --info:#1f5673;
+    --sidebar:#1a1410;
+    --sidebar-ink:rgba(243,238,226,0.62);
+    --sidebar-active:#f3eee2;
+    --shadow-card:0 1px 2px rgba(16,13,10,0.05),0 8px 20px -16px rgba(16,13,10,0.30);
+    --font:'Manrope',system-ui,-apple-system,sans-serif;
   }
-  html,body{background:var(--ground);color:var(--ink);}
+  html,body{background:var(--page);color:var(--ink);}
   body{
-    font-family:var(--font-body);
-    font-size:16px;
+    font-family:var(--font);
+    font-size:15px;
     line-height:1.55;
     margin:0;
     -webkit-font-smoothing:antialiased;
+    font-feature-settings:"ss01","cv11";
   }
-  .page{max-width:1120px;margin:0 auto;padding:64px 40px 96px;}
-  .eyebrow{
-    font-family:var(--font-label);
-    font-size:11px;
-    letter-spacing:0.22em;
-    text-transform:uppercase;
-    color:var(--gold);
+  .wrap{max-width:1160px;margin:0 auto;padding:56px 40px 96px;}
+
+  /* Top identifier */
+  .top{
+    display:flex;justify-content:space-between;align-items:center;
+    padding-bottom:20px;border-bottom:1px solid var(--divider);
+    font-size:12.5px;color:var(--ink-mute);
   }
-  .rule{height:1px;background:var(--line);margin:16px 0 0;}
+  .top b{color:var(--ink);font-weight:700;}
+  .top .gold{color:var(--gold);font-weight:600;}
 
   /* Hero */
-  .hero{
-    padding-top:24px;
-    padding-bottom:56px;
-    border-bottom:1px solid var(--line);
-  }
-  .hero-top{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    gap:24px;
-    flex-wrap:wrap;
-    font-family:var(--font-label);
-    font-size:11px;
-    letter-spacing:0.18em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-  }
-  .hero-title{
-    font-family:var(--font-display);
-    font-weight:500;
-    font-style:italic;
-    font-size:clamp(44px,6.4vw,88px);
-    line-height:1.02;
-    letter-spacing:-0.01em;
-    text-wrap:balance;
-    margin:36px 0 20px;
+  .hero{padding:44px 0 28px;border-bottom:1px solid var(--divider);}
+  .hero h1{
+    font-family:var(--font);
+    font-size:40px;font-weight:700;line-height:1.15;
+    letter-spacing:-0.015em;
     color:var(--ink);
-  }
-  .hero-title em{
-    font-style:normal;
-    color:var(--gold);
-  }
-  .hero-lede{
-    font-size:19px;
-    line-height:1.55;
-    max-width:64ch;
-    color:var(--ink-mute);
-  }
-  .hero-meta{
-    margin-top:40px;
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:1px;
-    background:var(--line);
-    border:1px solid var(--line);
-  }
-  .hero-meta > div{
-    background:var(--ground);
-    padding:18px 20px;
-  }
-  .hero-meta .k{
-    font-family:var(--font-label);
-    font-size:10px;
-    letter-spacing:0.2em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-    margin-bottom:8px;
-  }
-  .hero-meta .v{font-family:var(--font-display);font-size:20px;color:var(--ink);}
-
-  /* Section */
-  section{padding:56px 0;border-bottom:1px solid var(--line);}
-  section:last-of-type{border-bottom:0;}
-  h2{
-    font-family:var(--font-display);
-    font-weight:500;
-    font-size:34px;
-    letter-spacing:-0.01em;
-    margin:16px 0 8px;
+    margin:0 0 14px;max-width:22ch;
     text-wrap:balance;
   }
-  h3{
-    font-family:var(--font-display);
-    font-weight:500;
-    font-size:22px;
-    margin:0 0 8px;
+  .hero p{
+    font-size:16.5px;color:var(--ink-2);max-width:70ch;margin:0;line-height:1.6;
   }
-  p{color:var(--ink-mute);max-width:68ch;}
-  .section-lede{font-size:17px;max-width:70ch;margin-bottom:32px;}
+  .hero .meta{
+    margin-top:28px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+  }
+  .hero .meta .cell{
+    background:var(--card);border:1px solid var(--divider);
+    padding:14px 16px;border-radius:8px;
+  }
+  .hero .meta .k{font-size:11px;color:var(--ink-mute);font-weight:600;letter-spacing:0.02em;margin-bottom:4px;}
+  .hero .meta .v{font-size:15px;color:var(--ink);font-weight:600;}
 
-  /* Diagnóstico grid */
-  .diag{
-    display:grid;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:20px;
+  section{padding:56px 0;border-bottom:1px solid var(--divider);}
+  section:last-of-type{border-bottom:0;}
+  .lead{font-size:12px;color:var(--gold);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+  h2{
+    font-family:var(--font);
+    font-size:28px;font-weight:700;letter-spacing:-0.01em;
+    margin:0 0 10px;color:var(--ink);text-wrap:balance;
   }
-  .card{
-    background:var(--surface);
-    border:1px solid var(--line);
-    padding:22px 22px 24px;
-  }
-  .card .tag{
-    font-family:var(--font-label);
-    font-size:10px;
-    letter-spacing:0.2em;
-    text-transform:uppercase;
-    color:var(--gold);
-    margin-bottom:12px;
-  }
-  .card p{margin:6px 0 0;font-size:14.5px;}
+  h2 + p.sub{font-size:15.5px;color:var(--ink-mute);margin:0 0 32px;max-width:72ch;line-height:1.6;}
 
-  /* Flow diagram */
-  .flow-wrap{
-    background:var(--surface);
-    border:1px solid var(--line);
-    padding:32px 28px;
+  /* Flowchart card */
+  .flow-card{
+    background:var(--card);border:1px solid var(--divider);border-radius:12px;
+    padding:28px 24px;box-shadow:var(--shadow-card);
     overflow-x:auto;
   }
-  .flow{
-    min-width:920px;
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:0;
-    align-items:stretch;
-  }
-  .flow-col{padding:8px 20px;position:relative;}
-  .flow-col + .flow-col{border-left:1px dashed var(--line-2);}
-  .flow-col .head{
-    font-family:var(--font-label);
-    font-size:10px;
-    letter-spacing:0.22em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-    margin-bottom:14px;
-  }
-  .flow-col .stage{
-    font-family:var(--font-display);
-    font-size:22px;
-    color:var(--ink);
-    margin-bottom:6px;
-  }
-  .flow-col .who{font-size:13.5px;color:var(--gold);font-family:var(--font-label);letter-spacing:0.06em;}
-  .flow-col ul{
-    list-style:none;
-    padding:0;
-    margin:18px 0 0;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-  .flow-col li{
-    font-size:14px;
-    color:var(--ink-mute);
-    padding-left:14px;
-    position:relative;
-    line-height:1.45;
-  }
-  .flow-col li::before{
-    content:"";
-    position:absolute;
-    left:0;top:9px;
-    width:6px;height:1px;background:var(--gold);
-  }
+  .flow-card svg{display:block;width:100%;height:auto;min-width:900px;}
 
-  /* Roles / RACI */
-  .roles{
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:16px;
+  /* Screen mockup */
+  .screen{
+    background:var(--card);border:1px solid var(--divider);border-radius:12px;
+    overflow:hidden;box-shadow:var(--shadow-card);
+    display:grid;grid-template-columns:180px 1fr;min-height:360px;
   }
-  .role{
-    background:var(--surface);
-    border:1px solid var(--line);
-    padding:24px 22px 26px;
-    position:relative;
+  .screen .sb{
+    background:var(--sidebar);color:var(--sidebar-ink);
+    padding:16px 0;font-size:12px;
   }
-  .role::before{
-    content:"";
-    position:absolute;
-    left:0;top:0;bottom:0;
-    width:3px;
-    background:var(--role,var(--gold));
+  .screen .sb .brand{padding:2px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .screen .sb .brand .b1{color:#fff;font-weight:700;font-size:13px;letter-spacing:0.02em;}
+  .screen .sb .brand .b2{color:rgba(243,238,226,0.42);font-size:10.5px;margin-top:2px;}
+  .screen .sb ul{list-style:none;padding:0;margin:14px 0 0;}
+  .screen .sb li{padding:7px 18px;color:var(--sidebar-ink);border-left:2px solid transparent;}
+  .screen .sb li.active{color:#fff;background:rgba(255,255,255,0.05);border-left-color:var(--sidebar-active);font-weight:600;}
+  .screen .sb .sec{padding:10px 18px 2px;font-size:9.5px;color:rgba(243,238,226,0.32);letter-spacing:0.12em;text-transform:uppercase;}
+  .screen .main{background:var(--page);padding:22px 24px;}
+  .screen .main .ph{
+    padding-bottom:14px;border-bottom:1px solid var(--divider);margin-bottom:16px;
   }
-  .role .name{
-    font-family:var(--font-display);
-    font-size:22px;
-    margin:0 0 4px;
+  .screen .main .ph .t{font-size:20px;font-weight:700;color:var(--ink);}
+  .screen .main .ph .s{font-size:11.5px;color:var(--ink-mute);margin-top:2px;letter-spacing:0.02em;}
+  .screen .main table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;}
+  .screen .main th{
+    text-align:left;padding:8px 10px;background:var(--canvas);
+    font-weight:600;color:var(--ink-2);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+    border-bottom:1px solid var(--divider);
   }
-  .role .kind{
-    font-family:var(--font-label);
-    font-size:10px;
-    letter-spacing:0.22em;
-    text-transform:uppercase;
-    color:var(--role,var(--gold));
-    margin-bottom:14px;
+  .screen .main td{padding:9px 10px;border-bottom:1px solid var(--divider);color:var(--ink);}
+  .screen .main td .m{color:var(--ink-mute);}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+
+  .badge{
+    display:inline-block;padding:2px 8px;border-radius:4px;
+    font-size:10px;font-weight:700;letter-spacing:0.04em;
   }
-  .role h4{
-    font-family:var(--font-label);
-    font-size:10px;
-    letter-spacing:0.2em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-    margin:14px 0 6px;
-    font-weight:600;
+  .b-pos{background:#e6ede6;color:var(--pos);}
+  .b-warn{background:rgba(138,101,22,0.12);color:var(--warn);}
+  .b-neg{background:#f3e6e2;color:var(--neg);}
+  .b-info{background:rgba(31,86,115,0.10);color:var(--info);}
+
+  /* Step (screen + explanation) */
+  .step{
+    display:grid;grid-template-columns:1.15fr 1fr;gap:32px;align-items:start;
+    padding:32px 0;
+    border-top:1px solid var(--divider);
   }
-  .role ul{list-style:none;padding:0;margin:0;}
-  .role li{
-    font-size:13.5px;
-    color:var(--ink-mute);
-    padding:4px 0;
-    border-bottom:1px dashed var(--line);
+  .step:first-of-type{border-top:0;padding-top:8px;}
+  .step-notext{padding:28px 0;border-top:1px solid var(--divider);}
+  .step:nth-of-type(even) .screen-wrap{order:2;}
+  .step:nth-of-type(even) .explain{order:1;}
+  .step .explain h3{font-size:20px;margin:0 0 6px;color:var(--ink);font-weight:700;}
+  .step .explain .who{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px;}
+  .step .explain p{font-size:14.5px;color:var(--ink-2);margin:0 0 12px;line-height:1.6;}
+  .step .explain ul{margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px;}
+  .step .explain ul li{margin-bottom:4px;}
+
+  /* Fase 0 — negociação (sem screen mockup) */
+  .fase-zero{
+    background:var(--canvas);border:1px dashed var(--divider-strong);border-radius:10px;
+    padding:22px 24px;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;
   }
-  .role li:last-child{border-bottom:0;}
+  .fase-zero .badge-fase{
+    font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.08em;
+    padding:4px 10px;border:1px solid var(--divider-strong);border-radius:3px;
+    background:var(--card);white-space:nowrap;
+  }
+  .fase-zero h3{font-size:17px;margin:0 0 4px;color:var(--ink);font-weight:700;}
+  .fase-zero p{font-size:13.5px;color:var(--ink-2);margin:0;}
+
+  /* Fase 4 — consumo com 4 áreas */
+  .consumo-grid{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
+    margin-top:18px;
+  }
+  .consumo-card{
+    background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:16px 16px 18px;
+  }
+  .consumo-card .who{font-size:10.5px;color:var(--gold);font-weight:700;letter-spacing:0.08em;margin-bottom:8px;}
+  .consumo-card h4{font-size:15px;margin:0 0 4px;color:var(--ink);font-weight:700;}
+  .consumo-card .obj{font-size:12px;color:var(--ink-mute);margin:0 0 10px;line-height:1.45;}
+  .consumo-card ul{margin:0;padding-left:16px;color:var(--ink-2);font-size:12.5px;line-height:1.55;}
+  .consumo-card ul li{margin-bottom:3px;}
+  .consumo-card.tes{border-top:2px solid var(--pos);}
+  .consumo-card.con{border-top:2px solid var(--info);}
+  .consumo-card.jur{border-top:2px solid var(--gold);}
+  .consumo-card.ass{border-top:2px solid var(--warn);}
 
   /* RACI table */
-  table.raci{
-    width:100%;
-    border-collapse:collapse;
-    font-size:14px;
-    font-variant-numeric:tabular-nums;
-  }
-  table.raci th,table.raci td{
-    border-bottom:1px solid var(--line);
-    padding:12px 14px;
-    text-align:left;
-    vertical-align:top;
-  }
+  .raci-wrap{background:var(--card);border:1px solid var(--divider);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-card);}
+  table.raci{width:100%;border-collapse:collapse;font-size:14px;}
+  table.raci th,table.raci td{padding:11px 16px;border-bottom:1px solid var(--divider);text-align:left;vertical-align:middle;}
   table.raci thead th{
-    font-family:var(--font-label);
-    font-size:10px;
-    letter-spacing:0.2em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-    font-weight:600;
-    border-bottom:1px solid var(--line-2);
+    background:var(--canvas);color:var(--ink-2);
+    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;
   }
-  table.raci td.mod{color:var(--ink);}
-  table.raci td .chip{
-    display:inline-block;
-    min-width:22px;
-    padding:2px 8px;
-    border:1px solid currentColor;
-    font-family:var(--font-label);
-    font-size:11px;
-    letter-spacing:0.1em;
-    text-align:center;
-  }
-  .chip-R{color:var(--gold);}
-  .chip-A{color:var(--legal);}
-  .chip-C{color:var(--tesouraria);}
-  .chip-I{color:var(--ink-dim);}
+  table.raci td.mod{color:var(--ink);font-weight:600;}
+  table.raci td.c{text-align:center;font-weight:700;font-size:12.5px;}
+  .r-R{color:var(--gold);}
+  .r-A{color:var(--info);}
+  .r-C{color:var(--pos);}
+  .r-I{color:var(--ink-faint);}
 
-  /* Fases */
-  .phases{
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:0;
-    border:1px solid var(--line);
-  }
+  /* Phases strip */
+  .phases{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
   .phase{
-    padding:22px 22px 26px;
-    border-right:1px solid var(--line);
-    background:var(--surface);
+    background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:18px 18px 20px;
   }
-  .phase:last-child{border-right:0;}
-  .phase .num{
-    font-family:var(--font-display);
-    font-style:italic;
-    font-size:36px;
-    color:var(--gold);
-    line-height:1;
-  }
-  .phase .t{
-    font-family:var(--font-display);
-    font-size:18px;
-    margin:14px 0 6px;
-  }
-  .phase p{font-size:13.5px;margin:0;}
+  .phase .n{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;}
+  .phase h4{font-size:15.5px;margin:6px 0 8px;color:var(--ink);font-weight:700;}
+  .phase p{font-size:13px;color:var(--ink-mute);margin:0;line-height:1.55;}
 
-  /* Footer */
   footer{
-    padding-top:56px;
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    font-family:var(--font-label);
-    font-size:10.5px;
-    letter-spacing:0.2em;
-    text-transform:uppercase;
-    color:var(--ink-dim);
-    gap:24px;flex-wrap:wrap;
+    padding-top:44px;font-size:12px;color:var(--ink-mute);
+    display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   }
 
-  @media (max-width:820px){
-    .diag,.roles,.phases,.hero-meta{grid-template-columns:1fr 1fr;}
+  @media (max-width:900px){
+    .step{grid-template-columns:1fr;}
+    .step:nth-child(even) .screen-wrap,.step:nth-child(even) .explain{order:unset;}
+    .hero .meta{grid-template-columns:1fr 1fr;}
+    .phases{grid-template-columns:1fr 1fr;}
   }
-  @media (max-width:520px){
-    .page{padding:40px 20px 64px;}
-    .diag,.roles,.phases,.hero-meta{grid-template-columns:1fr;}
-    .phase{border-right:0;border-bottom:1px solid var(--line);}
-    .phase:last-child{border-bottom:0;}
+  @media (max-width:540px){
+    .wrap{padding:32px 20px 60px;}
+    .hero h1{font-size:30px;}
+    .hero .meta,.phases{grid-template-columns:1fr;}
+    .screen{grid-template-columns:1fr;}
+    .screen .sb{display:none;}
   }
 </style>
 
-<div class="page">
+<div class="wrap">
+
+  <div class="top">
+    <div><b>Botafogo SAF</b> · Gestão Contratual</div>
+    <div class="gold">Fluxo de Input · Proposta</div>
+  </div>
 
   <header class="hero">
-    <div class="hero-top">
-      <div>Glorioso · Gestão de Contratos SAF</div>
-      <div>Proposta de Governança de Dados · v1</div>
-    </div>
-
-    <h1 class="hero-title">
-      O <em>Jurídico</em> escreve o contrato.<br/>
-      O sistema é onde ele <em>vive</em>.
-    </h1>
-
-    <p class="hero-lede">
-      Hoje o Glorioso-Contract já modela o atleta como núcleo — contratos, cláusulas
-      condição→efeito, remuneração versionada, obrigações financeiras e parcelas —
-      mas sem um dono claro do input. Esta proposta define <b>quem carrega</b>,
-      <b>quem opera</b> e <b>quem consome</b> a informação, sem duplicar responsabilidade.
+    <h1>Fluxo de informação entre Jurídico, Tesouraria, Controladoria e Assessor Financeiro</h1>
+    <p>
+      O sistema já modela contratos, cláusulas, remuneração e obrigações com o
+      atleta no centro. Falta definir quem alimenta o dado e quem apenas consome.
+      Esta proposta parte do contrato como fonte da verdade: Jurídico registra,
+      Tesouraria opera o financeiro, Controladoria e Assessor Financeiro leem.
     </p>
 
-    <div class="hero-meta">
-      <div><div class="k">Origem do dado</div><div class="v">Contrato assinado</div></div>
-      <div><div class="k">Carregador</div><div class="v">Jurídico</div></div>
-      <div><div class="k">Operador financeiro</div><div class="v">Tesouraria</div></div>
-      <div><div class="k">Consumidores</div><div class="v">Controladoria · Assessor</div></div>
+    <div class="meta">
+      <div class="cell"><div class="k">Origem</div><div class="v">Contrato assinado</div></div>
+      <div class="cell"><div class="k">Quem registra</div><div class="v">Jurídico</div></div>
+      <div class="cell"><div class="k">Quem opera o caixa</div><div class="v">Tesouraria</div></div>
+      <div class="cell"><div class="k">Quem consome</div><div class="v">Controladoria · Assessor</div></div>
     </div>
   </header>
 
+  <!-- Flowchart -->
   <section>
-    <div class="eyebrow">01 · Diagnóstico</div>
-    <h2>O que o projeto já resolve — e o que ainda depende de convenção humana</h2>
-    <p class="section-lede">
-      O schema <code>ac_*</code> (atleta-central) já garante integridade: toda
-      obrigação financeira aponta para um atleta, cláusulas têm condição e efeito
-      formalizados, remuneração é versionada sem sobreposição. O que falta não é
-      modelo — é <b>fluxo</b>.
+    <div class="lead">Fluxograma</div>
+    <h2>Como a informação circula</h2>
+    <p class="sub">
+      Do contrato assinado ao relatório consumido. As setas indicam sentido de
+      escrita ou leitura. O banco de dados no centro é o schema atleta-central
+      (<code>ac_atletas</code>, <code>ac_contratos</code>, <code>ac_clausulas</code>,
+      <code>ac_obrigacoes_financeiras</code>, <code>ac_parcelas</code>).
     </p>
 
-    <div class="diag">
-      <div class="card">
-        <div class="tag">Resolvido</div>
-        <h3>Modelo de dados</h3>
-        <p><code>ac_atletas</code>, <code>ac_contratos</code>, <code>ac_clausulas</code>,
-        <code>ac_obrigacoes_financeiras</code>, <code>ac_parcelas</code>, <code>ac_remuneracoes</code>.
-        Multimoeda, PTAX, intangível, contingente.</p>
-      </div>
-      <div class="card">
-        <div class="tag">Resolvido</div>
-        <h3>Telas de leitura</h3>
-        <p>Album, Visão Atletas, Consolidado, Sell-on, Direitos Econômicos,
-        Gatilhos, Recuperação Judicial — todas prontas para <em>consumir</em>.</p>
-      </div>
-      <div class="card">
-        <div class="tag">Em aberto</div>
-        <h3>Governança de entrada</h3>
-        <p>Quem digita o quê, em que ordem, com qual autoridade. Sem isso, o
-        contrato é fonte da verdade só no papel — não no sistema.</p>
-      </div>
+    <div class="flow-card">
+      <svg viewBox="0 0 1120 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fluxograma de informação em quatro fases">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#100d0a"/>
+          </marker>
+        </defs>
+
+        <!-- ── LEFT COLUMN: STAGE LABELS ──────────────────────────────── -->
+        <g font-family="Manrope">
+          <text x="30" y="60"  font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 0</text>
+          <text x="30" y="80"  font-size="13" fill="#100d0a" font-weight="700">Negociação</text>
+          <text x="30" y="97"  font-size="11" fill="#6b645d">sigilo interno</text>
+
+          <text x="30" y="240" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 1</text>
+          <text x="30" y="260" font-size="13" fill="#100d0a" font-weight="700">Contrato</text>
+          <text x="30" y="277" font-size="11" fill="#6b645d">assinado &amp; registrado</text>
+
+          <text x="30" y="470" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 2</text>
+          <text x="30" y="490" font-size="13" fill="#100d0a" font-weight="700">Sanity check</text>
+          <text x="30" y="507" font-size="11" fill="#6b645d">validação do dado</text>
+
+          <text x="30" y="640" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">FASE 3</text>
+          <text x="30" y="660" font-size="13" fill="#100d0a" font-weight="700">Consumo</text>
+          <text x="30" y="677" font-size="11" fill="#6b645d">contínuo por área</text>
+        </g>
+
+        <!-- Divider column -->
+        <line x1="200" y1="20" x2="200" y2="820" stroke="#d9d6d0" stroke-width="1"/>
+
+        <!-- ══ FASE 0 · Negociação (invisível à companhia) ══ -->
+        <g>
+          <rect x="230" y="30" width="860" height="90" rx="6" fill="#eeedea" stroke="#bebab2" stroke-width="1" stroke-dasharray="5 4"/>
+          <text x="260" y="58" font-family="Manrope" font-size="10" fill="#6b645d" font-weight="700" letter-spacing="2">DEPARTAMENTO DE FUTEBOL · INTERNO</text>
+          <text x="260" y="82" font-family="Manrope" font-size="16" fill="#100d0a" font-weight="700">Negociação em andamento</text>
+          <text x="260" y="103" font-family="Manrope" font-size="12" fill="#6b645d">Informação sigilosa — para a companhia, essa negociação ainda não existe. Nenhum registro no sistema.</text>
+        </g>
+
+        <!-- Arrow 0 → 1 -->
+        <line x1="660" y1="120" x2="660" y2="165" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="672" y="147" font-family="Manrope" font-size="11" fill="#6b645d" font-style="normal">assinatura do contrato</text>
+
+        <!-- ══ FASE 1 · Jurídico registra ══ -->
+        <g>
+          <rect x="230" y="170" width="860" height="120" rx="6" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.6"/>
+          <text x="260" y="200" font-family="Manrope" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">CARREGA</text>
+          <text x="260" y="224" font-family="Manrope" font-size="17" fill="#100d0a" font-weight="700">Jurídico registra tudo</text>
+          <text x="260" y="245" font-family="Manrope" font-size="12" fill="#6b645d">Contrato assinado. Informação já pode ser compartilhada. Rota /criar.</text>
+
+          <!-- inline chips of what is written -->
+          <g font-family="Manrope" font-size="11" fill="#100d0a" font-weight="600">
+            <rect x="260" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="325" y="273" text-anchor="middle">Contrato + aditivos</text>
+            <rect x="398" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="463" y="273" text-anchor="middle">Cláusulas</text>
+            <rect x="536" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="601" y="273" text-anchor="middle">Remuneração</text>
+            <rect x="674" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="739" y="273" text-anchor="middle">Contrapartes</text>
+            <rect x="812" y="258" width="130" height="22" rx="3" fill="#f2efe8" stroke="#e0d4b8" stroke-width="1"/>
+            <text x="877" y="273" text-anchor="middle">PDF do contrato</text>
+          </g>
+        </g>
+
+        <!-- Arrow 1 → DB -->
+        <line x1="660" y1="290" x2="660" y2="325" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
+
+        <!-- ══ Banco de dados central ══ -->
+        <g>
+          <rect x="230" y="330" width="860" height="100" rx="8" fill="#f3f2ef" stroke="#100d0a" stroke-width="1.4"/>
+          <text x="260" y="358" font-family="Manrope" font-size="10" fill="#6b645d" font-weight="700" letter-spacing="2">BANCO DE DADOS · SCHEMA ATLETA-CENTRAL</text>
+          <line x1="250" y1="371" x2="1070" y2="371" stroke="#d9d6d0" stroke-width="1"/>
+          <g font-family="Manrope" font-size="12" fill="#100d0a" font-weight="600">
+            <text x="260" y="393">ac_atletas</text>
+            <text x="360" y="393">ac_contratos</text>
+            <text x="470" y="393">ac_clausulas</text>
+            <text x="580" y="393">ac_remuneracoes</text>
+            <text x="720" y="393">ac_obrigacoes_financeiras</text>
+            <text x="920" y="393">ac_parcelas</text>
+            <text x="260" y="414">ac_entidades</text>
+            <text x="380" y="414">ac_ativos_intangiveis</text>
+            <text x="550" y="414">ac_amortizacoes</text>
+            <text x="700" y="414">ac_documentos</text>
+            <text x="850" y="414">ac_taxas_cambio</text>
+          </g>
+        </g>
+
+        <!-- Arrow DB → Fase 2 -->
+        <line x1="660" y1="430" x2="660" y2="465" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
+
+        <!-- ══ FASE 2 · Sanity check ══ -->
+        <g>
+          <rect x="230" y="470" width="415" height="120" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="255" y="498" font-family="Manrope" font-size="10" fill="#1f5673" font-weight="700" letter-spacing="2">VALIDA</text>
+          <text x="255" y="522" font-family="Manrope" font-size="16" fill="#100d0a" font-weight="700">Controladoria</text>
+          <text x="255" y="544" font-family="Manrope" font-size="12" fill="#6b645d">Confere consistência do que foi registrado</text>
+          <text x="255" y="562" font-family="Manrope" font-size="11" fill="#6b645d">Valores, moeda, contraparte, cronograma,</text>
+          <text x="255" y="577" font-family="Manrope" font-size="11" fill="#6b645d">rubrica e tratamento contábil coerentes.</text>
+
+          <rect x="675" y="470" width="415" height="120" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="700" y="498" font-family="Manrope" font-size="10" fill="#1f5673" font-weight="700" letter-spacing="2">VALIDA</text>
+          <text x="700" y="522" font-family="Manrope" font-size="16" fill="#100d0a" font-weight="700">Assessor Financeiro</text>
+          <text x="700" y="544" font-family="Manrope" font-size="12" fill="#6b645d">Sanity check financeiro do dado</text>
+          <text x="700" y="562" font-family="Manrope" font-size="11" fill="#6b645d">Exposição total, moeda, ownership e</text>
+          <text x="700" y="577" font-family="Manrope" font-size="11" fill="#6b645d">gatilhos batem com a negociação fechada.</text>
+        </g>
+
+        <!-- Arrow 2 → 3 -->
+        <line x1="660" y1="590" x2="660" y2="620" stroke="#100d0a" stroke-width="1.4" marker-end="url(#arr)"/>
+        <text x="672" y="609" font-family="Manrope" font-size="11" fill="#6b645d">dado governado</text>
+
+        <!-- ══ FASE 3 · Consumo por área ══ -->
+        <g>
+          <!-- Tesouraria -->
+          <rect x="230" y="630" width="200" height="170" rx="6" fill="#ffffff" stroke="#2f6b3a" stroke-width="1.4"/>
+          <text x="248" y="657" font-family="Manrope" font-size="10" fill="#2f6b3a" font-weight="700" letter-spacing="2">TESOURARIA</text>
+          <text x="248" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Caixa</text>
+          <line x1="248" y1="690" x2="278" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="248" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Projeção de fluxo</text>
+          <text x="248" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Câmbio e PTAX</text>
+          <text x="248" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Parcelas pagas</text>
+          <text x="248" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Baixas e overdue</text>
+          <text x="248" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Correção monetária</text>
+
+          <!-- Controladoria -->
+          <rect x="445" y="630" width="200" height="170" rx="6" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="463" y="657" font-family="Manrope" font-size="10" fill="#1f5673" font-weight="700" letter-spacing="2">CONTROLADORIA</text>
+          <text x="463" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Resultado</text>
+          <line x1="463" y1="690" x2="493" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="463" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Forecast</text>
+          <text x="463" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Orçamentos futuros</text>
+          <text x="463" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Análise do realizado</text>
+          <text x="463" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Orçado × realizado</text>
+          <text x="463" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Amortização</text>
+
+          <!-- Jurídico -->
+          <rect x="660" y="630" width="200" height="170" rx="6" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.4"/>
+          <text x="678" y="657" font-family="Manrope" font-size="10" fill="#8f6a2a" font-weight="700" letter-spacing="2">JURÍDICO</text>
+          <text x="678" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Risco</text>
+          <line x1="678" y1="690" x2="708" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="678" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Gatilhos próximos</text>
+          <text x="678" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Vencimentos críticos</text>
+          <text x="678" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Cláusulas de default</text>
+          <text x="678" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Passivo contingente</text>
+          <text x="678" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Recuperação judicial</text>
+
+          <!-- Assessor -->
+          <rect x="875" y="630" width="215" height="170" rx="6" fill="#ffffff" stroke="#8a6516" stroke-width="1.4"/>
+          <text x="893" y="657" font-family="Manrope" font-size="10" fill="#8a6516" font-weight="700" letter-spacing="2">ASSESSOR FINANCEIRO</text>
+          <text x="893" y="680" font-family="Manrope" font-size="14" fill="#100d0a" font-weight="700">Decisão</text>
+          <line x1="893" y1="690" x2="923" y2="690" stroke="#d9d6d0" stroke-width="1"/>
+          <text x="893" y="708" font-family="Manrope" font-size="11" fill="#2a2521">· Relatórios macro</text>
+          <text x="893" y="725" font-family="Manrope" font-size="11" fill="#2a2521">· Cenários e sell-on</text>
+          <text x="893" y="742" font-family="Manrope" font-size="11" fill="#2a2521">· Exposição consolidada</text>
+          <text x="893" y="759" font-family="Manrope" font-size="11" fill="#2a2521">· Submete ao CEO</text>
+          <text x="893" y="776" font-family="Manrope" font-size="11" fill="#2a2521">· Apoio à diretoria</text>
+        </g>
+
+        <!-- Legenda -->
+        <g font-family="Manrope" font-size="11" fill="#6b645d">
+          <rect x="230" y="848" width="14" height="12" rx="2" fill="#eeedea" stroke="#bebab2" stroke-width="1" stroke-dasharray="3 2"/>
+          <text x="252" y="859">interno (fora do sistema)</text>
+          <rect x="410" y="848" width="14" height="12" rx="2" fill="#ffffff" stroke="#8f6a2a" stroke-width="1.4"/>
+          <text x="432" y="859">área carregadora</text>
+          <rect x="555" y="848" width="14" height="12" rx="2" fill="#ffffff" stroke="#1f5673" stroke-width="1.4"/>
+          <text x="577" y="859">área validadora</text>
+          <rect x="690" y="848" width="14" height="12" rx="2" fill="#ffffff" stroke="#2f6b3a" stroke-width="1.4"/>
+          <text x="712" y="859">área operadora</text>
+          <rect x="820" y="848" width="14" height="12" rx="2" fill="#f3f2ef" stroke="#100d0a" stroke-width="1.2"/>
+          <text x="842" y="859">banco de dados</text>
+        </g>
+      </svg>
     </div>
   </section>
 
+  <!-- Screens step by step -->
   <section>
-    <div class="eyebrow">02 · Fluxo proposto</div>
-    <h2>Uma passagem de bastão, não um comitê</h2>
-    <p class="section-lede">
-      O contrato entra <b>uma vez</b>, pela mão de quem o redigiu. A partir daí,
-      Tesouraria opera o financeiro; Controladoria e Assessor Financeiro leem.
-      Jurídico continua dono das cláusulas — nunca de valores realizados.
+    <div class="lead">Passo a passo</div>
+    <h2>O fluxo nas telas do sistema</h2>
+    <p class="sub">
+      Quatro fases que vão da negociação sigilosa até o consumo contínuo do
+      dado governado. As telas ilustram o momento em que cada área toca a
+      informação.
     </p>
 
-    <div class="flow-wrap">
-      <div class="flow">
-        <div class="flow-col">
-          <div class="head">Entrada · fonte da verdade</div>
-          <div class="stage">Jurídico carrega</div>
-          <div class="who">Owner do contrato</div>
+    <!-- FASE 0 — Negociação (sem tela) -->
+    <div class="fase-zero" style="margin-bottom:8px;">
+      <div class="badge-fase">FASE 0 · NEGOCIAÇÃO</div>
+      <div>
+        <h3>Departamento de Futebol negocia — informação ainda não existe para a companhia</h3>
+        <p>
+          Enquanto a negociação está em andamento é conteúdo sigiloso. Nada é
+          registrado no sistema, nenhum relatório muda. Para efeito de
+          companhia, o atleta e a operação simplesmente <b>ainda não existem</b>.
+          O fluxo só começa quando o contrato é assinado.
+        </p>
+      </div>
+    </div>
+
+    <!-- STEP 1: Jurídico — Wizard -->
+    <div class="step">
+      <div class="screen-wrap">
+        <div class="screen">
+          <aside class="sb">
+            <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
+            <ul>
+              <li class="active">+ Criar (Assistente)</li>
+              <li>Dashboards</li>
+              <li>Atletas</li>
+              <li>Portfolio de Atletas</li>
+              <li>Clubes</li>
+              <li>Agentes</li>
+            </ul>
+            <div class="sec">Relatórios</div>
+            <ul>
+              <li>Visão por Atleta</li>
+              <li>Consolidado</li>
+              <li>Recuperação Judicial</li>
+            </ul>
+          </aside>
+          <div class="main">
+            <div class="ph"><div class="t">O que você quer registrar?</div><div class="s">Assistente de criação · Botafogo SAF</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
+                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">CONTRATO</div>
+                <div style="font-size:14px;font-weight:600;margin-top:6px;">Trabalho (CLT + imagem)</div>
+                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Salário, direito de imagem, luvas, bônus.</div>
+              </div>
+              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
+                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">TRANSFERÊNCIA</div>
+                <div style="font-size:14px;font-weight:600;margin-top:6px;">Aquisição / Venda</div>
+                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Compra, venda, empréstimo, sell-on.</div>
+              </div>
+              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
+                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">CLÁUSULA</div>
+                <div style="font-size:14px;font-weight:600;margin-top:6px;">Gatilho de desempenho</div>
+                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Jogos, gols, títulos → obrigação ou reajuste.</div>
+              </div>
+              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
+                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">ADITIVO</div>
+                <div style="font-size:14px;font-weight:600;margin-top:6px;">Aditivo contratual</div>
+                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Renegociação, reajuste, extensão.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="explain">
+        <div class="who">Fase 1 · Jurídico registra</div>
+        <h3>Contrato assinado, informação vai ao sistema</h3>
+        <p>
+          Com o contrato assinado, o Jurídico já elaborou tudo — a informação
+          pode ser compartilhada. Toda entrada passa pelo mesmo funil:
+          <b>+ Criar (Assistente)</b>. O Jurídico transforma o contrato em
+          dados estruturados: contrato de trabalho, cláusulas condição→efeito,
+          remuneração inicial, contrapartes e aditivos. Nenhum valor realizado
+          é digitado aqui — só o que está no papel.
+        </p>
+        <ul>
+          <li>Rota: <code>/criar</code></li>
+          <li>Escreve: <code>ac_contratos</code>, <code>ac_clausulas</code>, <code>ac_remuneracoes</code></li>
+          <li>Anexa: PDF do contrato em <code>ac_documentos</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STEP 2: Sanity check — Controladoria + Assessor -->
+    <div class="step">
+      <div class="screen-wrap">
+        <div class="screen">
+          <aside class="sb">
+            <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
+            <ul>
+              <li>+ Criar (Assistente)</li>
+              <li>Dashboards</li>
+              <li>Atletas</li>
+            </ul>
+            <div class="sec">Relatórios</div>
+            <ul>
+              <li class="active">Visão por Atleta</li>
+              <li>Consolidado</li>
+              <li>Direitos Econômicos</li>
+            </ul>
+          </aside>
+          <div class="main">
+            <div class="ph"><div class="t">Visão por Atleta</div><div class="s">Sanity check dos dados registrados · Botafogo SAF</div></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">EXPOSIÇÃO</div>
+                <div style="font-size:16px;font-weight:700;margin-top:2px;">€ 12,0 M</div>
+                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ bate com contrato</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">OWNERSHIP</div>
+                <div style="font-size:16px;font-weight:700;margin-top:2px;">100% BFR</div>
+                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ soma 100%</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">GATILHOS</div>
+                <div style="font-size:16px;font-weight:700;margin-top:2px;">2 registrados</div>
+                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ condição + efeito</div>
+              </div>
+            </div>
+            <table>
+              <thead><tr><th>Item</th><th>Contrato</th><th>Sistema</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Salário mensal</td><td>R$ 600.000</td><td>R$ 600.000</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Direito de imagem</td><td>R$ 600.000</td><td>R$ 600.000</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Transferência (5×)</td><td>€ 10,0 M</td><td>€ 10,0 M</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Comissão agente</td><td>€ 1,0 M</td><td>€ 1,0 M</td><td><span class="badge b-pos">Confere</span></td></tr>
+                <tr><td>Gatilho 10 jogos</td><td>€ 500 k</td><td>€ 500 k</td><td><span class="badge b-warn">Contingente</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="explain">
+        <div class="who">Fase 2 · Controladoria + Assessor</div>
+        <h3>Sanity check antes de virar operação</h3>
+        <p>
+          Antes do dado ser consumido para caixa e para decisão, Controladoria e
+          Assessor Financeiro fazem uma leitura crítica do que o Jurídico
+          registrou. Objetivo: garantir que valor, moeda, contraparte,
+          cronograma e ownership espelham o contrato assinado. Nada é
+          reescrito — apenas confirmado ou devolvido ao Jurídico para ajuste.
+        </p>
+        <ul>
+          <li>Rotas: <code>/relatorios/visao-atletas</code>, <code>/atletas/:id</code></li>
+          <li>Verifica: exposição total, moeda, ownership 100%, gatilhos (condição + efeito)</li>
+          <li>Devolve ao Jurídico se algo divergir do contrato</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FASE 3 header (título do bloco de consumo) -->
+    <div class="step-notext" style="grid-column:1/-1;">
+      <div class="who" style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Fase 3 · Consumo contínuo</div>
+      <h3 style="font-size:22px;margin:0 0 10px;color:var(--ink);font-weight:700;">Quatro áreas, quatro propósitos, mesma base de dados</h3>
+      <p style="font-size:14.5px;color:var(--ink-2);margin:0;max-width:75ch;line-height:1.6;">
+        A partir da validação, o dado governado passa a ser consumido em
+        paralelo pelas quatro áreas. Cada uma lê o mesmo <code>ac_*</code>, mas
+        com objetivo distinto — caixa, resultado, risco jurídico e decisão executiva.
+      </p>
+
+      <div class="consumo-grid">
+        <div class="consumo-card tes">
+          <div class="who">TESOURARIA</div>
+          <h4>Caixa e realização</h4>
+          <p class="obj">Valida a informação a nível de caixa e cuida de todas as parcelas — pagas, baixas e em atraso.</p>
           <ul>
-            <li>Cadastro do atleta e contrapartes (<code>ac_atletas</code>, <code>ac_entidades</code>)</li>
-            <li>Contrato de trabalho, imagem, aquisição, empréstimo</li>
-            <li>Cláusulas: condição, efeito, escopo, janela</li>
-            <li>Aditivos versionados</li>
-            <li>Remuneração inicial (salário, imagem, luvas, bônus)</li>
-            <li>Anexos: PDF do contrato, aditivos, termos</li>
+            <li>Projeção de fluxo de caixa</li>
+            <li>Validação de informações cambiais</li>
+            <li>PTAX aplicada por parcela</li>
+            <li>Baixa e status: paga, parcial, vencida</li>
+            <li>Correção monetária (SELIC/CDI/IPCA)</li>
+            <li>Alertas de overdue</li>
           </ul>
         </div>
 
-        <div class="flow-col">
-          <div class="head">Operação · dinheiro real</div>
-          <div class="stage">Tesouraria opera</div>
-          <div class="who">Owner do fluxo de caixa</div>
+        <div class="consumo-card con">
+          <div class="who">CONTROLADORIA</div>
+          <h4>Forecast e realizado</h4>
+          <p class="obj">Usa a informação para projetar resultado e analisar o realizado da companhia.</p>
           <ul>
-            <li>Cronograma de parcelas (<code>ac_parcelas</code>)</li>
-            <li>Pagamentos, baixas, status (PENDENTE / PAGA / VENCIDA)</li>
-            <li>Câmbio e PTAX aplicada</li>
-            <li>Índice de correção por parcela</li>
-            <li>Avaliação de gatilhos financeiros disparados</li>
-            <li>Renegociações e acordos</li>
-          </ul>
-        </div>
-
-        <div class="flow-col">
-          <div class="head">Consumo · leitura estratégica</div>
-          <div class="stage">Todos consomem</div>
-          <div class="who">Controladoria · Assessor · Jurídico</div>
-          <ul>
-            <li>Consolidado, Visão Atletas, Sell-on</li>
-            <li>Direitos econômicos e mais-valia</li>
-            <li>Gatilhos ativos e contingentes</li>
-            <li>Recuperação judicial (passivo firme × contingente)</li>
+            <li>Forecasts financeiros</li>
+            <li>Orçamentos futuros</li>
+            <li>Análise do resultado realizado</li>
+            <li>Orçado × realizado por rubrica</li>
             <li>Amortização do intangível</li>
-            <li>Exposição por moeda e por contraparte</li>
+            <li>DRE gerencial por atleta</li>
+          </ul>
+        </div>
+
+        <div class="consumo-card jur">
+          <div class="who">JURÍDICO</div>
+          <h4>Risco contratual</h4>
+          <p class="obj">Checa gatilhos próximos, vencimentos e faz análise de risco sobre as obrigações.</p>
+          <ul>
+            <li>Gatilhos que estão se aproximando</li>
+            <li>Vencimentos com risco</li>
+            <li>Obrigações mais críticas de atrasar</li>
+            <li>Cláusulas de default (atraso × dias)</li>
+            <li>Passivo contingente por atleta</li>
+            <li>Recuperação judicial</li>
+          </ul>
+        </div>
+
+        <div class="consumo-card ass">
+          <div class="who">ASSESSOR FINANCEIRO</div>
+          <h4>Decisão executiva</h4>
+          <p class="obj">Cria relatórios mais macros e submete a informação para tomada de decisão do CEO e executivos.</p>
+          <ul>
+            <li>Relatórios executivos consolidados</li>
+            <li>Cenários e simulações</li>
+            <li>Sell-on e mais-valia</li>
+            <li>Exposição consolidada por moeda</li>
+            <li>Direitos econômicos</li>
+            <li>Apoio à diretoria e CEO</li>
           </ul>
         </div>
       </div>
     </div>
-  </section>
 
-  <section>
-    <div class="eyebrow">03 · Papéis</div>
-    <h2>Quatro áreas, um dado</h2>
-    <p class="section-lede">
-      Cada área tem uma <em>função</em> distinta sobre a mesma base. A regra é
-      simples: quem escreve o contrato descreve o mundo; quem paga descreve o
-      caixa; ninguém descreve os dois.
-    </p>
-
-    <div class="roles">
-      <div class="role" style="--role:var(--legal)">
-        <div class="name">Jurídico</div>
-        <div class="kind">Carrega · Fonte da verdade</div>
-        <h4>Escreve</h4>
-        <ul>
-          <li>Contratos e aditivos</li>
-          <li>Cláusulas condição→efeito</li>
-          <li>Remuneração contratada</li>
-          <li>Contrapartes e representação</li>
-        </ul>
-        <h4>Consome</h4>
-        <ul>
-          <li>Gatilhos em avaliação</li>
-          <li>Passivo contingente</li>
-          <li>Recuperação judicial</li>
-        </ul>
+    <!-- Tela ilustrativa da Fase 3 — Consolidado da Tesouraria -->
+    <div class="step">
+      <div class="screen-wrap">
+      <div class="screen-wrap">
+        <div class="screen">
+          <aside class="sb">
+            <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
+            <ul>
+              <li>+ Criar (Assistente)</li>
+              <li>Dashboards</li>
+              <li>Atletas</li>
+            </ul>
+            <div class="sec">Relatórios</div>
+            <ul>
+              <li>Visão por Atleta</li>
+              <li class="active">Consolidado</li>
+              <li>Recuperação Judicial</li>
+            </ul>
+          </aside>
+          <div class="main">
+            <div class="ph"><div class="t">Consolidado</div><div class="s">Todas as movimentações financeiras · Botafogo SAF</div></div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Vencimento</th>
+                  <th>Atleta</th>
+                  <th>Natureza</th>
+                  <th class="num">Valor</th>
+                  <th class="num">BRL (PTAX)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>05/09/2026</td><td>João Silva</td><td>Salário</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td><span class="badge b-warn">Vence 5d</span></td></tr>
+                <tr><td>10/09/2026</td><td>João Silva</td><td>Imagem</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td><span class="badge b-warn">Vence 10d</span></td></tr>
+                <tr><td>01/10/2026</td><td>João Silva</td><td>Transferência</td><td class="num">€ 2.000.000</td><td class="num">12.400.000</td><td><span class="badge b-info">Pendente</span></td></tr>
+                <tr><td>15/10/2026</td><td>João Silva</td><td>Comissão agente</td><td class="num">€ 100.000</td><td class="num">620.000</td><td><span class="badge b-info">Pendente</span></td></tr>
+                <tr><td>25/08/2026</td><td>João Silva</td><td>Solidariedade</td><td class="num">€ 200.000</td><td class="num">1.240.000</td><td><span class="badge b-neg">Vencida</span></td></tr>
+                <tr><td>31/07/2026</td><td>João Silva</td><td>Salário</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td><span class="badge b-pos">Paga</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
-      <div class="role" style="--role:var(--tesouraria)">
-        <div class="name">Tesouraria</div>
-        <div class="kind">Opera · Financeiro real</div>
-        <h4>Escreve</h4>
+      <div class="explain">
+        <div class="who">Fase 3 · Tesouraria (exemplo)</div>
+        <h3>Consolidado — validação de caixa e overdue</h3>
+        <p>
+          A Tesouraria opera o Consolidado como sua tela de trabalho.
+          Diariamente valida parcelas pagas, aplica câmbio e PTAX, marca
+          baixas e identifica overdue. É a única área que <b>escreve</b>
+          durante o consumo — todas as outras apenas leem.
+        </p>
         <ul>
-          <li>Parcelas e vencimentos</li>
-          <li>Baixas e status de pagamento</li>
-          <li>Câmbio, PTAX, correção</li>
-          <li>Efeitos financeiros de gatilhos</li>
-        </ul>
-        <h4>Consome</h4>
-        <ul>
-          <li>Cronograma consolidado</li>
-          <li>Exposição por moeda</li>
-          <li>Fluxo de caixa projetado</li>
-        </ul>
-      </div>
-
-      <div class="role" style="--role:var(--control)">
-        <div class="name">Controladoria</div>
-        <div class="kind">Reconcilia · Contábil</div>
-        <h4>Escreve</h4>
-        <ul>
-          <li>Rubrica e tratamento contábil</li>
-          <li>Conta contábil, centro de custo</li>
-          <li>Cronograma de amortização</li>
-        </ul>
-        <h4>Consome</h4>
-        <ul>
-          <li>Orçado × realizado</li>
-          <li>Intangível capitalizado</li>
-          <li>DRE gerencial por atleta</li>
-        </ul>
-      </div>
-
-      <div class="role" style="--role:var(--assessor)">
-        <div class="name">Assessor Financeiro</div>
-        <div class="kind">Analisa · Estratégico</div>
-        <h4>Escreve</h4>
-        <ul>
-          <li>Não escreve dado transacional</li>
-          <li>Anotações e cenários (sandbox)</li>
-        </ul>
-        <h4>Consome</h4>
-        <ul>
-          <li>Visão consolidada de exposição</li>
-          <li>Sell-on e direitos econômicos</li>
-          <li>Simulações de gatilhos e mais-valia</li>
+          <li>Rota: <code>/relatorios/consolidado</code></li>
+          <li>Escreve: <code>ac_parcelas</code> (status, câmbio, correção)</li>
+          <li>Objetivo: caixa em dia, projeção de fluxo, gestão de overdue</li>
         </ul>
       </div>
     </div>
+
   </section>
 
+  <!-- RACI -->
   <section>
-    <div class="eyebrow">04 · Matriz de responsabilidade</div>
+    <div class="lead">Matriz de responsabilidade</div>
     <h2>Quem faz o quê, por módulo</h2>
-    <p class="section-lede">
-      <span class="chip chip-R" style="border:1px solid currentColor;padding:1px 6px;font-family:var(--font-label);font-size:11px;">R</span>
-      responsável &nbsp;·&nbsp;
-      <span class="chip chip-A" style="border:1px solid currentColor;padding:1px 6px;font-family:var(--font-label);font-size:11px;">A</span>
-      aprova &nbsp;·&nbsp;
-      <span class="chip chip-C" style="border:1px solid currentColor;padding:1px 6px;font-family:var(--font-label);font-size:11px;">C</span>
-      consultado &nbsp;·&nbsp;
-      <span class="chip chip-I" style="border:1px solid currentColor;padding:1px 6px;font-family:var(--font-label);font-size:11px;">I</span>
-      informado
+    <p class="sub">
+      <b>R</b> responsável &nbsp;·&nbsp; <b>A</b> aprova &nbsp;·&nbsp;
+      <b>C</b> consultado &nbsp;·&nbsp; <b>I</b> informado.
     </p>
 
-    <div style="overflow-x:auto;border:1px solid var(--line);">
+    <div class="raci-wrap">
       <table class="raci">
         <thead>
           <tr>
-            <th>Módulo do sistema</th>
-            <th>Jurídico</th>
-            <th>Tesouraria</th>
-            <th>Controladoria</th>
-            <th>Assessor</th>
+            <th style="width:40%">Módulo</th>
+            <th style="text-align:center">Jurídico</th>
+            <th style="text-align:center">Tesouraria</th>
+            <th style="text-align:center">Controladoria</th>
+            <th style="text-align:center">Assessor</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td class="mod">Cadastro de atleta e contrapartes</td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Contratos, aditivos, PDFs</td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Cláusulas: condição, efeito, escopo</td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Remuneração contratada (versionada)</td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Obrigações financeiras (natureza, direção)</td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-A">A</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Parcelas, pagamentos, câmbio, PTAX</td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Avaliação de gatilho (jogos, gols, metas)</td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Contabilização e amortização de intangível</td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Recuperação judicial (firme × contingente)</td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-R">R</span></td>
-            <td><span class="chip chip-I">I</span></td>
-          </tr>
-          <tr>
-            <td class="mod">Relatórios estratégicos e cenários</td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-I">I</span></td>
-            <td><span class="chip chip-C">C</span></td>
-            <td><span class="chip chip-R">R</span></td>
-          </tr>
+          <tr><td class="mod">Cadastro de atleta e contrapartes</td><td class="c r-R">R</td><td class="c r-I">I</td><td class="c r-C">C</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Contratos, aditivos e PDFs</td><td class="c r-R">R</td><td class="c r-I">I</td><td class="c r-C">C</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Cláusulas condição→efeito</td><td class="c r-R">R</td><td class="c r-C">C</td><td class="c r-C">C</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Remuneração contratada (versionada)</td><td class="c r-R">R</td><td class="c r-I">I</td><td class="c r-C">C</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Obrigações financeiras</td><td class="c r-C">C</td><td class="c r-R">R</td><td class="c r-A">A</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Parcelas, pagamentos, câmbio, PTAX</td><td class="c r-I">I</td><td class="c r-R">R</td><td class="c r-C">C</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Avaliação de gatilhos</td><td class="c r-C">C</td><td class="c r-R">R</td><td class="c r-I">I</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Contabilização e amortização de intangível</td><td class="c r-I">I</td><td class="c r-C">C</td><td class="c r-R">R</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Recuperação judicial</td><td class="c r-C">C</td><td class="c r-C">C</td><td class="c r-R">R</td><td class="c r-I">I</td></tr>
+          <tr><td class="mod">Relatórios estratégicos e cenários</td><td class="c r-I">I</td><td class="c r-I">I</td><td class="c r-C">C</td><td class="c r-R">R</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
+  <!-- Rollout -->
   <section>
-    <div class="eyebrow">05 · Rollout</div>
-    <h2>Quatro fases para pôr em pé</h2>
+    <div class="lead">Rollout</div>
+    <h2>Quatro fases para colocar em pé</h2>
+    <p class="sub">
+      Nenhuma refaz o produto — todas usam telas e tabelas que já existem no
+      Glorioso Contract, adicionando papéis, permissões e trilha de auditoria.
+    </p>
 
     <div class="phases">
       <div class="phase">
-        <div class="num">I</div>
-        <div class="t">Perfis e permissões</div>
-        <p>Criar roles no Supabase (juridico, tesouraria, controladoria, assessor). RLS por tabela — Jurídico grava contrato/cláusula; Tesouraria grava parcela; leitura ampla para todos.</p>
+        <div class="n">FASE 1</div>
+        <h4>Perfis e permissões</h4>
+        <p>Roles no Supabase (juridico, tesouraria, controladoria, assessor) e RLS por tabela. Escrita restrita ao dono do módulo; leitura ampla.</p>
       </div>
       <div class="phase">
-        <div class="num">II</div>
-        <div class="t">Carga inicial pelo Jurídico</div>
-        <p>Wizard existente (<code>PageWizard</code>) como funil único. Importação de planilhas restrita ao Jurídico para bootstrap do backlog contratual.</p>
+        <div class="n">FASE 2</div>
+        <h4>Carga pelo Jurídico</h4>
+        <p>O Assistente (<code>/criar</code>) vira o único funil de entrada. Importação de planilhas restrita ao Jurídico para bootstrap do backlog.</p>
       </div>
       <div class="phase">
-        <div class="num">III</div>
-        <div class="t">Tesouraria assume o caixa</div>
-        <p>Tela de parcelas com baixa, câmbio, correção. Trilha de auditoria por parcela. Alertas de vencimento e de gatilho a apurar.</p>
+        <div class="n">FASE 3</div>
+        <h4>Tesouraria assume o caixa</h4>
+        <p>Baixa, câmbio e correção nas parcelas com trilha de auditoria. Alertas de vencimento e de gatilho a apurar.</p>
       </div>
       <div class="phase">
-        <div class="num">IV</div>
-        <div class="t">Consumo por Controladoria e Assessor</div>
-        <p>Consolidado, Sell-on, Direitos Econômicos, Gatilhos, Recuperação Judicial já existem — passam a ler dado <em>governado</em>, não digitado ad-hoc.</p>
+        <div class="n">FASE 4</div>
+        <h4>Consumo governado</h4>
+        <p>Consolidado, Sell-on, Direitos Econômicos, Gatilhos e Recuperação Judicial passam a ler dado com dono, não digitado ad-hoc.</p>
       </div>
     </div>
   </section>
 
   <footer>
-    <div>Glorioso-Contract · Proposta interna</div>
-    <div>Doc vivo · sujeito a validação com as áreas</div>
+    <div>Botafogo SAF · Gestão Contratual</div>
+    <div>Proposta interna · sujeita a validação com as áreas</div>
   </footer>
-
 </div>
