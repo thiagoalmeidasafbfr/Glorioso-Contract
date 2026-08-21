@@ -27,11 +27,22 @@ do $$ begin
     ('MANTER','RENOVAR','VENDER','RESCINDIR','NOVA_CONTRATACAO');
 exception when duplicate_object then null; end $$;
 
+-- Trigger genérico de updated_at (idempotente): a 012 já cria esta função, mas
+-- se o DB estiver adiante do 012, garantimos que ela exista.
+create or replace function public.ac_set_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at := now();
+  return new;
+end $$;
+
 create table if not exists public.ac_premissas_atleta (
   id                        uuid primary key default gen_random_uuid(),
 
   -- Vínculo com atleta existente (NULL quando é uma nova contratação).
-  atleta_id                 uuid references public.ac_atletas(id) on delete cascade,
+  -- A FK para public.ac_atletas é adicionada mais abaixo, condicional à
+  -- existência da tabela (evita erro em DBs sem as migrations 012/014).
+  atleta_id                 uuid,
 
   -- Cache/override de identificação (usado quando atleta_id é NULL).
   nome                      text,
@@ -109,6 +120,32 @@ create index if not exists ac_premissas_atleta_atleta_idx
 create index if not exists ac_premissas_atleta_decisao_idx
   on public.ac_premissas_atleta(decisao);
 
+-- FK opcional: só criamos se ac_atletas existir (schema robusto instalado).
+-- Em DBs que ainda usam apenas o schema legado (`athletes`), a coluna
+-- atleta_id fica sem FK — a integridade é garantida pela camada de app.
+do $$
+declare
+  parent_exists boolean;
+  fk_exists boolean;
+begin
+  select exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'ac_atletas'
+  ) into parent_exists;
+
+  select exists (
+    select 1 from pg_constraint
+    where conname = 'ac_premissas_atleta_atleta_id_fkey'
+  ) into fk_exists;
+
+  if parent_exists and not fk_exists then
+    execute 'alter table public.ac_premissas_atleta
+             add constraint ac_premissas_atleta_atleta_id_fkey
+             foreign key (atleta_id) references public.ac_atletas(id)
+             on delete cascade';
+  end if;
+end $$;
+
 drop trigger if exists ac_premissas_atleta_updated_at on public.ac_premissas_atleta;
 create trigger ac_premissas_atleta_updated_at
   before update on public.ac_premissas_atleta
@@ -122,9 +159,31 @@ create policy ac_premissas_atleta_select on public.ac_premissas_atleta
   for select using (true);
 
 drop policy if exists ac_premissas_atleta_write on public.ac_premissas_atleta;
-create policy ac_premissas_atleta_write on public.ac_premissas_atleta
-  for all using (public.get_my_role() = 'master')
-  with check (public.get_my_role() = 'master');
+do $$
+declare
+  has_role_fn boolean;
+begin
+  select exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'get_my_role'
+  ) into has_role_fn;
+
+  if has_role_fn then
+    execute $sql$
+      create policy ac_premissas_atleta_write on public.ac_premissas_atleta
+        for all using (public.get_my_role() = 'master')
+        with check (public.get_my_role() = 'master')
+    $sql$;
+  else
+    -- Fallback: qualquer usuário autenticado escreve (sem o helper de role).
+    execute $sql$
+      create policy ac_premissas_atleta_write on public.ac_premissas_atleta
+        for all using (auth.uid() is not null)
+        with check (auth.uid() is not null)
+    $sql$;
+  end if;
+end $$;
 
 comment on table public.ac_premissas_atleta is
   'Aba centralizada de premissas por atleta (Fase 1 do modelo do CFO). Uma linha por atleta ativo, futuro contratado ou em decisão de venda/rescisão. Todo o motor de projeção puxa daqui.';
