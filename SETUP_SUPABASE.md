@@ -35,6 +35,21 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 7. `007_clubs_intermediaries.sql`  ← **cadastros de clubes e agentes (com escudo/logo)**
 8. `008_economic_holder_agente.sql`  ← **permite "Agente" como detentor de titularidade econômica**
 9. `009_remuneracao_agente_vinculo.sql`  ← **remuneração (imagem/outros) no contrato + agente ligado ao vínculo**
+10. `010_external_ids.sql`
+11. `011_athlete_pj_and_category.sql`
+12. `012_schema_robusto_atleta_central.sql`
+13. `013_seed_joao.sql`
+14. `014_bridge_app_atleta_central.sql`
+15. `015_contrato_vinculo_relacionado.sql`
+16. `016_gatilho_imagem.sql`
+17. `017_ptax_fixada.sql`
+18. `018_premissas_atleta.sql`  ← **aba de PREMISSAS por atleta (Fase 1 do modelo do CFO)**
+
+> **IMPORTANTE:** rode **todas** as migrations acima, em ordem. Se pular alguma,
+> a aba correspondente falha com um erro do tipo *"Could not find the table
+> 'public.<nome>' in the schema cache"* — isso significa que a migration que cria
+> essa tabela ainda não foi aplicada no banco. Rode a migration que falta e
+> recarregue a página. (Ex.: a aba **Premissas** exige a `018`.)
 
 > Se preferir a CLI do Supabase: `supabase link --project-ref <ref>` e depois
 > `supabase db push` (aplica tudo de `supabase/migrations/` em ordem).
