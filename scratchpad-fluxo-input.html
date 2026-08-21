@@ -93,59 +93,123 @@
   .screen{
     background:var(--card);border:1px solid var(--divider);border-radius:12px;
     overflow:hidden;box-shadow:var(--shadow-card);
-    display:grid;grid-template-columns:180px 1fr;min-height:360px;
+    display:grid;grid-template-columns:220px 1fr;min-height:560px;
   }
   .screen .sb{
     background:var(--sidebar);color:var(--sidebar-ink);
-    padding:16px 0;font-size:12px;
+    padding:18px 0;font-size:13px;
   }
-  .screen .sb .brand{padding:2px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.06);}
-  .screen .sb .brand .b1{color:#fff;font-weight:700;font-size:13px;letter-spacing:0.02em;}
-  .screen .sb .brand .b2{color:rgba(243,238,226,0.42);font-size:10.5px;margin-top:2px;}
-  .screen .sb ul{list-style:none;padding:0;margin:14px 0 0;}
-  .screen .sb li{padding:7px 18px;color:var(--sidebar-ink);border-left:2px solid transparent;}
+  .screen .sb .brand{padding:2px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .screen .sb .brand .b1{color:#fff;font-weight:700;font-size:14px;letter-spacing:0.02em;}
+  .screen .sb .brand .b2{color:rgba(243,238,226,0.42);font-size:11px;margin-top:3px;}
+  .screen .sb ul{list-style:none;padding:0;margin:12px 0 0;}
+  .screen .sb li{padding:8px 20px 8px 18px;color:var(--sidebar-ink);border-left:2px solid transparent;font-size:12.5px;}
   .screen .sb li.active{color:#fff;background:rgba(255,255,255,0.05);border-left-color:var(--sidebar-active);font-weight:600;}
-  .screen .sb .sec{padding:10px 18px 2px;font-size:9.5px;color:rgba(243,238,226,0.32);letter-spacing:0.12em;text-transform:uppercase;}
-  .screen .main{background:var(--page);padding:22px 24px;}
+  .screen .sb .sec{padding:14px 20px 4px;font-size:10px;color:rgba(243,238,226,0.32);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;}
+  .screen .main{background:var(--page);padding:26px 30px;overflow:hidden;}
   .screen .main .ph{
-    padding-bottom:14px;border-bottom:1px solid var(--divider);margin-bottom:16px;
+    padding-bottom:16px;border-bottom:1px solid var(--divider);margin-bottom:20px;
+    display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
   }
-  .screen .main .ph .t{font-size:20px;font-weight:700;color:var(--ink);}
-  .screen .main .ph .s{font-size:11.5px;color:var(--ink-mute);margin-top:2px;letter-spacing:0.02em;}
-  .screen .main table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;}
+  .screen .main .ph .t{font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-0.01em;}
+  .screen .main .ph .s{font-size:12px;color:var(--ink-mute);margin-top:3px;}
+  .screen .main .ph-actions{display:flex;gap:8px;}
+  .screen .main .btn{
+    padding:7px 14px;font-family:var(--font);font-size:12px;font-weight:600;
+    border-radius:6px;border:1px solid var(--divider-strong);background:var(--card);
+    color:var(--ink);cursor:default;
+  }
+  .screen .main .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .screen .main table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;}
   .screen .main th{
-    text-align:left;padding:8px 10px;background:var(--canvas);
-    font-weight:600;color:var(--ink-2);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+    text-align:left;padding:9px 12px;background:var(--canvas);
+    font-weight:700;color:var(--ink-2);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
     border-bottom:1px solid var(--divider);
   }
-  .screen .main td{padding:9px 10px;border-bottom:1px solid var(--divider);color:var(--ink);}
+  .screen .main td{padding:10px 12px;border-bottom:1px solid var(--divider);color:var(--ink);}
+  .screen .main tr:nth-child(even) td{background:#faf9f7;}
   .screen .main td .m{color:var(--ink-mute);}
   .num{text-align:right;font-variant-numeric:tabular-nums;}
 
+  /* Filter bar inside screen */
+  .filter-bar{
+    display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;
+  }
+  .filter-bar .chip{
+    background:var(--card);border:1px solid var(--divider);border-radius:6px;
+    padding:6px 12px;font-size:12px;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center;
+  }
+  .filter-bar .chip b{color:var(--ink);font-weight:600;}
+  .filter-bar .chip .caret{color:var(--ink-mute);font-size:10px;}
+  .filter-bar .search{
+    flex:1;min-width:200px;border:1px solid var(--divider);background:var(--card);
+    border-radius:6px;padding:7px 12px;font-size:12px;color:var(--ink-mute);
+    display:flex;align-items:center;gap:8px;
+  }
+  .filter-bar .search::before{content:"⌕";font-size:14px;color:var(--ink-mute);}
+
+  /* KPI row inside screen */
+  .kpi-row{display:grid;gap:10px;margin-bottom:16px;}
+  .kpi-4{grid-template-columns:repeat(4,1fr);}
+  .kpi-5{grid-template-columns:repeat(5,1fr);}
+  .kpi{
+    background:var(--card);border:1px solid var(--divider);border-radius:8px;
+    padding:12px 14px;
+  }
+  .kpi .k{font-size:10.5px;color:var(--ink-mute);letter-spacing:0.06em;font-weight:600;text-transform:uppercase;}
+  .kpi .v{font-size:20px;font-weight:700;margin-top:4px;color:var(--ink);letter-spacing:-0.01em;}
+  .kpi .v.pos{color:var(--pos);}
+  .kpi .v.warn{color:var(--warn);}
+  .kpi .v.neg{color:var(--neg);}
+  .kpi .d{font-size:10.5px;color:var(--ink-mute);margin-top:3px;}
+  .kpi .d.ok{color:var(--pos);font-weight:600;}
+  .kpi .d.ok::before{content:"✓ ";}
+
+  .section-h{
+    font-size:12px;font-weight:700;color:var(--ink-2);letter-spacing:0.06em;
+    text-transform:uppercase;margin:4px 0 10px;
+  }
+
   .badge{
-    display:inline-block;padding:2px 8px;border-radius:4px;
-    font-size:10px;font-weight:700;letter-spacing:0.04em;
+    display:inline-block;padding:3px 9px;border-radius:4px;
+    font-size:10.5px;font-weight:700;letter-spacing:0.02em;
   }
   .b-pos{background:#e6ede6;color:var(--pos);}
   .b-warn{background:rgba(138,101,22,0.12);color:var(--warn);}
   .b-neg{background:#f3e6e2;color:var(--neg);}
   .b-info{background:rgba(31,86,115,0.10);color:var(--info);}
+  .rj-pill{
+    display:inline-block;padding:1px 6px;margin-left:4px;border-radius:3px;
+    font-family:var(--font);font-size:9px;font-weight:700;letter-spacing:0.10em;
+    background:var(--warn);color:#fff;
+  }
 
-  /* Step (screen + explanation) */
+  /* Step (screen + explanation) — single column, screen full-width */
   .step{
-    display:grid;grid-template-columns:1.15fr 1fr;gap:32px;align-items:start;
-    padding:32px 0;
+    padding:36px 0;
     border-top:1px solid var(--divider);
   }
   .step:first-of-type{border-top:0;padding-top:8px;}
-  .step-notext{padding:28px 0;border-top:1px solid var(--divider);}
-  .step:nth-of-type(even) .screen-wrap{order:2;}
-  .step:nth-of-type(even) .explain{order:1;}
-  .step .explain h3{font-size:20px;margin:0 0 6px;color:var(--ink);font-weight:700;}
-  .step .explain .who{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px;}
-  .step .explain p{font-size:14.5px;color:var(--ink-2);margin:0 0 12px;line-height:1.6;}
-  .step .explain ul{margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px;}
-  .step .explain ul li{margin-bottom:4px;}
+  .step-notext{padding:32px 0;border-top:1px solid var(--divider);}
+  .step .head{
+    display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;
+    margin-bottom:18px;
+  }
+  .step .head .who{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;}
+  .step .head h3{font-size:22px;margin:0 0 6px;color:var(--ink);font-weight:700;letter-spacing:-0.01em;}
+  .step .head p{font-size:14.5px;color:var(--ink-2);margin:0;max-width:78ch;line-height:1.55;}
+  .step .head .meta-chip{
+    background:var(--canvas);border:1px solid var(--divider);border-radius:6px;
+    padding:8px 14px;font-size:11.5px;color:var(--ink-2);
+    display:flex;flex-direction:column;gap:2px;min-width:180px;
+  }
+  .step .head .meta-chip b{font-size:10px;color:var(--ink-mute);letter-spacing:0.06em;font-weight:700;text-transform:uppercase;}
+  .step .head .meta-chip span{font-weight:600;color:var(--ink);}
+  .step .foot{
+    margin-top:16px;font-size:13px;color:var(--ink-mute);
+    display:flex;flex-wrap:wrap;gap:20px;
+  }
+  .step .foot span b{color:var(--ink);font-weight:600;}
 
   /* Fase 0 — negociação (sem screen mockup) */
   .fase-zero{
@@ -207,18 +271,20 @@
     display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   }
 
-  @media (max-width:900px){
-    .step{grid-template-columns:1fr;}
-    .step:nth-child(even) .screen-wrap,.step:nth-child(even) .explain{order:unset;}
+  @media (max-width:960px){
+    .step .head{grid-template-columns:1fr;}
+    .step .head .meta-chip{width:fit-content;}
     .hero .meta{grid-template-columns:1fr 1fr;}
-    .phases{grid-template-columns:1fr 1fr;}
+    .phases,.consumo-grid{grid-template-columns:1fr 1fr;}
+    .kpi-4,.kpi-5{grid-template-columns:repeat(2,1fr);}
   }
-  @media (max-width:540px){
+  @media (max-width:640px){
     .wrap{padding:32px 20px 60px;}
     .hero h1{font-size:30px;}
-    .hero .meta,.phases{grid-template-columns:1fr;}
-    .screen{grid-template-columns:1fr;}
+    .hero .meta,.phases,.consumo-grid{grid-template-columns:1fr;}
+    .screen{grid-template-columns:1fr;min-height:0;}
     .screen .sb{display:none;}
+    .kpi-4,.kpi-5{grid-template-columns:1fr;}
   }
 </style>
 
@@ -458,136 +524,216 @@
 
     <!-- STEP 1: Jurídico — Wizard -->
     <div class="step">
-      <div class="screen-wrap">
-        <div class="screen">
-          <aside class="sb">
-            <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
-            <ul>
-              <li class="active">+ Criar (Assistente)</li>
-              <li>Dashboards</li>
-              <li>Atletas</li>
-              <li>Portfolio de Atletas</li>
-              <li>Clubes</li>
-              <li>Agentes</li>
-            </ul>
-            <div class="sec">Relatórios</div>
-            <ul>
-              <li>Visão por Atleta</li>
-              <li>Consolidado</li>
-              <li>Recuperação Judicial</li>
-            </ul>
-          </aside>
-          <div class="main">
-            <div class="ph"><div class="t">O que você quer registrar?</div><div class="s">Assistente de criação · Botafogo SAF</div></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
-                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">CONTRATO</div>
-                <div style="font-size:14px;font-weight:600;margin-top:6px;">Trabalho (CLT + imagem)</div>
-                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Salário, direito de imagem, luvas, bônus.</div>
-              </div>
-              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
-                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">TRANSFERÊNCIA</div>
-                <div style="font-size:14px;font-weight:600;margin-top:6px;">Aquisição / Venda</div>
-                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Compra, venda, empréstimo, sell-on.</div>
-              </div>
-              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
-                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">CLÁUSULA</div>
-                <div style="font-size:14px;font-weight:600;margin-top:6px;">Gatilho de desempenho</div>
-                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Jogos, gols, títulos → obrigação ou reajuste.</div>
-              </div>
-              <div style="border:1px solid var(--divider);border-radius:8px;padding:14px;">
-                <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:0.06em;">ADITIVO</div>
-                <div style="font-size:14px;font-weight:600;margin-top:6px;">Aditivo contratual</div>
-                <div style="font-size:12px;color:var(--ink-mute);margin-top:4px;">Renegociação, reajuste, extensão.</div>
-              </div>
+      <div class="head">
+        <div>
+          <div class="who">Fase 1 · Jurídico registra</div>
+          <h3>Contrato assinado, informação vai ao sistema</h3>
+          <p>
+            Com o contrato assinado, a informação pode ser compartilhada.
+            Toda entrada passa pelo mesmo funil: <b>+ Criar (Assistente)</b>.
+            O Jurídico transforma o contrato em dados estruturados —
+            cláusulas condição→efeito, remuneração inicial, contrapartes e
+            aditivos. Nenhum valor realizado é digitado aqui.
+          </p>
+        </div>
+        <div class="meta-chip">
+          <b>Rota</b><span>/criar</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <aside class="sb">
+          <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
+          <ul>
+            <li class="active">+ Criar (Assistente)</li>
+            <li>Dashboards</li>
+            <li>Atletas</li>
+            <li>Portfolio de Atletas</li>
+            <li>Clubes</li>
+            <li>Agentes</li>
+          </ul>
+          <div class="sec">Relatórios</div>
+          <ul>
+            <li>Visão por Atleta</li>
+            <li>Consolidado</li>
+            <li>Acordos e Renegociações</li>
+            <li>Vendas Futuras</li>
+            <li>Direitos Econômicos</li>
+            <li>Gatilhos e Metas</li>
+            <li>Recuperação Judicial</li>
+          </ul>
+          <div class="sec">Dados</div>
+          <ul>
+            <li>Importar / Exportar</li>
+          </ul>
+        </aside>
+        <div class="main">
+          <div class="ph">
+            <div><div class="t">O que você quer registrar?</div><div class="s">Assistente de criação · Botafogo SAF</div></div>
+            <div class="ph-actions"><button class="btn">Cancelar</button><button class="btn primary">Continuar →</button></div>
+          </div>
+
+          <div class="section-h">Escolha o tipo de registro</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+            <div style="border:1px solid var(--gold);border-radius:8px;padding:16px 16px 18px;background:var(--gold-tint);">
+              <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:0.10em;">CONTRATO · SELECIONADO</div>
+              <div style="font-size:15px;font-weight:700;margin-top:8px;">Trabalho (CLT + imagem)</div>
+              <div style="font-size:12px;color:var(--ink-mute);margin-top:5px;line-height:1.45;">Salário, direito de imagem, luvas e bônus. PJ de imagem opcional.</div>
+              <div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:10px;">↳ 5 cláusulas suportadas</div>
             </div>
+            <div style="border:1px solid var(--divider);border-radius:8px;padding:16px 16px 18px;background:var(--card);">
+              <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:0.10em;">TRANSFERÊNCIA</div>
+              <div style="font-size:15px;font-weight:700;margin-top:8px;">Aquisição / Venda</div>
+              <div style="font-size:12px;color:var(--ink-mute);margin-top:5px;line-height:1.45;">Compra, venda, empréstimo. Gera intangível e cronograma.</div>
+              <div style="font-size:11px;color:var(--ink-mute);font-weight:600;margin-top:10px;">↳ multimoeda + PTAX</div>
+            </div>
+            <div style="border:1px solid var(--divider);border-radius:8px;padding:16px 16px 18px;background:var(--card);">
+              <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:0.10em;">CLÁUSULA</div>
+              <div style="font-size:15px;font-weight:700;margin-top:8px;">Gatilho de desempenho</div>
+              <div style="font-size:12px;color:var(--ink-mute);margin-top:5px;line-height:1.45;">Jogos, gols, títulos → obrigação, reajuste ou receita.</div>
+              <div style="font-size:11px;color:var(--ink-mute);font-weight:600;margin-top:10px;">↳ condição + efeito</div>
+            </div>
+            <div style="border:1px solid var(--divider);border-radius:8px;padding:16px 16px 18px;background:var(--card);">
+              <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:0.10em;">ADITIVO</div>
+              <div style="font-size:15px;font-weight:700;margin-top:8px;">Aditivo contratual</div>
+              <div style="font-size:12px;color:var(--ink-mute);margin-top:5px;line-height:1.45;">Renegociação, extensão ou reajuste sobre contrato ativo.</div>
+              <div style="font-size:11px;color:var(--ink-mute);font-weight:600;margin-top:10px;">↳ versionado</div>
+            </div>
+            <div style="border:1px solid var(--divider);border-radius:8px;padding:16px 16px 18px;background:var(--card);">
+              <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:0.10em;">SELL-ON</div>
+              <div style="font-size:15px;font-weight:700;margin-top:8px;">Percentual em venda futura</div>
+              <div style="font-size:12px;color:var(--ink-mute);margin-top:5px;line-height:1.45;">Sobre a mais-valia ou sobre o valor total.</div>
+              <div style="font-size:11px;color:var(--ink-mute);font-weight:600;margin-top:10px;">↳ pagar ou receber</div>
+            </div>
+            <div style="border:1px solid var(--divider);border-radius:8px;padding:16px 16px 18px;background:var(--card);">
+              <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:0.10em;">SOLIDARIEDADE</div>
+              <div style="font-size:15px;font-weight:700;margin-top:8px;">FIFA — clubes formadores</div>
+              <div style="font-size:12px;color:var(--ink-mute);margin-top:5px;line-height:1.45;">Repasse a clubes formadores do atleta.</div>
+              <div style="font-size:11px;color:var(--ink-mute);font-weight:600;margin-top:10px;">↳ capitalizável</div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;padding:12px 14px;background:var(--canvas);border:1px solid var(--divider);border-radius:6px;font-size:12px;color:var(--ink-2);">
+            <b style="color:var(--ink);">Passo 1 de 5</b> · Após escolher o tipo você vincula atleta e contraparte, define valores, cronograma e (opcionalmente) anexa o PDF do contrato.
           </div>
         </div>
       </div>
-      <div class="explain">
-        <div class="who">Fase 1 · Jurídico registra</div>
-        <h3>Contrato assinado, informação vai ao sistema</h3>
-        <p>
-          Com o contrato assinado, o Jurídico já elaborou tudo — a informação
-          pode ser compartilhada. Toda entrada passa pelo mesmo funil:
-          <b>+ Criar (Assistente)</b>. O Jurídico transforma o contrato em
-          dados estruturados: contrato de trabalho, cláusulas condição→efeito,
-          remuneração inicial, contrapartes e aditivos. Nenhum valor realizado
-          é digitado aqui — só o que está no papel.
-        </p>
-        <ul>
-          <li>Rota: <code>/criar</code></li>
-          <li>Escreve: <code>ac_contratos</code>, <code>ac_clausulas</code>, <code>ac_remuneracoes</code></li>
-          <li>Anexa: PDF do contrato em <code>ac_documentos</code></li>
-        </ul>
+
+      <div class="foot">
+        <span><b>Escreve</b> · ac_contratos, ac_clausulas, ac_remuneracoes, ac_entidades</span>
+        <span><b>Anexa</b> · PDF do contrato em ac_documentos</span>
       </div>
     </div>
 
     <!-- STEP 2: Sanity check — Controladoria + Assessor -->
     <div class="step">
-      <div class="screen-wrap">
-        <div class="screen">
-          <aside class="sb">
-            <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
-            <ul>
-              <li>+ Criar (Assistente)</li>
-              <li>Dashboards</li>
-              <li>Atletas</li>
-            </ul>
-            <div class="sec">Relatórios</div>
-            <ul>
-              <li class="active">Visão por Atleta</li>
-              <li>Consolidado</li>
-              <li>Direitos Econômicos</li>
-            </ul>
-          </aside>
-          <div class="main">
-            <div class="ph"><div class="t">Visão por Atleta</div><div class="s">Sanity check dos dados registrados · Botafogo SAF</div></div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
-              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
-                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">EXPOSIÇÃO</div>
-                <div style="font-size:16px;font-weight:700;margin-top:2px;">€ 12,0 M</div>
-                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ bate com contrato</div>
-              </div>
-              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
-                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">OWNERSHIP</div>
-                <div style="font-size:16px;font-weight:700;margin-top:2px;">100% BFR</div>
-                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ soma 100%</div>
-              </div>
-              <div style="background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;">
-                <div style="font-size:10.5px;color:var(--ink-mute);letter-spacing:0.04em;">GATILHOS</div>
-                <div style="font-size:16px;font-weight:700;margin-top:2px;">2 registrados</div>
-                <div style="font-size:10.5px;color:var(--pos);font-weight:600;margin-top:2px;">✓ condição + efeito</div>
-              </div>
-            </div>
-            <table>
-              <thead><tr><th>Item</th><th>Contrato</th><th>Sistema</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr><td>Salário mensal</td><td>R$ 600.000</td><td>R$ 600.000</td><td><span class="badge b-pos">Confere</span></td></tr>
-                <tr><td>Direito de imagem</td><td>R$ 600.000</td><td>R$ 600.000</td><td><span class="badge b-pos">Confere</span></td></tr>
-                <tr><td>Transferência (5×)</td><td>€ 10,0 M</td><td>€ 10,0 M</td><td><span class="badge b-pos">Confere</span></td></tr>
-                <tr><td>Comissão agente</td><td>€ 1,0 M</td><td>€ 1,0 M</td><td><span class="badge b-pos">Confere</span></td></tr>
-                <tr><td>Gatilho 10 jogos</td><td>€ 500 k</td><td>€ 500 k</td><td><span class="badge b-warn">Contingente</span></td></tr>
-              </tbody>
-            </table>
-          </div>
+      <div class="head">
+        <div>
+          <div class="who">Fase 2 · Controladoria + Assessor validam</div>
+          <h3>Sanity check antes de virar operação</h3>
+          <p>
+            Antes do dado ser consumido para caixa e decisão, Controladoria e
+            Assessor Financeiro fazem leitura crítica do que o Jurídico
+            registrou. Objetivo: garantir que valor, moeda, contraparte,
+            cronograma e ownership espelham o contrato assinado. Nada é
+            reescrito — apenas confirmado ou devolvido ao Jurídico para ajuste.
+          </p>
+        </div>
+        <div class="meta-chip">
+          <b>Rota</b><span>/atletas/:id</span>
         </div>
       </div>
-      <div class="explain">
-        <div class="who">Fase 2 · Controladoria + Assessor</div>
-        <h3>Sanity check antes de virar operação</h3>
-        <p>
-          Antes do dado ser consumido para caixa e para decisão, Controladoria e
-          Assessor Financeiro fazem uma leitura crítica do que o Jurídico
-          registrou. Objetivo: garantir que valor, moeda, contraparte,
-          cronograma e ownership espelham o contrato assinado. Nada é
-          reescrito — apenas confirmado ou devolvido ao Jurídico para ajuste.
-        </p>
-        <ul>
-          <li>Rotas: <code>/relatorios/visao-atletas</code>, <code>/atletas/:id</code></li>
-          <li>Verifica: exposição total, moeda, ownership 100%, gatilhos (condição + efeito)</li>
-          <li>Devolve ao Jurídico se algo divergir do contrato</li>
-        </ul>
+
+      <div class="screen">
+        <aside class="sb">
+          <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
+          <ul>
+            <li>+ Criar (Assistente)</li>
+            <li>Dashboards</li>
+            <li class="active">Atletas</li>
+            <li>Portfolio de Atletas</li>
+            <li>Clubes</li>
+            <li>Agentes</li>
+          </ul>
+          <div class="sec">Relatórios</div>
+          <ul>
+            <li>Visão por Atleta</li>
+            <li>Consolidado</li>
+            <li>Acordos e Renegociações</li>
+            <li>Vendas Futuras</li>
+            <li>Direitos Econômicos</li>
+            <li>Gatilhos e Metas</li>
+            <li>Recuperação Judicial</li>
+          </ul>
+          <div class="sec">Dados</div>
+          <ul>
+            <li>Importar / Exportar</li>
+          </ul>
+        </aside>
+        <div class="main">
+          <div class="ph">
+            <div>
+              <div class="t">João Silva <span style="display:inline-block;margin-left:8px;padding:3px 9px;border-radius:5px;background:rgba(31,86,115,0.10);color:var(--info);font-size:10.5px;font-weight:700;letter-spacing:0.06em;vertical-align:middle;">SANITY CHECK</span></div>
+              <div class="s">Ficha do atleta · aquisição Barcelona · 11/2024 → 10/2029</div>
+            </div>
+            <div class="ph-actions">
+              <button class="btn">Devolver ao Jurídico</button>
+              <button class="btn primary">Aprovar dados ✓</button>
+            </div>
+          </div>
+
+          <div class="kpi-row kpi-4">
+            <div class="kpi">
+              <div class="k">Exposição total</div>
+              <div class="v">€ 12,0 M</div>
+              <div class="d ok">bate com contrato</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Passivo firme</div>
+              <div class="v pos">€ 11,5 M</div>
+              <div class="d ok">4 obrigações</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Contingente</div>
+              <div class="v warn">€ 0,5 M</div>
+              <div class="d">1 gatilho pendente</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Ownership</div>
+              <div class="v">100% BFR</div>
+              <div class="d ok">soma 100%</div>
+            </div>
+          </div>
+
+          <div class="section-h">Conciliação · Contrato × Sistema</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Contraparte</th>
+                <th class="num">No contrato</th>
+                <th class="num">No sistema</th>
+                <th>Cronograma</th>
+                <th style="text-align:center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Transferência (aquisição)</td><td>FC Barcelona</td><td class="num">€ 10,0 M</td><td class="num">€ 10,0 M</td><td class="m">5× € 2,0 M</td><td style="text-align:center"><span class="badge b-pos">Confere</span></td></tr>
+              <tr><td>Comissão agente</td><td>Agente XYZ</td><td class="num">€ 1,0 M</td><td class="num">€ 1,0 M</td><td class="m">10× € 100k bim.</td><td style="text-align:center"><span class="badge b-pos">Confere</span></td></tr>
+              <tr><td>Solidariedade FIFA</td><td>3 clubes formadores</td><td class="num">€ 0,5 M</td><td class="num">€ 0,5 M</td><td class="m">à vista</td><td style="text-align:center"><span class="badge b-pos">Confere</span></td></tr>
+              <tr><td>Salário CLT</td><td>Botafogo SAF</td><td class="num">R$ 600.000</td><td class="num">R$ 600.000</td><td class="m">mensal · 60 meses</td><td style="text-align:center"><span class="badge b-pos">Confere</span></td></tr>
+              <tr><td>Direito de imagem</td><td>PJ Silva Imagem Ltda.</td><td class="num">R$ 600.000</td><td class="num">R$ 600.000</td><td class="m">mensal · 60 meses</td><td style="text-align:center"><span class="badge b-pos">Confere</span></td></tr>
+              <tr><td>Gatilho · 10 jogos no BFR</td><td>FC Barcelona</td><td class="num">€ 500 k</td><td class="num">€ 500 k</td><td class="m">à vista após apuração</td><td style="text-align:center"><span class="badge b-warn">Contingente</span></td></tr>
+              <tr><td>Gatilho · 30 gols</td><td>—</td><td class="num" class="m">reajuste 700 k</td><td class="num">700 k</td><td class="m">altera remuneração</td><td style="text-align:center"><span class="badge b-warn">A apurar</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span><b>Verifica</b> · valor, moeda, contraparte, cronograma, ownership</span>
+        <span><b>Devolve ao Jurídico</b> se algo divergir</span>
+        <span><b>Aprova</b> para liberar consumo</span>
       </div>
     </div>
 
@@ -662,62 +808,131 @@
 
     <!-- Tela ilustrativa da Fase 3 — Consolidado da Tesouraria -->
     <div class="step">
-      <div class="screen-wrap">
-      <div class="screen-wrap">
-        <div class="screen">
-          <aside class="sb">
-            <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
-            <ul>
-              <li>+ Criar (Assistente)</li>
-              <li>Dashboards</li>
-              <li>Atletas</li>
-            </ul>
-            <div class="sec">Relatórios</div>
-            <ul>
-              <li>Visão por Atleta</li>
-              <li class="active">Consolidado</li>
-              <li>Recuperação Judicial</li>
-            </ul>
-          </aside>
-          <div class="main">
-            <div class="ph"><div class="t">Consolidado</div><div class="s">Todas as movimentações financeiras · Botafogo SAF</div></div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Vencimento</th>
-                  <th>Atleta</th>
-                  <th>Natureza</th>
-                  <th class="num">Valor</th>
-                  <th class="num">BRL (PTAX)</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>05/09/2026</td><td>João Silva</td><td>Salário</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td><span class="badge b-warn">Vence 5d</span></td></tr>
-                <tr><td>10/09/2026</td><td>João Silva</td><td>Imagem</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td><span class="badge b-warn">Vence 10d</span></td></tr>
-                <tr><td>01/10/2026</td><td>João Silva</td><td>Transferência</td><td class="num">€ 2.000.000</td><td class="num">12.400.000</td><td><span class="badge b-info">Pendente</span></td></tr>
-                <tr><td>15/10/2026</td><td>João Silva</td><td>Comissão agente</td><td class="num">€ 100.000</td><td class="num">620.000</td><td><span class="badge b-info">Pendente</span></td></tr>
-                <tr><td>25/08/2026</td><td>João Silva</td><td>Solidariedade</td><td class="num">€ 200.000</td><td class="num">1.240.000</td><td><span class="badge b-neg">Vencida</span></td></tr>
-                <tr><td>31/07/2026</td><td>João Silva</td><td>Salário</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td><span class="badge b-pos">Paga</span></td></tr>
-              </tbody>
-            </table>
+      <div class="head">
+        <div>
+          <div class="who">Fase 3 · Tesouraria em ação</div>
+          <h3>Consolidado — validação de caixa, câmbio e overdue</h3>
+          <p>
+            A Tesouraria opera o Consolidado como sua tela de trabalho.
+            Diariamente valida parcelas pagas, aplica câmbio e PTAX, marca
+            baixas e identifica overdue. É a única área que <b>escreve</b>
+            durante o consumo — as demais leem os mesmos dados com seus
+            propósitos.
+          </p>
+        </div>
+        <div class="meta-chip">
+          <b>Rota</b><span>/relatorios/consolidado</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <aside class="sb">
+          <div class="brand"><div class="b1">Botafogo SAF</div><div class="b2">Gestão Contratual</div></div>
+          <ul>
+            <li>+ Criar (Assistente)</li>
+            <li>Dashboards</li>
+            <li>Atletas</li>
+            <li>Portfolio de Atletas</li>
+            <li>Clubes</li>
+            <li>Agentes</li>
+          </ul>
+          <div class="sec">Relatórios</div>
+          <ul>
+            <li>Visão por Atleta</li>
+            <li class="active">Consolidado</li>
+            <li>Acordos e Renegociações</li>
+            <li>Vendas Futuras</li>
+            <li>Direitos Econômicos</li>
+            <li>Gatilhos e Metas</li>
+            <li>Recuperação Judicial</li>
+          </ul>
+          <div class="sec">Dados</div>
+          <ul>
+            <li>Importar / Exportar</li>
+          </ul>
+        </aside>
+        <div class="main">
+          <div class="ph">
+            <div><div class="t">Consolidado</div><div class="s">Todas as movimentações financeiras · Botafogo SAF</div></div>
+            <div class="ph-actions">
+              <button class="btn">Exportar XLSX</button>
+              <button class="btn primary">Baixar selecionadas (3)</button>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <div class="search">buscar por atleta, contraparte ou obrigação…</div>
+            <div class="chip"><span class="caret">▾</span>&nbsp;Natureza: <b>Todas</b></div>
+            <div class="chip"><span class="caret">▾</span>&nbsp;Moeda: <b>Todas</b></div>
+            <div class="chip"><span class="caret">▾</span>&nbsp;Período: <b>Próx. 60 dias</b></div>
+            <div class="chip"><span class="caret">▾</span>&nbsp;Status: <b>Não pagas</b></div>
+          </div>
+
+          <div class="kpi-row kpi-5">
+            <div class="kpi">
+              <div class="k">A pagar · 30 dias</div>
+              <div class="v">R$ 18,4 M</div>
+              <div class="d">42 parcelas</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Vencidas</div>
+              <div class="v neg">R$ 1,24 M</div>
+              <div class="d">3 · overdue</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Vence em 7 dias</div>
+              <div class="v warn">R$ 4,8 M</div>
+              <div class="d">8 parcelas</div>
+            </div>
+            <div class="kpi">
+              <div class="k">Pagas no mês</div>
+              <div class="v pos">R$ 22,1 M</div>
+              <div class="d">51 parcelas</div>
+            </div>
+            <div class="kpi">
+              <div class="k">PTAX EUR · hoje</div>
+              <div class="v">6,20</div>
+              <div class="d">BCB · fechamento D-1</div>
+            </div>
+          </div>
+
+          <div class="section-h">Parcelas · próximos vencimentos</div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:28px"><input type="checkbox" checked style="accent-color:var(--ink);"></th>
+                <th>Vencimento</th>
+                <th>Atleta</th>
+                <th>Natureza</th>
+                <th>Contraparte</th>
+                <th class="num">Valor original</th>
+                <th class="num">BRL (PTAX)</th>
+                <th style="text-align:center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><input type="checkbox" style="accent-color:var(--ink);"></td><td>25/08/2026</td><td>João Silva</td><td>Solidariedade</td><td>Clubes formadores</td><td class="num">€ 200.000</td><td class="num">1.240.000</td><td style="text-align:center"><span class="badge b-neg">Vencida 12d</span></td></tr>
+              <tr><td><input type="checkbox" style="accent-color:var(--ink);"></td><td>28/08/2026</td><td>Marcos Costa</td><td>Comissão agente</td><td>Elite Sport</td><td class="num">R$ 45.000</td><td class="num">45.000</td><td style="text-align:center"><span class="badge b-neg">Vencida 9d</span></td></tr>
+              <tr><td><input type="checkbox" checked style="accent-color:var(--ink);"></td><td>05/09/2026</td><td>João Silva</td><td>Salário CLT</td><td>Botafogo SAF</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td style="text-align:center"><span class="badge b-warn">Vence 5d</span></td></tr>
+              <tr><td><input type="checkbox" checked style="accent-color:var(--ink);"></td><td>08/09/2026</td><td>Rafael Almeida</td><td>Imagem <span class="rj-pill">RJ</span></td><td>PJ Almeida Imagem</td><td class="num">R$ 380.000</td><td class="num">380.000</td><td style="text-align:center"><span class="badge b-warn">Vence 8d</span></td></tr>
+              <tr><td><input type="checkbox" checked style="accent-color:var(--ink);"></td><td>10/09/2026</td><td>João Silva</td><td>Imagem</td><td>PJ Silva Imagem</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td style="text-align:center"><span class="badge b-warn">Vence 10d</span></td></tr>
+              <tr><td><input type="checkbox" style="accent-color:var(--ink);"></td><td>01/10/2026</td><td>João Silva</td><td>Transferência</td><td>FC Barcelona</td><td class="num">€ 2.000.000</td><td class="num">12.400.000</td><td style="text-align:center"><span class="badge b-info">Pendente</span></td></tr>
+              <tr><td><input type="checkbox" style="accent-color:var(--ink);"></td><td>15/10/2026</td><td>João Silva</td><td>Comissão agente</td><td>Agente XYZ</td><td class="num">€ 100.000</td><td class="num">620.000</td><td style="text-align:center"><span class="badge b-info">Pendente</span></td></tr>
+              <tr><td><input type="checkbox" style="accent-color:var(--ink);"></td><td>31/07/2026</td><td>João Silva</td><td>Salário CLT</td><td>Botafogo SAF</td><td class="num">R$ 600.000</td><td class="num">600.000</td><td style="text-align:center"><span class="badge b-pos">Paga · D-1</span></td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:12px;font-size:12px;color:var(--ink-mute);display:flex;justify-content:space-between;">
+            <span>Exibindo 8 de 42 parcelas · ordenadas por vencimento</span>
+            <span>← Anterior &nbsp; 1 &nbsp; 2 &nbsp; 3 &nbsp; 4 &nbsp; 5 &nbsp; Próxima →</span>
           </div>
         </div>
       </div>
-      <div class="explain">
-        <div class="who">Fase 3 · Tesouraria (exemplo)</div>
-        <h3>Consolidado — validação de caixa e overdue</h3>
-        <p>
-          A Tesouraria opera o Consolidado como sua tela de trabalho.
-          Diariamente valida parcelas pagas, aplica câmbio e PTAX, marca
-          baixas e identifica overdue. É a única área que <b>escreve</b>
-          durante o consumo — todas as outras apenas leem.
-        </p>
-        <ul>
-          <li>Rota: <code>/relatorios/consolidado</code></li>
-          <li>Escreve: <code>ac_parcelas</code> (status, câmbio, correção)</li>
-          <li>Objetivo: caixa em dia, projeção de fluxo, gestão de overdue</li>
-        </ul>
+
+      <div class="foot">
+        <span><b>Escreve</b> · ac_parcelas (status, câmbio, correção)</span>
+        <span><b>Alertas</b> · vencimento próximo, overdue, gatilho a apurar</span>
+        <span><b>Trilha</b> · auditoria por baixa (quem, quando, com qual PTAX)</span>
       </div>
     </div>
 
