@@ -54,6 +54,7 @@ import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
 import { exportWorkbook } from '../lib/xlsx-utils'
 import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteConsolidado'
+import PremissaVendaSection from '../components/athletes/PremissaVendaSection'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -360,7 +361,7 @@ function contractLabel(c: Contract): string {
   return parts.join(' · ')
 }
 
-type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'acordos' | 'transferencias' | 'consolidado'
+type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'acordos' | 'transferencias' | 'consolidado' | 'premissas'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'salario',        label: 'Salário' },
   { id: 'luvas',          label: 'Luvas' },
@@ -368,6 +369,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'gatilhos',       label: 'Gatilhos e Cláusulas Diversas' },
   { id: 'acordos',        label: 'Acordos e Renegociações' },
   { id: 'transferencias', label: 'Histórico de Transferências' },
+  { id: 'premissas',      label: 'Venda & Simulação' },
   { id: 'consolidado',    label: 'Consolidado' },
 ]
 
@@ -843,6 +845,17 @@ export default function PageAthleteDetail() {
           }}
           onDeleteLiab={(kind, lid) => kind === 'club' ? handleDeleteClubLiab(lid) : handleDeleteIntermLiab(lid)}
           onConvertLiab={handleConvertLiab}
+        />
+      )}
+
+      {/* Venda & Simulação — premissa de venda e impacto contábil/caixa */}
+      {tab === 'premissas' && (
+        <PremissaVendaSection
+          athlete={athlete}
+          contracts={contracts}
+          clauses={clauses}
+          rights={rights}
+          canEdit={canEdit}
         />
       )}
 

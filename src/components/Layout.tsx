@@ -26,7 +26,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; 
   {
     label: 'Modelo financeiro',
     items: [
-      { to: '/modelo/premissas', label: 'Premissas por atleta', short: 'PR' },
+      { to: '/modelo/premissas', label: 'Premissas & Simulação', short: 'PR' },
     ],
   },
   {

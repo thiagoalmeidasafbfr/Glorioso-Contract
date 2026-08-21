@@ -1,532 +1,313 @@
 // src/pages/PagePremissas.tsx
-// Aba centralizada de PREMISSAS por atleta — Fase 1 do modelo do CFO.
-// Uma linha por atleta (ativo, futuro contratado ou em decisão). Todo o
-// motor de projeção puxa exclusivamente dessa aba (Fase 2 em diante).
+// RELATÓRIO consolidado de premissas por atleta (Fase 1 → Fase 2 do modelo do CFO).
+//
+// As premissas são EDITADAS na página de cada atleta (aba "Venda & Simulação").
+// Esta página apenas CONSOLIDA todas elas e mostra, por atleta, o impacto
+// contábil (competência) e de caixa de uma eventual venda, além do que se evita
+// em folha/amortização. É read-only: para alterar, abra o atleta.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import PageHero from '../components/PageHero'
-import { IconButton } from '../components/Icon'
-import { fetchAthletes } from '../lib/athleteQueries'
+import KpiPill from '../components/KpiPill'
+import RefLink from '../components/RefLink'
+import { Icon } from '../components/Icon'
+import { fetchPremissas } from '../lib/premissasQueries'
 import {
-  fetchPremissas, createPremissa, updatePremissa, deletePremissa,
-} from '../lib/premissasQueries'
-import { ENCARGOS_DEFAULT, ANTECIPACAO_DEFAULT, DECISAO_LABELS } from '../types/premissas'
+  fetchAthletes, fetchAllContracts, fetchAllClauses, fetchAllEconomicRights,
+} from '../lib/athleteQueries'
+import { fetchPtaxRates } from '../lib/ptax'
+import { deriveCadastro, simularPremissa, type SimulacaoResultado } from '../lib/premissaSimulacao'
+import { DECISAO_LABELS } from '../types/premissas'
 import type { PremissaAtleta, PremissaDecisao } from '../types/premissas'
 import type { Athlete } from '../types/athlete-system'
-import { useAuth } from '../context/AuthContext'
+import { fmtCurrencyShort, todayISO } from '../lib/format'
+import { exportWorkbook } from '../lib/xlsx-utils'
 
-const fontBody = "var(--font-body)"
-const fontMono = "var(--font-label)"
+const font = 'var(--font-body)'
+const mono = 'var(--font-label)'
 
-interface Row extends PremissaAtleta {
-  // Se a premissa foi criada apenas em memória (ainda não gravada). Nunca
-  // deixamos o usuário sair da página sem salvar — no blur/commit gravamos.
-  _dirty?: boolean
+interface RowSim {
+  premissa: PremissaAtleta
+  nome: string
+  res: SimulacaoResultado
 }
 
-const DECISAO_OPTIONS: PremissaDecisao[] = [
-  'MANTER', 'RENOVAR', 'VENDER', 'RESCINDIR', 'NOVA_CONTRATACAO',
+const DECISAO_FILTERS: (('TODOS') | PremissaDecisao)[] = [
+  'TODOS', 'MANTER', 'RENOVAR', 'VENDER', 'RESCINDIR', 'NOVA_CONTRATACAO',
 ]
 
 const DECISAO_COLOR: Record<PremissaDecisao, { bg: string; fg: string }> = {
-  MANTER:            { bg: 'var(--pos-tint)',    fg: 'var(--pos)' },
-  RENOVAR:           { bg: 'var(--accent-tint2)', fg: '#7a6244' },
-  VENDER:            { bg: 'rgba(91,107,122,0.18)', fg: '#3c4a58' },
-  RESCINDIR:         { bg: 'var(--neg-tint)',    fg: 'var(--neg)' },
-  NOVA_CONTRATACAO:  { bg: 'rgba(190,140,74,0.20)', fg: '#8a5a1e' },
-}
-
-// Wrap padrão de célula editável.
-function Cell(props: {
-  children: React.ReactNode; align?: 'left' | 'right' | 'center'; width?: number | string
-}) {
-  return (
-    <td style={{
-      padding: '6px 8px',
-      textAlign: props.align ?? 'left',
-      borderBottom: '1px solid var(--rule)',
-      background: 'var(--surface)',
-      minWidth: props.width,
-      fontFamily: fontBody, fontSize: 13,
-      color: 'var(--ink-primary)',
-      whiteSpace: 'nowrap',
-    }}>{props.children}</td>
-  )
-}
-
-function Head(props: { children: React.ReactNode; width?: number | string; sticky?: boolean }) {
-  return (
-    <th style={{
-      padding: '10px 8px',
-      textAlign: 'left',
-      fontFamily: fontMono, fontSize: 10, fontWeight: 600,
-      letterSpacing: '0.10em', textTransform: 'uppercase',
-      color: 'var(--ink-secondary)',
-      background: 'var(--cream-inset)',
-      borderBottom: '1px solid var(--rule)',
-      position: props.sticky ? 'sticky' as const : undefined,
-      left: props.sticky ? 0 : undefined,
-      zIndex: props.sticky ? 3 : undefined,
-      minWidth: props.width,
-      whiteSpace: 'nowrap',
-    }}>{props.children}</th>
-  )
-}
-
-// Input compacto — usado em todas as células editáveis. Comita no blur / Enter.
-function CellInput(props: {
-  value: string | number | null | undefined
-  type?: 'text' | 'number' | 'date'
-  onCommit: (v: string) => void
-  align?: 'left' | 'right'
-  width?: number | string
-  step?: string
-  disabled?: boolean
-  placeholder?: string
-}) {
-  const [v, setV] = useState<string>(props.value == null ? '' : String(props.value))
-  useEffect(() => { setV(props.value == null ? '' : String(props.value)) }, [props.value])
-  return (
-    <input
-      value={v}
-      type={props.type ?? 'text'}
-      step={props.step}
-      disabled={props.disabled}
-      placeholder={props.placeholder}
-      onChange={e => setV(e.target.value)}
-      onBlur={() => { if (v !== (props.value == null ? '' : String(props.value))) props.onCommit(v) }}
-      onKeyDown={e => {
-        if (e.key === 'Enter') { (e.target as HTMLInputElement).blur() }
-        if (e.key === 'Escape') { setV(props.value == null ? '' : String(props.value)); (e.target as HTMLInputElement).blur() }
-      }}
-      style={{
-        width: props.width ?? '100%',
-        minWidth: 80,
-        padding: '4px 6px',
-        border: '1px solid transparent',
-        borderRadius: 4,
-        background: 'transparent',
-        fontFamily: fontBody, fontSize: 13,
-        textAlign: props.align ?? 'left',
-        color: 'var(--ink-primary)',
-        outline: 'none',
-      }}
-      onFocus={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.border = '1px solid var(--rule-strong)' }}
-      onBlurCapture={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent' }}
-    />
-  )
-}
-
-function toNum(s: string): number | null {
-  if (s === '' || s == null) return null
-  const cleaned = s.replace(/\./g, '').replace(',', '.')
-  const n = Number(cleaned)
-  return Number.isFinite(n) ? n : null
-}
-
-function toPct(s: string): number | null {
-  const n = toNum(s)
-  if (n == null) return null
-  // Aceita "20" (=20%) ou "0.20". Se > 1 assumimos que veio em pontos %.
-  return n > 1 ? n / 100 : n
-}
-
-function fmtPct(n: number | null | undefined): string {
-  if (n == null) return ''
-  return (n * 100).toFixed(2)
-}
-
-// Converte erros crus (especialmente o do PostgREST quando a tabela não existe)
-// em uma mensagem acionável para o operador. O erro
-// "Could not find the table 'public.ac_premissas_atleta' in the schema cache"
-// significa que a migration 018 ainda NÃO foi aplicada no banco Supabase.
-function explainError(e: unknown): string {
-  const msg = (e as Error)?.message ?? 'Falha ao carregar premissas.'
-  const code = (e as { code?: string })?.code
-  const missingTable =
-    code === 'PGRST205' ||
-    /schema cache/i.test(msg) ||
-    /ac_premissas_atleta/i.test(msg)
-  if (missingTable) {
-    return (
-      'A tabela de premissas ainda não existe no banco. ' +
-      'Rode a migration "018_premissas_atleta.sql" no Supabase ' +
-      '(SQL Editor → New query → cole o arquivo → Run) e recarregue a página. ' +
-      `Detalhe técnico: ${msg}`
-    )
-  }
-  return msg
+  MANTER:           { bg: 'var(--pos-tint)', fg: 'var(--pos)' },
+  RENOVAR:          { bg: 'var(--accent-tint2)', fg: '#7a6244' },
+  VENDER:           { bg: 'rgba(91,107,122,0.18)', fg: '#3c4a58' },
+  RESCINDIR:        { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
+  NOVA_CONTRATACAO: { bg: 'rgba(190,140,74,0.20)', fg: '#8a5a1e' },
 }
 
 export default function PagePremissas() {
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master'
-
-  const [rows, setRows] = useState<Row[]>([])
-  const [athletes, setAthletes] = useState<Athlete[]>([])
+  const [rows, setRows] = useState<RowSim[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [filter, setFilter] = useState<'TODOS' | PremissaDecisao>('TODOS')
   const [search, setSearch] = useState('')
+  const [expanded, setExpanded] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null)
     try {
-      const [ps, as] = await Promise.all([fetchPremissas(), fetchAthletes()])
-      setRows(ps as Row[]); setAthletes(as)
+      const [ptax, premissas, athletes, contracts, clauses, rights] = await Promise.all([
+        fetchPtaxRates().catch(() => ({} as Record<string, number>)),
+        fetchPremissas(),
+        fetchAthletes(), fetchAllContracts(), fetchAllClauses(), fetchAllEconomicRights(),
+      ])
+      const byId = new Map<string, Athlete>(athletes.map(a => [a.id, a]))
+      const hoje = todayISO()
+      const built = premissas.map(p => {
+        const nome = (p.atleta_id && byId.get(p.atleta_id)?.full_name) || p.nome || '—'
+        const cad = deriveCadastro(p.atleta_id ?? '', contracts, clauses, rights, ptax, hoje)
+        return { premissa: p, nome, res: simularPremissa(p, cad, ptax, hoje) }
+      })
+      setRows(built)
     } catch (e) {
       setErr(explainError(e))
     } finally { setLoading(false) }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount
   useEffect(() => { void load() }, [load])
-
-  // Persistência otimista — atualiza o state, dispara PATCH, reverte se falhar.
-  const patch = useCallback(async (id: string, p: Partial<PremissaAtleta>) => {
-    setRows(rs => rs.map(r => r.id === id ? { ...r, ...p } : r))
-    try { await updatePremissa(id, p) } catch (e) {
-      setErr(explainError(e))
-      await load()
-    }
-  }, [load])
-
-  const addNew = useCallback(async (kind: 'ATLETA_EXISTENTE' | 'NOVA_CONTRATACAO') => {
-    try {
-      const base = kind === 'NOVA_CONTRATACAO'
-        ? { decisao: 'NOVA_CONTRATACAO' as PremissaDecisao, nome: 'Nova contratação' }
-        : { decisao: 'MANTER' as PremissaDecisao }
-      const created = await createPremissa(base)
-      setRows(rs => [created as Row, ...rs])
-    } catch (e) { setErr(explainError(e)) }
-  }, [])
-
-  const removeRow = useCallback(async (id: string) => {
-    if (!confirm('Excluir esta linha de premissas?')) return
-    try { await deletePremissa(id); setRows(rs => rs.filter(r => r.id !== id)) }
-    catch (e) { setErr(explainError(e)) }
-  }, [])
-
-  // Nome exibido: se tem atleta_id vinculado, puxa do cadastro; senão usa o campo.
-  const nameOf = useCallback((r: Row): string => {
-    if (r.atleta_id) {
-      const a = athletes.find(x => x.id === r.atleta_id)
-      if (a) return a.full_name
-    }
-    return r.nome ?? '—'
-  }, [athletes])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return rows.filter(r => {
-      if (filter !== 'TODOS' && r.decisao !== filter) return false
+      if (filter !== 'TODOS' && r.premissa.decisao !== filter) return false
       if (!q) return true
-      return nameOf(r).toLowerCase().includes(q) || (r.posicao ?? '').toLowerCase().includes(q)
+      return r.nome.toLowerCase().includes(q) || (r.premissa.posicao ?? '').toLowerCase().includes(q)
     })
-  }, [rows, filter, search, nameOf])
+  }, [rows, filter, search])
 
-  const totalEncargos = (r: Row) =>
-    (r.inss_patronal_pct ?? 0) + (r.fgts_pct ?? 0) +
-    (r.decimo_terceiro_pct ?? 0) + (r.ferias_pct ?? 0) + (r.outros_encargos_pct ?? 0)
+  // Totais só das premissas de VENDA (as demais não têm resultado de venda).
+  const totals = useMemo(() => {
+    const vendas = filtered.filter(r => r.premissa.decisao === 'VENDER')
+    return {
+      count: vendas.length,
+      resultado: vendas.reduce((s, r) => s + r.res.resultadoContabilBRL, 0),
+      caixa: vendas.reduce((s, r) => s + r.res.caixaLiquidoBRL, 0),
+      folhaEvitada: vendas.reduce((s, r) => s + r.res.folhaFuturaEvitadaBRL, 0),
+    }
+  }, [filtered])
 
-  // Vincular a um atleta existente.
-  const linkToAthlete = useCallback((r: Row, athleteId: string) => {
-    const a = athletes.find(x => x.id === athleteId)
-    void patch(r.id, {
-      atleta_id: athleteId || null,
-      nome: a?.full_name ?? r.nome,
-      data_nascimento: a?.birth_date ?? r.data_nascimento,
-      posicao: a?.position ?? r.posicao,
-    })
-  }, [athletes, patch])
+  function exportXlsx() {
+    const cols = [
+      { key: 'atleta', header: 'Atleta' },
+      { key: 'decisao', header: 'Decisão' },
+      { key: 'dataDecisao', header: 'Data-alvo' },
+      { key: 'vendaBRL', header: 'Venda (BRL)' },
+      { key: 'residual', header: 'Baixa residual (BRL)' },
+      { key: 'maisValia', header: 'Mais-valia (BRL)' },
+      { key: 'resultado', header: 'Resultado contábil (BRL)' },
+      { key: 'despFin', header: 'Desp. antecipação (BRL)' },
+      { key: 'caixa', header: 'Caixa líquido (BRL)' },
+      { key: 'repasses', header: 'Repasses a terceiros (BRL)' },
+      { key: 'folhaEvitada', header: 'Folha evitada (BRL)' },
+      { key: 'amortEvitada', header: 'Amortização evitada (BRL)' },
+    ]
+    const data = filtered.map(r => ({
+      atleta: r.nome,
+      decisao: DECISAO_LABELS[r.premissa.decisao],
+      dataDecisao: r.premissa.decisao_data ?? '',
+      vendaBRL: round(r.res.vendaBRL),
+      residual: round(r.res.baixaResidualBRL),
+      maisValia: round(r.res.maisValiaBRL),
+      resultado: round(r.res.resultadoContabilBRL),
+      despFin: round(r.res.despesaFinanceiraBRL),
+      caixa: round(r.res.caixaLiquidoBRL),
+      repasses: round(r.res.repasses.reduce((s, x) => s + x.valorBRL, 0)),
+      folhaEvitada: round(r.res.folhaFuturaEvitadaBRL),
+      amortEvitada: round(r.res.amortizacaoFuturaEvitadaBRL),
+    }))
+    exportWorkbook([{ name: 'Premissas', cols, rows: data }], 'premissas-simulacao.xlsx')
+  }
+
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.12em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12.5, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const tdNum: React.CSSProperties = { ...td, textAlign: 'right', fontFamily: mono, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
 
   return (
-    <div style={{ padding: 'clamp(16px, 3vw, 32px)', maxWidth: '100%' }}>
-      <PageHero
-        title="Premissas por atleta"
-        subtitle="Modelo financeiro — Fase 1"
-      >
-        {canEdit && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => void addNew('ATLETA_EXISTENTE')} style={btn()}>
-              + Atleta existente
-            </button>
-            <button onClick={() => void addNew('NOVA_CONTRATACAO')} style={btn('accent')}>
-              + Nova contratação
-            </button>
-          </div>
-        )}
+    <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
+      <PageHero title="Premissas & Simulação de venda" subtitle="Modelo financeiro — consolidado por atleta">
+        <button onClick={exportXlsx} className="btn btn-outline" style={{ padding: '8px 14px' }}>
+          <Icon name="download" size={14} /> Exportar
+        </button>
       </PageHero>
 
-      {/* Filtros */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por atleta ou posição"
-          style={{
-            padding: '8px 10px', border: '1px solid var(--rule)', borderRadius: 6,
-            background: 'var(--surface)', fontFamily: fontBody, fontSize: 13, minWidth: 240,
-          }}
-        />
-        <div style={{ display: 'flex', gap: 4 }}>
-          {(['TODOS', ...DECISAO_OPTIONS] as const).map(d => (
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por atleta ou posição"
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', minWidth: 240 }} />
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {DECISAO_FILTERS.map(d => (
             <button key={d} onClick={() => setFilter(d)} style={{
-              padding: '6px 10px', border: '1px solid var(--rule)',
-              borderRadius: 6, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.10em',
-              background: filter === d ? 'var(--ink-primary)' : 'var(--surface)',
+              padding: '6px 10px', border: '1px solid var(--divider-strong)', borderRadius: 6,
+              fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer',
+              background: filter === d ? 'var(--ink-primary)' : 'var(--cream-card)',
               color: filter === d ? '#fff' : 'var(--ink-secondary)',
-              cursor: 'pointer', textTransform: 'uppercase',
-            }}>{d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d as PremissaDecisao]}</button>
+            }}>{d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d]}</button>
           ))}
         </div>
-        <span style={{ marginLeft: 'auto', fontFamily: fontMono, fontSize: 10, color: 'var(--ink-secondary)' }}>
-          {filtered.length} {filtered.length === 1 ? 'linha' : 'linhas'}
-        </span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <KpiPill label={`Resultado contábil (${totals.count} vendas)`} value={fmtCurrencyShort(totals.resultado, 'BRL')} tone={totals.resultado >= 0 ? 'pos' : 'neg'} />
+          <KpiPill label="Caixa líquido" value={fmtCurrencyShort(totals.caixa, 'BRL')} tone={totals.caixa >= 0 ? 'pos' : 'neg'} />
+          <KpiPill label="Folha evitada" value={fmtCurrencyShort(totals.folhaEvitada, 'BRL')} tone="neutral" />
+        </div>
       </div>
 
       {err && (
-        <div style={{
-          padding: '10px 14px', border: '1px solid var(--neg)', background: 'var(--neg-tint)',
-          borderRadius: 6, color: 'var(--neg)', fontFamily: fontBody, fontSize: 13, marginBottom: 12,
-        }}>{err}</div>
+        <div style={{ padding: '12px 16px', border: '1px solid var(--neg)', background: 'var(--neg-tint)', borderRadius: 8, color: 'var(--neg)', fontFamily: font, fontSize: 13, marginBottom: 14 }}>{err}</div>
       )}
 
-      <div style={{
-        overflowX: 'auto', border: '1px solid var(--rule)', borderRadius: 8,
-        background: 'var(--surface)',
-      }}>
-        <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 2400 }}>
-          <thead>
-            <tr>
-              <Head sticky width={220}>Atleta</Head>
-              <Head width={110}>Nascimento</Head>
-              <Head width={110}>Posição</Head>
-              <Head width={130}>Valor merc. (EUR)</Head>
-              <Head width={110}>Contrato início</Head>
-              <Head width={110}>Contrato fim</Head>
-              <Head width={110}>Salário (BRL)</Head>
-              <Head width={110}>Imagem (BRL)</Head>
-              <Head width={90}>INSS %</Head>
-              <Head width={90}>FGTS %</Head>
-              <Head width={90}>13º %</Head>
-              <Head width={90}>Férias %</Head>
-              <Head width={90}>Outros %</Head>
-              <Head width={70}>Σ enc.</Head>
-              <Head width={130}>Luvas total (BRL)</Head>
-              <Head width={140}>Intermediação (BRL)</Head>
-              <Head width={150}>Decisão</Head>
-              <Head width={120}>Data decisão</Head>
-              <Head width={130}>Venda (EUR)</Head>
-              <Head width={90}>Comis. %</Head>
-              <Head width={90}>Solid. %</Head>
-              <Head width={80}>Antec.?</Head>
-              <Head width={100}>Antec. modo</Head>
-              <Head width={90}>Antec. %/vlr</Head>
-              <Head width={90}>CDI a.a.</Head>
-              <Head width={90}>Spread a.a.</Head>
-              <Head width={130}>Renov. salário</Head>
-              <Head width={130}>Renov. imagem</Head>
-              <Head width={130}>Renov. luvas</Head>
-              <Head width={90}>Renov. m</Head>
-              <Head width={60}>{' '}</Head>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>Carregando...</td></tr>
-            )}
-            {!loading && filtered.length === 0 && (
-              <tr><td colSpan={31} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13 }}>
-                Nenhuma premissa cadastrada. Clique em <b>+ Atleta existente</b> ou <b>+ Nova contratação</b> para começar.
-              </td></tr>
-            )}
-            {filtered.map(r => {
-              const disabled = !canEdit
-              return (
-                <tr key={r.id}>
-                  {/* Atleta — sticky */}
-                  <td style={{
-                    padding: '6px 8px', borderBottom: '1px solid var(--rule)',
-                    background: 'var(--surface)', position: 'sticky', left: 0, zIndex: 2,
-                    borderRight: '1px solid var(--rule)', minWidth: 220,
-                  }}>
-                    {r.atleta_id ? (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <select
-                          disabled={disabled}
-                          value={r.atleta_id ?? ''}
-                          onChange={e => linkToAthlete(r, e.target.value)}
-                          style={selectStyle()}
-                        >
-                          <option value="">— sem vínculo —</option>
-                          {athletes.map(a => (
-                            <option key={a.id} value={a.id}>{a.full_name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <CellInput
-                          value={r.nome ?? ''}
-                          onCommit={v => void patch(r.id, { nome: v || null })}
-                          placeholder="Nome (nova contratação)"
-                          disabled={disabled}
-                        />
-                        <select
-                          disabled={disabled}
-                          value=""
-                          onChange={e => e.target.value && linkToAthlete(r, e.target.value)}
-                          style={{ ...selectStyle(), fontSize: 11, color: 'var(--ink-secondary)' }}
-                        >
-                          <option value="">vincular a atleta existente...</option>
-                          {athletes.map(a => (
-                            <option key={a.id} value={a.id}>{a.full_name}</option>
-                          ))}
-                        </select>
-                      </div>
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ ...th, width: 32 }} aria-label="Expandir" />
+                <th style={{ ...th, minWidth: 180 }}>Atleta</th>
+                <th style={{ ...th, minWidth: 120 }}>Decisão</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Venda (BRL)</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Resultado contábil</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Caixa líquido</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Folha evitada</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando premissas e PTAX…</td></tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+                  Nenhuma premissa. Abra um atleta e use a aba <b>Venda &amp; Simulação</b> para criar.
+                </td></tr>
+              )}
+              {!loading && filtered.map(r => {
+                const isOpen = expanded === r.premissa.id
+                const c = DECISAO_COLOR[r.premissa.decisao]
+                const isVenda = r.premissa.decisao === 'VENDER'
+                return (
+                  <Fragment key={r.premissa.id}>
+                    <tr style={{ cursor: 'pointer' }} onClick={() => setExpanded(isOpen ? null : r.premissa.id)}>
+                      <td style={{ ...td, textAlign: 'center' }}>
+                        <Icon name={isOpen ? 'chevronDown' : 'chevronRight'} size={14} />
+                      </td>
+                      <td style={td}>
+                        {r.premissa.atleta_id
+                          ? <RefLink to={`/atletas/${r.premissa.atleta_id}`}>{r.nome}</RefLink>
+                          : r.nome}
+                        {r.premissa.posicao && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}> · {r.premissa.posicao}</span>}
+                      </td>
+                      <td style={td}>
+                        <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase', background: c.bg, color: c.fg }}>
+                          {DECISAO_LABELS[r.premissa.decisao]}
+                        </span>
+                      </td>
+                      <td style={tdNum}>{isVenda ? fmtCurrencyShort(r.res.vendaBRL, 'BRL') : '—'}</td>
+                      <td style={{ ...tdNum, color: isVenda ? (r.res.resultadoContabilBRL >= 0 ? 'var(--pos)' : 'var(--neg)') : undefined }}>
+                        {isVenda ? fmtCurrencyShort(r.res.resultadoContabilBRL, 'BRL') : '—'}
+                      </td>
+                      <td style={{ ...tdNum, color: isVenda ? (r.res.caixaLiquidoBRL >= 0 ? 'var(--pos)' : 'var(--neg)') : undefined }}>
+                        {isVenda ? fmtCurrencyShort(r.res.caixaLiquidoBRL, 'BRL') : '—'}
+                      </td>
+                      <td style={tdNum}>{fmtCurrencyShort(r.res.folhaFuturaEvitadaBRL, 'BRL')}</td>
+                    </tr>
+                    {isOpen && (
+                      <tr>
+                        <td colSpan={7} style={{ ...td, background: 'var(--bg-subtle)', padding: '16px 20px' }}>
+                          <DetalheSim r={r} />
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <Cell><CellInput type="date" value={r.data_nascimento ?? ''} disabled={disabled}
-                    onCommit={v => void patch(r.id, { data_nascimento: v || null })} /></Cell>
-                  <Cell><CellInput value={r.posicao ?? ''} disabled={disabled}
-                    onCommit={v => void patch(r.id, { posicao: v || null })} /></Cell>
-                  <Cell align="right"><CellInput type="number" value={r.valor_mercado_eur ?? ''} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { valor_mercado_eur: toNum(v) })} /></Cell>
-                  <Cell><CellInput type="date" value={r.contrato_inicio ?? ''} disabled={disabled}
-                    onCommit={v => void patch(r.id, { contrato_inicio: v || null })} /></Cell>
-                  <Cell><CellInput type="date" value={r.contrato_fim ?? ''} disabled={disabled}
-                    onCommit={v => void patch(r.id, { contrato_fim: v || null })} /></Cell>
-                  <Cell align="right"><CellInput type="number" value={r.salario_brl} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { salario_brl: toNum(v) ?? 0 })} /></Cell>
-                  <Cell align="right"><CellInput type="number" value={r.imagem_brl} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { imagem_brl: toNum(v) ?? 0 })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.inss_patronal_pct)} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { inss_patronal_pct: toPct(v) ?? 0 })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.fgts_pct)} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { fgts_pct: toPct(v) ?? 0 })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.decimo_terceiro_pct)} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { decimo_terceiro_pct: toPct(v) ?? 0 })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.ferias_pct)} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { ferias_pct: toPct(v) ?? 0 })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.outros_encargos_pct)} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { outros_encargos_pct: toPct(v) ?? 0 })} /></Cell>
-                  <Cell align="right">
-                    <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--ink-secondary)' }}>
-                      {fmtPct(totalEncargos(r))}%
-                    </span>
-                  </Cell>
-                  <Cell align="right"><CellInput type="number" value={r.luvas_total_brl} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { luvas_total_brl: toNum(v) ?? 0 })} /></Cell>
-                  <Cell align="right"><CellInput type="number" value={r.intermediacao_total_brl} disabled={disabled} align="right"
-                    onCommit={v => void patch(r.id, { intermediacao_total_brl: toNum(v) ?? 0 })} /></Cell>
-
-                  {/* Decisão */}
-                  <Cell>
-                    <select
-                      disabled={disabled}
-                      value={r.decisao}
-                      onChange={e => void patch(r.id, { decisao: e.target.value as PremissaDecisao })}
-                      style={{
-                        ...selectStyle(),
-                        background: DECISAO_COLOR[r.decisao].bg,
-                        color: DECISAO_COLOR[r.decisao].fg,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {DECISAO_OPTIONS.map(d => (
-                        <option key={d} value={d}>{DECISAO_LABELS[d]}</option>
-                      ))}
-                    </select>
-                  </Cell>
-                  <Cell><CellInput type="date" value={r.decisao_data ?? ''} disabled={disabled || r.decisao === 'MANTER'}
-                    onCommit={v => void patch(r.id, { decisao_data: v || null })} /></Cell>
-
-                  {/* Venda */}
-                  <Cell align="right"><CellInput type="number" value={r.venda_valor_eur ?? ''} disabled={disabled || r.decisao !== 'VENDER'} align="right"
-                    onCommit={v => void patch(r.id, { venda_valor_eur: toNum(v) })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.venda_comissao_pct)} disabled={disabled || r.decisao !== 'VENDER'} align="right"
-                    onCommit={v => void patch(r.id, { venda_comissao_pct: toPct(v) })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.venda_solidariedade_pct)} disabled={disabled || r.decisao !== 'VENDER'} align="right"
-                    onCommit={v => void patch(r.id, { venda_solidariedade_pct: toPct(v) })} /></Cell>
-
-                  {/* Antecipação */}
-                  <Cell align="center">
-                    <input type="checkbox" disabled={disabled || r.decisao !== 'VENDER'}
-                      checked={!!r.antecipar}
-                      onChange={e => void patch(r.id, { antecipar: e.target.checked })}
-                    />
-                  </Cell>
-                  <Cell>
-                    <select
-                      disabled={disabled || !r.antecipar}
-                      value={r.antecipacao_modo}
-                      onChange={e => void patch(r.id, { antecipacao_modo: e.target.value as 'PERCENTUAL' | 'VALOR' })}
-                      style={selectStyle()}
-                    >
-                      <option value="PERCENTUAL">% do total</option>
-                      <option value="VALOR">Valor fixo</option>
-                    </select>
-                  </Cell>
-                  <Cell align="right">
-                    {r.antecipacao_modo === 'PERCENTUAL' ? (
-                      <CellInput type="number" step="0.01" value={fmtPct(r.antecipacao_pct)} disabled={disabled || !r.antecipar} align="right"
-                        onCommit={v => void patch(r.id, { antecipacao_pct: toPct(v) })} />
-                    ) : (
-                      <CellInput type="number" value={r.antecipacao_valor ?? ''} disabled={disabled || !r.antecipar} align="right"
-                        onCommit={v => void patch(r.id, { antecipacao_valor: toNum(v) })} />
-                    )}
-                  </Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.antecipacao_cdi_pct_aa)} disabled={disabled || !r.antecipar} align="right"
-                    onCommit={v => void patch(r.id, { antecipacao_cdi_pct_aa: toPct(v) })} /></Cell>
-                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.antecipacao_spread_pct_aa)} disabled={disabled || !r.antecipar} align="right"
-                    onCommit={v => void patch(r.id, { antecipacao_spread_pct_aa: toPct(v) })} /></Cell>
-
-                  {/* Renovação */}
-                  <Cell align="right"><CellInput type="number" value={r.renov_novo_salario_brl ?? ''} disabled={disabled || r.decisao !== 'RENOVAR'} align="right"
-                    onCommit={v => void patch(r.id, { renov_novo_salario_brl: toNum(v) })} /></Cell>
-                  <Cell align="right"><CellInput type="number" value={r.renov_novo_imagem_brl ?? ''} disabled={disabled || r.decisao !== 'RENOVAR'} align="right"
-                    onCommit={v => void patch(r.id, { renov_novo_imagem_brl: toNum(v) })} /></Cell>
-                  <Cell align="right"><CellInput type="number" value={r.renov_novas_luvas_brl ?? ''} disabled={disabled || r.decisao !== 'RENOVAR'} align="right"
-                    onCommit={v => void patch(r.id, { renov_novas_luvas_brl: toNum(v) })} /></Cell>
-                  <Cell align="right"><CellInput type="number" value={r.renov_novo_prazo_meses ?? ''} disabled={disabled || r.decisao !== 'RENOVAR'} align="right"
-                    onCommit={v => void patch(r.id, { renov_novo_prazo_meses: toNum(v) })} /></Cell>
-
-                  {/* Ações */}
-                  <Cell align="center">
-                    {canEdit && (
-                      <IconButton icon="trash" label="Excluir linha" tone="danger" small
-                        onClick={() => void removeRow(r.id)} />
-                    )}
-                  </Cell>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                  </Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink-secondary)' }}>
-        Encargos padrão: INSS {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}% · FGTS {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}% · férias {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}%. Antecipação padrão: CDI {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}% a.a.
+      <p style={{ marginTop: 12, fontFamily: mono, fontSize: 10, letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+        Receita de venda, sell-on, solidariedade e intermediação reconhecidos na competência (na cabeça); o cronograma define o efeito caixa. Valor residual e amortização vêm do cadastro (contrato de entrada). Edite cada premissa na aba <b>Venda &amp; Simulação</b> do atleta.
       </p>
     </div>
   )
 }
 
-function btn(variant?: 'accent'): React.CSSProperties {
-  return {
-    padding: '8px 14px',
-    border: variant === 'accent' ? '1px solid #be8c4a' : '1px solid rgba(255,255,255,0.20)',
-    background: variant === 'accent' ? '#be8c4a' : 'transparent',
-    color: variant === 'accent' ? '#1a1410' : '#f3eee2',
-    fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
-    borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+function DetalheSim({ r }: { r: RowSim }) {
+  const { res } = r
+  if (r.premissa.decisao !== 'VENDER') {
+    return (
+      <div style={{ fontFamily: font, fontSize: 13, color: 'var(--ink-secondary)' }}>
+        Decisão <b>{DECISAO_LABELS[r.premissa.decisao]}</b>. Custo mensal mantendo o atleta:{' '}
+        <b>{fmtCurrencyShort(res.custoMensalTotalBRL, 'BRL')}</b> (folha {fmtCurrencyShort(res.folhaMensalBRL, 'BRL')} + amortização {fmtCurrencyShort(res.amortizacaoMensalBRL, 'BRL')}).
+        {' '}Folha futura evitada até o fim do contrato: <b>{fmtCurrencyShort(res.folhaFuturaEvitadaBRL, 'BRL')}</b>.
+      </div>
+    )
   }
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+      <MiniBloco titulo="Resultado contábil (competência)">
+        <Linha l="Receita de venda" v={res.vendaBRL} />
+        <Linha l="(−) Solidariedade" v={-res.solidariedadeBRL} />
+        <Linha l="(−) Baixa residual" v={-res.baixaResidualBRL} />
+        <Linha l="= Mais-valia" v={res.maisValiaBRL} muted />
+        <Linha l="(−) Sell-on" v={-res.sellOnBRL} />
+        <Linha l="(−) Comissão" v={-res.comissaoBRL} />
+        <Linha l="(−) Intermediação" v={-res.intermedCadastradaBRL} />
+        <Linha l="Resultado" v={res.resultadoContabilBRL} strong />
+      </MiniBloco>
+      <MiniBloco titulo="Efeito caixa">
+        <Linha l="Recebimento (nominal)" v={res.totalRecebimentoNominalBRL} />
+        {res.antecipar && <Linha l="(−) Desp. antecipação" v={-res.despesaFinanceiraBRL} />}
+        <Linha l="Entrada líquida" v={res.caixaEntradaLiquidaBRL} muted />
+        <Linha l="(−) Repasses" v={-res.totalSaidasBRL} />
+        <Linha l="Caixa líquido" v={res.caixaLiquidoBRL} strong />
+      </MiniBloco>
+      <MiniBloco titulo="A quem repassar">
+        {res.repasses.length === 0
+          ? <div style={{ fontFamily: font, fontSize: 12, color: 'var(--text-muted)' }}>Nenhum repasse a terceiros.</div>
+          : res.repasses.map((rp, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontFamily: font, fontSize: 12, padding: '3px 0' }}>
+              <span>{rp.party} <span style={{ color: 'var(--text-muted)' }}>· {rp.motivo}</span></span>
+              <span style={{ fontFamily: mono }}>{fmtCurrencyShort(rp.valorBRL, 'BRL')}</span>
+            </div>
+          ))}
+      </MiniBloco>
+    </div>
+  )
 }
 
-function selectStyle(): React.CSSProperties {
-  return {
-    width: '100%', padding: '4px 6px',
-    border: '1px solid var(--rule)', borderRadius: 4,
-    background: 'var(--surface)', fontFamily: fontBody, fontSize: 12,
-    color: 'var(--ink-primary)', cursor: 'pointer',
+function MiniBloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ fontFamily: mono, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-deep)', marginBottom: 8 }}>{titulo}</div>
+      {children}
+    </div>
+  )
+}
+
+function Linha({ l, v, strong, muted }: { l: string; v: number; strong?: boolean; muted?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '3px 0', fontFamily: font, fontSize: strong ? 13 : 12, fontWeight: strong ? 700 : 400, color: muted ? 'var(--ink-secondary)' : 'var(--ink-primary)', borderTop: strong ? '1px solid var(--divider-strong)' : undefined, marginTop: strong ? 4 : undefined, paddingTop: strong ? 6 : 3 }}>
+      <span>{l}</span>
+      <span style={{ fontFamily: mono, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', color: strong ? (v >= 0 ? 'var(--pos)' : 'var(--neg)') : undefined }}>{fmtCurrencyShort(v, 'BRL')}</span>
+    </div>
+  )
+}
+
+function round(n: number): number { return Math.round(n * 100) / 100 }
+
+function explainError(e: unknown): string {
+  const msg = (e as Error)?.message ?? 'Falha ao carregar premissas.'
+  const code = (e as { code?: string })?.code
+  if (code === 'PGRST205' || /schema cache/i.test(msg) || /ac_premissas_atleta/i.test(msg)) {
+    return 'A tabela de premissas ainda não existe no banco. Rode a migration "018_premissas_atleta.sql" no Supabase e recarregue a página. Detalhe técnico: ' + msg
   }
+  return msg
 }
