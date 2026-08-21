@@ -136,6 +136,28 @@ function fmtPct(n: number | null | undefined): string {
   return (n * 100).toFixed(2)
 }
 
+// Converte erros crus (especialmente o do PostgREST quando a tabela não existe)
+// em uma mensagem acionável para o operador. O erro
+// "Could not find the table 'public.ac_premissas_atleta' in the schema cache"
+// significa que a migration 018 ainda NÃO foi aplicada no banco Supabase.
+function explainError(e: unknown): string {
+  const msg = (e as Error)?.message ?? 'Falha ao carregar premissas.'
+  const code = (e as { code?: string })?.code
+  const missingTable =
+    code === 'PGRST205' ||
+    /schema cache/i.test(msg) ||
+    /ac_premissas_atleta/i.test(msg)
+  if (missingTable) {
+    return (
+      'A tabela de premissas ainda não existe no banco. ' +
+      'Rode a migration "018_premissas_atleta.sql" no Supabase ' +
+      '(SQL Editor → New query → cole o arquivo → Run) e recarregue a página. ' +
+      `Detalhe técnico: ${msg}`
+    )
+  }
+  return msg
+}
+
 export default function PagePremissas() {
   const { profile } = useAuth()
   const canEdit = !profile || profile.role === 'master'
@@ -153,7 +175,7 @@ export default function PagePremissas() {
       const [ps, as] = await Promise.all([fetchPremissas(), fetchAthletes()])
       setRows(ps as Row[]); setAthletes(as)
     } catch (e) {
-      setErr((e as Error).message ?? 'Falha ao carregar premissas.')
+      setErr(explainError(e))
     } finally { setLoading(false) }
   }, [])
 
@@ -163,7 +185,7 @@ export default function PagePremissas() {
   const patch = useCallback(async (id: string, p: Partial<PremissaAtleta>) => {
     setRows(rs => rs.map(r => r.id === id ? { ...r, ...p } : r))
     try { await updatePremissa(id, p) } catch (e) {
-      setErr((e as Error).message ?? 'Falha ao salvar.')
+      setErr(explainError(e))
       await load()
     }
   }, [load])
@@ -175,13 +197,13 @@ export default function PagePremissas() {
         : { decisao: 'MANTER' as PremissaDecisao }
       const created = await createPremissa(base)
       setRows(rs => [created as Row, ...rs])
-    } catch (e) { setErr((e as Error).message ?? 'Falha ao criar linha.') }
+    } catch (e) { setErr(explainError(e)) }
   }, [])
 
   const removeRow = useCallback(async (id: string) => {
     if (!confirm('Excluir esta linha de premissas?')) return
     try { await deletePremissa(id); setRows(rs => rs.filter(r => r.id !== id)) }
-    catch (e) { setErr((e as Error).message ?? 'Falha ao excluir.') }
+    catch (e) { setErr(explainError(e)) }
   }, [])
 
   // Nome exibido: se tem atleta_id vinculado, puxa do cadastro; senão usa o campo.
