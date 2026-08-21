@@ -24,6 +24,12 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; 
     ],
   },
   {
+    label: 'Modelo financeiro',
+    items: [
+      { to: '/modelo/premissas', label: 'Premissas por atleta', short: 'PR' },
+    ],
+  },
+  {
     label: 'Relatórios',
     items: [
       { to: '/relatorios/visao-atletas',        label: 'Visão por Atleta',       short: 'VA' },
