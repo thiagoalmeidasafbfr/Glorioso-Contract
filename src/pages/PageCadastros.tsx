@@ -8,7 +8,7 @@
 // só os passivos flat — como antes — zerava clubes que têm obrigações reais.
 
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   fetchClubs, createClub, fetchAllClubLiabilities,
   fetchIntermediaries, createIntermediary, fetchAllIntermediaryLiabilities,
@@ -40,7 +40,6 @@ interface Entry {
 const toBRL = (v: number, c: Currency) => approxToBRL(v, c)
 
 export default function PageCadastros({ kind }: { kind: Kind }) {
-  const navigate = useNavigate()
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -97,11 +96,11 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
 
       {/* Resumo + ordenação */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ fontFamily: fontMono, fontSize: 11.5, color: 'var(--text-muted)' }}>
+        <div style={{ fontFamily: fontMono, fontSize: 12, color: 'var(--text-muted)' }}>
           {filtered.length} {isClube ? 'clube(s)' : 'agente(s)'} · em aberto (aprox.) <strong style={{ color: 'var(--ink-primary)' }}>{fmtCurrencyShort(totalOpen, 'BRL')}</strong>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
+          <span style={{ fontFamily: fontMono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
           {(['nome', 'valor'] as const).map(s => (
             <button key={s} onClick={() => setSort(s)}
               className={`btn btn-sm ${sort === s ? 'btn-primary' : 'btn-outline'}`}>
@@ -120,10 +119,8 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
           {filtered.map(e => (
-            <div key={e.id} className="card" role="button" tabIndex={0}
-              style={{ padding: 16, cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center' }}
-              onClick={() => navigate(`${basePath}/${e.id}`)}
-              onKeyDown={ev => { if (ev.key === 'Enter') navigate(`${basePath}/${e.id}`) }}>
+            <Link key={e.id} to={`${basePath}/${e.id}`} className="card row-link"
+              style={{ padding: 16, cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center', textDecoration: 'none' }}>
               <div style={{ width: 52, height: 52, borderRadius: isClube ? 10 : '50%', overflow: 'hidden', background: 'var(--cream-inset)', border: '1px solid var(--divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {e.logo
                   ? <img src={e.logo} alt="" style={{ width: '100%', height: '100%', objectFit: isClube ? 'contain' : 'cover' }} />
@@ -131,18 +128,18 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
-                {e.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 5 }}>
+                {e.sub && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 5 }}>
                   {e.count} obrigaç{e.count === 1 ? 'ão' : 'ões'}
                   {e.athletes > 0 && <> · {e.athletes} atleta{e.athletes === 1 ? '' : 's'}</>}
                 </div>
                 <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 700, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
                   {fmtCurrencyShort(e.openBRL, 'BRL')}
-                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-muted)' }}> em aberto</span>
+                  <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-muted)' }}> em aberto</span>
                 </div>
               </div>
               <Icon name="chevronRight" size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            </div>
+            </Link>
           ))}
         </div>
       )}
@@ -190,11 +187,11 @@ function NewModal({ kind, onClose, onSaved }: { kind: Kind; onClose: () => void;
       <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
         <ImageUpload value={logo} onChange={setLogo} fallbackText={name} size={88} rounded={!isClube} maxSize={512} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div><label style={modalLabel}>Nome *</label><input style={modalInput} value={name} onChange={e => setName(e.target.value)} placeholder={isClube ? 'Ex: Benfica' : 'Ex: Agência XYZ'} /></div>
-          <div><label style={modalLabel}>{isClube ? 'País' : 'Contato'}</label><input style={modalInput} value={sub} onChange={e => setSub(e.target.value)} /></div>
+          <div><label htmlFor="cad-nome" style={modalLabel}>Nome *</label><input id="cad-nome" aria-required="true" style={modalInput} value={name} onChange={e => setName(e.target.value)} placeholder={isClube ? 'Ex: Benfica' : 'Ex: Agência XYZ'} /></div>
+          <div><label htmlFor="cad-campo" style={modalLabel}>{isClube ? 'País' : 'Contato'}</label><input id="cad-campo" style={modalInput} value={sub} onChange={e => setSub(e.target.value)} /></div>
         </div>
       </div>
-      <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 54, resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} /></div>
+      <div><label htmlFor="cad-observacoes" style={modalLabel}>Observações</label><textarea id="cad-observacoes" style={{ ...modalInput, minHeight: 54, resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} /></div>
     </ModalShell>
   )
 }

@@ -25,7 +25,7 @@ export default function PageHero({ title, subtitle, children }: Props) {
       <div style={{ minWidth: 0 }}>
         <div style={{
           fontFamily: "var(--font-label)",
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 500,
           letterSpacing: '0.2em',
           textTransform: 'uppercase',

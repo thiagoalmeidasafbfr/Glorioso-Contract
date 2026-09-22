@@ -26,8 +26,12 @@ import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import KpiPill from '../components/KpiPill'
 import RefLink from '../components/RefLink'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -53,6 +57,8 @@ const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes
 
 export default function PageRecuperacaoJudicial() {
   const { canEdit } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const [rows, setRows] = useState<RJRow[]>([])
   const [ptax, setPtax] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
@@ -235,8 +241,11 @@ export default function PageRecuperacaoJudicial() {
 
   async function unmark(r: RJRow) {
     if (!canEdit) return
-    if (!confirm(`Retirar "${r.descricao || r.natureza}" da Recuperação Judicial?`)) return
-    await unmarkItemRJ({ kind: r.kind, id: r.id }, r.notes)
+    if (!await confirm({ title: `Retirar "${r.descricao || r.natureza}" da Recuperação Judicial?`, message: 'O item volta a contar como a pagar corrente.', confirmLabel: 'Retirar da RJ' })) return
+    try {
+      await unmarkItemRJ({ kind: r.kind, id: r.id }, r.notes)
+      toast.success('Item retirado da Recuperação Judicial.')
+    } catch (e) { toast.error('Não foi possível retirar o item da RJ.', { detail: errorMessage(e) }) }
     await load()
   }
 
@@ -260,7 +269,25 @@ export default function PageRecuperacaoJudicial() {
     exportWorkbook([{ name: 'Recuperação Judicial', cols, rows: data }], 'recuperacao-judicial.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  // Ordenação das duas tabelas (clique no cabeçalho).
+  type Group = (typeof byCreditor)[number]
+  const { sorted: sortedGroups, sort: sortG } = useSortable<Group>(byCreditor, 'total', { initialDir: 'desc' })
+  const detailAccessors = useMemo<SortAccessors<RJRow>>(() => ({
+    dueDate: r => r.dueDate,
+    atleta: r => r.atleta,
+    credor: r => r.credor,
+    natureza: r => r.natureza,
+    descricao: r => r.descricao,
+    valor: r => r.valor,
+    valorBRL: r => brlOf(r),
+    atraso: r => { const d = r.dueDate ? daysFromToday(r.dueDate) : null; return d !== null && d < 0 && OPEN.has(r.status) ? -d : 0 },
+    filedAt: r => r.filedAt,
+    status: r => r.status,
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- brlOf depende só de ptax
+  }), [ptax, today])
+  const { sorted: sortedRows, sort } = useSortable(filtered, null, { accessors: detailAccessors })
+
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
@@ -280,53 +307,53 @@ export default function PageRecuperacaoJudicial() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
+          <label htmlFor="recjud-busca" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
+          <input id="recjud-busca" value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
             style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
-          <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 240 }}>
+          <label htmlFor="recjud-credor" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
+          <select id="recjud-credor" value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 240 }}>
             {credores.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="recjud-status" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <select id="recjud-status" value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
       </div>
 
       {/* ── Agrupamento por credor ─────────────────────────────────────── */}
-      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
+      <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
         Detalhamento por credor
       </div>
       <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: '60vh' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, minWidth: 180 }}>Credor</th>
-              <th style={{ ...th, minWidth: 130 }}>Natureza predominante</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Lançamentos</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Vencidos</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Atraso máx.</th>
-              <th style={{ ...th, minWidth: 120 }}>Próx. vencimento</th>
-              <th style={{ ...th, minWidth: 120 }}>Protocolo RJ</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Total (BRL PTAX)</th>
+              <SortHeader k="credor" sort={sortG} style={{ ...th, minWidth: 180 }}>Credor</SortHeader>
+              <SortHeader k="topNatureza" sort={sortG} style={{ ...th, minWidth: 130 }}>Natureza predominante</SortHeader>
+              <SortHeader k="count" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 100 }}>Lançamentos</SortHeader>
+              <SortHeader k="overdueCount" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 100 }}>Vencidos</SortHeader>
+              <SortHeader k="maxDelayDays" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 130 }}>Atraso máx.</SortHeader>
+              <SortHeader k="nextDue" sort={sortG} style={{ ...th, minWidth: 120 }}>Próx. vencimento</SortHeader>
+              <SortHeader k="earliestFiledAt" sort={sortG} style={{ ...th, minWidth: 120 }}>Protocolo RJ</SortHeader>
+              <SortHeader k="total" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 130 }}>Total (BRL PTAX)</SortHeader>
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum lançamento marcado como Recuperação Judicial.</td></tr>}
-              {byCreditor.map(g => (
+              {sortedGroups.map(g => (
                 <tr key={g.credor}>
                   <td style={{ ...td, fontWeight: 600 }}>{g.credor}</td>
                   <td style={{ ...td, color: 'var(--text-secondary)' }}>{g.topNatureza}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>{g.count}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.overdueCount > 0 ? 'var(--neg)' : 'var(--text-muted)', fontWeight: g.overdueCount > 0 ? 600 : 400 }}>{g.overdueCount}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.maxDelayDays > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{g.maxDelayDays > 0 ? `${g.maxDelayDays} dias` : '—'}</td>
-                  <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{g.nextDue ? fmtDate(g.nextDue) : '—'}</td>
-                  <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(g.earliestFiledAt)}</td>
+                  <td style={{ ...td, fontFamily: mono, fontSize: 12 }}>{g.nextDue ? fmtDate(g.nextDue) : '—'}</td>
+                  <td style={{ ...td, fontFamily: mono, fontSize: 12, color: 'var(--text-secondary)' }}>{fmtDate(g.earliestFiledAt)}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>{fmtCurrencyShort(g.total, 'BRL')}</td>
                 </tr>
               ))}
@@ -336,45 +363,45 @@ export default function PageRecuperacaoJudicial() {
       </div>
 
       {/* ── Detalhe por lançamento ─────────────────────────────────────── */}
-      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
+      <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
         Lançamentos incluídos
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, minWidth: 100 }}>Vencimento</th>
-              <th style={{ ...th, minWidth: 140 }}>Atleta</th>
-              <th style={{ ...th, minWidth: 150 }}>Credor</th>
-              <th style={{ ...th, minWidth: 130 }}>Natureza</th>
-              <th style={{ ...th, minWidth: 200 }}>Descrição</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Valor (BRL PTAX)</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Atraso</th>
-              <th style={{ ...th, minWidth: 110 }}>Protocolo</th>
-              <th style={{ ...th, minWidth: 90 }}>Status</th>
+              <SortHeader k="dueDate" sort={sort} style={{ ...th, minWidth: 100 }}>Vencimento</SortHeader>
+              <SortHeader k="atleta" sort={sort} style={{ ...th, minWidth: 140 }}>Atleta</SortHeader>
+              <SortHeader k="credor" sort={sort} style={{ ...th, minWidth: 150 }}>Credor</SortHeader>
+              <SortHeader k="natureza" sort={sort} style={{ ...th, minWidth: 130 }}>Natureza</SortHeader>
+              <SortHeader k="descricao" sort={sort} style={{ ...th, minWidth: 200 }}>Descrição</SortHeader>
+              <SortHeader k="valor" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</SortHeader>
+              <SortHeader k="valorBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }}>Valor (BRL PTAX)</SortHeader>
+              <SortHeader k="atraso" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 100 }}>Atraso</SortHeader>
+              <SortHeader k="filedAt" sort={sort} style={{ ...th, minWidth: 110 }}>Protocolo</SortHeader>
+              <SortHeader k="status" sort={sort} style={{ ...th, minWidth: 90 }}>Status</SortHeader>
               {canEdit && <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>}
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum lançamento em RJ.</td></tr>}
-              {filtered.map(r => {
+              {sortedRows.map(r => {
                 const d = r.dueDate ? daysFromToday(r.dueDate) : null
                 const isLate = d !== null && d < 0 && OPEN.has(r.status)
                 return (
                   <tr key={`${r.kind}-${r.id}`}>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 700 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 700 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title="Abrir atleta">{r.atleta}</RefLink></td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.credor}</td>
                     <td style={td}>{r.natureza}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.descricao}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 12 }}>{r.descricao}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(r.valor, r.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}>{fmtCurrencyShort(brlOf(r), 'BRL')}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: isLate ? 'var(--neg)' : 'var(--text-muted)', fontWeight: isLate ? 600 : 400 }}>{isLate ? `${-d!} dias` : '—'}</td>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
                     <td style={td}>
                       <span style={{
-                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
+                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600,
                         fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
                         background: r.status === 'PAGA' ? 'var(--pos-tint)' : r.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
                         color: r.status === 'PAGA' ? 'var(--pos)' : r.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
@@ -383,7 +410,7 @@ export default function PageRecuperacaoJudicial() {
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => unmark(r)}
-                          style={{ background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 6, padding: '3px 8px', fontFamily: mono, fontSize: 9, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                          style={{ background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 6, padding: '3px 8px', fontFamily: mono, fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-secondary)', cursor: 'pointer' }}
                           title="Retirar este lançamento da Recuperação Judicial">
                           Retirar da RJ
                         </button>
@@ -396,7 +423,7 @@ export default function PageRecuperacaoJudicial() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: mono }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', fontFamily: mono }}>
         {filtered.length} lançamento(s) · {byCreditor.length} credor(es)
       </div>
     </div>

@@ -15,6 +15,7 @@ import { fmtDate, todayISO } from '../../lib/format'
 import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { ModalShell } from './EditModals'
 import { modalInput, modalLabel } from './styles'
+import { useToast } from '../toast-context'
 
 const font = "var(--font-body)"
 
@@ -40,6 +41,7 @@ export default function NewObligationModal({ entityName, kind, athletes, onClose
   const [currency, setCurrency] = useState<Currency>(isClube ? 'EUR' : 'BRL')
   const [lines, setLines] = useState<FlowLine[]>([])
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -86,6 +88,7 @@ export default function NewObligationModal({ entityName, kind, athletes, onClose
           installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency,
         })))
       }
+      toast.success('Obrigação criada.')
       onSaved(clause.id)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao salvar')
@@ -104,15 +107,15 @@ export default function NewObligationModal({ entityName, kind, athletes, onClose
       </>}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label style={modalLabel}>Atleta *</label>
-          <select style={modalInput} value={athleteId} onChange={e => chooseAthlete(e.target.value)}>
+          <label htmlFor="newoblmod-atleta" style={modalLabel}>Atleta *</label>
+          <select id="newoblmod-atleta" aria-required="true" style={modalInput} value={athleteId} onChange={e => chooseAthlete(e.target.value)}>
             <option value="">— selecione o atleta —</option>
             {sortedAthletes.map(a => <option key={a.id} value={a.id}>{a.short_name || a.full_name}</option>)}
           </select>
         </div>
         <div>
-          <label style={modalLabel}>Vínculo do atleta (opcional)</label>
-          <select style={modalInput} value={contractId} onChange={e => setContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
+          <label htmlFor="newoblmod-vinculo-do-atleta-opcional" style={modalLabel}>Vínculo do atleta (opcional)</label>
+          <select id="newoblmod-vinculo-do-atleta-opcional" style={modalInput} value={contractId} onChange={e => setContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
             <option value="">
               {!athleteId ? '— escolha o atleta primeiro —' : contracts.length === 0 ? '— sem vínculos cadastrados —' : '— nenhum (obrigação independente) —'}
             </option>
@@ -120,22 +123,22 @@ export default function NewObligationModal({ entityName, kind, athletes, onClose
           </select>
         </div>
         <div>
-          <label style={modalLabel}>Natureza</label>
-          <select style={modalInput} value={clauseType} onChange={e => setClauseType(e.target.value as ClauseType)}>
+          <label htmlFor="newoblmod-natureza" style={modalLabel}>Natureza</label>
+          <select id="newoblmod-natureza" style={modalInput} value={clauseType} onChange={e => setClauseType(e.target.value as ClauseType)}>
             {types.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
           </select>
         </div>
         <div>
-          <label style={modalLabel}>Direção</label>
-          <select style={modalInput} value={direction} onChange={e => setDirection(e.target.value as LiabilityDirection)}>
+          <label htmlFor="newoblmod-direcao" style={modalLabel}>Direção</label>
+          <select id="newoblmod-direcao" style={modalInput} value={direction} onChange={e => setDirection(e.target.value as LiabilityDirection)}>
             <option value="A_PAGAR">Botafogo paga (a pagar)</option>
             <option value="A_RECEBER">Botafogo recebe (a receber)</option>
           </select>
         </div>
       </div>
       <div>
-        <label style={modalLabel}>Descrição</label>
-        <input style={modalInput} value={description} onChange={e => setDescription(e.target.value)}
+        <label htmlFor="newoblmod-descricao" style={modalLabel}>Descrição</label>
+        <input id="newoblmod-descricao" style={modalInput} value={description} onChange={e => setDescription(e.target.value)}
           placeholder={`${CLAUSE_TYPE_LABELS[clauseType]} — ${entityName}`} />
       </div>
       <div style={{ borderTop: '1px solid var(--divider)', paddingTop: 14 }}>

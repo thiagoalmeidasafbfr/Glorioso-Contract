@@ -4,7 +4,7 @@
 // novo registro já entra em Clubes/Agentes. Devolve o NOME selecionado (chave
 // usada pelos passivos) e, opcionalmente, o sub (país ou contato) associado.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   fetchClubs, createClub, fetchIntermediaries, createIntermediary,
 } from '../lib/athleteQueries'
@@ -22,12 +22,18 @@ interface Props {
   onChange: (name: string, sub?: string) => void
   label?: string
   placeholder?: string
+  /** Campo obrigatório: marca o rótulo com * e o input com aria-required. */
+  required?: boolean
+  /** Mensagem de erro inline (deixa o input aria-invalid). */
+  error?: string | null
 }
 
 const norm = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
-export default function EntityPicker({ kind, value, onChange, label, placeholder }: Props) {
+export default function EntityPicker({ kind, value, onChange, label, placeholder, required, error }: Props) {
+  const uid = useId()
+  const inputId = `${uid}-input`
   const isClube = kind === 'clube'
   const [list, setList] = useState<Entity[]>([])
   const [query, setQuery] = useState(value)
@@ -98,18 +104,31 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
     borderRadius: 7, padding: '8px 10px', fontSize: 13, color: '#1a1410', fontFamily: fontBody, boxSizing: 'border-box',
   }
   const lblStyle: React.CSSProperties = {
-    fontFamily: fontMono, fontSize: 10, fontWeight: 500, letterSpacing: '0.12em',
-    textTransform: 'uppercase', color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
+    fontFamily: fontMono, fontSize: 11, fontWeight: 500, letterSpacing: '0.12em',
+    textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4,
   }
 
   const placeholderText = placeholder ?? (isClube ? 'Buscar clube...' : 'Buscar agente...')
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      {label && <label style={lblStyle}>{label}</label>}
+      {label && (
+        <label htmlFor={inputId} style={lblStyle}>
+          {label.replace(/\s*\*$/, '')}
+          {(required || /\*$/.test(label)) && <span aria-hidden="true" style={{ color: 'var(--neg)', marginLeft: 3 }}>*</span>}
+        </label>
+      )}
       <input
+        id={inputId}
         type="text"
-        style={inp}
+        aria-required={required || (label ? /\*$/.test(label) : false) || undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${uid}-err` : undefined}
+        style={{ ...inp, ...(error ? { borderColor: 'var(--neg)' } : null) }}
+        onKeyDown={e => {
+          // Esc fecha só a lista (não o modal em volta).
+          if (e.key === 'Escape' && open) { e.nativeEvent.stopPropagation(); setOpen(false); setCreating(false) }
+        }}
         value={query}
         placeholder={placeholderText}
         onFocus={() => setOpen(true)}
@@ -122,6 +141,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
           onChange(e.target.value)
         }}
       />
+      {error && <div id={`${uid}-err`} role="alert" style={{ fontSize: 12, color: 'var(--neg)', marginTop: 4, fontFamily: fontBody }}>{error}</div>}
 
       {open && (
         <div style={{
@@ -148,7 +168,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                   onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--accent-tint2)' : 'transparent')}
                 >
                   <div style={{ fontWeight: 500 }}>{x.name}</div>
-                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{x.sub}</div>}
+                  {x.sub && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{x.sub}</div>}
                 </button>
               ))}
             </div>
@@ -177,7 +197,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
 
           {creating && (
             <div style={{ padding: 12, borderTop: '1px solid var(--divider-soft)', background: 'var(--accent-tint)' }}>
-              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
+              <div style={{ fontFamily: fontMono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
                 Novo {isClube ? 'clube' : 'agente'}
               </div>
               <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--ink-primary)', marginBottom: 8 }}>
@@ -193,7 +213,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={() => { setCreating(false); setNewSub('') }}
-                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(26,20,16,0.15)', background: 'transparent', color: 'rgba(26,20,16,0.55)', fontSize: 12, fontFamily: fontBody, cursor: 'pointer' }}>
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(26,20,16,0.15)', background: 'transparent', color: 'var(--text-muted)', fontSize: 12, fontFamily: fontBody, cursor: 'pointer' }}>
                   Cancelar
                 </button>
                 <button type="button" onMouseDown={e => e.preventDefault()}

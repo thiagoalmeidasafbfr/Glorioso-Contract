@@ -43,7 +43,7 @@ export default function KpiPill({ label, value, tone = 'neutral' }: Props) {
       minHeight: 36, minWidth: 0,
     }}>
       <div style={{
-        fontFamily: 'var(--font-label)', fontSize: 8.5, fontWeight: 500,
+        fontFamily: 'var(--font-label)', fontSize: 11, fontWeight: 500,
         letterSpacing: '0.14em', textTransform: 'uppercase',
         color: tone === 'neutral' ? 'var(--text-muted)' : fg,
         lineHeight: 1.1,

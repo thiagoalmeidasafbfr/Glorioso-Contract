@@ -6,6 +6,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { USE_SUPABASE } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from './toast-context'
+import { useConfirm } from './confirm-context'
 import {
   fetchDocumentos, uploadDocumento, urlDocumento, deleteDocumento, mensagemErro,
 } from '../lib/governanca'
@@ -30,6 +32,8 @@ function fmtSize(n: number | null): string {
 
 export default function DocumentosAtleta({ athleteId, contracts }: { athleteId: string; contracts: Contract[] }) {
   const { can } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const podeGerenciar = can('gerenciarDocumentos')
   const [docs, setDocs] = useState<Documento[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -58,14 +62,14 @@ export default function DocumentosAtleta({ athleteId, contracts }: { athleteId: 
 
   async function handleUpload() {
     if (!file) return
-    if (file.size > MAX_BYTES) { window.alert('Arquivo acima de 20 MB.'); return }
+    if (file.size > MAX_BYTES) { toast.error('Arquivo acima de 20 MB.'); return }
     setBusy(true)
     try {
       await uploadDocumento({ atletaId: athleteId, contratoId: contratoId || null, tipo, descricao, file })
       setFile(null); setDescricao('')
       if (fileRef.current) fileRef.current.value = ''
       setReload(n => n + 1)
-    } catch (e) { window.alert(`Falha no upload: ${mensagemErro(e)}`) } finally { setBusy(false) }
+    } catch (e) { toast.error('Falha no upload.', { detail: mensagemErro(e) }) } finally { setBusy(false) }
   }
   async function handleOpen(d: Documento) {
     // Abre a aba ANTES do await (senão o bloqueador de pop-up barra).
@@ -73,11 +77,11 @@ export default function DocumentosAtleta({ athleteId, contracts }: { athleteId: 
     try {
       const url = await urlDocumento(d)
       if (w) w.location.replace(url); else window.location.assign(url)
-    } catch (e) { w?.close(); window.alert(mensagemErro(e)) }
+    } catch (e) { w?.close(); toast.error('Não foi possível abrir o documento.', { detail: mensagemErro(e) }) }
   }
   async function handleDelete(d: Documento) {
-    if (!window.confirm(`Excluir o documento "${d.nome_arquivo}"? O arquivo será removido do armazenamento.`)) return
-    try { await deleteDocumento(d); setReload(n => n + 1) } catch (e) { window.alert(mensagemErro(e)) }
+    if (!await confirm({ title: 'Excluir documento?', message: `"${d.nome_arquivo}" será removido do armazenamento. Esta ação não pode ser desfeita.`, danger: true })) return
+    try { await deleteDocumento(d); setReload(n => n + 1); toast.success('Documento excluído.') } catch (e) { toast.error('Não foi possível excluir o documento.', { detail: mensagemErro(e) }) }
   }
 
   if (!USE_SUPABASE) {

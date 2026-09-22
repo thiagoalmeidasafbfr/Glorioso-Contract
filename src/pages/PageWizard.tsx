@@ -27,6 +27,8 @@ import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import EntityPicker from '../components/EntityPicker'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
+import Field from '../components/Field'
+import { useToast, errorMessage } from '../components/toast-context'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -72,7 +74,7 @@ const card: React.CSSProperties = {
   borderRadius: 12, padding: 20, boxShadow: 'var(--shadow-hair)',
 }
 const lbl: React.CSSProperties = {
-  fontFamily: mono, fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
+  fontFamily: mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
   color: 'var(--text-muted)', display: 'block', marginBottom: 5,
 }
 const input: React.CSSProperties = {
@@ -83,7 +85,7 @@ const sectionTitle: React.CSSProperties = {
   fontFamily: mono, fontSize: 11, fontWeight: 800, letterSpacing: '0.16em',
   textTransform: 'uppercase', color: 'var(--ink-primary)',
 }
-const hint: React.CSSProperties = { fontFamily: font, fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }
+const hint: React.CSSProperties = { fontFamily: font, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }
 
 export default function PageWizard() {
   const navigate = useNavigate()
@@ -115,6 +117,11 @@ export default function PageWizard() {
   const [linkContractId, setLinkContractId] = useState('')
 
   const [description, setDescription] = useState('')
+  const toast = useToast()
+  // Erros inline: aparecem no blur do campo ou depois de tentar avançar.
+  const [tried, setTried] = useState<Record<number, boolean>>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const touch = (k: string) => setTouched(t => (t[k] ? t : { ...t, [k]: true }))
 
   useEffect(() => { fetchAthletes().then(setAthletes) }, [])
 
@@ -152,6 +159,9 @@ export default function PageWizard() {
       setAthletes(prev => [...prev, a].sort((x, y) => x.full_name.localeCompare(y.full_name)))
       setCreatingAth(false); setNewAth({ full_name: '', position: '' })
       pickAthlete(a)
+      toast.success(`Atleta "${a.short_name}" criado e selecionado.`)
+    } catch (e) {
+      toast.error('Não foi possível criar o atleta.', { detail: errorMessage(e) })
     } finally { setSavingAth(false) }
   }
 
@@ -174,6 +184,19 @@ export default function PageWizard() {
     }
   }
   const blocked = blockedReason()
+  const show = (k: string) => !!tried[step] || !!touched[k]
+  const athleteErr = step === 1 && !athleteId && tried[1] ? 'Selecione um atleta da lista ou crie um novo.' : null
+  const benefErr = step === 1 && !beneficiary.trim() && show('benef')
+    ? (nature?.benef === 'atleta' ? 'Informe o beneficiário.' : 'Informe a contraparte.') : null
+  const startErr = step === 1 && nature?.isMovement && !startDate && show('start') ? 'Informe a data de início do vínculo.' : null
+  function goNext() {
+    if (blocked) {
+      setTried(t => ({ ...t, [step]: true }))
+      requestAnimationFrame(() => (document.querySelector('[aria-invalid="true"]') as HTMLElement | null)?.focus())
+      return
+    }
+    setStep(s => s + 1)
+  }
 
   async function handleSave() {
     if (!nature || !athleteId || valid.length === 0) return
@@ -224,9 +247,11 @@ export default function PageWizard() {
           installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency,
         })))
       }
+      toast.success(`${nature.label} registrado com ${sorted.length} parcela(s).`)
       navigate(`/obrigacoes/${clause.id}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao salvar')
+      toast.error('Não foi possível criar a obrigação.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
@@ -249,10 +274,10 @@ export default function PageWizard() {
                 border: `1px solid ${active || done ? 'var(--divider-strong)' : 'var(--divider)'}`,
                 cursor: done ? 'pointer' : 'default',
               }}>
-              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                 {done ? <Icon name="check" size={12} /> : i + 1}
               </span>
-              <span style={{ fontFamily: font, fontSize: 11.5, fontWeight: active ? 700 : 500, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
+              <span style={{ fontFamily: font, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
             </button>
           )
         })}
@@ -284,8 +309,8 @@ export default function PageWizard() {
                       border: `1px solid ${natureKey === n.key ? 'var(--accent)' : 'var(--divider-strong)'}`,
                     }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-primary)' }}>{n.label}</div>
-                    <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
-                    <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: 6 }}>
+                    <div style={{ fontFamily: font, fontSize: 12, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
+                    <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: 6 }}>
                       {n.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}{n.isMovement ? ' · cria vínculo' : ''}
                     </div>
                   </button>
@@ -302,7 +327,7 @@ export default function PageWizard() {
           {/* Atleta */}
           <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
-              <div style={sectionTitle}>Atleta {athlete ? '' : '*'}</div>
+              <div style={sectionTitle} id="wiz-atleta-titulo">Atleta {!athlete && <span aria-hidden="true" style={{ color: 'var(--neg)' }}>*</span>}</div>
               <button onClick={() => setCreatingAth(v => !v)} className="btn btn-outline">
                 <Icon name={creatingAth ? 'x' : 'plus'} size={14} /> {creatingAth ? 'Cancelar' : 'Novo atleta'}
               </button>
@@ -312,12 +337,12 @@ export default function PageWizard() {
               <div style={{ padding: 14, borderRadius: 9, border: '1px solid var(--divider)', background: 'var(--bg-subtle)', marginBottom: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={lbl}>Nome completo *</label>
-                    <input style={input} autoFocus value={newAth.full_name} onChange={e => setNewAth(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: João da Silva Santos" />
+                    <label htmlFor="wiz-nome-completo" style={lbl}>Nome completo *</label>
+                    <input id="wiz-nome-completo" aria-required="true" style={input} autoFocus value={newAth.full_name} onChange={e => setNewAth(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: João da Silva Santos" />
                   </div>
                   <div>
-                    <label style={lbl}>Posição</label>
-                    <input style={input} value={newAth.position} onChange={e => setNewAth(p => ({ ...p, position: e.target.value }))} placeholder="Ex: Atacante" />
+                    <label htmlFor="wiz-posicao" style={lbl}>Posição</label>
+                    <input id="wiz-posicao" style={input} value={newAth.position} onChange={e => setNewAth(p => ({ ...p, position: e.target.value }))} placeholder="Ex: Atacante" />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -333,13 +358,15 @@ export default function PageWizard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--accent-tint)', border: '1px solid var(--divider-strong)' }}>
                 <Icon name="check" size={14} />
                 <span style={{ fontFamily: font, fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)' }}>{athlete.full_name}</span>
-                <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>· {athlete.position || 'posição não informada'}</span>
+                <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>· {athlete.position || 'posição não informada'}</span>
                 <button onClick={() => { setAthleteId(''); setContracts([]); setLinkContractId('') }} className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }}>Trocar</button>
               </div>
             )}
 
             {!athlete && (<>
-              <input style={{ ...input, marginBottom: 10 }} placeholder="Buscar atleta..." value={athleteQuery} onChange={e => setAthleteQuery(e.target.value)} />
+              <input aria-labelledby="wiz-atleta-titulo" aria-invalid={athleteErr ? true : undefined} aria-describedby={athleteErr ? 'wiz-atleta-erro' : undefined}
+                style={{ ...input, marginBottom: 10, ...(athleteErr ? { borderColor: 'var(--neg)' } : null) }} placeholder="Buscar atleta..." value={athleteQuery} onChange={e => setAthleteQuery(e.target.value)} />
+              {athleteErr && <div id="wiz-atleta-erro" role="alert" style={{ fontSize: 12, color: 'var(--neg)', fontFamily: font, marginBottom: 8 }}>{athleteErr}</div>}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
                 {filteredAthletes.map(a => (
                   <button key={a.id} onClick={() => pickAthlete(a)}
@@ -347,7 +374,7 @@ export default function PageWizard() {
                       textAlign: 'left', padding: '9px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: font, fontSize: 13,
                       background: 'transparent', border: '1px solid var(--divider)', color: 'var(--ink-primary)',
                     }}>
-                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)' }}>· {a.position || '—'}</span>
+                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>· {a.position || '—'}</span>
                   </button>
                 ))}
                 {filteredAthletes.length === 0 && <div style={hint}>Nenhum atleta encontrado. Use “Novo atleta” acima.</div>}
@@ -360,36 +387,35 @@ export default function PageWizard() {
             <div style={sectionTitle}>Contraparte e direção</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
-                <label style={lbl}>Direção</label>
-                <select style={input} value={direction} onChange={e => setDirection(e.target.value as Dir)}>
+                <label htmlFor="wiz-direcao" style={lbl}>Direção</label>
+                <select id="wiz-direcao" style={input} value={direction} onChange={e => setDirection(e.target.value as Dir)}>
                   <option value="A_PAGAR">Botafogo paga (a pagar)</option>
                   <option value="A_RECEBER">Botafogo recebe (a receber)</option>
                 </select>
               </div>
-              <div>
+              <div onBlur={() => touch('benef')}>
                 {nature.benef === 'clube' ? (
-                  <EntityPicker kind="clube" label={direction === 'A_PAGAR' ? 'Clube (pago a) *' : 'Clube (recebido de) *'} value={beneficiary} onChange={(name, sub) => { setBeneficiary(name); if (sub) setCountry(sub) }} />
+                  <EntityPicker kind="clube" required error={benefErr} label={direction === 'A_PAGAR' ? 'Clube (pago a)' : 'Clube (recebido de)'} value={beneficiary} onChange={(name, sub) => { setBeneficiary(name); if (sub) setCountry(sub) }} />
                 ) : nature.benef === 'agente' ? (
-                  <EntityPicker kind="intermediario" label="Agente *" value={beneficiary} onChange={name => setBeneficiary(name)} />
+                  <EntityPicker kind="intermediario" required error={benefErr} label="Agente" value={beneficiary} onChange={name => setBeneficiary(name)} />
                 ) : (
-                  <>
-                    <label style={lbl}>{direction === 'A_PAGAR' ? 'Pago a *' : 'Recebido de *'}</label>
-                    <input style={input} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder="Nome do beneficiário" />
-                  </>
+                  <Field label={direction === 'A_PAGAR' ? 'Pago a' : 'Recebido de'} required error={benefErr} labelStyle={lbl}>
+                    <input style={{ ...input, ...(benefErr ? { borderColor: 'var(--neg)' } : null) }} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder="Nome do beneficiário" />
+                  </Field>
                 )}
               </div>
             </div>
 
             {nature.isMovement ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                <div><label style={lbl}>País da contraparte</label><input style={input} value={country} onChange={e => setCountry(e.target.value)} placeholder="Ex: Espanha" /></div>
-                <div><label style={lbl}>Início do vínculo *</label><input style={input} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-                <div><label style={lbl}>Término</label><input style={input} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+                <div><label htmlFor="wiz-pais-da-contraparte" style={lbl}>País da contraparte</label><input id="wiz-pais-da-contraparte" style={input} value={country} onChange={e => setCountry(e.target.value)} placeholder="Ex: Espanha" /></div>
+                <Field label="Início do vínculo" required error={startErr} labelStyle={lbl}><input style={{ ...input, ...(startErr ? { borderColor: 'var(--neg)' } : null) }} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} onBlur={() => touch('start')} /></Field>
+                <div><label htmlFor="wiz-termino" style={lbl}>Término</label><input id="wiz-termino" style={input} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
               </div>
             ) : (
               <div>
-                <label style={lbl}>Vincular a uma transação do atleta (opcional)</label>
-                <select style={input} value={linkContractId} onChange={e => setLinkContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
+                <label htmlFor="wiz-vincular-a-uma-transacao-do" style={lbl}>Vincular a uma transação do atleta (opcional)</label>
+                <select id="wiz-vincular-a-uma-transacao-do" style={input} value={linkContractId} onChange={e => setLinkContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
                   <option value="">
                     {!athleteId ? '— escolha o atleta primeiro —' : contracts.length === 0 ? '— sem vínculos cadastrados —' : '— não vinculado —'}
                   </option>
@@ -406,8 +432,8 @@ export default function PageWizard() {
             )}
 
             <div>
-              <label style={lbl}>Descrição (opcional)</label>
-              <input style={input} value={description} onChange={e => setDescription(e.target.value)} placeholder={`${nature.label}${beneficiary ? ` — ${beneficiary}` : ''}`} />
+              <label htmlFor="wiz-descricao-opcional" style={lbl}>Descrição (opcional)</label>
+              <input id="wiz-descricao-opcional" style={input} value={description} onChange={e => setDescription(e.target.value)} placeholder={`${nature.label}${beneficiary ? ` — ${beneficiary}` : ''}`} />
             </div>
           </div>
         </div>
@@ -450,7 +476,7 @@ export default function PageWizard() {
             <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {[...valid].sort((a, b) => a.due_date.localeCompare(b.due_date)).map((l, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr', gap: 10, padding: '6px 10px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>{i + 1}</span>
+                  <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>{i + 1}</span>
                   <span style={{ fontFamily: mono, fontSize: 12 }}>{fmtDate(l.due_date)}</span>
                   <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 600, textAlign: 'right' }}>{fmtCurrencyShort(l.value, currency)}</span>
                 </div>
@@ -466,9 +492,10 @@ export default function PageWizard() {
           {step === 0 ? 'Cancelar' : '← Voltar'}
         </button>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {blocked && <span style={hint}>{blocked}</span>}
+          {blocked && <span id="wiz-bloqueio" role="status" style={{ ...hint, color: tried[step] ? 'var(--neg)' : undefined }}>{blocked}</span>}
           {step < 3 ? (
-            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo →</button>
+            <button onClick={goNext} aria-disabled={!!blocked} aria-describedby={blocked ? 'wiz-bloqueio' : undefined}
+              className="btn btn-primary" style={{ opacity: blocked ? 0.55 : 1 }}>Próximo →</button>
           ) : (
             <button onClick={handleSave} disabled={saving || valid.length === 0} className="btn btn-primary">
               {saving ? 'Criando...' : 'Criar e abrir obrigação'}
@@ -483,7 +510,7 @@ export default function PageWizard() {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12 }}>
-      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k}</span>
+      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k}</span>
       <span>{v}</span>
     </div>
   )
@@ -495,7 +522,7 @@ function Pill({ label, value }: { label: string; value: string }) {
       display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 7,
       background: 'var(--bg-subtle)', border: '1px solid var(--divider)', maxWidth: 320,
     }}>
-      <span style={{ fontFamily: mono, fontSize: 8.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
       <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
     </span>
   )

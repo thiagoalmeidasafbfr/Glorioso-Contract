@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from './toast-context'
 import { ModalShell } from './modals/EditModals'
 import {
   enviarParaRevisao, aprovarRegistro, rejeitarRegistro, statusAprovacao, mensagemErro,
@@ -72,6 +73,7 @@ export default function AprovacaoStatus({ tabela, row, titulo, onChanged, hideAp
   hideAprovado?: boolean
 }) {
   const { can } = useAuth()
+  const toast = useToast()
   const [busy, setBusy] = useState(false)
   const [rejecting, setRejecting] = useState(false)
   const status = statusAprovacao(row)
@@ -80,7 +82,7 @@ export default function AprovacaoStatus({ tabela, row, titulo, onChanged, hideAp
 
   async function run(fn: () => Promise<void>) {
     setBusy(true)
-    try { await fn(); onChanged() } catch (e) { window.alert(mensagemErro(e)) } finally { setBusy(false) }
+    try { await fn(); onChanged() } catch (e) { toast.error('Não foi possível atualizar a aprovação.', { detail: mensagemErro(e) }) } finally { setBusy(false) }
   }
 
   if (hideAprovado && status === 'APROVADO' && !row.aprovado_em) return null

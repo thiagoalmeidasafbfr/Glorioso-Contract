@@ -10,7 +10,7 @@
 //     o detalhe e dar baixa.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllClauses, fetchAllInstallments,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
@@ -23,6 +23,8 @@ import { fmtCurrencyShort, fmtDate } from '../lib/format'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon, IconButton } from '../components/Icon'
 import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
@@ -43,7 +45,7 @@ function StatusPill({ status }: { status: NatureStatus }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 9px', borderRadius: 5,
-      fontSize: 9, fontWeight: 600, fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
+      fontSize: 11, fontWeight: 600, fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
       background: s.bg, color: s.fg,
       border: status === 'SEM_LANCAMENTO' ? '1px solid var(--divider)' : '1px solid transparent',
     }}>
@@ -62,9 +64,10 @@ function ByCurrency({ totals }: { totals: Partial<Record<Currency, number>> }) {
 }
 
 type Filter = 'todos' | 'atraso' | 'aberto'
+// Ordenação da tabela: o atleta pelo nome; demais colunas pelo campo da linha.
+const VISAO_ACCESSORS: SortAccessors<AthleteOverview> = { atleta: r => r.athlete.full_name }
 
 export default function PageVisaoAtletas() {
-  const navigate = useNavigate()
   const [rows, setRows] = useState<AthleteOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -145,7 +148,9 @@ export default function PageVisaoAtletas() {
     exportWorkbook([{ name: 'Visão por atleta', cols, rows: out }], 'visao-consolidada-atletas.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const { sorted, sort } = useSortable(visible, null, { accessors: VISAO_ACCESSORS })
+
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
@@ -157,8 +162,8 @@ export default function PageVisaoAtletas() {
       {/* Filtros + totais */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <label htmlFor="visaoatletas-busca" style={{ display: 'block', fontSize: 11, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <input id="visaoatletas-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -176,23 +181,23 @@ export default function PageVisaoAtletas() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 240px)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
               <th style={{ ...th, width: 36 }} aria-label="Expandir" />
-              <th style={{ ...th, minWidth: 180 }}>Atleta / natureza</th>
-              <th style={{ ...th, minWidth: 110 }}>Situação</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em aberto</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em atraso (aprox. BRL)</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 140 }} title="Obrigações incluídas no processo de Recuperação Judicial — devidas mas fora do em atraso.">Em Rec. Judicial</th>
-              <th style={{ ...th, minWidth: 130 }}>Atraso desde</th>
-              <th style={{ ...th, minWidth: 110 }}>Próx. venc.</th>
+              <SortHeader k="atleta" sort={sort} style={{ ...th, minWidth: 180 }}>Atleta / natureza</SortHeader>
+              <SortHeader k="status" sort={sort} style={{ ...th, minWidth: 110 }}>Situação</SortHeader>
+              <SortHeader k="openBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em aberto</SortHeader>
+              <SortHeader k="overdueBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em atraso (aprox. BRL)</SortHeader>
+              <SortHeader k="rjBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 140 }} title="Obrigações incluídas no processo de Recuperação Judicial — devidas mas fora do em atraso.">Em Rec. Judicial</SortHeader>
+              <SortHeader k="daysLate" sort={sort} style={{ ...th, minWidth: 130 }}>Atraso desde</SortHeader>
+              <SortHeader k="nextDue" sort={sort} style={{ ...th, minWidth: 110 }}>Próx. venc.</SortHeader>
               <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
-              {visible.map(r => {
+              {sorted.map(r => {
                 const open = expanded.has(r.athlete.id)
                 const shown = r.natures.filter(n => n.totalCount > 0)
                 return [
@@ -205,7 +210,7 @@ export default function PageVisaoAtletas() {
                     </td>
                     <td style={{ ...td, fontWeight: 700 }}>
                       <RefLink to={`/atletas/${r.athlete.id}`} title="Abrir a ficha do atleta">{r.athlete.short_name || r.athlete.full_name}</RefLink>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, fontWeight: 400 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font, fontWeight: 400 }}>
                         {' '}· {shown.length} natureza{shown.length === 1 ? '' : 's'}
                       </span>
                     </td>
@@ -213,16 +218,16 @@ export default function PageVisaoAtletas() {
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>{r.openBRL > 0 ? fmtCurrencyShort(r.openBRL, 'BRL') : '—'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700, color: r.overdueBRL > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
                       {r.overdueBRL > 0 ? fmtCurrencyShort(r.overdueBRL, 'BRL') : '—'}
-                      {r.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.overdueCount} parcela(s)</div>}
+                      {r.overdueCount > 0 && <div style={{ fontSize: 12, fontWeight: 400 }}>{r.overdueCount} parcela(s)</div>}
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700, color: r.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
                       {r.rjBRL > 0 ? fmtCurrencyShort(r.rjBRL, 'BRL') : '—'}
-                      {r.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.rjCount} lançamento(s)</div>}
+                      {r.rjCount > 0 && <div style={{ fontSize: 12, fontWeight: 400 }}>{r.rjCount} lançamento(s)</div>}
                     </td>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: r.daysLate > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: r.daysLate > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
                       {r.daysLate > 0 ? lateLabel(r.daysLate) : '—'}
                     </td>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{r.nextDue ? fmtDate(r.nextDue) : '—'}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12 }}>{r.nextDue ? fmtDate(r.nextDue) : '—'}</td>
                     <td style={{ ...td, textAlign: 'right' }}>
                       <RowActions open={{ to: `/atletas/${r.athlete.id}`, label: 'Abrir a ficha do atleta' }} />
                     </td>
@@ -230,10 +235,7 @@ export default function PageVisaoAtletas() {
                   // ── linhas por natureza (filhas) ──
                   ...(open ? shown.map(n => (
                     <NatureRow key={`${r.athlete.id}:${n.key}`} n={n} td={td}
-                      onOpen={() => {
-                        if (n.focusClauseId) navigate(`/obrigacoes/${n.focusClauseId}`)
-                        else navigate(`/atletas/${r.athlete.id}`)
-                      }} />
+                      to={n.focusClauseId ? `/obrigacoes/${n.focusClauseId}` : `/atletas/${r.athlete.id}`} />
                   )) : []),
                 ]
               })}
@@ -241,26 +243,26 @@ export default function PageVisaoAtletas() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: mono }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', fontFamily: mono }}>
         {visible.length} atleta(s) · {totals.late} com atraso
       </div>
     </div>
   )
 }
 
-function NatureRow({ n, td, onOpen }: {
-  n: NatureSummary; td: React.CSSProperties; onOpen: () => void
+function NatureRow({ n, td, to }: {
+  n: NatureSummary; td: React.CSSProperties; to: string
 }) {
   const late = n.status === 'EM_ATRASO'
   return (
     <tr style={{ background: 'var(--bg-subtle)' }}>
       <td style={td} />
       <td style={{ ...td, paddingLeft: 6 }}>
-        <button onClick={onOpen}
-          style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>
+        <Link to={to} className="row-link"
+          style={{ fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>
           {n.label}
-        </button>
-        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: mono, marginTop: 2 }}>
+        </Link>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: mono, marginTop: 2 }}>
           {n.openCount} em aberto · {n.paidCount} paga(s) de {n.totalCount}
         </div>
       </td>
@@ -270,19 +272,19 @@ function NatureRow({ n, td, onOpen }: {
       </td>
       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 700 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
         {n.overdueBRL > 0 ? fmtCurrencyShort(n.overdueBRL, 'BRL') : '—'}
-        {n.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.overdueCount} parcela(s)</div>}
+        {n.overdueCount > 0 && <div style={{ fontSize: 12, fontWeight: 400 }}>{n.overdueCount} parcela(s)</div>}
       </td>
       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 700 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
         {n.rjBRL > 0 ? fmtCurrencyShort(n.rjBRL, 'BRL') : '—'}
-        {n.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.rjCount} lançamento(s)</div>}
+        {n.rjCount > 0 && <div style={{ fontSize: 12, fontWeight: 400 }}>{n.rjCount} lançamento(s)</div>}
       </td>
-      <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
-        {n.oldestOverdue ? <>{fmtDate(n.oldestOverdue)}<div style={{ fontSize: 10 }}>{lateLabel(n.daysLate)}</div></> : '—'}
+      <td style={{ ...td, fontFamily: mono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
+        {n.oldestOverdue ? <>{fmtDate(n.oldestOverdue)}<div style={{ fontSize: 12 }}>{lateLabel(n.daysLate)}</div></> : '—'}
       </td>
-      <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{n.nextDue ? fmtDate(n.nextDue) : '—'}</td>
+      <td style={{ ...td, fontFamily: mono, fontSize: 12 }}>{n.nextDue ? fmtDate(n.nextDue) : '—'}</td>
       <td style={{ ...td, textAlign: 'right' }}>
         <RowActions open={{
-          onClick: onOpen,
+          to,
           label: n.focusClauseId ? 'Abrir a obrigação (a mais atrasada)' : 'Abrir a ficha do atleta',
         }} />
       </td>

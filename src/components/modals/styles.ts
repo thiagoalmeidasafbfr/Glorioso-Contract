@@ -11,6 +11,6 @@ export const modalInput: React.CSSProperties = {
 }
 
 export const modalLabel: React.CSSProperties = {
-  fontSize: 9, fontFamily: mono, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase',
+  fontSize: 11, fontFamily: mono, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
   color: 'var(--text-muted)', marginBottom: 3, display: 'block',
 }

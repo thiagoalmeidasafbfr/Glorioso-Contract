@@ -95,15 +95,15 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
         {[0, 0.5, 1].map(g => (
           <line key={g} x1={padL} x2={W - padR} y1={padT + ih - g * ih} y2={padT + ih - g * ih} stroke="var(--divider)" strokeWidth="1" />
         ))}
-        <text x={padL} y={padT - 8} textAnchor="start" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">
+        <text x={padL} y={padT - 8} textAnchor="start" fontFamily={fontMono} fontSize="11" fill="var(--text-muted)">
           {fmtCurrencyShort(maxTotal, contract.salary_currency)}
         </text>
 
         <line x1={X(todayT)} x2={X(todayT)} y1={padT} y2={padT + ih} stroke="var(--divider-strong)" strokeWidth="1" strokeDasharray="2 3" />
-        {showTodayLabel && <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">hoje</text>}
+        {showTodayLabel && <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontMono} fontSize="11" fill="var(--text-muted)">hoje</text>}
 
-        <text x={padL} y={H - 8} textAnchor="start" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">{fmtDate(start)}</text>
-        <text x={W - padR} y={H - 8} textAnchor="end" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">{fmtDate(end)}</text>
+        <text x={padL} y={H - 8} textAnchor="start" fontFamily={fontMono} fontSize="11" fill="var(--text-muted)">{fmtDate(start)}</text>
+        <text x={W - padR} y={H - 8} textAnchor="end" fontFamily={fontMono} fontSize="11" fill="var(--text-muted)">{fmtDate(end)}</text>
 
         {segs.map((s, i) => (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
@@ -126,20 +126,20 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
         <div style={{
           position: 'absolute', top: 2, left: `${(X(hv.t) / W) * 100}%`, transform: 'translateX(-50%)',
           background: 'var(--ink-primary, #1a1410)', color: '#fff', padding: '5px 9px', borderRadius: 6,
-          fontFamily: fontMono, fontSize: 10, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          fontFamily: fontMono, fontSize: 12, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
         }}>
           <div style={{ opacity: 0.7 }}>{fmtDate(hv.iso)}{hv.t > todayT ? ' · projeção' : ''}</div>
           <div style={{ fontWeight: 700 }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 11, color: 'var(--text-muted)' }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 12, color: 'var(--text-muted)' }}>
         <span><span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--gold)', verticalAlign: 'middle', marginRight: 6 }} />Remuneração total/mês</span>
         <span><span style={{ display: 'inline-block', width: 16, height: 0, borderTop: '2px dashed var(--gold)', verticalAlign: 'middle', marginRight: 6, opacity: 0.6 }} />Projeção</span>
         <span style={{ fontFamily: fontMono, color: 'var(--ink-primary)' }}>Hoje: {fmtCurrencyShort(currentTotal, contract.salary_currency)}/mês</span>
       </div>
       <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-deep, var(--ink-secondary))' }}>
+        <span style={{ fontFamily: fontMono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-deep, var(--ink-secondary))' }}>
           Total até o fim do contrato ({nMonths} {nMonths === 1 ? 'mês' : 'meses'})
         </span>
         <span style={{ fontFamily: fontMono, fontSize: 18, fontWeight: 700, color: 'var(--ink-primary)' }}>

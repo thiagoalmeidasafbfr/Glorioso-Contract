@@ -16,6 +16,8 @@ import { fmtCurrencyShort, fmtDate } from '../lib/format'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
+import { useSortable } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon } from '../components/Icon'
 import RowActions from '../components/RowActions'
 
@@ -126,7 +128,9 @@ export default function PageRelSellOn() {
     }], 'relatorio-sell-on.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
+  const { sorted, sort } = useSortable(filtered, 'atleta')
+
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   return (
@@ -138,13 +142,13 @@ export default function PageRelSellOn() {
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, contraparte, condição..."
+          <label htmlFor="relsellon-busca" style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <input id="relsellon-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, contraparte, condição..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Direção</div>
-          <select value={dirFilter} onChange={e => setDirFilter(e.target.value as 'Todos' | Dir)}
+          <label htmlFor="relsellon-direcao" style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Direção</label>
+          <select id="relsellon-direcao" value={dirFilter} onChange={e => setDirFilter(e.target.value as 'Todos' | Dir)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             <option value="A_PAGAR">A pagar</option>
@@ -152,8 +156,8 @@ export default function PageRelSellOn() {
           </select>
         </div>
         <div>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
+          <label htmlFor="relsellon-status" style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</label>
+          <select id="relsellon-status" value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'] as const).map(s => (
@@ -168,34 +172,34 @@ export default function PageRelSellOn() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={th}>Atleta</th>
-                <th style={th}>Direção</th>
-                <th style={th}>Contraparte</th>
-                <th style={{ ...th, textAlign: 'right' }}>%</th>
-                <th style={{ ...th, textAlign: 'right' }}>Valor fixo</th>
-                <th style={th}>Base</th>
-                <th style={th}>Condição</th>
-                <th style={th}>Status</th>
+                <SortHeader k="atleta" sort={sort} style={th}>Atleta</SortHeader>
+                <SortHeader k="dir" sort={sort} style={th}>Direção</SortHeader>
+                <SortHeader k="contraparte" sort={sort} style={th}>Contraparte</SortHeader>
+                <SortHeader k="percentage" sort={sort} style={{ ...th, textAlign: 'right' }}>%</SortHeader>
+                <SortHeader k="fixedValue" sort={sort} style={{ ...th, textAlign: 'right' }}>Valor fixo</SortHeader>
+                <SortHeader k="basis" sort={sort} style={th}>Base</SortHeader>
+                <SortHeader k="condition" sort={sort} style={th}>Condição</SortHeader>
+                <SortHeader k="status" sort={sort} style={th}>Status</SortHeader>
                 <th style={{ ...th, textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum sell-on registrado.</td></tr>}
-              {filtered.map(r => {
+              {sorted.map(r => {
                 const st = STATUS_STYLE[r.status]
                 return (
                   <tr key={r.id}>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
-                    <td style={{ ...td, fontSize: 10, fontFamily: 'var(--font-label)', color: r.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{r.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, fontSize: 12, fontFamily: 'var(--font-label)', color: r.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{r.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.contraparte}</td>
                     <td style={tdNum}>{r.percentage != null ? `${r.percentage}%` : '—'}</td>
                     <td style={tdNum}>{r.fixedValue != null ? fmtCurrencyShort(r.fixedValue, r.currency) : '—'}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.basis}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.condition}>{r.condition || '—'}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 12 }}>{r.basis}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 12, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.condition}>{r.condition || '—'}</td>
                     <td style={td}>
-                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: 'var(--font-label)', letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span>
-                      {r.achievedDate && <span style={{ marginLeft: 8, fontSize: 10, fontFamily: 'var(--font-data)', color: 'var(--text-muted)' }}>em {fmtDate(r.achievedDate)}</span>}
+                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-label)', letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span>
+                      {r.achievedDate && <span style={{ marginLeft: 8, fontSize: 12, fontFamily: 'var(--font-data)', color: 'var(--text-muted)' }}>em {fmtDate(r.achievedDate)}</span>}
                     </td>
                     <td style={{ ...td, textAlign: 'right' }}>
                       <RowActions open={{ to: `/obrigacoes/${r.id}`, label: 'Abrir a cláusula' }} />
@@ -207,7 +211,7 @@ export default function PageRelSellOn() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>
         {filtered.length} cláusula(s) · {stats.atletas} atleta(s)
       </div>
     </div>

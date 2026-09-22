@@ -6,6 +6,8 @@
 import { useEffect, useState } from 'react'
 import PageHero from '../components/PageHero'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 import { USE_SUPABASE, type UserProfile, type UserRole } from '../lib/supabase'
 import { fetchProfiles, updateProfile, mensagemErro } from '../lib/governanca'
 import { ALL_ROLES, ROLE_LABELS } from '../lib/permissoes'
@@ -25,6 +27,8 @@ const ROLE_HINT: Record<UserRole, string> = {
 
 export default function PageUsuarios() {
   const { isMaster, profile } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const [rows, setRows] = useState<UserProfile[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)
@@ -39,12 +43,12 @@ export default function PageUsuarios() {
   }, [])
 
   async function save(u: UserProfile, patch: { role?: UserRole; ativo?: boolean }) {
-    if (patch.ativo === false && !window.confirm(`Desativar ${u.email}? O usuário perde o acesso a todos os dados.`)) return
+    if (patch.ativo === false && !await confirm({ title: `Desativar ${u.email}?`, message: 'O usuário perde o acesso a todos os dados.', confirmLabel: 'Desativar', danger: true })) return
     setSavingId(u.id)
     try {
       const upd = await updateProfile(u.id, patch)
       setRows(prev => prev?.map(r => r.id === u.id ? upd : r) ?? prev)
-    } catch (e) { window.alert(mensagemErro(e)) } finally { setSavingId(null) }
+    } catch (e) { toast.error('Não foi possível atualizar o usuário.', { detail: mensagemErro(e) }) } finally { setSavingId(null) }
   }
 
   return (

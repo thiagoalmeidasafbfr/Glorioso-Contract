@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../components/toast-context'
 import { USE_SUPABASE } from '../lib/supabase'
 import { markAlertRead } from '../lib/athleteQueries'
 import {
@@ -29,6 +30,7 @@ type FiltroSetor = 'todos' | 'meu' | SetorAlerta
 
 export default function PageAlertas() {
   const { isMaster, role } = useAuth()
+  const toast = useToast()
   const [alerts, setAlerts] = useState<AlertWithDetails[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
@@ -81,7 +83,7 @@ export default function PageAlertas() {
       else await markAlertRead(a.id)
       setAlerts(prev => prev?.map(x => x.id === a.id ? { ...x, is_read: !a.is_read } : x) ?? prev)
       window.dispatchEvent(new Event('alertas-changed'))
-    } catch (e) { window.alert(mensagemErro(e)) }
+    } catch (e) { toast.error('Não foi possível concluir a ação.', { detail: mensagemErro(e) }) }
   }
   async function handleGerar() {
     setBusy(true); setMsg(null)

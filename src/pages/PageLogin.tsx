@@ -53,7 +53,7 @@ export default function PageLogin() {
           </h1>
           <div style={{
             fontFamily: fontLabel,
-            fontSize: 10,
+            fontSize: 11,
             color: 'rgba(243,238,226,0.38)',
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
@@ -65,10 +65,10 @@ export default function PageLogin() {
         {/* Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{
+            <label htmlFor="log-e-mail" style={{
               display: 'block',
               fontFamily: fontLabel,
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: 500,
               color: 'rgba(243,238,226,0.45)',
               letterSpacing: '0.18em',
@@ -77,7 +77,7 @@ export default function PageLogin() {
             }}>
               E-mail
             </label>
-            <input
+            <input id="log-e-mail"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -101,10 +101,10 @@ export default function PageLogin() {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={{
+            <label htmlFor="log-senha" style={{
               display: 'block',
               fontFamily: fontLabel,
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: 500,
               color: 'rgba(243,238,226,0.45)',
               letterSpacing: '0.18em',
@@ -113,7 +113,7 @@ export default function PageLogin() {
             }}>
               Senha
             </label>
-            <input
+            <input id="log-senha"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -177,7 +177,7 @@ export default function PageLogin() {
         <div style={{
           marginTop: 32,
           fontFamily: fontLabel,
-          fontSize: 9,
+          fontSize: 11,
           color: 'rgba(243,238,226,0.20)',
           textAlign: 'center',
           letterSpacing: '0.10em',

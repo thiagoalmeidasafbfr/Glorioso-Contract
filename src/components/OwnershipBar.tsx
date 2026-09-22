@@ -41,7 +41,7 @@ export default function OwnershipBar({ rights, compact = false, showLegend = tru
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
             {!compact && r.percentage >= 12 && (
-              <span style={{ fontSize: 9, fontFamily: fontMono, fontWeight: 700, color: '#fff' }}>
+              <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 700, color: '#fff' }}>
                 {fmtPct(r.percentage)}
               </span>
             )}
@@ -85,7 +85,7 @@ export function OwnershipBadge({ rights }: { rights: EconomicRight[] }) {
   return (
     <span title={`Soma dos direitos = ${fmtPct(sumOwnership(rights))} (deveria ser 100%)`}
       style={{
-        fontSize: 9, fontFamily: fontMono, fontWeight: 700, color: 'var(--neg)',
+        fontSize: 12, fontFamily: fontMono, fontWeight: 700, color: 'var(--neg)',
         background: 'var(--neg-tint)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap',
       }}>
       ⚠ {fmtPct(sumOwnership(rights))}

@@ -22,6 +22,8 @@ import { fetchPtaxRates, toBRL, ptaxRateFor } from '../lib/ptax'
 import PageHero from '../components/PageHero'
 import KpiPill from '../components/KpiPill'
 import RefLink from '../components/RefLink'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon } from '../components/Icon'
 import RowActions, { ActionLegend } from '../components/RowActions'
 import PaymentModal from '../components/athletes/PaymentModal'
@@ -31,6 +33,8 @@ import {
 import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -62,6 +66,8 @@ const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes
 
 export default function PageConsolidado() {
   const { canEdit } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const [movs, setMovs] = useState<Mov[]>([])
   // Registros brutos — necessários para abrir os modais de edição de qualquer linha.
   const [clauses, setClauses] = useState<Clause[]>([])
@@ -232,14 +238,20 @@ export default function PageConsolidado() {
   async function bulkMarkRJ() {
     const chosen = movs.filter(m => selected.has(m.id) && canMarkRJ(m))
     if (chosen.length === 0) return
-    if (!confirm(`Marcar ${chosen.length} lançamento(s) como Recuperação Judicial em ${rjDate}?`)) return
-    await markManyRJ(chosen.map(m => ({ kind: m.kind, id: m.id, notes: m.notes })), rjDate)
+    if (!await confirm({ title: `Marcar ${chosen.length} lançamento(s) como Recuperação Judicial?`, message: `Data de habilitação: ${rjDate}.`, confirmLabel: 'Marcar como RJ' })) return
+    try {
+      await markManyRJ(chosen.map(m => ({ kind: m.kind, id: m.id, notes: m.notes })), rjDate)
+      toast.success(`${chosen.length} lançamento(s) marcado(s) como RJ.`)
+    } catch (e) { toast.error('Não foi possível marcar como RJ.', { detail: errorMessage(e) }) }
     setSelected(new Set())
     await load()
   }
   async function unmarkRJ(m: Mov) {
-    if (!confirm('Remover a marcação de Recuperação Judicial deste lançamento?')) return
-    await unmarkItemRJ({ kind: m.kind, id: m.id }, m.notes)
+    if (!await confirm({ title: 'Remover a marcação de Recuperação Judicial?', message: 'O lançamento volta a contar como a pagar corrente.', confirmLabel: 'Remover marcação' })) return
+    try {
+      await unmarkItemRJ({ kind: m.kind, id: m.id }, m.notes)
+      toast.success('Marcação de RJ removida.')
+    } catch (e) { toast.error('Não foi possível remover a marcação.', { detail: errorMessage(e) }) }
     await load()
   }
 
@@ -288,7 +300,20 @@ export default function PageConsolidado() {
     exportWorkbook([{ name: 'Consolidado', cols, rows }], 'consolidado-movimentacoes.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const sortAccessors = useMemo<SortAccessors<Mov>>(() => ({
+    date: m => m.date,
+    atleta: m => m.atleta,
+    natureza: m => m.natureza,
+    contraparte: m => m.contraparte,
+    dir: m => m.dir,
+    valor: m => m.valor,
+    valorBRL: m => effectiveBRL(m),
+    status: m => m.status,
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- effectiveBRL depende só de ptax
+  }), [ptax])
+  const { sorted, sort } = useSortable(filtered, 'date', { accessors: sortAccessors })
+
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
@@ -299,36 +324,36 @@ export default function PageConsolidado() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+          <label htmlFor="con-busca" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
+          <input id="con-busca" value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
-          <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <label htmlFor="con-atleta" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
+          <select id="con-atleta" value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {atletas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
-          <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="con-posicao" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
+          <select id="con-posicao" value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {posicoes.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
-          <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <label htmlFor="con-natureza" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
+          <select id="con-natureza" value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {naturezas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="con-status" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <select id="con-status" value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
-          <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="con-rec-judicial" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
+          <select id="con-rec-judicial" value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {['Todos', 'Em RJ', 'Fora da RJ'].map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
@@ -343,10 +368,10 @@ export default function PageConsolidado() {
           padding: '10px 14px', marginBottom: 10, borderRadius: 8,
           background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)',
         }}>
-          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--ink-primary)', fontWeight: 600 }}>
+          <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--ink-primary)', fontWeight: 600 }}>
             {selected.size} lançamento(s) selecionado(s)
           </span>
-          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>Data protocolo RJ:</span>
+          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>Data protocolo RJ:</span>
           <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)}
             style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid var(--divider-strong)', fontFamily: mono, fontSize: 12, background: '#fff' }} />
           <button onClick={bulkMarkRJ} className="btn btn-outline" style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
@@ -359,53 +384,54 @@ export default function PageConsolidado() {
         <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert']} />
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 240px)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
               {canEdit && (
                 <th style={{ ...th, width: 34, textAlign: 'center' }}>
                   <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    aria-label="Selecionar todos os passivos elegíveis (a pagar, fora da RJ)"
                     title="Selecionar todos os passivos elegíveis (a pagar, fora da RJ)" />
                 </th>
               )}
-              <th style={{ ...th, minWidth: 90 }}>Vencimento</th>
-              <th style={{ ...th, minWidth: 140 }}>Atleta</th>
-              <th style={{ ...th, minWidth: 150 }}>Natureza</th>
-              <th style={{ ...th, minWidth: 150 }}>Contraparte</th>
-              <th style={{ ...th, minWidth: 80 }}>Direção</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }} title="Convertido pela PTAX atual do Banco Central">Valor (BRL PTAX)</th>
-              <th style={{ ...th, minWidth: 90 }}>Status</th>
+              <SortHeader k="date" sort={sort} style={{ ...th, minWidth: 90 }}>Vencimento</SortHeader>
+              <SortHeader k="atleta" sort={sort} style={{ ...th, minWidth: 140 }}>Atleta</SortHeader>
+              <SortHeader k="natureza" sort={sort} style={{ ...th, minWidth: 150 }}>Natureza</SortHeader>
+              <SortHeader k="contraparte" sort={sort} style={{ ...th, minWidth: 150 }}>Contraparte</SortHeader>
+              <SortHeader k="dir" sort={sort} style={{ ...th, minWidth: 80 }}>Direção</SortHeader>
+              <SortHeader k="valor" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</SortHeader>
+              <SortHeader k="valorBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }} title="Convertido pela PTAX atual do Banco Central">Valor (BRL PTAX)</SortHeader>
+              <SortHeader k="status" sort={sort} style={{ ...th, minWidth: 90 }}>Status</SortHeader>
               <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>Ações</th>
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
-              {filtered.map(m => {
+              {sorted.map(m => {
                 const late = isOverdue(m.date, m.status)
                 return (
                   <tr key={m.id} style={{ background: m.rjFiledAt ? 'var(--warn-tint, #fff4e0)' : late ? 'var(--row-late-bg)' : 'transparent' }}>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'center', padding: '9px 6px' }}>
                         {canMarkRJ(m) ? (
-                          <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleOne(m.id)} />
+                          <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleOne(m.id)} aria-label={`Selecionar ${m.natureza} de ${m.atleta}`} />
                         ) : m.rjFiledAt ? (
                           <button title={`Em RJ desde ${fmtDate(m.rjFiledAt)} — clique para remover`}
                             onClick={() => unmarkRJ(m)}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--warn)', fontFamily: mono, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em' }}>RJ</button>
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--warn)', fontFamily: mono, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>RJ</button>
                         ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                       </td>
                     )}
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
-                      {m.rjFiledAt && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: mono, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(m.rjFiledAt)}`}>RJ</span>}
+                      {m.rjFiledAt && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: mono, fontSize: 11, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(m.rjFiledAt)}`}>RJ</span>}
                     </td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
                       {(() => { const to = entityLink(m.contraparte); return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{m.contraparte}</RefLink> : m.contraparte })()}
                     </td>
-                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, textAlign: 'center', fontSize: 12, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}
                       title={m.moeda === 'BRL' ? 'BRL'
@@ -413,11 +439,11 @@ export default function PageConsolidado() {
                           ? `PTAX FIXADA ${m.moeda}/BRL: ${m.fixedRate.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`
                           : `PTAX ${m.moeda}/BRL: ${ptaxRateFor(m.moeda, ptax).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}>
                       {fmtCurrencyShort(effectiveBRL(m), 'BRL')}
-                      {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--warn)', fontWeight: 600 }}>fx</span>}
+                      {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 12, color: 'var(--warn)', fontWeight: 600 }}>fx</span>}
                     </td>
                     <td style={td}>
                       <span style={{
-                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
+                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600,
                         fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
                         background: m.status === 'PAGA' ? 'var(--pos-tint)' : m.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
                         color: m.status === 'PAGA' ? 'var(--pos)' : m.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
@@ -456,7 +482,7 @@ export default function PageConsolidado() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 10, fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>{filtered.length} movimentação(ões)</div>
+      <div style={{ marginTop: 10, fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>{filtered.length} movimentação(ões)</div>
 
       {payInstId && (() => {
         const inst = insts.find(i => i.id === payInstId)
