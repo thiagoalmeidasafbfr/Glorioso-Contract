@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Vitest 5 declara engines >= 22.12 (no Node 20 o npm só emite aviso
+        # EBADENGINE; a suíte roda normalmente — verificado em 20.20). O
+        # vitest 4.1 não instala com o npm 10 por um bug de peer-deps
+        # (vite 8 → @vitejs/devtools → vitest@*). Se o Node 20 quebrar, remova-o.
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      # Lint estrito na lógica de negócio (src/lib, incluindo os testes) e nas
+      # configs: precisa passar.
+      - name: Lint (src/lib + configs)
+        run: npm run lint:lib
+
+      # Lint completo: ainda há 11 erros pré-existentes em src/pages,
+      # src/components e src/context (react-hooks/set-state-in-effect,
+      # react-refresh/only-export-components, react-hooks/immutability).
+      # Fica informativo até serem corrigidos; depois remova o continue-on-error.
+      - name: Lint (projeto inteiro, informativo)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Testes
+        run: npm test
+
+      # A trava do item 1.10 bloqueia build de produção sem Supabase; no CI não
+      # há backend, então o build local é liberado explicitamente.
+      - name: Build
+        run: npm run build
+        env:
+          VITE_ALLOW_LOCAL_BUILD: 'true'
