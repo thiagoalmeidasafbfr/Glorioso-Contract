@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useApp, CURRENCY_OPTIONS, type AppCurrency } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { USE_SUPABASE } from '../lib/supabase'
+import { roleLabel } from '../lib/permissoes'
 
 const fontBody  = "var(--font-body)"
 const fontMono  = "var(--font-label)"
@@ -99,7 +100,7 @@ function NavItem({ to, label, short, collapsed }: { to: string; label: string; s
 
 export default function Layout({ children }: Props) {
   const { currency, setCurrency } = useApp()
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, can, isMaster } = useAuth()
   const isMobile = useIsMobile()
   const { pathname } = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -120,6 +121,34 @@ export default function Layout({ children }: Props) {
   useEffect(() => { setDrawerOpen(false) }, [pathname])
 
   const toggle = () => isMobile ? setDrawerOpen(false) : setCollapsed(c => !c)
+
+  // Governança: badge de alertas não lidos (recarrega ao navegar e quando a
+  // central de alertas avisa via evento) + seções por papel.
+  const [alertCount, setAlertCount] = useState(0)
+  useEffect(() => {
+    let alive = true
+    // import dinâmico: a camada de dados não entra no bundle inicial (item 2.2).
+    const refresh = () => { import('../lib/governanca').then(m => m.contarAlertasNaoLidos()).then(n => { if (alive) setAlertCount(n) }).catch(() => {}) }
+    refresh()
+    window.addEventListener('alertas-changed', refresh)
+    return () => { alive = false; window.removeEventListener('alertas-changed', refresh) }
+  }, [pathname])
+  const govSections: typeof NAV_SECTIONS = [
+    {
+      label: 'Governança',
+      items: [
+        { to: '/alertas', label: alertCount > 0 ? `Alertas (${alertCount})` : 'Alertas', short: alertCount > 0 ? `!${alertCount > 99 ? '99' : alertCount}` : 'AL' },
+        ...(can('aprovar') || can('enviarRevisao') ? [{ to: '/aprovacoes', label: 'Aprovações', short: 'AP' }] : []),
+      ],
+    },
+    ...(isMaster || can('verAuditoria') ? [{
+      label: 'Administração',
+      items: [
+        ...(isMaster ? [{ to: '/admin/usuarios', label: 'Usuários', short: 'US' }] : []),
+        ...(can('verAuditoria') ? [{ to: '/admin/auditoria', label: 'Auditoria', short: 'AU' }] : []),
+      ],
+    }] : []),
+  ]
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -168,7 +197,7 @@ export default function Layout({ children }: Props) {
 
         {/* Navegação */}
         <nav style={{ flex: 1, padding: '14px 0' }}>
-          {NAV_SECTIONS.map((section, i) => (
+          {[...NAV_SECTIONS, ...govSections].map((section, i) => (
             <div key={i} style={{ marginBottom: 14 }}>
               {section.label && !collapsed && (
                 <div style={{ fontFamily: fontMono, fontSize: 8.5, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.34)', padding: '4px 22px 8px' }}>
@@ -200,7 +229,7 @@ export default function Layout({ children }: Props) {
             {USE_SUPABASE && profile && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
                 <div style={{ fontFamily: fontMono, fontSize: 8.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.42)', marginBottom: 3 }}>
-                  {profile.role === 'master' ? 'Master' : 'Jurídico'}
+                  {profile.ativo === false ? `${roleLabel(profile.role)} (inativo)` : roleLabel(profile.role)}
                 </div>
                 <div style={{ fontFamily: fontBody, fontSize: 11, color: 'rgba(243,238,226,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 8 }}>
                   {profile.email}

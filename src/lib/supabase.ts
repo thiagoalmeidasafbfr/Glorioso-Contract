@@ -11,7 +11,10 @@ export const supabase = USE_SUPABASE
   ? createClient(supabaseUrl, supabaseAnonKey)
   : createClient('https://placeholder.supabase.co', 'placeholder-key')
 
-export type UserRole = 'master' | 'juridico'
+// Papéis setoriais (migration 020). Ver docs/CONTRATOS_BACKEND.md §020.
+export type UserRole =
+  | 'master' | 'juridico' | 'tesouraria' | 'controladoria'
+  | 'assessor' | 'futebol' | 'rh' | 'diretoria'
 
 export interface UserProfile {
   id: string

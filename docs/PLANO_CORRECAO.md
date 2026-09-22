@@ -44,12 +44,12 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 
 | # | Item | Status |
 |---|---|---|
-| 3.1 | Papéis: `juridico`, `tesouraria`, `controladoria`, `assessor`, `futebol`, `rh`, `diretoria` + RLS por papel | ⬜ |
-| 3.2 | Trilha de auditoria (tabela `ac_auditoria` + trigger genérico) e `created_by` real | ⬜ |
-| 3.3 | Workflow RASCUNHO → EM_REVISÃO → APROVADO (Controladoria aprova) | ⬜ |
-| 3.4 | Baixa de parcela com valor pago, PTAX efetiva e autor | ⬜ |
-| 3.5 | Upload de PDF de contratos/aditivos no Supabase Storage (`ac_documentos`) | ⬜ |
-| 3.6 | Metadados hoje em `notes` (empréstimo, renegociação, RJ) viram colunas | ⬜ |
+| 3.1 | Papéis: `juridico`, `tesouraria`, `controladoria`, `assessor`, `futebol`, `rh`, `diretoria` + RLS por papel | 🚧 back (020) + front: `UserRole` com 8 papéis, `can()` por papel (`src/lib/permissoes.ts`), papel real no rodapé, tela `/admin/usuarios`. Falta validar em Supabase real e aplicar `can()` nas demais telas (a maioria ainda usa `canEdit`) |
+| 3.2 | Trilha de auditoria (tabela `ac_auditoria` + trigger genérico) e `created_by` real | ✅ back (021) + front: aba "Histórico" na ficha do atleta e `/admin/auditoria` com filtros (tabela, usuário, período). Não testado contra Supabase real |
+| 3.3 | Workflow RASCUNHO → EM_REVISÃO → APROVADO (Controladoria aprova) | ✅ back (022) + front: chip + ações em contratos/cláusulas da ficha (aba Transferências), fila `/aprovacoes`, opção "Salvar como rascunho" no novo contrato. Não testado contra Supabase real |
+| 3.4 | Baixa de parcela com valor pago, PTAX efetiva e autor | ✅ back (023) + front: baixa/estorno via RPC, "pago por/em" na página da obrigação, Tesouraria dá baixa na página da obrigação. Não testado contra Supabase real; demais telas ainda escondem os botões de quem não tem `canEdit` |
+| 3.5 | Upload de PDF de contratos/aditivos no Supabase Storage (`ac_documentos`) | ✅ back (024) + front: aba "Documentos" na ficha (upload, URL assinada, exclusão). Só com Supabase. Não testado contra Supabase real |
+| 3.6 | Metadados hoje em `notes` (empréstimo, renegociação, RJ) viram colunas | 🚧 back (025, trigger sincroniza as colunas a partir de `notes`) + front lendo as colunas com fallback para `notes` (`src/lib/metadados.ts`). Gravação ainda só em `notes` (o trigger preenche as colunas) |
 
 ## Fase 4 — Movimentação de atletas
 
@@ -64,8 +64,8 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 
 | # | Item | Status |
 |---|---|---|
-| 5.1 | Geração de `ac_alertas` (pg_cron/Edge Function): parcelas a vencer, contratos expirando, gatilhos | ⬜ |
-| 5.2 | Notificação por e-mail por setor | ⬜ |
+| 5.1 | Geração de `ac_alertas` (pg_cron/Edge Function): parcelas a vencer, contratos expirando, gatilhos | ✅ back (027) + front: central `/alertas` (por setor/tipo, marcar lido, "Gerar alertas agora" p/ master) e contador no menu; em modo local as regras de parcela/contrato rodam no navegador. Não testado contra Supabase real |
+| 5.2 | Notificação por e-mail por setor | 🚧 Edge Function `notificar-alertas` pronta (back); falta deploy/agendamento e configurar Resend. Nenhuma mudança de front necessária |
 | 5.3 | Alimentação de desempenho (jogos/gols) para apuração automática de gatilhos | ⬜ |
 | 5.4 | Exportação contábil (ERP/SPED) | ⬜ |
 | 5.5 | Premissas (CFO) lendo contratos/remuneração em vez de redigitação | ⬜ |
