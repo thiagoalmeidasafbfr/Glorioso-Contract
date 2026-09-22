@@ -35,6 +35,7 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
   EMPRESTADO: 'Emprestado',
   VENDIDO:    'Vendido',
   DESLIGADO:  'Desligado',
+  LESIONADO:  'Lesionado',
 }
 
 const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
@@ -42,6 +43,7 @@ const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
   EMPRESTADO: { bg: 'var(--accent-tint2)', fg: '#7a6244' },
   VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
+  LESIONADO:  { bg: 'var(--warn-tint)', fg: 'var(--warn)' },
 }
 
 // Ordem de exibição por posição (de cima pra baixo):
@@ -154,7 +156,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           {field('CPF', 'cpf')}
           {field('Passaporte', 'passport_number')}
           {field('Posição', 'position', 'text', ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante'])}
-          {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          {field('Status Atual', 'current_status', 'text', ['ATIVO', 'LESIONADO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
           <div>
             <label style={lbl}>Categoria</label>
             <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
@@ -302,7 +304,7 @@ export default function PageAthletesList() {
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
             style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
-            {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
+            {(['ATIVO','LESIONADO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
             ))}
           </select>

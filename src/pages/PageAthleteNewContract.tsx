@@ -11,7 +11,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createClauseInstallments } from '../lib/athleteQueries'
+import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createClauseInstallments, deleteContract } from '../lib/athleteQueries'
 import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection, SellOnBasis } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES, isTransferContractType, SELL_ON_CLAUSE_TYPES, SELLON_BASIS_LABELS, sellOnConditionText } from '../types/athlete-system'
 import { todayISO, monthsBetween, addMonths, fmtCurrencyShort } from '../lib/format'
@@ -307,12 +307,18 @@ export default function PageAthleteNewContract() {
     if (!id) return
     setSaving(true)
     setError(null)
+    // Criação "atômica" por COMPENSAÇÃO: contrato, cláusulas e parcelas são
+    // gravados em sequência; se qualquer passo falhar, o contrato criado é
+    // apagado — deleteContract remove as cláusulas/parcelas dele (cascade no
+    // Supabase; remoção explícita no modo local), sem deixar vínculo pela metade.
+    let createdContractId: string | null = null
     try {
       const savedContract = await createContract(id, {
         ...contract,
         transfer_fee_gross: willGenTransfer ? transferTotal : contract.transfer_fee_gross,
         related_contract_id: relatedId || undefined,
       })
+      createdContractId = savedContract.id
       const buying = contract.type === 'ENTRADA' || contract.type === 'EMPRESTIMO_ENTRADA'
 
       // Rate para gravar em cada cláusula/parcela criada abaixo (só quando a
@@ -443,9 +449,21 @@ export default function PageAthleteNewContract() {
           })))
         }
       }
+      createdContractId = null   // tudo gravado — nada a desfazer
       navigate(`/atletas/${id}`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao salvar')
+      const cause = e instanceof Error ? e.message : ((e as { message?: string })?.message ?? 'Erro ao salvar')
+      if (createdContractId) {
+        try {
+          await deleteContract(createdContractId)
+          setError(`Não foi possível salvar o contrato: ${cause}. Nada foi gravado — o contrato e os fluxos parciais foram desfeitos.`)
+        } catch (rb) {
+          const rbMsg = rb instanceof Error ? rb.message : ((rb as { message?: string })?.message ?? String(rb))
+          setError(`Não foi possível salvar o contrato: ${cause}. ATENÇÃO: a limpeza automática também falhou (${rbMsg}) — o contrato ficou incompleto; exclua-o manualmente na ficha do atleta.`)
+        }
+      } else {
+        setError(`Não foi possível salvar o contrato: ${cause}`)
+      }
     } finally {
       setSaving(false)
     }
