@@ -6,8 +6,7 @@ documento consolida a especificação técnica e funcional do produto:
 propósito, arquitetura, modelo de dados, regras de negócio, telas,
 integrações e governança.
 
-Última atualização: 2026-08-12
-Branch de trabalho: `claude/analise-fluxo-input-kfqe6d`
+Última atualização: 2026-09-22
 
 ---
 
@@ -44,8 +43,13 @@ versionada e obrigações são separadas entre passivo firme e contingente.
   centro de custo, amortização.
 - **Assessor Financeiro** — analisa exposição, cenários, mais-valia.
 
-Detalhamento da governança em `docs/FLUXO_INPUT.md` (proposta) e no deck
-`fluxo-input-glorioso.pptx`.
+Detalhamento da governança (proposta) no deck `fluxo-input-glorioso.pptx`
+(também em PDF: `fluxo-input-glorioso.pdf`) e no artefato HTML
+`scratchpad-fluxo-input.html`, todos na raiz do repositório.
+
+> **Hoje o sistema só tem dois papéis:** `master` e `juridico` (ver §7). Os
+> papéis acima descrevem a governança **proposta** (Fase 3 do
+> `docs/PLANO_CORRECAO.md`).
 
 ---
 
@@ -76,12 +80,12 @@ Glorioso-Contract/
 │   │   └── modals/            # modais compartilhados
 │   ├── context/               # AppContext (dados), AuthContext (sessão)
 │   ├── lib/                   # regras de negócio, queries, importadores
-│   ├── pages/                 # 19 páginas de rota
+│   ├── pages/                 # páginas de rota
 │   ├── types/                 # tipos TS espelhando o schema
 │   ├── i18n/
 │   └── assets/
 ├── supabase/
-│   └── migrations/            # 17 migrations (001 → 017)
+│   └── migrations/            # 19 migrations (001 → 019)
 ├── docs/                      # documentação
 ├── public/
 ├── package.json
@@ -91,10 +95,14 @@ Glorioso-Contract/
 
 ### 2.3 Configuração
 
-- `.env.example` documenta as variáveis exigidas (`VITE_SUPABASE_URL`,
-  `VITE_SUPABASE_ANON_KEY`).
-- `USE_SUPABASE` em `src/lib/supabase.ts` habilita o modo remoto; sem as
-  variáveis o app roda com `localStore` (persistência em `localStorage`).
+- `.env.example` documenta as variáveis (`VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY`, `VITE_USE_SUPABASE`, `VITE_ALLOW_LOCAL_BUILD`).
+- `USE_SUPABASE` em `src/lib/supabase.ts` (`VITE_USE_SUPABASE=true`)
+  habilita o modo remoto; caso contrário o app roda com `localStore`
+  (persistência em `localStorage`) e exibe um aviso de modo local.
+- **Build de produção exige Supabase:** `vite build` falha se
+  `VITE_USE_SUPABASE` não for `true` (ou se URL/chave faltarem). Para demo/CI
+  sem backend use `VITE_ALLOW_LOCAL_BUILD=true`.
 - Setup completo do banco em `SETUP_SUPABASE.md`.
 
 ### 2.4 Build e desenvolvimento
@@ -102,10 +110,15 @@ Glorioso-Contract/
 ```bash
 npm install
 npm run dev          # Vite dev server
-npm run build        # tsc -b && vite build
-npm run lint         # ESLint
+npm run build        # tsc -b && vite build (exige Supabase — ver 2.3)
+npm run lint         # ESLint (projeto inteiro)
+npm run lint:lib     # ESLint estrito em src/lib + configs (usado no CI)
+npm test             # Vitest (testes unitários de src/lib)
 npm run preview      # preview do build
 ```
+
+CI (`.github/workflows/ci.yml`): Node 20 e 22 → `npm ci`, `tsc -b`,
+`lint:lib`, `lint` (informativo), `npm test`, `npm run build`.
 
 ---
 
@@ -114,6 +127,20 @@ npm run preview      # preview do build
 O modelo canônico é o **schema atleta-central** (`ac_*`), introduzido pela
 migration `012_schema_robusto_atleta_central.sql`. A modelagem anterior
 (em inglês) coexiste via bridge (`014_bridge_app_atleta_central.sql`).
+
+> **Estado atual × proposta.** Boa parte desta seção (núcleo financeiro da
+> `012`: `ac_obrigacoes_financeiras`, `ac_parcelas`, `ac_remuneracoes`,
+> cláusulas Condição→Efeito→Avaliação) descreve o **modelo-alvo**. Hoje o app
+> **não** grava nessas tabelas: `src/lib/athleteQueries.ts` usa o backbone da
+> `012` (`ac_atletas`, `ac_entidades`, `ac_contratos`) e, para todo o detalhe
+> financeiro, as **tabelas-ponte da `014`** — `ac_clausulas_fin`,
+> `ac_parcelas_fin`, `ac_gatilhos_salario`, `ac_passivos_clube`,
+> `ac_passivos_agente`, `ac_titularidade_economica`, `ac_direitos_imagem`,
+> `ac_alertas`. Essas tabelas-ponte são, na prática, a fonte da verdade; o
+> núcleo financeiro da `012` fica vazio (exceto o seed `013`).
+> Metadados de empréstimo, renegociação e RJ ainda vivem no campo `notes`
+> (`__EMPRESTIMO__…`, `__ACORDO__…`, `[RJ:AAAA-MM-DD]`). A decisão de
+> convergência é o item 1.9 do `docs/PLANO_CORRECAO.md`.
 
 ### 3.1 Princípios de modelagem
 
@@ -158,7 +185,7 @@ migration `012_schema_robusto_atleta_central.sql`. A modelagem anterior
 | `ac_condicao_janela` | TEMPORADA, CONTRATO, COMPETICAO |
 | `ac_condicao_escopo` | PROPRIO_ATLETA, RELATIVO_AO_CLUBE |
 | `ac_efeito_tipo` | GERAR_OBRIGACAO, ALTERAR_REMUNERACAO, GERAR_RECEITA |
-| `ac_avaliacao_status` | PENDENTE, APLICADA, NAO_APLICAVEL |
+| `ac_avaliacao_status` | PENDENTE, ATINGIDA, NAO_ATINGIDA, APLICADA |
 | `ac_indice_correcao` | NENHUM, SELIC, CDI, IGPM, IPCA |
 | `HolderType` (TS) | BFR, CLUBE, AGENTE, ATLETA, TERCEIRO |
 
@@ -227,6 +254,8 @@ Detalhamento com DDL comentado em `docs/SCHEMA_ATLETA_CENTRAL.md`.
 | 015 | `015_contrato_vinculo_relacionado.sql` | Vínculo entre contratos |
 | 016 | `016_gatilho_imagem.sql` | Gatilhos aplicados a imagem |
 | 017 | `017_ptax_fixada.sql` | PTAX fixada por parcela |
+| 018 | `018_premissas_atleta.sql` | Aba de Premissas por atleta (modelo do CFO) |
+| 019 | `019_seguranca_perfis.sql` | Segurança de perfis: papel não vem do signup, perfil inativo sem acesso, trigger contra auto-promoção |
 
 ---
 
@@ -252,7 +281,7 @@ abrir o novo. Requer a extensão `btree_gist`.
   `escopo` (próprio atleta ou relativo a um clube).
 - Efeitos suportados: gerar obrigação, alterar remuneração, gerar receita.
 - Avaliação (`ac_clausula_avaliacoes`) fecha o ciclo com status
-  PENDENTE / APLICADA / NAO_APLICAVEL.
+  PENDENTE / ATINGIDA / NAO_ATINGIDA / APLICADA.
 
 ### 4.4 Passivo firme × contingente
 
@@ -349,11 +378,12 @@ Em `src/components/`:
 | `athleteQueries.ts` | Queries de atleta |
 | `athleteOverview.ts`, `athleteConsolidado.ts` | Consolidados por atleta |
 | `entityObligations.ts` | Obrigações por contraparte |
-| `judicialRecovery.ts` | Cálculo firme × contingente |
+| `judicialRecovery.ts` | Marcação de itens em Recuperação Judicial (`[RJ:AAAA-MM-DD]` em `notes`) |
 | `liabilityFlow.ts`, `salaryFlow.ts`, `remflow.ts` | Fluxos de passivo/salário/remuneração |
 | `loanSalary.ts` | Salário em empréstimo |
 | `ownership.ts` | Direitos econômicos |
-| `ptax.ts` | Câmbio |
+| `ptax.ts` | PTAX do dia (BACEN) + conversão com fallback |
+| `fx.ts` | Tabela única de câmbio de referência |
 | `renegotiation.ts` | Renegociação |
 | `reportPorters.ts` | Adapters para relatórios |
 | `salary.ts` | Regras de salário |
@@ -361,6 +391,13 @@ Em `src/components/`:
 | `image.ts` | PJ de imagem |
 | `importCanon.ts`, `importHelpers.ts`, `importSheets.ts` | Importação de planilhas |
 | `xlsx-utils.ts` | Wrapper SheetJS |
+
+Testes unitários (Vitest) em `src/lib/__tests__/` cobrem as funções puras e
+os fluxos (com `athleteQueries` mockado) de `format`, `remflow`, `salary`,
+`salaryFlow`, `loanSalary`, `renegotiation`, `liabilityFlow`,
+`judicialRecovery`, `ownership`, `fx`/`ptax`, `importCanon` e
+`importHelpers`. A matemática de amortização ainda vive dentro de
+`src/pages/PageAmortizacao.tsx` (sem testes até ser extraída para `src/lib`).
 
 ---
 
@@ -378,9 +415,18 @@ Em `src/components/`:
 - Supabase Auth (email/senha) via `AuthContext`.
 - Sessão bloqueia rotas — `App.tsx` mostra `PageLogin` quando
   `USE_SUPABASE` está ativo e não há sessão.
-- **RLS** (`002_rls.sql`) — política inicial existente; expansão
-  proposta na governança de fluxo (roles: `juridico`, `tesouraria`,
-  `controladoria`, `assessor`).
+- **Papéis atuais:** apenas `master` e `juridico` (`profiles.role`, check
+  em `001_schema.sql`). `master` administra usuários e pode apagar a base;
+  `juridico` edita o cadastro contratual. Perfil com `ativo = false` não tem
+  papel (`get_my_role()` retorna `null`).
+- **RLS** (`002_rls.sql`) — políticas por `get_my_role()`.
+- **`019_seguranca_perfis.sql`** — o papel **não** é mais lido do
+  `raw_user_meta_data` no signup (todo novo perfil nasce `juridico`), perfis
+  inativos perdem acesso e um trigger impede que não-`master` altere `role`
+  ou `ativo`.
+- **Proposta (Fase 3):** papéis por área — `juridico`, `tesouraria`,
+  `controladoria`, `assessor`, `futebol`, `rh`, `diretoria` — com RLS por
+  papel (item 3.1 do `docs/PLANO_CORRECAO.md`). Ainda não implementado.
 
 ---
 
@@ -413,8 +459,9 @@ Detalhamento no deck `fluxo-input-glorioso.pptx` e no artefato HTML
 - **Vercel** (`vercel.json`) — build automático a partir da branch
   principal.
 - **Supabase** — migrations aplicadas via CLI, ordem numérica.
-- **Variáveis** — `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-  (documentadas em `.env.example`).
+- **Variáveis** — `VITE_USE_SUPABASE=true`, `VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY` (documentadas em `.env.example`). Sem elas o
+  build de produção falha de propósito.
 
 ---
 
@@ -432,9 +479,10 @@ Detalhamento no deck `fluxo-input-glorioso.pptx` e no artefato HTML
 
 ## 11. Referências internas
 
-- `README.md` — instruções de setup do template Vite.
+- `README.md` — visão geral, setup e estrutura do projeto.
+- `docs/PLANO_CORRECAO.md` — plano de correção por fases (status).
 - `SETUP_SUPABASE.md` — provisionamento do banco.
 - `docs/SCHEMA_ATLETA_CENTRAL.md` — DDL comentado.
 - `docs/BACKUP.md` — procedimentos de backup.
-- `scratchpad-fluxo-input.html` / `fluxo-input-glorioso.pptx` —
+- `scratchpad-fluxo-input.html` / `fluxo-input-glorioso.pptx` / `.pdf` —
   proposta de governança do fluxo de input.
