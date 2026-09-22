@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useApp, CURRENCY_OPTIONS, type AppCurrency } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { USE_SUPABASE } from '../lib/supabase'
@@ -10,6 +10,19 @@ const fontMono  = "var(--font-label)"
 const SIDEBAR_W_OPEN = 220
 const SIDEBAR_W_COLLAPSED = 60
 const COLLAPSE_KEY = 'sidebar-collapsed'
+// Abaixo desta largura a sidebar vira drawer (sobreposta, aberta pelo ☰).
+const MOBILE_QUERY = '(max-width: 900px)'
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY)
+    const onChange = () => setMobile(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return mobile
+}
 
 const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; short: string }[] }[] = [
   {
@@ -17,6 +30,7 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; 
     items: [
       { to: '/criar',          label: '+ Criar (Assistente)', short: '+' },
       { to: '/dashboards',     label: 'Dashboards',           short: 'DB' },
+      { to: '/dashboard',      label: 'Visão Geral',          short: 'VG' },
       { to: '/atletas',        label: 'Atletas',              short: 'AT' },
       { to: '/album',          label: 'Portfolio de Atletas', short: 'PA' },
       { to: '/clubes',         label: 'Clubes',               short: 'CL' },
@@ -51,8 +65,6 @@ const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; 
   },
 ]
 
-const LANGS = ['PT', 'EN', 'ES'] as const
-
 interface Props { children: React.ReactNode }
 
 function NavItem({ to, label, short, collapsed }: { to: string; label: string; short: string; collapsed: boolean }) {
@@ -86,30 +98,45 @@ function NavItem({ to, label, short, collapsed }: { to: string; label: string; s
 }
 
 export default function Layout({ children }: Props) {
-  const { currency, setCurrency, language, setLanguage } = useApp()
+  const { currency, setCurrency } = useApp()
   const { profile, signOut } = useAuth()
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
+  const isMobile = useIsMobile()
+  const { pathname } = useLocation()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [collapsedPref, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
   })
+  // No mobile a sidebar é sempre "aberta" dentro do drawer; o recolhimento é só desktop.
+  const collapsed = !isMobile && collapsedPref
 
   useEffect(() => {
-    const w = collapsed ? SIDEBAR_W_COLLAPSED : SIDEBAR_W_OPEN
+    const w = isMobile ? 0 : collapsed ? SIDEBAR_W_COLLAPSED : SIDEBAR_W_OPEN
     document.documentElement.style.setProperty('--sidebar-w', `${w}px`)
-    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0') } catch { /* ignore */ }
-  }, [collapsed])
+    try { localStorage.setItem(COLLAPSE_KEY, collapsedPref ? '1' : '0') } catch { /* ignore */ }
+  }, [collapsed, collapsedPref, isMobile])
 
-  const toggle = () => setCollapsed(c => !c)
+  // Fecha o drawer ao navegar.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza UI com a rota
+  useEffect(() => { setDrawerOpen(false) }, [pathname])
+
+  const toggle = () => isMobile ? setDrawerOpen(false) : setCollapsed(c => !c)
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       {/* ── Sidebar ── */}
-      <aside style={{
+      {isMobile && drawerOpen && (
+        <div aria-hidden onClick={() => setDrawerOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 99 }} />
+      )}
+      <aside aria-label="Menu principal" style={{
         position: 'fixed', top: 0, left: 0, bottom: 0,
-        width: 'var(--sidebar-w)',
+        width: isMobile ? SIDEBAR_W_OPEN + 40 : 'var(--sidebar-w)',
+        transform: isMobile && !drawerOpen ? 'translateX(-100%)' : 'none',
+        boxShadow: isMobile && drawerOpen ? '0 0 40px rgba(0,0,0,0.4)' : 'none',
         background: 'linear-gradient(180deg, #17150f 0%, #0b0a07 100%)',
         display: 'flex', flexDirection: 'column', zIndex: 100, overflowY: 'auto', overflowX: 'hidden',
         borderRight: '1px solid rgba(255,255,255,0.07)',
-        transition: 'width 0.18s ease',
+        transition: 'width 0.18s ease, transform 0.2s ease',
       }}>
         {/* Marca */}
         <div style={{
@@ -126,7 +153,7 @@ export default function Layout({ children }: Props) {
               </div>
             </div>
           )}
-          <button onClick={toggle} title={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'} aria-label={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
+          <button onClick={toggle} title={isMobile ? 'Fechar menu' : collapsed ? 'Expandir sidebar' : 'Recolher sidebar'} aria-label={isMobile ? 'Fechar menu' : collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
             style={{
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.10)',
@@ -135,7 +162,7 @@ export default function Layout({ children }: Props) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, fontSize: 14, lineHeight: 1, padding: 0,
             }}>
-            {collapsed ? '»' : '«'}
+            {isMobile ? '✕' : collapsed ? '»' : '«'}
           </button>
         </div>
 
@@ -167,20 +194,8 @@ export default function Layout({ children }: Props) {
               </select>
             </div>
 
-            <div style={{ display: 'flex', gap: 4 }}>
-              {LANGS.map(l => {
-                const active = language === l.toLowerCase()
-                return (
-                  <button key={l} onClick={() => setLanguage(l.toLowerCase() as 'pt' | 'en' | 'es')}
-                    style={{
-                      flex: 1, background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
-                      border: `1px solid ${active ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? '#ffffff' : 'rgba(243,238,226,0.40)',
-                      borderRadius: 6, padding: '4px 0', fontFamily: fontMono, fontSize: 9, letterSpacing: '0.10em', cursor: 'pointer',
-                    }}>{l}</button>
-                )
-              })}
-            </div>
+            {/* Seletor PT/EN/ES removido até o i18n estar ligado às telas (hoje
+                nenhuma tela usa t()). Ver docs/PLANO_CORRECAO.md. */}
 
             {USE_SUPABASE && profile && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
@@ -201,7 +216,22 @@ export default function Layout({ children }: Props) {
       </aside>
 
       {/* ── Conteúdo ── */}
-      <main style={{ marginLeft: 'var(--sidebar-w)', flex: 1, minHeight: '100vh', background: 'var(--cream-page)', transition: 'margin-left 0.18s ease' }}>
+      <main style={{ marginLeft: 'var(--sidebar-w)', flex: 1, minWidth: 0, minHeight: '100vh', background: 'var(--cream-page)', transition: 'margin-left 0.18s ease' }}>
+        {isMobile && (
+          <div style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: '#14120c', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <button onClick={() => setDrawerOpen(true)} aria-label="Abrir menu" aria-expanded={drawerOpen}
+              style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: '#f3eee2', width: 36, height: 36, borderRadius: 8, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>
+              ☰
+            </button>
+            <span style={{ fontFamily: fontMono, fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.85)' }}>Gestão Contratual</span>
+          </div>
+        )}
+        {!USE_SUPABASE && (
+          <div role="status" style={{ padding: '8px 16px', background: '#fff4d6', borderBottom: '1px solid #e8cf87', color: '#5c4400', fontFamily: fontBody, fontSize: 13 }}>
+            <strong>Modo local:</strong> os dados estão salvos apenas neste navegador e não são compartilhados com a equipe.
+            Configure o Supabase (<code>VITE_USE_SUPABASE=true</code>) para uso em produção.
+          </div>
+        )}
         {children}
       </main>
     </div>

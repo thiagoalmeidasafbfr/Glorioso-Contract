@@ -57,7 +57,6 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
       }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
         background: 'var(--cream-card, #faf6ed)', border: '1px solid var(--gold-line, var(--divider-strong))',

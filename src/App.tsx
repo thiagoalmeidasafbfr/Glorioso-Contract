@@ -1,4 +1,5 @@
 import './index.css'
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -6,32 +7,42 @@ import { USE_SUPABASE } from './lib/supabase'
 import Layout from './components/Layout'
 import PageLogin from './pages/PageLogin'
 
+// Rotas carregadas sob demanda: xlsx/recharts e as páginas pesadas saem do
+// bundle inicial (antes ~1,8 MB num único chunk, inclusive na tela de login).
 // Sistema de atletas
-import PageDashboard from './pages/PageDashboard'
-import PageAlbum from './pages/PageAlbum'
-import PageAthletesList from './pages/PageAthletesList'
-import PageAthleteDetail from './pages/PageAthleteDetail'
-import PageWizard from './pages/PageWizard'
-import PageDashboards from './pages/PageDashboards'
-import PageAthleteNewContract from './pages/PageAthleteNewContract'
-import PageClauseDetail from './pages/PageClauseDetail'
+const PageDashboard = lazy(() => import('./pages/PageDashboard'))
+const PageAlbum = lazy(() => import('./pages/PageAlbum'))
+const PageAthletesList = lazy(() => import('./pages/PageAthletesList'))
+const PageAthleteDetail = lazy(() => import('./pages/PageAthleteDetail'))
+const PageWizard = lazy(() => import('./pages/PageWizard'))
+const PageDashboards = lazy(() => import('./pages/PageDashboards'))
+const PageAthleteNewContract = lazy(() => import('./pages/PageAthleteNewContract'))
+const PageClauseDetail = lazy(() => import('./pages/PageClauseDetail'))
 
 // Cadastros (clubes / intermediários)
-import PageCadastros from './pages/PageCadastros'
-import PageCadastroDetail from './pages/PageCadastroDetail'
+const PageCadastros = lazy(() => import('./pages/PageCadastros'))
+const PageCadastroDetail = lazy(() => import('./pages/PageCadastroDetail'))
 
 // Relatórios
-import PageAcordos from './pages/PageAcordos'
-import PageConsolidado from './pages/PageConsolidado'
-import PageVisaoAtletas from './pages/PageVisaoAtletas'
-import PageRelSellOn from './pages/PageRelSellOn'
-import PageRelDirEconomicos from './pages/PageRelDirEconomicos'
-import PageRelGatilhos from './pages/PageRelGatilhos'
-import PageRecuperacaoJudicial from './pages/PageRecuperacaoJudicial'
-import PageDados from './pages/PageDados'
-import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
-import PageAmortizacao from './pages/PageAmortizacao'
-import PagePremissas from './pages/PagePremissas'
+const PageAcordos = lazy(() => import('./pages/PageAcordos'))
+const PageConsolidado = lazy(() => import('./pages/PageConsolidado'))
+const PageVisaoAtletas = lazy(() => import('./pages/PageVisaoAtletas'))
+const PageRelSellOn = lazy(() => import('./pages/PageRelSellOn'))
+const PageRelDirEconomicos = lazy(() => import('./pages/PageRelDirEconomicos'))
+const PageRelGatilhos = lazy(() => import('./pages/PageRelGatilhos'))
+const PageRecuperacaoJudicial = lazy(() => import('./pages/PageRecuperacaoJudicial'))
+const PageDados = lazy(() => import('./pages/PageDados'))
+const PageImportarPlanilhas = lazy(() => import('./pages/PageImportarPlanilhas'))
+const PageAmortizacao = lazy(() => import('./pages/PageAmortizacao'))
+const PagePremissas = lazy(() => import('./pages/PagePremissas'))
+
+function RouteFallback() {
+  return (
+    <div role="status" aria-live="polite" style={{ padding: 32, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)' }}>
+      Carregando…
+    </div>
+  )
+}
 
 function AppRoutes() {
   const { session, loading } = useAuth()
@@ -42,7 +53,7 @@ function AppRoutes() {
         minHeight: '100vh', background: '#1a1410',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontFamily: "var(--font-label)", fontSize: 11,
-        color: 'rgba(243,238,226,0.40)', letterSpacing: '0.14em',
+        color: 'rgba(243,238,226,0.78)', letterSpacing: '0.14em',
       }}>
         CARREGANDO...
       </div>
@@ -60,6 +71,7 @@ function AppRoutes() {
   return (
     <AppProvider>
       <Layout>
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Navigate to="/atletas" replace />} />
           <Route path="/criar" element={<PageWizard />} />
@@ -100,6 +112,7 @@ function AppRoutes() {
 
           <Route path="*" element={<Navigate to="/atletas" replace />} />
         </Routes>
+        </Suspense>
       </Layout>
     </AppProvider>
   )

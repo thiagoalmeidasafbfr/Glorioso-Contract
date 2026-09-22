@@ -142,8 +142,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 28, width: 600, maxWidth: '96vw', border: '1px solid var(--divider)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, marginBottom: 4 }}>Novo Atleta</div>
 

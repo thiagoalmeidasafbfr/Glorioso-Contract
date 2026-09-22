@@ -39,8 +39,7 @@ export function ModalShell({ title, subtitle, width = 560, onClose, children, fo
   }, [onClose])
   return (
     <div role="dialog" aria-modal="true" aria-label={title}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(16,13,10,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
+      style={{ position: 'fixed', inset: 0, background: 'rgba(16,13,10,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
       <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 24, width, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{title}</div>
