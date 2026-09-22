@@ -8,6 +8,7 @@ import { isOwnershipValid } from '../lib/ownership'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
 import { approxToBRL } from '../lib/fx'
+import { mentionsBotafogo } from '../lib/direction'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -96,7 +97,7 @@ export default function PageDashboard() {
     const key = monthKey(c.due_date)
     if (!monthBuckets[key]) return
     const brl = toBRL(c.original_value, c.currency)
-    const isReceivable = c.creditor_party.toLowerCase().includes('botafogo')
+    const isReceivable = mentionsBotafogo(c.creditor_party)
     if (isReceivable) monthBuckets[key].receivable += brl
     else monthBuckets[key].payable += brl
   })
@@ -111,7 +112,7 @@ export default function PageDashboard() {
   allClauses.forEach(c => {
     if (!c.original_value || ['PAGA', 'CANCELADA'].includes(c.payment_status)) return
     if (!exposures[c.currency]) exposures[c.currency] = { receivable: 0, payable: 0 }
-    const isReceivable = c.creditor_party.toLowerCase().includes('botafogo')
+    const isReceivable = mentionsBotafogo(c.creditor_party)
     if (isReceivable) exposures[c.currency].receivable += c.original_value
     else exposures[c.currency].payable += c.original_value
   })
