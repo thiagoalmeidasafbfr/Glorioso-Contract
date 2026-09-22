@@ -15,11 +15,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Vitest 5 declara engines >= 22.12 (no Node 20 o npm só emite aviso
-        # EBADENGINE; a suíte roda normalmente — verificado em 20.20). O
-        # vitest 4.1 não instala com o npm 10 por um bug de peer-deps
-        # (vite 8 → @vitejs/devtools → vitest@*). Se o Node 20 quebrar, remova-o.
-        node: [20, 22]
+        # Node >= 22.12: exigido pelo Vitest 5 e pelo WebSocket nativo que o
+        # cliente do Supabase usa (no Node 20 os testes quebram). Node 20 também
+        # está descontinuado nos runners do GitHub.
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
 

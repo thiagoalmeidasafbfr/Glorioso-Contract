@@ -30,7 +30,7 @@ Principais funcionalidades:
 
 ## Como rodar
 
-Requisitos: Node 20.19+ ou 22.12+ (recomendado: 22) e npm.
+Requisitos: Node 22.12+ e npm.
 
 ```bash
 npm install
@@ -78,7 +78,7 @@ Build local sem Supabase (demo):
 VITE_ALLOW_LOCAL_BUILD=true npm run build
 ```
 
-O CI (`.github/workflows/ci.yml`) roda, em Node 20 e 22: `npm ci`, `tsc -b`,
+O CI (`.github/workflows/ci.yml`) roda, em Node 22 e 24: `npm ci`, `tsc -b`,
 `lint:lib`, `lint` (informativo enquanto houver erros legados em páginas e
 componentes), `npm test` e `npm run build`.
 

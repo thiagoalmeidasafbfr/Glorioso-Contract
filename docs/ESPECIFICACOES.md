@@ -117,7 +117,7 @@ npm test             # Vitest (testes unitários de src/lib)
 npm run preview      # preview do build
 ```
 
-CI (`.github/workflows/ci.yml`): Node 20 e 22 → `npm ci`, `tsc -b`,
+CI (`.github/workflows/ci.yml`): Node 22 e 24 → `npm ci`, `tsc -b`,
 `lint:lib`, `lint` (informativo), `npm test`, `npm run build`.
 
 ---
