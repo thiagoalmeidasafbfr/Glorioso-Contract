@@ -84,11 +84,14 @@ export function renegotiatedAcordoId(notes: string | null | undefined): string |
 
 // Divide um total em N parcelas iguais (centavos), com a última absorvendo a
 // diferença de arredondamento.
+// A conta é feita em centavos inteiros: em ponto flutuante, 1009.80 / 10 * 100
+// dá 10097.999… e o floor gerava 9 × 100,97 + 101,07 em vez de 10 × 100,98.
 function splitEqual(total: number, n: number): number[] {
   if (n <= 0) return []
-  const base = Math.floor((total / n) * 100) / 100
-  const arr = Array(n).fill(base)
-  arr[n - 1] = Math.round((total - base * (n - 1)) * 100) / 100
+  const cents = Math.round(total * 100)
+  const baseCents = Math.floor(cents / n)
+  const arr: number[] = Array(n).fill(baseCents / 100)
+  arr[n - 1] = (cents - baseCents * (n - 1)) / 100
   return arr
 }
 
