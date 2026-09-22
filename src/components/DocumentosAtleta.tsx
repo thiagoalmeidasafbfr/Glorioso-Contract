@@ -20,7 +20,7 @@ const mono = 'var(--font-label)'
 const ACCEPT = 'application/pdf,image/*'
 const MAX_BYTES = 20 * 1024 * 1024
 
-const lbl: React.CSSProperties = { fontFamily: mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }
+const lbl: React.CSSProperties = { fontFamily: mono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }
 const inp: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontFamily: font, fontSize: 13 }
 
 function fmtSize(n: number | null): string {
@@ -96,7 +96,7 @@ export default function DocumentosAtleta({ athleteId, contracts }: { athleteId: 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {podeGerenciar && (
         <div className="card" style={{ padding: '16px 20px' }}>
-          <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>Enviar documento</div>
+          <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>Enviar documento</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
             <div>
               <label htmlFor="doc-file" style={lbl}>Arquivo (PDF ou imagem)</label>

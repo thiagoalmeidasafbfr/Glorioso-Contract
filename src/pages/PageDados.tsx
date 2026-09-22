@@ -32,6 +32,8 @@ import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import type { AthleteCategory } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import { useToast } from '../components/toast-context'
+import ExportContabilCard from '../components/ExportContabilCard'
+import { fetchAllDesempenho, upsertDesempenho } from '../lib/desempenho'
 
 // Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
 function parseCategory(v: unknown): AthleteCategory {
@@ -41,6 +43,14 @@ function parseCategory(v: unknown): AthleteCategory {
   }
   return 'PROFISSIONAL'
 }
+
+const COLS_DESEMPENHO: ColDef[] = [
+  { key: 'atleta_id', header: 'Atleta ID' }, { key: 'atleta', header: 'Atleta' },
+  { key: 'temporada', header: 'Temporada' }, { key: 'competicao', header: 'Competição' },
+  { key: 'jogos', header: 'Jogos' }, { key: 'gols', header: 'Gols' },
+  { key: 'assistencias', header: 'Assistências' }, { key: 'minutos', header: 'Minutos' },
+  { key: 'fonte', header: 'Fonte' },
+]
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -277,6 +287,34 @@ const DESCRIPTORS: Descriptor[] = [
       return res
     },
   },
+  {
+    // Desempenho (Fase 5.3): upsert por atleta+temporada+competição. Competição
+    // vazia = total da temporada. Atleta por ID ou, na falta, pelo nome completo.
+    key: 'Desempenho', label: 'Desempenho (jogos/gols)', cols: COLS_DESEMPENHO, parent: 'Atleta ID ou Atleta',
+    load: async () => {
+      const [rows, athletes] = await Promise.all([fetchAllDesempenho(), fetchAthletes()])
+      const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
+      return rows.map(r => ({ ...r, atleta: nameOf.get(r.atleta_id) ?? '' }))
+    },
+    importRows: async rows => {
+      const res = emptyResult()
+      const athletes = await fetchAthletes()
+      const byName = new Map(athletes.map(a => [dupKey(a.full_name), a.id]))
+      const ids = new Set(athletes.map(a => a.id))
+      for (const r of rows) {
+        const aid = S(r['Atleta ID']) && ids.has(S(r['Atleta ID'])) ? S(r['Atleta ID']) : byName.get(dupKey(S(r['Atleta'])))
+        const temporada = S(r['Temporada'])
+        if (!aid || !temporada) { res.invalid++; continue }
+        await upsertDesempenho({
+          atleta_id: aid, temporada, competicao: S(r['Competição']),
+          jogos: N(r['Jogos']), gols: N(r['Gols']), assistencias: N(r['Assistências']), minutos: N(r['Minutos']),
+          fonte: S(r['Fonte']) || 'PLANILHA',
+        })
+        res.created++
+      }
+      return res
+    },
+  },
 ]
 
 export default function PageDados() {
@@ -391,6 +429,8 @@ export default function PageDados() {
           </div>
         ))}
       </div>
+
+      <ExportContabilCard />
     </div>
   )
 }

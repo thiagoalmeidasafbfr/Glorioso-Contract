@@ -14,7 +14,7 @@ import type { AuditoriaRow } from '../types/governanca'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
-const lbl: React.CSSProperties = { fontFamily: mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }
+const lbl: React.CSSProperties = { fontFamily: mono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }
 
 export default function PageAuditoria() {
   const { can } = useAuth()

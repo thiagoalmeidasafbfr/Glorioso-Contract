@@ -62,16 +62,24 @@ import Field from '../components/Field'
 import ModalFrame from '../components/ModalFrame'
 import { useToast, errorMessage } from '../components/toast-context'
 import { useConfirm } from '../components/confirm-context'
+import { isBFRParty, mentionsBotafogo } from '../lib/direction'
+import MovimentacaoModal from '../components/MovimentacaoModal'
+import MovimentacoesPanel from '../components/athletes/MovimentacoesPanel'
+import DesempenhoTab from '../components/athletes/DesempenhoTab'
+import GatilhosProgresso from '../components/athletes/GatilhosProgresso'
+import { useHasRole, ROLES } from '../lib/roleGate'
+import { ClubeAtualSelect, ClubeAtualLabel } from '../components/athletes/ClubeAtual'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
-const isBFRparty = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
+const isBFRparty = (s: string) => isBFRParty(s)
 
 const ATHLETE_STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string; label: string }> = {
   ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a', label: 'Ativo' },
   EMPRESTADO: { bg: 'var(--accent-tint2)', fg: '#7a6244', label: 'Emprestado' },
   VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a', label: 'Vendido' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280', label: 'Desligado' },
+  LESIONADO:  { bg: 'var(--warn-tint)', fg: 'var(--warn)', label: 'Lesionado' },
 }
 const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDENTE:          { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
@@ -85,6 +93,7 @@ const TRIGGER_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   ATINGIDA:     { bg: '#e6ece2', fg: '#3a6f3a' },
   NAO_ATINGIDA: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
 }
+const PE_LABELS: Record<string, string> = { DIREITO: 'Direito', ESQUERDO: 'Esquerdo', AMBIDESTRO: 'Ambidestro' }
 const ATHLETE_POSITIONS = ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante']
 
 function StatusBadge({ status, map }: { status: string; map: Record<string, { bg: string; fg: string }> }) {
@@ -244,6 +253,8 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
     current_status: athlete.current_status, category: (athlete.category ?? 'PROFISSIONAL') as AthleteCategory,
     nationality: athlete.nationality ?? '', birth_date: athlete.birth_date ?? '',
     cpf: athlete.cpf ?? '', passport_number: athlete.passport_number ?? '', notes: athlete.notes ?? '',
+    apelido: athlete.apelido ?? '', registro_bid_cbf: athlete.registro_bid_cbf ?? '', fifa_id: athlete.fifa_id ?? '',
+    pe_preferido: athlete.pe_preferido ?? '', entidade_clube_atual_id: athlete.entidade_clube_atual_id ?? '',
   })
   const [rows, setRows] = useState<RightRow[]>(rights.map(r => ({ id: r.id, holder_type: r.holder_type, holder_name: r.holder_name ?? '', percentage: String(r.percentage), notes: r.notes ?? '' })))
   const [saving, setSaving] = useState(false)
@@ -273,6 +284,9 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
         position: f.position || null, current_status: f.current_status, category: f.category,
         nationality: f.nationality || null, birth_date: f.birth_date || null,
         cpf: f.cpf || null, passport_number: f.passport_number || null, notes: f.notes || null,
+        apelido: f.apelido.trim() || null, registro_bid_cbf: f.registro_bid_cbf.trim() || null,
+        fifa_id: f.fifa_id.trim() || null, pe_preferido: (f.pe_preferido || null) as Athlete['pe_preferido'],
+        entidade_clube_atual_id: f.entidade_clube_atual_id || null,
       })
       // Titularidade: recria (apaga as antigas, insere as atuais).
       for (const r of rights) await deleteEconomicRight(r.id)
@@ -303,7 +317,7 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
           {field('Nome completo', 'full_name', 'text', undefined, { required: true, error: nameError })}
           {field('Nome curto', 'short_name')}
           {field('Posição', 'position', 'text', ATHLETE_POSITIONS)}
-          {field('Status', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          {field('Status', 'current_status', 'text', ['ATIVO', 'LESIONADO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
           <div>
             <label htmlFor="athdet-categoria" style={lbl}>Categoria</label>
             <select id="athdet-categoria" style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
@@ -316,6 +330,11 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
           {field('Nascimento', 'birth_date', 'date')}
           {field('CPF', 'cpf')}
           {field('Passaporte', 'passport_number')}
+          {field('Apelido', 'apelido')}
+          {field('Pé preferido', 'pe_preferido', 'text', ['', 'DIREITO', 'ESQUERDO', 'AMBIDESTRO'])}
+          {field('Registro BID/CBF', 'registro_bid_cbf')}
+          {field('FIFA ID', 'fifa_id')}
+          <div><label style={lbl} htmlFor="edit-clube-atual">Clube atual</label><ClubeAtualSelect id="edit-clube-atual" style={inp} value={f.entidade_clube_atual_id} onChange={v => set('entidade_clube_atual_id', v)} /></div>
         </div>
         <div><label htmlFor="athdet-observacoes-2" style={lbl}>Observações</label><textarea id="athdet-observacoes-2" style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
 
@@ -381,7 +400,7 @@ function contractLabel(c: Contract): string {
   return parts.join(' · ')
 }
 
-type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'acordos' | 'transferencias' | 'consolidado' | 'documentos' | 'historico'
+type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'desempenho' | 'acordos' | 'transferencias' | 'consolidado' | 'documentos' | 'historico'
 // Consolidado é a aba padrão — por isso vem primeiro.
 const TABS: { id: Tab; label: string }[] = [
   { id: 'consolidado',    label: 'Consolidado' },
@@ -389,6 +408,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'luvas',          label: 'Luvas' },
   { id: 'agentes',        label: 'Agentes' },
   { id: 'gatilhos',       label: 'Gatilhos e Cláusulas Diversas' },
+  { id: 'desempenho',     label: 'Desempenho' },
   { id: 'acordos',        label: 'Acordos e Renegociações' },
   { id: 'transferencias', label: 'Histórico de Transferências' },
   { id: 'documentos',     label: 'Documentos' },
@@ -474,6 +494,9 @@ export default function PageAthleteDetail() {
   const [loanShareContractId, setLoanShareContractId] = useState<string | null>(null)
   const [highlightAcordo, setHighlightAcordo] = useState<string | null>(null)
   const [showEdit, setShowEdit] = useState(false)
+  const [showMov, setShowMov] = useState(false)
+  const [movRefresh, setMovRefresh] = useState(0)
+  const canMove = useHasRole(ROLES.movimentacao)
   const [editContractId, setEditContractId] = useState<string | null>(null)
   const [newClauseContractId, setNewClauseContractId] = useState<string | null>(null)
   const [flowClauseId, setFlowClauseId] = useState<string | null>(null)
@@ -504,7 +527,7 @@ export default function PageAthleteDetail() {
   // Cálculo consolidado: parcelas + cláusulas de valor único + passivos.
   // Itens marcados como Recuperação Judicial SAEM de "A pagar" (e de "Em atraso")
   // e vão para o bucket rjPayable — mesma regra em todo o sistema.
-  const isBFRparty2 = (s: string | null | undefined) => !!s && s.toLowerCase().includes('botafogo')
+  const isBFRparty2 = (s: string | null | undefined) => mentionsBotafogo(s)
   const clauseById2 = new Map(clauses.map(c => [c.id, c]))
   const withInstSet = new Set(installments.map(i => i.clause_id))
   let receivable = 0, payable = 0, rjPayable = 0
@@ -800,6 +823,11 @@ export default function PageAthleteDetail() {
               {athlete.position && <span><LabelSpan>Posição</LabelSpan> {athlete.position}</span>}
               {athlete.nationality && <span><LabelSpan>Nacionalidade</LabelSpan> {athlete.nationality}</span>}
               {athlete.birth_date && <span><LabelSpan>Nasc.</LabelSpan> {fmtDate(athlete.birth_date)}</span>}
+              {athlete.apelido && <span><LabelSpan>Apelido</LabelSpan> {athlete.apelido}</span>}
+              {athlete.pe_preferido && <span><LabelSpan>Pé</LabelSpan> {PE_LABELS[athlete.pe_preferido] ?? athlete.pe_preferido}</span>}
+              <span><LabelSpan>BID/CBF</LabelSpan> {athlete.registro_bid_cbf || '—'}</span>
+              <span><LabelSpan>FIFA ID</LabelSpan> {athlete.fifa_id || '—'}</span>
+              {athlete.entidade_clube_atual_id && <span><LabelSpan>Clube atual</LabelSpan> <ClubeAtualLabel clubId={athlete.entidade_clube_atual_id} /></span>}
             </div>
             {athlete.notes && <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', borderLeft: '2px solid var(--gold-ring)', borderRadius: 4, padding: '7px 12px', fontFamily: font }}>{athlete.notes}</div>}
 
@@ -835,6 +863,7 @@ export default function PageAthleteDetail() {
             <div style={{ display: 'flex', gap: 8 }}>
               <IconButton icon="download" label="Exportar dados deste atleta (XLSX)" onClick={exportAthlete} />
               {canEdit && <IconButton icon="edit" label="Editar atleta" onClick={() => setShowEdit(true)} />}
+              {canMove && <button className="btn btn-outline" onClick={() => setShowMov(true)}>Registrar movimentação</button>}
               <Link to={`/atletas/${athlete.id}/contratos/novo`} className="btn btn-primary">
                 <Icon name="plus" size={14} /> Novo contrato
               </Link>
@@ -988,6 +1017,7 @@ export default function PageAthleteDetail() {
       )}
 
       {/* Gatilhos e Cláusulas Diversas */}
+      {tab === 'gatilhos' && <div style={{ marginBottom: 16 }}><GatilhosProgresso athleteId={athlete.id} refreshKey={movRefresh} /></div>}
       {tab === 'gatilhos' && (
         <GatilhosTab
           emp={emp} empTriggers={empTriggers} clauses={clauses} installments={installments}
@@ -1000,6 +1030,8 @@ export default function PageAthleteDetail() {
           onNewClause={cid => setNewClauseContractId(cid)}
         />
       )}
+
+      {tab === 'desempenho' && <DesempenhoTab athleteId={athlete.id} onChanged={() => setMovRefresh(k => k + 1)} />}
 
       {/* Acordos e Renegociações */}
       {tab === 'acordos' && (
@@ -1021,6 +1053,7 @@ export default function PageAthleteDetail() {
         const transferContracts = contracts.filter(ct => TRANSFER_CONTRACT_TYPES.includes(ct.type))
         return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <MovimentacoesPanel athleteId={athlete.id} refreshKey={movRefresh} onChanged={loadData} />
           {transferContracts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: font }}>Nenhuma transferência cadastrada. Use “+ Novo Contrato” para registrar uma compra, venda ou empréstimo.</div>}
           {transferContracts.map(ct => {
             // Só as cláusulas de transferência (transfer fee, sell-on, taxas, etc.).
@@ -1184,6 +1217,7 @@ export default function PageAthleteDetail() {
         const cl = clauses.find(c => c.id === flowClauseId)
         return cl ? <ClauseFlowModal clause={cl} onClose={() => setFlowClauseId(null)} onSaved={() => { setFlowClauseId(null); loadData() }} /> : null
       })()}
+      {showMov && athlete && <MovimentacaoModal athleteId={athlete.id} athleteName={athlete.full_name} contracts={contracts} onClose={() => setShowMov(false)} onDone={() => { setShowMov(false); setMovRefresh(k => k + 1); setTab('transferencias'); loadData() }} />}
       {editLiab && <LiabilityEditModal kind={editLiab.kind} liab={editLiab.liab} onClose={() => setEditLiab(null)} onSaved={() => { setEditLiab(null); loadData() }} />}
     </div>
   )
@@ -1576,7 +1610,7 @@ function ConsolidadoTab({
   const clauseById = new Map(clauses.map(c => [c.id, c]))
   type Item = { date: string | null; nat: string; parte: string; dir: 'A_PAGAR' | 'A_RECEBER'; valor: number; moeda: Currency; status: string; kind: 'inst' | 'clause' | 'club' | 'agent'; ref: string; clauseRef?: string; notes: string | null }
   const items: Item[] = []
-  const isBFR = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
+  const isBFR = (s: string) => isBFRParty(s)
 
   for (const it of installments) {
     const c = clauseById.get(it.clause_id)
@@ -2368,17 +2402,21 @@ function InstallmentActions({ inst, canEdit, onEdit, onPay, onQuickPay, onRevert
   clauseId?: string
   onSchedule?: () => void
 }) {
-  if (!canEdit) return <StatusBadge status={inst.payment_status} map={PAYMENT_STATUS_STYLE} />
+  // Tesouraria dá baixa/estorna sem poder editar o contrato (RPCs 023).
+  const { can } = useAuth()
+  const canPay = canEdit || can('baixarParcelas')
+  const canRevert = canEdit || can('estornarBaixa')
+  if (!canPay && !canRevert) return <StatusBadge status={inst.payment_status} map={PAYMENT_STATUS_STYLE} />
   const paid = inst.payment_status === 'PAGA'
   const cancelled = inst.payment_status === 'CANCELADA'
   return (
     <RowActions align="center"
       open={clauseId ? { to: `/obrigacoes/${clauseId}` } : undefined}
-      edit={{ onClick: onEdit, label: 'Editar parcela' }}
-      schedule={onSchedule ? { onClick: onSchedule } : undefined}
-      markPaid={{ onClick: !paid && !cancelled ? onQuickPay : undefined, reason: paid ? 'parcela já paga' : 'parcela cancelada' }}
-      pay={{ onClick: !paid && !cancelled ? onPay : undefined, reason: paid ? 'parcela já paga' : 'parcela cancelada' }}
-      revert={{ onClick: paid ? onRevert : undefined, reason: 'a parcela não está paga' }}
+      edit={canEdit ? { onClick: onEdit, label: 'Editar parcela' } : undefined}
+      schedule={canEdit && onSchedule ? { onClick: onSchedule } : undefined}
+      markPaid={{ onClick: canPay && !paid && !cancelled ? onQuickPay : undefined, reason: !canPay ? 'sem permissão' : paid ? 'parcela já paga' : 'parcela cancelada' }}
+      pay={{ onClick: canPay && !paid && !cancelled ? onPay : undefined, reason: !canPay ? 'sem permissão' : paid ? 'parcela já paga' : 'parcela cancelada' }}
+      revert={{ onClick: canRevert && paid ? onRevert : undefined, reason: !canRevert ? 'sem permissão' : 'a parcela não está paga' }}
     />
   )
 }

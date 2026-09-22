@@ -12,6 +12,7 @@ import type {
   Contract, ClauseType, Currency, LiabilityDirection,
 } from '../types/athlete-system'
 import { norm } from './importHelpers'
+import { isBFRParty } from './direction'
 
 export type EntityKind = 'clube' | 'intermediario'
 
@@ -27,8 +28,7 @@ export const AGENT_CLAUSE_TYPES: ClauseType[] = [
   'INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA', 'ACORDO_RENEGOCIACAO',
 ]
 
-export const isBFRparty = (s: string | null | undefined) =>
-  !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
+export const isBFRparty = (s: string | null | undefined) => isBFRParty(s)
 
 /** Uma linha de obrigação vinculada à entidade — parcela, cláusula ou passivo. */
 export interface EntityObligation {

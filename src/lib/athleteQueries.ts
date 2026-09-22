@@ -26,6 +26,7 @@ import type {
 import { isOverdue, isDueSoon, addMonths } from './format'
 import { approxRateBRL } from './fx'
 import { withStructuredMeta } from './metadados'
+import { mentionsBotafogo } from './direction'
 
 // Nomes das tabelas no localStore (modo navegador — formas legadas "achatadas").
 const T = {
@@ -99,11 +100,11 @@ function fromAcFK<R>(r: Row): R {
   return withStructuredMeta(o) as R
 }
 
-// Status do atleta: legado (DESLIGADO) ↔ robusto (LIBERADO); LESIONADO→ATIVO na leitura.
+// Status do atleta: legado (DESLIGADO) ↔ robusto (LIBERADO). LESIONADO é
+// preservado (existe no enum ac_atleta_status e no tipo AthleteStatus).
 function acAthleteStatus(s: string): string { return s === 'DESLIGADO' ? 'LIBERADO' : s }
 function appAthleteStatus(s: string): Athlete['current_status'] {
   if (s === 'LIBERADO') return 'DESLIGADO'
-  if (s === 'LESIONADO') return 'ATIVO'
   return s as Athlete['current_status']
 }
 
@@ -119,6 +120,9 @@ function fromAcAthlete(r: Row): Athlete {
     position: r.posicao ?? null,
     profile_photo_url: r.foto_url ?? null,
     notes: r.observacoes ?? null,
+    apelido: r.apelido ?? null, registro_bid_cbf: r.registro_bid_cbf ?? null,
+    fifa_id: r.fifa_id ?? null, pe_preferido: r.pe_preferido ?? null,
+    entidade_clube_atual_id: r.entidade_clube_atual_id ?? null,
     created_at: r.created_at, updated_at: r.updated_at,
   }
 }
@@ -138,6 +142,11 @@ function toAcAthlete(a: Partial<Athlete>): Row {
   if (a.profile_photo_url !== undefined) o.foto_url = a.profile_photo_url
   if (a.notes !== undefined) o.observacoes = a.notes
   if (a.external_ref !== undefined) o.external_ref = a.external_ref
+  if (a.apelido !== undefined) o.apelido = a.apelido
+  if (a.registro_bid_cbf !== undefined) o.registro_bid_cbf = a.registro_bid_cbf
+  if (a.fifa_id !== undefined) o.fifa_id = a.fifa_id
+  if (a.pe_preferido !== undefined) o.pe_preferido = a.pe_preferido
+  if (a.entidade_clube_atual_id !== undefined) o.entidade_clube_atual_id = a.entidade_clube_atual_id
   return o
 }
 
@@ -1107,11 +1116,11 @@ export async function fetchAthleteWithStats(id: string): Promise<AthleteWithStat
   const next_due_date = openDates[0] ?? null
 
   const total_receivable_brl = clauses
-    .filter(c => c.creditor_party.toLowerCase().includes('botafogo') && openStatuses.includes(c.payment_status) && c.original_value)
+    .filter(c => mentionsBotafogo(c.creditor_party) && openStatuses.includes(c.payment_status) && c.original_value)
     .reduce((s, c) => s + (c.original_value ?? 0) * getApproxBRL(c.currency), 0)
 
   const total_payable_brl = clauses
-    .filter(c => c.debtor_party.toLowerCase().includes('botafogo') && openStatuses.includes(c.payment_status) && c.original_value)
+    .filter(c => mentionsBotafogo(c.debtor_party) && openStatuses.includes(c.payment_status) && c.original_value)
     .reduce((s, c) => s + (c.original_value ?? 0) * getApproxBRL(c.currency), 0)
 
   return {

@@ -32,6 +32,7 @@ import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
 import { useToast, errorMessage } from '../components/toast-context'
 import { useConfirm } from '../components/confirm-context'
+import { isBFRParty } from '../lib/direction'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -53,7 +54,7 @@ interface RJRow {
   fixedRate: number | null
 }
 
-const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
+const isBFR = (s: string | null | undefined) => isBFRParty(s)
 
 export default function PageRecuperacaoJudicial() {
   const { canEdit } = useAuth()

@@ -50,7 +50,7 @@ export function RejeitarModal({ titulo, onClose, onConfirm }: {
         <button className="btn btn-outline" onClick={onClose} disabled={saving}>Cancelar</button>
         <button className="btn btn-danger" onClick={go} disabled={saving || !motivo.trim()}>{saving ? 'Rejeitando…' : 'Rejeitar'}</button>
       </>}>
-      <label htmlFor="motivo-rejeicao" style={{ fontFamily: 'var(--font-label)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+      <label htmlFor="motivo-rejeicao" style={{ fontFamily: 'var(--font-label)', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
         Motivo da rejeição (obrigatório)
       </label>
       <textarea id="motivo-rejeicao" autoFocus rows={3} value={motivo} onChange={e => setMotivo(e.target.value)}
@@ -86,7 +86,7 @@ export default function AprovacaoStatus({ tabela, row, titulo, onChanged, hideAp
   }
 
   if (hideAprovado && status === 'APROVADO' && !row.aprovado_em) return null
-  const btn: React.CSSProperties = { padding: '3px 10px', fontSize: 9 }
+  const btn: React.CSSProperties = { padding: '3px 10px', fontSize: 11 }
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
       <AprovacaoChip status={status} motivo={row.motivo_rejeicao} />

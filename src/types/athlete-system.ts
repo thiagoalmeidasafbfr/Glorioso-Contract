@@ -5,7 +5,11 @@ import type {
   BaixaFields, AlertaFields, StatusAprovacao,
 } from './governanca'
 
-export type AthleteStatus = 'ATIVO' | 'EMPRESTADO' | 'VENDIDO' | 'DESLIGADO'
+// LESIONADO existe no enum do banco (ac_atleta_status, migration 012) e agora é
+// preservado na leitura (antes era convertido para ATIVO).
+export type AthleteStatus = 'ATIVO' | 'EMPRESTADO' | 'VENDIDO' | 'DESLIGADO' | 'LESIONADO'
+
+export type PePreferido = 'DIREITO' | 'ESQUERDO' | 'AMBIDESTRO'
 
 // Categoria (dimensão) do atleta no clube.
 export type AthleteCategory = 'BASE' | 'PROFISSIONAL' | 'COMISSAO_TECNICA'
@@ -85,6 +89,13 @@ export interface Athlete {
   position: string | null
   profile_photo_url: string | null
   notes: string | null
+  // Registro esportivo (colunas do núcleo 012 em ac_atletas). Opcionais para não
+  // quebrar importadores; no modo local ficam no próprio registro.
+  apelido?: string | null
+  registro_bid_cbf?: string | null
+  fifa_id?: string | null
+  pe_preferido?: PePreferido | null
+  entidade_clube_atual_id?: string | null
   created_at: string
   updated_at: string
 }

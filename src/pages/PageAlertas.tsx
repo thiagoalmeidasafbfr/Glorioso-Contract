@@ -113,7 +113,7 @@ export default function PageAlertas() {
       </PageHero>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', fontFamily: font, fontSize: 13 }}>
-        <label htmlFor="filtro-setor" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Setor</label>
+        <label htmlFor="filtro-setor" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Setor</label>
         <select id="filtro-setor" value={setor} onChange={e => setSetor(e.target.value as FiltroSetor)}>
           {setorOpts.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
         </select>

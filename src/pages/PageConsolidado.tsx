@@ -35,6 +35,7 @@ import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 import { useToast, errorMessage } from '../components/toast-context'
 import { useConfirm } from '../components/confirm-context'
+import { isBFRParty } from '../lib/direction'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -62,7 +63,7 @@ interface Mov {
   rjFiledAt: string | null
 }
 
-const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
+const isBFR = (s: string | null | undefined) => isBFRParty(s)
 
 export default function PageConsolidado() {
   const { canEdit } = useAuth()

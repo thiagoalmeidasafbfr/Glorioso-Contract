@@ -16,18 +16,19 @@
 //   • quem recebe se vender: sell-on (a pagar), intermediação da venda futura,
 //     solidariedade FIFA, passivos com clubes/agentes — tudo lido do cadastro.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchAthletes, fetchAllContracts, fetchAllClauses,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
 } from '../lib/athleteQueries'
-import { fetchPtaxRates, toBRL, ptaxRateFor } from '../lib/ptax'
+import { fetchPtaxRates, toBRL, ptaxRateFor, fetchPtaxOn } from '../lib/ptax'
 import { fmtCurrencyShort, fmtCurrencyFull, fmtPercent, fmtDate } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClubLiability, IntermediaryLiability, Currency,
 } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import KpiPill from '../components/KpiPill'
+import FechamentoCompetencia, { type ClosingCalc } from '../components/FechamentoCompetencia'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -67,7 +68,9 @@ interface AthleteCalc {
   intangibleItems: {
     clauseType: Clause['clause_type']; description: string;
     currency: Currency; originalValue: number; brl: number;
+    rate: number; rateSource: 'FIXADA' | 'AQUISICAO' | 'ATUAL';
   }[]
+  ptaxAquisicao: number | null      // taxa usada na conversão (1º item em moeda estrangeira)
   monthlyAmortBRL: number           // BRL / mês
   accumAmortBRL: number             // baixado até hoje
   residualBRL: number               // saldo do intangível
@@ -92,8 +95,12 @@ function buildAthleteCalcs(
   clubLiabs: ClubLiability[],
   intermLiabs: IntermediaryLiability[],
   ptax: Record<string, number>,
+  // PTAX da data de aquisição (início do contrato de ENTRADA), por atleta → moeda.
+  // Quando ausente, cai na PTAX corrente (comportamento anterior).
+  acqRates: Record<string, Partial<Record<string, number>>> = {},
+  asOf: Date = new Date(),
 ): AthleteCalc[] {
-  const today = new Date()
+  const today = asOf
 
   return athletes.map(a => {
     // Contratos do atleta — pegamos o contrato de ENTRADA vigente ou mais recente
@@ -119,15 +126,20 @@ function buildAthleteCalcs(
         && (entry ? cl.contract_id === entry.id : false)
         && INTANGIBLE_CLAUSE_TYPES.has(cl.clause_type)
         && (cl.original_value ?? 0) > 0)
-      .map(cl => ({
-        clauseType: cl.clause_type,
-        description: cl.description || cl.clause_type,
-        currency: cl.currency,
-        originalValue: cl.original_value ?? 0,
-        brl: cl.fixed_exchange_rate
-          ? (cl.original_value ?? 0) * cl.fixed_exchange_rate
-          : toBRL(cl.original_value ?? 0, cl.currency, ptax),
-      }))
+      .map(cl => {
+        const acq = acqRates[a.id]?.[cl.currency]
+        const rate = cl.fixed_exchange_rate || (cl.currency === 'BRL' ? 1 : acq ?? ptaxRateFor(cl.currency, ptax))
+        const rateSource: 'FIXADA' | 'AQUISICAO' | 'ATUAL' = cl.fixed_exchange_rate ? 'FIXADA' : (cl.currency === 'BRL' || acq != null) ? 'AQUISICAO' : 'ATUAL'
+        return {
+          clauseType: cl.clause_type,
+          description: cl.description || cl.clause_type,
+          currency: cl.currency,
+          originalValue: cl.original_value ?? 0,
+          brl: (cl.original_value ?? 0) * rate,
+          rate, rateSource,
+        }
+      })
+    const ptaxAquisicao = intangibleItems.find(it => it.currency !== 'BRL')?.rate ?? null
     const intangibleBRL = intangibleItems.reduce((s, it) => s + it.brl, 0)
 
     const monthlyAmortBRL = contractMonths > 0 ? intangibleBRL / contractMonths : 0
@@ -181,7 +193,7 @@ function buildAthleteCalcs(
       entryContractStart: entry?.start_date ?? null,
       entryContractEnd: entry?.end_date ?? null,
       contractMonths, monthsElapsed, monthsRemaining,
-      intangibleBRL, intangibleItems,
+      intangibleBRL, intangibleItems, ptaxAquisicao,
       monthlyAmortBRL, accumAmortBRL, residualBRL,
       monthlySalaryBRL, monthlyImageBRL, monthlyPayrollBRL,
       sellOnPct, sellOnPayees,
@@ -236,6 +248,29 @@ function calcSale(inputs: SaleInputs, c: AthleteCalc, ptax: Record<string, numbe
   }
 }
 
+// PTAX da data de aquisição por atleta (moedas estrangeiras sem PTAX fixada).
+async function loadAcquisitionRates(
+  athletes: Athlete[], contracts: Contract[], clauses: Clause[],
+): Promise<Record<string, Partial<Record<string, number>>>> {
+  const out: Record<string, Partial<Record<string, number>>> = {}
+  const jobs: Promise<void>[] = []
+  for (const a of athletes) {
+    const entry = contracts.filter(c => c.athlete_id === a.id && c.type === 'ENTRADA')
+      .sort((x, y) => (y.start_date ?? '').localeCompare(x.start_date ?? ''))[0]
+    if (!entry?.start_date) continue
+    const curs = new Set(clauses
+      .filter(cl => cl.contract_id === entry.id && INTANGIBLE_CLAUSE_TYPES.has(cl.clause_type) && !cl.fixed_exchange_rate && cl.currency !== 'BRL')
+      .map(cl => cl.currency))
+    for (const cur of curs) {
+      jobs.push(fetchPtaxOn(cur, entry.start_date).then(r => {
+        if (r) (out[a.id] ??= {})[cur] = r.rate
+      }).catch(() => undefined))
+    }
+  }
+  await Promise.all(jobs)
+  return out
+}
+
 // ── UI ─────────────────────────────────────────────────────────────────────
 export default function PageAmortizacao() {
   const [rows, setRows] = useState<AthleteCalc[]>([])
@@ -243,6 +278,7 @@ export default function PageAmortizacao() {
   const [ptax, setPtax] = useState<Record<string, number>>({})
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [raw, setRaw] = useState<Parameters<typeof buildAthleteCalcs> | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -253,8 +289,38 @@ export default function PageAmortizacao() {
       fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
     ])
     setRows(buildAthleteCalcs(athletes, contracts, clauses, clubLiabs, intermLiabs, rates))
+    setRaw([athletes, contracts, clauses, clubLiabs, intermLiabs, rates, {}])
     setLoading(false)
+    // Refina com a PTAX da data de aquisição (item 1.11) — assíncrono, em segundo plano.
+    const acq = await loadAcquisitionRates(athletes, contracts, clauses)
+    if (Object.keys(acq).length) {
+      setRows(buildAthleteCalcs(athletes, contracts, clauses, clubLiabs, intermLiabs, rates, acq))
+      setRaw([athletes, contracts, clauses, clubLiabs, intermLiabs, rates, acq])
+    }
   }, [])
+
+  // Cálculo numa data de corte arbitrária (fechamento de competência).
+  const computeAt = useCallback((asOf: Date): ClosingCalc[] => {
+    if (!raw) return []
+    const [athletes, contracts, clauses, clubLiabs, intermLiabs, rates, acq] = raw
+    return buildAthleteCalcs(athletes, contracts, clauses, clubLiabs, intermLiabs, rates, acq, asOf).map(c => {
+      const compYM = `${asOf.getFullYear()}-${String(asOf.getMonth() + 1).padStart(2, '0')}`
+      const inContract = c.contractMonths > 0 && !!c.entryContractStart && c.entryContractStart.slice(0, 7) <= compYM
+        && (!c.entryContractEnd || compYM <= c.entryContractEnd.slice(0, 7))
+      return {
+        athleteId: c.athlete.id, name: c.athlete.full_name,
+        cost: c.intangibleBRL, month: inContract ? c.monthlyAmortBRL : 0,
+        acc: c.accumAmortBRL, net: c.residualBRL, ptax: c.ptaxAquisicao,
+        memo: {
+          contrato_entrada_id: c.entryContract?.id ?? null,
+          inicio: c.entryContractStart, fim: c.entryContractEnd,
+          prazo_meses: c.contractMonths, meses_decorridos: c.monthsElapsed,
+          itens: c.intangibleItems.map(it => ({ tipo: it.clauseType, moeda: it.currency, valor: it.originalValue, taxa: it.rate, fonte_taxa: it.rateSource, brl: it.brl })),
+        },
+      }
+    })
+  }, [raw])
+  const athleteNames = useMemo(() => new Map(rows.map(r => [r.athlete.id, r.athlete.full_name])), [rows])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount
   useEffect(() => { load() }, [load])
@@ -318,7 +384,7 @@ export default function PageAmortizacao() {
                 const isOpen = expandedId === r.athlete.id
                 const pct = r.intangibleBRL > 0 ? (r.accumAmortBRL / r.intangibleBRL) * 100 : 0
                 return (
-                  <>
+                  <Fragment key={r.athlete.id}>
                     <tr key={r.athlete.id} style={{ background: 'var(--cream-card)', cursor: 'pointer' }}
                       onClick={() => setExpandedId(isOpen ? null : r.athlete.id)}>
                       <td style={{ ...td, textAlign: 'center', fontFamily: mono, color: 'var(--text-muted)' }}>{isOpen ? '▾' : '▸'}</td>
@@ -357,7 +423,7 @@ export default function PageAmortizacao() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>
@@ -365,8 +431,10 @@ export default function PageAmortizacao() {
         </div>
       </div>
       <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', fontFamily: mono }}>
-        Amortização linear pelo prazo do contrato de entrada; PTAX corrente do BACEN quando disponível.
+        Amortização linear pelo prazo do contrato de entrada. Conversão do intangível: PTAX fixada na cláusula → PTAX da data de aquisição (início do contrato de entrada) → PTAX corrente do BACEN.
       </div>
+
+      <FechamentoCompetencia compute={computeAt} names={athleteNames} disabled={loading || !raw} />
     </div>
   )
 }
@@ -400,7 +468,8 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
               <tr>
                 <th style={{ ...detTh }}>Item</th>
                 <th style={{ ...detTh, textAlign: 'right' }}>Valor original</th>
-                <th style={{ ...detTh, textAlign: 'right' }}>BRL (aprox.)</th>
+                <th style={{ ...detTh, textAlign: 'right' }}>Taxa</th>
+                <th style={{ ...detTh, textAlign: 'right' }}>BRL</th>
               </tr>
             </thead>
             <tbody>
@@ -408,11 +477,15 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
                 <tr key={i}>
                   <td style={detTd}>{it.description}</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>{fmtCurrencyFull(it.originalValue, it.currency)}</td>
+                  <td style={{ ...detTd, textAlign: 'right', fontFamily: mono, fontSize: 11 }} title={it.rateSource === 'FIXADA' ? 'PTAX fixada no contrato' : it.rateSource === 'AQUISICAO' ? 'PTAX da data de aquisição' : 'PTAX corrente (aquisição indisponível)'}>
+                    {it.currency === 'BRL' ? '—' : `${it.rate.toFixed(4)} · ${it.rateSource === 'FIXADA' ? 'fixada' : it.rateSource === 'AQUISICAO' ? 'aquisição' : 'atual'}`}
+                  </td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>{fmtCurrencyShort(it.brl, 'BRL')}</td>
                 </tr>
               ))}
               <tr>
                 <td style={{ ...detTd, fontWeight: 700 }}>Total do intangível</td>
+                <td style={detTd} />
                 <td style={detTd} />
                 <td style={{ ...detTd, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>{fmtCurrencyShort(c.intangibleBRL, 'BRL')}</td>
               </tr>

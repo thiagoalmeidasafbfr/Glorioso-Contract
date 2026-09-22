@@ -108,7 +108,7 @@ export default function HistoricoAuditoria(props: { atletaId?: string; tabela?: 
 
   return (
     <div className="card" style={{ padding: '16px 20px' }}>
-      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+      <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
         Histórico de alterações
       </div>
       {!USE_SUPABASE ? (

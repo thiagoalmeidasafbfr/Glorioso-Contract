@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Currency } from '../../types/athlete-system'
 import NumberInput from '../NumberInput'
 import { approxRateBRL } from '../../lib/fx'
 import ModalFrame from '../ModalFrame'
+import { fetchPtaxOn } from '../../lib/ptax'
 
 interface PaymentModalProps {
   label: string
@@ -31,6 +32,22 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
   const [valueCurrency, setValueCurrency] = useState(value)
   const [rate, setRate] = useState(defaultRate)
   const [notes, setNotes] = useState('')
+  // PTAX da DATA DO PAGAMENTO (BCB/ac_taxas_cambio); a tabela aproximada de fx
+  // é só o fallback. Não sobrescreve uma taxa digitada pelo usuário.
+  const [rateTouched, setRateTouched] = useState(false)
+  const [ptaxInfo, setPtaxInfo] = useState<string | null>(null)
+  useEffect(() => {
+    if (currency === 'BRL' || !date) return
+    let alive = true
+    void fetchPtaxOn(currency, date).then(r => {
+      if (!alive) return
+      if (r) {
+        setPtaxInfo(`PTAX ${r.date.split('-').reverse().join('/')}: ${r.rate.toFixed(4)}`)
+        if (!rateTouched) setRate(r.rate)
+      } else setPtaxInfo(null)
+    })
+    return () => { alive = false }
+  }, [currency, date, rateTouched])
 
   const valueBRL = currency === 'BRL' ? valueCurrency : valueCurrency * rate
 
@@ -96,13 +113,13 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
               <label htmlFor="paymod-taxa-de-cambio-1-r-ptax-esti" style={labelStyle}>
                 Taxa de câmbio (1 {currency} = R$)
                 <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
-                  PTAX estimado: {defaultRate.toFixed(2)}
+                  {ptaxInfo ?? `PTAX indisponível — estimado: ${defaultRate.toFixed(2)}`}
                 </span>
               </label>
               <NumberInput id="paymod-taxa-de-cambio-1-r-ptax-esti"
                 decimals={4} grouping={false}
                 value={rate || ''}
-                onChange={v => setRate(v ? parseFloat(v) : defaultRate)}
+                onChange={v => { setRateTouched(true); setRate(v ? parseFloat(v) : defaultRate) }}
                 style={inputStyle}
               />
             </div>

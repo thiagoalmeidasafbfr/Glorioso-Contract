@@ -20,9 +20,9 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 | 1.6 | `deleteAthlete`: coluna correta (`clausula_fin_id`) e erros não engolidos | ✅ |
 | 1.7 | Tabela de câmbio única (`src/lib/fx.ts`) substituindo as taxas duplicadas em 9+ arquivos | ✅ |
 | 1.8 | Aviso visível quando o app roda em modo local (sem Supabase) | ✅ |
-| 1.9 | Decidir fonte única da verdade: ponte `014` (usada pelo app) × núcleo `012` (vazio) | ⬜ decisão |
+| 1.9 | Decidir fonte única da verdade: ponte `014` (usada pelo app) × núcleo `012` (vazio) | ✅ decidido: ponte `014` (migrations 020–029 e o app gravam só nela; colunas do núcleo em `ac_atletas` — BID/FIFA/apelido/pé/clube atual — passam a ser lidas/gravadas) |
 | 1.10 | Bloquear build de produção sem `VITE_USE_SUPABASE=true` (`vite.config.ts`; escape `VITE_ALLOW_LOCAL_BUILD=true` p/ demo/CI) | ✅ |
-| 1.11 | PTAX histórica persistida (`ac_taxas_cambio`) + conversão por data de vencimento/pagamento | ⬜ |
+| 1.11 | PTAX histórica persistida (`ac_taxas_cambio`) + conversão por data de vencimento/pagamento | ✅ `fetchPtaxOn` (BCB CotacaoMoedaDia, recua 7 dias, cache memória+localStorage, lê/grava `ac_taxas_cambio`); usada no default do PaymentModal (data do pagamento) e na PTAX de aquisição da Amortização. Relatórios de exposição ainda usam a PTAX corrente/aproximada |
 
 ## Fase 2 — UX essencial (quick wins)
 
@@ -55,10 +55,10 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 
 | # | Item | Status |
 |---|---|---|
-| 4.1 | RPC atômica `registrar_transferencia` (venda/empréstimo/retorno) gravando `ac_transferencias` | ⬜ |
-| 4.2 | Efeitos automáticos: status do atleta, encerra vínculo, cancela parcelas futuras, transfere titularidade, baixa do intangível, sell-on | ⬜ |
-| 4.3 | Criação de contrato + cláusulas + parcelas em uma única transação (RPC) | ⬜ |
-| 4.4 | Registro BID/CBF e FIFA ID na ficha do atleta | ⬜ |
+| 4.1 | RPC atômica `registrar_movimentacao` (venda/compra/empréstimo/retorno/rescisão) gravando `ac_movimentacoes` (migration 026) + tela "Registrar movimentação" com prévia e "Desfazer" (master, só a mais recente) | ✅ (modo local replica os efeitos em JS, sem transação) |
+| 4.2 | Efeitos automáticos: status do atleta, encerra vínculo, cancela parcelas futuras, transfere titularidade, baixa do intangível, sell-on | 🚧 status, vínculo, salário/imagem futuros e titularidade BFR ✅; baixa do intangível e geração de sell-on ainda manuais (contrato de SAÍDA continua em "Novo contrato") |
+| 4.3 | Criação de contrato + cláusulas + parcelas em uma única transação (RPC) | 🚧 rollback compensatório no front (falha → apaga o contrato criado, que leva cláusulas/parcelas); RPC transacional ainda não existe |
+| 4.4 | Registro BID/CBF e FIFA ID na ficha do atleta | ✅ (+ apelido, pé preferido, clube atual; status LESIONADO preservado) |
 
 ## Fase 5 — Alertas e integrações
 
@@ -66,10 +66,10 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 |---|---|---|
 | 5.1 | Geração de `ac_alertas` (pg_cron/Edge Function): parcelas a vencer, contratos expirando, gatilhos | ✅ back (027) + front: central `/alertas` (por setor/tipo, marcar lido, "Gerar alertas agora" p/ master) e contador no menu; em modo local as regras de parcela/contrato rodam no navegador. Não testado contra Supabase real |
 | 5.2 | Notificação por e-mail por setor | 🚧 Edge Function `notificar-alertas` pronta (back); falta deploy/agendamento e configurar Resend. Nenhuma mudança de front necessária |
-| 5.3 | Alimentação de desempenho (jogos/gols) para apuração automática de gatilhos | ⬜ |
-| 5.4 | Exportação contábil (ERP/SPED) | ⬜ |
-| 5.5 | Premissas (CFO) lendo contratos/remuneração em vez de redigitação | ⬜ |
-| 5.6 | Amortização persistida por competência | ⬜ |
+| 5.3 | Alimentação de desempenho (jogos/gols) para apuração automática de gatilhos | ✅ aba Desempenho (manual) + importação XLSX em Dados & Modelos + progresso em Gatilhos (`vw_ac_gatilhos_progresso`); marcar o gatilho como atingido continua manual |
+| 5.4 | Exportação contábil (ERP/SPED) | 🚧 exportação genérica de lançamentos (XLSX/CSV) com rubrica sugerida; falta de-para com plano de contas/ERP e SPED |
+| 5.5 | Premissas (CFO) lendo contratos/remuneração em vez de redigitação | ✅ "Puxar dos contratos" por linha e "Sincronizar com contratos" em massa, com diff antes de gravar |
+| 5.6 | Amortização persistida por competência | ✅ "Fechar competência" (master/controladoria) grava `ac_amortizacao_fechamentos`; histórico com exportação XLSX |
 
 ## Transversal
 

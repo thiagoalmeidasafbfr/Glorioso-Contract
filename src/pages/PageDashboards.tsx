@@ -31,6 +31,7 @@ import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import type { Currency, ClauseType } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import { approxToBRL } from '../lib/fx'
+import { isBFRParty } from '../lib/direction'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -53,7 +54,7 @@ const brlOf = (v: number, c: Currency) => approxToBRL(v, c)
 const OPEN = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'VENCIDA']
 const CLUB_TYPES: ClauseType[] = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
 const AGENT_TYPES: ClauseType[] = ['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA']
-const isBFR = (s: string) => s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr'
+const isBFR = (s: string) => isBFRParty(s)
 const MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const monthLabel = (ym: string) => { const [y, m] = ym.split('-'); return `${MES_ABREV[(+m) - 1] ?? m}/${y.slice(2)}` }
 

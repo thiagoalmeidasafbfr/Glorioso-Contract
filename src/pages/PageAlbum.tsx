@@ -17,6 +17,7 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
   EMPRESTADO: 'Emprestado',
   VENDIDO:    'Vendido',
   DESLIGADO:  'Desligado',
+  LESIONADO:  'Lesionado',
 }
 
 const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
@@ -24,6 +25,7 @@ const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
   EMPRESTADO: { bg: 'var(--divider-strong)', fg: '#7a6244' },
   VENDIDO:    { bg: 'rgba(91,107,122,0.14)', fg: '#5b6b7a' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.20)', fg: '#6b7280' },
+  LESIONADO:  { bg: 'var(--warn-tint)', fg: 'var(--warn)' },
 }
 
 function getInitials(name: string): string {
@@ -321,7 +323,7 @@ export default function PageAlbum() {
           <label htmlFor="album-status" style={{ ...selLabel, display: 'block' }}>Status</label>
           <select id="album-status" value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)} style={selStyle}>
             <option value="Todos">Todos</option>
-            {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
+            {(['ATIVO','LESIONADO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
             ))}
           </select>
