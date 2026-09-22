@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { exportWorkbook, parseWorkbookFile, type ColDef } from '../lib/xlsx-utils'
+import { useDialogA11y } from './useDialogA11y'
+import { useToast, errorMessage } from './toast-context'
 
 export interface ExportSheet {
   name: string
@@ -11,12 +13,18 @@ export interface ExportSheet {
 interface Props {
   exportSheets: ExportSheet[]
   exportFilename: string
-  onImport?: (sheets: Record<string, Record<string, string>[]>) => void
+  onImport?: (sheets: Record<string, Record<string, string>[]>) => void | Promise<void>
 }
 
 const fontMono = "var(--font-label)"
 const fontBody = "var(--font-body)"
 const fontDisplay = "var(--font-display)"
+
+// Dá ao preview o comportamento de diálogo (Esc, foco preso e restaurado).
+function PreviewFrame({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  const ref = useDialogA11y<HTMLDivElement>(onClose)
+  return <div ref={ref} role="dialog" aria-modal="true" aria-label="Pré-visualização da importação">{children}</div>
+}
 
 export default function SheetIO({ exportSheets, exportFilename, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
@@ -25,6 +33,8 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
     active: string
   } | null>(null)
   const [parsing, setParsing] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const toast = useToast()
 
   function handleExport() {
     exportWorkbook(exportSheets, exportFilename)
@@ -39,14 +49,22 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
       const sheets = await parseWorkbookFile(file)
       const firstSheet = Object.keys(sheets)[0] ?? ''
       setPreview({ sheets, active: firstSheet })
+    } catch (err) {
+      toast.error('Não foi possível ler a planilha.', { detail: errorMessage(err) })
     } finally {
       setParsing(false)
     }
   }
 
-  function handleConfirm() {
-    if (preview && onImport) onImport(preview.sheets)
-    setPreview(null)
+  async function handleConfirm() {
+    if (!preview || !onImport) { setPreview(null); return }
+    setImporting(true)
+    try {
+      await onImport(preview.sheets)
+      setPreview(null)
+    } catch (err) {
+      toast.error('A importação falhou.', { detail: errorMessage(err) })
+    } finally { setImporting(false) }
   }
 
   const totalRows = preview
@@ -79,13 +97,14 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
 
       {/* ── Preview modal ── */}
       {preview && (
+        <PreviewFrame onClose={() => setPreview(null)}>
         <div style={{
           position: 'fixed', inset: 0,
           background: 'rgba(26,20,16,0.80)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: 24,
         }}>
-          <div style={{
+          <div data-dialog-panel style={{
             background: 'var(--cream-page, #f9f7f2)',
             borderRadius: 14,
             width: '100%', maxWidth: 960,
@@ -103,7 +122,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
               flexShrink: 0,
             }}>
               <div>
-                <div style={{ fontFamily: fontMono, fontSize: 9, color: 'rgba(243,238,226,0.45)', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 6 }}>
+                <div style={{ fontFamily: fontMono, fontSize: 11, color: 'rgba(243,238,226,0.72)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 6 }}>
                   Preview de Importação
                 </div>
                 <div style={{ fontFamily: fontDisplay, fontSize: '1.3rem', fontWeight: 700, color: '#f5f2ec', lineHeight: 1.1 }}>
@@ -111,8 +130,8 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                 </div>
               </div>
               <button
-                onClick={() => setPreview(null)}
-                style={{ background: 'none', border: 'none', color: 'rgba(243,238,226,0.45)', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: 4 }}
+                onClick={() => setPreview(null)} aria-label="Fechar pré-visualização"
+                style={{ background: 'none', border: 'none', color: 'rgba(243,238,226,0.78)', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: 4 }}
               >
                 ✕
               </button>
@@ -140,7 +159,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                         fontFamily: fontMono, fontSize: 9,
                         letterSpacing: '0.12em', textTransform: 'uppercase',
                         background: active ? 'var(--cream-page, #f9f7f2)' : 'transparent',
-                        color: active ? '#1a1410' : '#999',
+                        color: active ? '#1a1410' : 'var(--text-muted)',
                         cursor: 'pointer',
                         fontWeight: active ? 600 : 400,
                       }}
@@ -196,13 +215,13 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                     </tbody>
                   </table>
                   {activeRows.length > 12 && (
-                    <div style={{ padding: '10px 8px', fontFamily: fontMono, fontSize: 9, color: '#aaa', letterSpacing: '0.10em' }}>
+                    <div style={{ padding: '10px 8px', fontFamily: fontMono, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
                       + {activeRows.length - 12} linhas adicionais não exibidas
                     </div>
                   )}
                 </>
               ) : (
-                <div style={{ padding: '32px 0', textAlign: 'center', fontFamily: fontBody, fontSize: 13, color: '#aaa' }}>
+                <div style={{ padding: '32px 0', textAlign: 'center', fontFamily: fontBody, fontSize: 13, color: 'var(--text-muted)' }}>
                   Nenhum dado encontrado nesta aba
                 </div>
               )}
@@ -219,12 +238,13 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
               <button onClick={() => setPreview(null)} className="btn btn-ghost">
                 Cancelar
               </button>
-              <button onClick={handleConfirm} className="btn btn-primary">
-                Confirmar Importação
+              <button onClick={handleConfirm} className="btn btn-primary" disabled={importing}>
+                {importing ? 'Importando…' : 'Confirmar Importação'}
               </button>
             </div>
           </div>
         </div>
+        </PreviewFrame>
       )}
     </>
   )

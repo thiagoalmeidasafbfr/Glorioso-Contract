@@ -22,6 +22,9 @@ import { Icon } from '../Icon'
 import NumberInput from '../NumberInput'
 import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { modalInput, modalLabel } from './styles'
+import { useDialogA11y } from '../useDialogA11y'
+import { useToast, errorMessage } from '../toast-context'
+import { useConfirm } from '../confirm-context'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -32,18 +35,14 @@ export function ModalShell({ title, subtitle, width = 560, onClose, children, fo
   title: string; subtitle?: string; width?: number; onClose: () => void
   children: React.ReactNode; footer: React.ReactNode
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  // Esc fecha, foco entra no diálogo e volta ao fechar (clique fora NÃO fecha).
+  const ref = useDialogA11y<HTMLDivElement>(onClose)
   return (
-    <div role="dialog" aria-modal="true" aria-label={title}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(16,13,10,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 24, width, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(16,13,10,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-label={title} style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 24, width, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 3 }}>{subtitle}</div>}
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{title}</h2>
+          {subtitle && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: mono, marginTop: 3 }}>{subtitle}</div>}
         </div>
         {children}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>{footer}</div>
@@ -66,6 +65,8 @@ export function InstallmentEditModal({ inst, onClose, onSaved }: {
     notes: inst.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
+  const confirm = useConfirm()
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
   async function save() {
@@ -79,13 +80,18 @@ export function InstallmentEditModal({ inst, onClose, onSaved }: {
         payment_date: f.payment_date || null,
         notes: f.notes || null,
       })
+      toast.success(`Parcela ${inst.installment_number} atualizada.`)
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível salvar a parcela.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
   async function remove() {
-    if (!window.confirm(`Excluir a parcela ${inst.installment_number}? Esta ação não pode ser desfeita.`)) return
+    if (!await confirm({ title: `Excluir a parcela ${inst.installment_number}?`, message: 'Esta ação não pode ser desfeita.', danger: true })) return
     setSaving(true)
-    try { await deleteInstallment(inst.id); onSaved() } finally { setSaving(false) }
+    try { await deleteInstallment(inst.id); toast.success(`Parcela ${inst.installment_number} excluída.`); onSaved() }
+    catch (e) { toast.error('Não foi possível excluir a parcela.', { detail: errorMessage(e) }) }
+    finally { setSaving(false) }
   }
 
   return (
@@ -96,17 +102,17 @@ export function InstallmentEditModal({ inst, onClose, onSaved }: {
         <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
       </>}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
-        <div><label style={modalLabel}>Valor</label><NumberInput style={modalInput} value={f.original_value} onChange={v => set('original_value', v)} /></div>
-        <div><label style={modalLabel}>Moeda</label><select style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div><label style={modalLabel}>Status</label>
-          <select style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
+        <div><label htmlFor="edimod-vencimento" style={modalLabel}>Vencimento</label><input id="edimod-vencimento" style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+        <div><label htmlFor="edimod-valor" style={modalLabel}>Valor</label><NumberInput id="edimod-valor" style={modalInput} value={f.original_value} onChange={v => set('original_value', v)} /></div>
+        <div><label htmlFor="edimod-moeda" style={modalLabel}>Moeda</label><select id="edimod-moeda" style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+        <div><label htmlFor="edimod-status" style={modalLabel}>Status</label>
+          <select id="edimod-status" style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
             {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
           </select>
         </div>
-        <div><label style={modalLabel}>Data pagamento</label><input style={modalInput} type="date" value={f.payment_date} onChange={e => set('payment_date', e.target.value)} /></div>
+        <div><label htmlFor="edimod-data-pagamento" style={modalLabel}>Data pagamento</label><input id="edimod-data-pagamento" style={modalInput} type="date" value={f.payment_date} onChange={e => set('payment_date', e.target.value)} /></div>
       </div>
-      <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+      <div><label htmlFor="edimod-observacoes" style={modalLabel}>Observações</label><textarea id="edimod-observacoes" style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
     </ModalShell>
   )
 }
@@ -131,6 +137,8 @@ export function ClauseEditModal({ clause, onClose, onSaved, allowDelete = true }
     notes: clause.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
+  const confirm = useConfirm()
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
   const parcelada = clause.installments_total > 1
 
@@ -151,13 +159,18 @@ export function ClauseEditModal({ clause, onClose, onSaved, allowDelete = true }
         achievement_status: f.achievement_status as Clause['achievement_status'],
         notes: f.notes || null,
       })
+      toast.success('Obrigação atualizada.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível salvar a obrigação.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
   async function remove() {
-    if (!window.confirm('Excluir esta obrigação e todas as suas parcelas? Esta ação não pode ser desfeita.')) return
+    if (!await confirm({ title: 'Excluir esta obrigação?', message: 'A obrigação e todas as suas parcelas serão excluídas. Esta ação não pode ser desfeita.', danger: true })) return
     setSaving(true)
-    try { await deleteClause(clause.id); onSaved() } finally { setSaving(false) }
+    try { await deleteClause(clause.id); toast.success('Obrigação excluída.'); onSaved() }
+    catch (e) { toast.error('Não foi possível excluir a obrigação.', { detail: errorMessage(e) }) }
+    finally { setSaving(false) }
   }
 
   return (
@@ -168,32 +181,32 @@ export function ClauseEditModal({ clause, onClose, onSaved, allowDelete = true }
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
         <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
       </>}>
-      <div><label style={modalLabel}>Natureza</label>
-        <select style={modalInput} value={f.clause_type} onChange={e => set('clause_type', e.target.value)}>
+      <div><label htmlFor="edimod-natureza" style={modalLabel}>Natureza</label>
+        <select id="edimod-natureza" style={modalInput} value={f.clause_type} onChange={e => set('clause_type', e.target.value)}>
           {(Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]).map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
         </select>
       </div>
-      <div><label style={modalLabel}>Descrição</label><input style={modalInput} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+      <div><label htmlFor="edimod-descricao" style={modalLabel}>Descrição</label><input id="edimod-descricao" style={modalInput} value={f.description} onChange={e => set('description', e.target.value)} /></div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div><label style={modalLabel}>Credor</label><input style={modalInput} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
-        <div><label style={modalLabel}>Devedor</label><input style={modalInput} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
-        <div><label style={modalLabel}>Valor{parcelada ? ' total' : ''}</label><NumberInput style={modalInput} value={f.original_value} onChange={v => set('original_value', v)} /></div>
-        <div><label style={modalLabel}>Moeda</label><select style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div><label style={modalLabel}>Percentual (%)</label><NumberInput style={modalInput} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} /></div>
-        <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
-        <div><label style={modalLabel}>Status pagamento</label>
-          <select style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
+        <div><label htmlFor="edimod-credor" style={modalLabel}>Credor</label><input id="edimod-credor" style={modalInput} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
+        <div><label htmlFor="edimod-devedor" style={modalLabel}>Devedor</label><input id="edimod-devedor" style={modalInput} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
+        <div><label htmlFor="edimod-valor-2" style={modalLabel}>Valor{parcelada ? ' total' : ''}</label><NumberInput id="edimod-valor-2" style={modalInput} value={f.original_value} onChange={v => set('original_value', v)} /></div>
+        <div><label htmlFor="edimod-moeda-2" style={modalLabel}>Moeda</label><select id="edimod-moeda-2" style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+        <div><label htmlFor="edimod-percentual" style={modalLabel}>Percentual (%)</label><NumberInput id="edimod-percentual" style={modalInput} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} /></div>
+        <div><label htmlFor="edimod-vencimento-2" style={modalLabel}>Vencimento</label><input id="edimod-vencimento-2" style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+        <div><label htmlFor="edimod-status-pagamento" style={modalLabel}>Status pagamento</label>
+          <select id="edimod-status-pagamento" style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
             {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
           </select>
         </div>
-        <div><label style={modalLabel}>Atingimento</label>
-          <select style={modalInput} value={f.achievement_status} onChange={e => set('achievement_status', e.target.value)}>
+        <div><label htmlFor="edimod-atingimento" style={modalLabel}>Atingimento</label>
+          <select id="edimod-atingimento" style={modalInput} value={f.achievement_status} onChange={e => set('achievement_status', e.target.value)}>
             {['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
           </select>
         </div>
       </div>
-      <div><label style={modalLabel}>Condição / gatilho</label><input style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
-      <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+      <div><label htmlFor="edimod-condicao-gatilho" style={modalLabel}>Condição / gatilho</label><input id="edimod-condicao-gatilho" style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
+      <div><label htmlFor="edimod-observacoes-2" style={modalLabel}>Observações</label><textarea id="edimod-observacoes-2" style={{ ...modalInput, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
     </ModalShell>
   )
 }
@@ -207,6 +220,7 @@ export function ClauseFlowModal({ clause, onClose, onSaved }: {
   const [currency, setCurrency] = useState<Currency>(clause.currency)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
 
   useEffect(() => {
     let alive = true
@@ -235,7 +249,10 @@ export function ClauseFlowModal({ clause, onClose, onSaved }: {
       } else {
         await updateClause(clause.id, { installments_total: 1, currency })
       }
+      toast.success(valid.length ? `Fluxo salvo com ${valid.length} parcela(s).` : 'Fluxo salvo sem parcelas.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível salvar o fluxo.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
@@ -278,6 +295,8 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
     notes: liab.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
+  const confirm = useConfirm()
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
   async function save() {
@@ -295,16 +314,22 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
       }
       if (isClub) await updateClubLiability(liab.id, { ...patch, club_name: f.name })
       else await updateIntermediaryLiability(liab.id, { ...patch, intermediary_name: f.name })
+      toast.success('Obrigação atualizada.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível salvar a obrigação.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
   async function remove() {
-    if (!window.confirm('Excluir esta obrigação?')) return
+    if (!await confirm({ title: 'Excluir esta obrigação?', message: 'Esta ação não pode ser desfeita.', danger: true })) return
     setSaving(true)
     try {
       if (isClub) await deleteClubLiability(liab.id)
       else await deleteIntermediaryLiability(liab.id)
+      toast.success('Obrigação excluída.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível excluir a obrigação.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
@@ -329,8 +354,11 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
         ...liab, ...patch,
         ...(isClub ? { club_name: f.name } : { intermediary_name: f.name }),
       } as ClubLiability | IntermediaryLiability)
+      toast.success('Obrigação criada — defina as parcelas.')
       if (onPromoted) onPromoted(clause.id)
       else onSaved()
+    } catch (e) {
+      toast.error('Não foi possível gerar as parcelas.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
@@ -341,25 +369,25 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
         <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </>}>
-      <div><label style={modalLabel}>{isClub ? 'Clube' : 'Agente'}</label><input style={modalInput} value={f.name} onChange={e => set('name', e.target.value)} /></div>
-      <div><label style={modalLabel}>Descrição</label><input style={modalInput} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Descrição da obrigação" /></div>
+      <div><label htmlFor="edimod-campo" style={modalLabel}>{isClub ? 'Clube' : 'Agente'}</label><input id="edimod-campo" style={modalInput} value={f.name} onChange={e => set('name', e.target.value)} /></div>
+      <div><label htmlFor="edimod-descricao-2" style={modalLabel}>Descrição</label><input id="edimod-descricao-2" style={modalInput} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Descrição da obrigação" /></div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div><label style={modalLabel}>Valor</label><NumberInput style={modalInput} value={f.amount} onChange={v => set('amount', v)} /></div>
-        <div><label style={modalLabel}>Moeda</label><select style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div><label style={modalLabel}>Direção</label>
-          <select style={modalInput} value={f.direction} onChange={e => set('direction', e.target.value)}>
+        <div><label htmlFor="edimod-valor-3" style={modalLabel}>Valor</label><NumberInput id="edimod-valor-3" style={modalInput} value={f.amount} onChange={v => set('amount', v)} /></div>
+        <div><label htmlFor="edimod-moeda-3" style={modalLabel}>Moeda</label><select id="edimod-moeda-3" style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+        <div><label htmlFor="edimod-direcao" style={modalLabel}>Direção</label>
+          <select id="edimod-direcao" style={modalInput} value={f.direction} onChange={e => set('direction', e.target.value)}>
             <option value="A_PAGAR">A pagar</option><option value="A_RECEBER">A receber</option>
           </select>
         </div>
-        <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
-        <div><label style={modalLabel}>Status</label>
-          <select style={modalInput} value={f.status} onChange={e => set('status', e.target.value)}>
+        <div><label htmlFor="edimod-vencimento-3" style={modalLabel}>Vencimento</label><input id="edimod-vencimento-3" style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+        <div><label htmlFor="edimod-status-2" style={modalLabel}>Status</label>
+          <select id="edimod-status-2" style={modalInput} value={f.status} onChange={e => set('status', e.target.value)}>
             {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
           </select>
         </div>
       </div>
-      <div><label style={modalLabel}>Condição</label><input style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
-      <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+      <div><label htmlFor="edimod-condicao" style={modalLabel}>Condição</label><input id="edimod-condicao" style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
+      <div><label htmlFor="edimod-observacoes-3" style={modalLabel}>Observações</label><textarea id="edimod-observacoes-3" style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 8, background: 'var(--info-tint)', border: '1px solid rgba(31,86,115,0.22)' }}>
         <span style={{ fontSize: 11.5, color: 'var(--ink-secondary)', fontFamily: font, flex: 1, minWidth: 220 }}>
           Precisa de parcelas? {PROMOTE_HINT}

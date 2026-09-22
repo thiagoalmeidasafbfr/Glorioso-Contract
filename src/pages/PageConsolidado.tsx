@@ -31,6 +31,8 @@ import {
 import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -62,6 +64,8 @@ const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes
 
 export default function PageConsolidado() {
   const { profile } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
   const [movs, setMovs] = useState<Mov[]>([])
   // Registros brutos — necessários para abrir os modais de edição de qualquer linha.
@@ -233,14 +237,20 @@ export default function PageConsolidado() {
   async function bulkMarkRJ() {
     const chosen = movs.filter(m => selected.has(m.id) && canMarkRJ(m))
     if (chosen.length === 0) return
-    if (!confirm(`Marcar ${chosen.length} lançamento(s) como Recuperação Judicial em ${rjDate}?`)) return
-    await markManyRJ(chosen.map(m => ({ kind: m.kind, id: m.id, notes: m.notes })), rjDate)
+    if (!await confirm({ title: `Marcar ${chosen.length} lançamento(s) como Recuperação Judicial?`, message: `Data de habilitação: ${rjDate}.`, confirmLabel: 'Marcar como RJ' })) return
+    try {
+      await markManyRJ(chosen.map(m => ({ kind: m.kind, id: m.id, notes: m.notes })), rjDate)
+      toast.success(`${chosen.length} lançamento(s) marcado(s) como RJ.`)
+    } catch (e) { toast.error('Não foi possível marcar como RJ.', { detail: errorMessage(e) }) }
     setSelected(new Set())
     await load()
   }
   async function unmarkRJ(m: Mov) {
-    if (!confirm('Remover a marcação de Recuperação Judicial deste lançamento?')) return
-    await unmarkItemRJ({ kind: m.kind, id: m.id }, m.notes)
+    if (!await confirm({ title: 'Remover a marcação de Recuperação Judicial?', message: 'O lançamento volta a contar como a pagar corrente.', confirmLabel: 'Remover marcação' })) return
+    try {
+      await unmarkItemRJ({ kind: m.kind, id: m.id }, m.notes)
+      toast.success('Marcação de RJ removida.')
+    } catch (e) { toast.error('Não foi possível remover a marcação.', { detail: errorMessage(e) }) }
     await load()
   }
 
@@ -300,36 +310,36 @@ export default function PageConsolidado() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+          <label htmlFor="con-busca" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
+          <input id="con-busca" value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
-          <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <label htmlFor="con-atleta" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
+          <select id="con-atleta" value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {atletas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
-          <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="con-posicao" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
+          <select id="con-posicao" value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {posicoes.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
-          <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <label htmlFor="con-natureza" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
+          <select id="con-natureza" value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {naturezas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="con-status" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <select id="con-status" value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
-          <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="con-rec-judicial" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
+          <select id="con-rec-judicial" value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {['Todos', 'Em RJ', 'Fora da RJ'].map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>

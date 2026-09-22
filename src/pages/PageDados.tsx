@@ -31,6 +31,7 @@ import {
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import type { AthleteCategory } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
+import { useToast } from '../components/toast-context'
 
 // Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
 function parseCategory(v: unknown): AthleteCategory {
@@ -279,6 +280,7 @@ const DESCRIPTORS: Descriptor[] = [
 ]
 
 export default function PageDados() {
+  const toast = useToast()
   const [msg, setMsg] = useState<{ key: string; text: string; ok: boolean } | null>(null)
   const [exportingAll, setExportingAll] = useState(false)
   const [confirmWipe, setConfirmWipe] = useState(false)
@@ -311,6 +313,7 @@ export default function PageDados() {
       setConfirmWipe(false)
       setWipeText('')
       setMsg({ key: '__wipe__', text: 'Base apagada. Toda a base foi removida com sucesso.', ok: true })
+      toast.success('Toda a base foi apagada.')
     } catch (err) {
       setMsg({ key: '__wipe__', text: `Erro ao apagar a base: ${(err as Error).message}`, ok: false })
     } finally {
@@ -376,10 +379,14 @@ export default function PageDados() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button onClick={() => downloadTemplate(d)} className="btn btn-outline">Baixar modelo</button>
               <button onClick={() => exportData(d)} className="btn btn-outline">Exportar</button>
-              <ImportButton onDone={(text, ok) => setMsg({ key: d.key, text, ok })} d={d} />
+              <ImportButton onDone={(text, ok) => {
+                setMsg({ key: d.key, text, ok })
+                if (ok) toast.success(`Importação de ${d.label} concluída.`, { detail: text })
+                else toast.error(`A importação de ${d.label} falhou.`, { detail: text })
+              }} d={d} />
             </div>
             {msg?.key === d.key && (
-              <div style={{ marginTop: 10, fontSize: 12, fontFamily: fontBody, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</div>
+              <div role="status" style={{ marginTop: 10, fontSize: 12, fontFamily: fontBody, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</div>
             )}
           </div>
         ))}

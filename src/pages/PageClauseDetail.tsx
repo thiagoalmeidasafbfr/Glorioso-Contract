@@ -27,6 +27,8 @@ import RowActions, { ActionLegend } from '../components/RowActions'
 import { InstallmentEditModal } from '../components/modals/EditModals'
 import { parseRJ, toggleItemRJ, markManyRJ, unmarkItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const font = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -53,6 +55,8 @@ export default function PageClauseDetail() {
   const { clauseId } = useParams<{ clauseId: string }>()
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
 
   const [clause, setClause] = useState<Clause | null>(null)
@@ -118,15 +122,22 @@ export default function PageClauseDetail() {
     return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{name}</RefLink> : <>{name}</>
   }
 
-  async function handleQuickPay(id: string) { await markInstallmentPaid(id, todayISO()); load() }
-  async function handleRevert(id: string) { await revertInstallment(id); load() }
+  async function run(action: () => Promise<unknown>, ok: string, fail: string) {
+    try { await action(); toast.success(ok); return true }
+    catch (e) { toast.error(fail, { detail: errorMessage(e) }); return false }
+  }
+  async function handleQuickPay(id: string) { await run(() => markInstallmentPaid(id, todayISO()), 'Parcela marcada como paga.', 'Não foi possível dar baixa na parcela.'); load() }
+  async function handleRevert(id: string) { await run(() => revertInstallment(id), 'Pagamento desfeito.', 'Não foi possível desfazer o pagamento.'); load() }
   async function handlePay(id: string, p: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
-    await registerInstallmentPayment(id, { payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes })
-    setPayInstId(null); load()
+    const ok = await run(() => registerInstallmentPayment(id, { payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes }),
+      'Pagamento registrado.', 'Não foi possível registrar o pagamento.')
+    if (ok) setPayInstId(null)
+    load()
   }
   async function handleDelete() {
-    if (!clause || !window.confirm('Excluir esta obrigação e suas parcelas? Esta ação não pode ser desfeita.')) return
-    await deleteClause(clause.id)
+    if (!clause) return
+    if (!await confirm({ title: 'Excluir esta obrigação?', message: 'A obrigação e suas parcelas serão excluídas. Esta ação não pode ser desfeita.', danger: true })) return
+    if (!await run(() => deleteClause(clause.id), 'Obrigação excluída.', 'Não foi possível excluir a obrigação.')) return
     navigate(athlete ? `/atletas/${athlete.id}` : '/atletas')
   }
   const parcRJ = installments.filter(p => parseRJ(p.notes))
@@ -154,26 +165,26 @@ export default function PageClauseDetail() {
   async function bulkMarkParcRJ() {
     const chosen = installments.filter(p => selectedRJ.has(p.id) && !parseRJ(p.notes))
     if (chosen.length === 0) return
-    if (!window.confirm(`Incluir ${chosen.length} parcela(s) na Recuperação Judicial em ${fmtDate(rjDate)}?`)) return
-    await markManyRJ(chosen.map(p => ({ kind: 'inst' as const, id: p.id, notes: p.notes })), rjDate)
+    if (!await confirm({ title: `Incluir ${chosen.length} parcela(s) na Recuperação Judicial?`, message: `Data de habilitação: ${fmtDate(rjDate)}.`, confirmLabel: 'Incluir na RJ' })) return
+    await run(() => markManyRJ(chosen.map(p => ({ kind: 'inst' as const, id: p.id, notes: p.notes })), rjDate), `${chosen.length} parcela(s) incluída(s) na RJ.`, 'Não foi possível incluir na RJ.')
     setSelectedRJ(new Set())
     await load()
   }
   async function unmarkParcRJ(pid: string) {
     const p = installments.find(i => i.id === pid); if (!p) return
-    if (!window.confirm('Retirar esta parcela da Recuperação Judicial?')) return
-    await unmarkItemRJ({ kind: 'inst', id: pid }, p.notes)
+    if (!await confirm({ title: 'Retirar esta parcela da Recuperação Judicial?', confirmLabel: 'Retirar da RJ' })) return
+    await run(() => unmarkItemRJ({ kind: 'inst', id: pid }, p.notes), 'Parcela retirada da RJ.', 'Não foi possível retirar da RJ.')
     await load()
   }
   async function toggleClauseRJ() {
     if (!clause) return
     const marked = !!parseRJ(clause.notes)
     if (marked) {
-      if (!window.confirm('Retirar a obrigação inteira da Recuperação Judicial?')) return
+      if (!await confirm({ title: 'Retirar a obrigação inteira da Recuperação Judicial?', confirmLabel: 'Retirar da RJ' })) return
     } else {
-      if (!window.confirm(`Incluir a obrigação inteira na Recuperação Judicial em ${fmtDate(rjDate)}?`)) return
+      if (!await confirm({ title: 'Incluir a obrigação inteira na Recuperação Judicial?', message: `Data de habilitação: ${fmtDate(rjDate)}.`, confirmLabel: 'Incluir na RJ' })) return
     }
-    await toggleItemRJ({ kind: 'clause', id: clause.id }, clause.notes, rjDate)
+    await run(() => toggleItemRJ({ kind: 'clause', id: clause.id }, clause.notes, rjDate), marked ? 'Obrigação retirada da RJ.' : 'Obrigação incluída na RJ.', 'Não foi possível alterar a marcação de RJ.')
     await load()
   }
 
@@ -385,23 +396,23 @@ function ClauseFields({ clause, onSaved, onCancel }: { clause: Clause; onSaved: 
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div><label style={lbl}>Natureza</label>
-        <select style={inp} value={f.clause_type} onChange={e => set('clause_type', e.target.value)}>
+      <div><label htmlFor="cladet-natureza" style={lbl}>Natureza</label>
+        <select id="cladet-natureza" style={inp} value={f.clause_type} onChange={e => set('clause_type', e.target.value)}>
           {CLAUSE_TYPES.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
         </select>
       </div>
-      <div><label style={lbl}>Descrição</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+      <div><label htmlFor="cladet-descricao" style={lbl}>Descrição</label><input id="cladet-descricao" style={inp} value={f.description} onChange={e => set('description', e.target.value)} /></div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
-        <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
-        <div><label style={lbl}>Valor</label><NumberInput style={inp} value={f.original_value} onChange={v => set('original_value', v)} /></div>
-        <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div><label style={lbl}>Percentual (%)</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} /></div>
-        <div><label style={lbl}>Vencimento</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+        <div><label htmlFor="cladet-credor" style={lbl}>Credor</label><input id="cladet-credor" style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
+        <div><label htmlFor="cladet-devedor" style={lbl}>Devedor</label><input id="cladet-devedor" style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
+        <div><label htmlFor="cladet-valor" style={lbl}>Valor</label><NumberInput id="cladet-valor" style={inp} value={f.original_value} onChange={v => set('original_value', v)} /></div>
+        <div><label htmlFor="cladet-moeda" style={lbl}>Moeda</label><select id="cladet-moeda" style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+        <div><label htmlFor="cladet-percentual" style={lbl}>Percentual (%)</label><NumberInput id="cladet-percentual" style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} /></div>
+        <div><label htmlFor="cladet-vencimento" style={lbl}>Vencimento</label><input id="cladet-vencimento" style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
       </div>
-      <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
-      <div><label style={lbl}>Status</label>
-        <select style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
+      <div><label htmlFor="cladet-condicao-gatilho" style={lbl}>Condição / gatilho</label><input id="cladet-condicao-gatilho" style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
+      <div><label htmlFor="cladet-status" style={lbl}>Status</label>
+        <select id="cladet-status" style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
           {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
         </select>
       </div>

@@ -14,6 +14,8 @@ import { ENCARGOS_DEFAULT, ANTECIPACAO_DEFAULT, DECISAO_LABELS } from '../types/
 import type { PremissaAtleta, PremissaDecisao } from '../types/premissas'
 import type { Athlete } from '../types/athlete-system'
 import { useAuth } from '../context/AuthContext'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -160,6 +162,8 @@ function explainError(e: unknown): string {
 
 export default function PagePremissas() {
   const { isMaster: canEdit } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const [rows, setRows] = useState<Row[]>([])
   const [athletes, setAthletes] = useState<Athlete[]>([])
@@ -200,10 +204,10 @@ export default function PagePremissas() {
   }, [])
 
   const removeRow = useCallback(async (id: string) => {
-    if (!confirm('Excluir esta linha de premissas?')) return
-    try { await deletePremissa(id); setRows(rs => rs.filter(r => r.id !== id)) }
-    catch (e) { setErr(explainError(e)) }
-  }, [])
+    if (!await confirm({ title: 'Excluir esta linha de premissas?', message: 'Esta ação não pode ser desfeita.', danger: true })) return
+    try { await deletePremissa(id); setRows(rs => rs.filter(r => r.id !== id)); toast.success('Linha de premissas excluída.') }
+    catch (e) { setErr(explainError(e)); toast.error('Não foi possível excluir a linha.', { detail: errorMessage(e) }) }
+  }, [confirm, toast])
 
   // Nome exibido: se tem atleta_id vinculado, puxa do cadastro; senão usa o campo.
   const nameOf = useCallback((r: Row): string => {

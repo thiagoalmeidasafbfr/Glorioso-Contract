@@ -312,12 +312,12 @@ export default function PageWizard() {
               <div style={{ padding: 14, borderRadius: 9, border: '1px solid var(--divider)', background: 'var(--bg-subtle)', marginBottom: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={lbl}>Nome completo *</label>
-                    <input style={input} autoFocus value={newAth.full_name} onChange={e => setNewAth(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: João da Silva Santos" />
+                    <label htmlFor="wiz-nome-completo" style={lbl}>Nome completo *</label>
+                    <input id="wiz-nome-completo" aria-required="true" style={input} autoFocus value={newAth.full_name} onChange={e => setNewAth(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: João da Silva Santos" />
                   </div>
                   <div>
-                    <label style={lbl}>Posição</label>
-                    <input style={input} value={newAth.position} onChange={e => setNewAth(p => ({ ...p, position: e.target.value }))} placeholder="Ex: Atacante" />
+                    <label htmlFor="wiz-posicao" style={lbl}>Posição</label>
+                    <input id="wiz-posicao" style={input} value={newAth.position} onChange={e => setNewAth(p => ({ ...p, position: e.target.value }))} placeholder="Ex: Atacante" />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -360,8 +360,8 @@ export default function PageWizard() {
             <div style={sectionTitle}>Contraparte e direção</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
-                <label style={lbl}>Direção</label>
-                <select style={input} value={direction} onChange={e => setDirection(e.target.value as Dir)}>
+                <label htmlFor="wiz-direcao" style={lbl}>Direção</label>
+                <select id="wiz-direcao" style={input} value={direction} onChange={e => setDirection(e.target.value as Dir)}>
                   <option value="A_PAGAR">Botafogo paga (a pagar)</option>
                   <option value="A_RECEBER">Botafogo recebe (a receber)</option>
                 </select>
@@ -373,8 +373,8 @@ export default function PageWizard() {
                   <EntityPicker kind="intermediario" label="Agente *" value={beneficiary} onChange={name => setBeneficiary(name)} />
                 ) : (
                   <>
-                    <label style={lbl}>{direction === 'A_PAGAR' ? 'Pago a *' : 'Recebido de *'}</label>
-                    <input style={input} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder="Nome do beneficiário" />
+                    <label htmlFor="wiz-campo" style={lbl}>{direction === 'A_PAGAR' ? 'Pago a *' : 'Recebido de *'}</label>
+                    <input id="wiz-campo" style={input} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder="Nome do beneficiário" />
                   </>
                 )}
               </div>
@@ -382,14 +382,14 @@ export default function PageWizard() {
 
             {nature.isMovement ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                <div><label style={lbl}>País da contraparte</label><input style={input} value={country} onChange={e => setCountry(e.target.value)} placeholder="Ex: Espanha" /></div>
-                <div><label style={lbl}>Início do vínculo *</label><input style={input} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-                <div><label style={lbl}>Término</label><input style={input} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+                <div><label htmlFor="wiz-pais-da-contraparte" style={lbl}>País da contraparte</label><input id="wiz-pais-da-contraparte" style={input} value={country} onChange={e => setCountry(e.target.value)} placeholder="Ex: Espanha" /></div>
+                <div><label htmlFor="wiz-inicio-do-vinculo" style={lbl}>Início do vínculo *</label><input id="wiz-inicio-do-vinculo" aria-required="true" style={input} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+                <div><label htmlFor="wiz-termino" style={lbl}>Término</label><input id="wiz-termino" style={input} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
               </div>
             ) : (
               <div>
-                <label style={lbl}>Vincular a uma transação do atleta (opcional)</label>
-                <select style={input} value={linkContractId} onChange={e => setLinkContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
+                <label htmlFor="wiz-vincular-a-uma-transacao-do" style={lbl}>Vincular a uma transação do atleta (opcional)</label>
+                <select id="wiz-vincular-a-uma-transacao-do" style={input} value={linkContractId} onChange={e => setLinkContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
                   <option value="">
                     {!athleteId ? '— escolha o atleta primeiro —' : contracts.length === 0 ? '— sem vínculos cadastrados —' : '— não vinculado —'}
                   </option>
@@ -406,8 +406,8 @@ export default function PageWizard() {
             )}
 
             <div>
-              <label style={lbl}>Descrição (opcional)</label>
-              <input style={input} value={description} onChange={e => setDescription(e.target.value)} placeholder={`${nature.label}${beneficiary ? ` — ${beneficiary}` : ''}`} />
+              <label htmlFor="wiz-descricao-opcional" style={lbl}>Descrição (opcional)</label>
+              <input id="wiz-descricao-opcional" style={input} value={description} onChange={e => setDescription(e.target.value)} placeholder={`${nature.label}${beneficiary ? ` — ${beneficiary}` : ''}`} />
             </div>
           </div>
         </div>

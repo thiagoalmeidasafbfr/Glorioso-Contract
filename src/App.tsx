@@ -5,6 +5,8 @@ import { AppProvider } from './context/AppContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { USE_SUPABASE } from './lib/supabase'
 import Layout from './components/Layout'
+import { ToastProvider } from './components/Toast'
+import { ConfirmProvider } from './components/ConfirmDialog'
 import PageLogin from './pages/PageLogin'
 
 // Rotas carregadas sob demanda: xlsx/recharts e as páginas pesadas saem do
@@ -70,6 +72,8 @@ function AppRoutes() {
 
   return (
     <AppProvider>
+      <ToastProvider>
+      <ConfirmProvider>
       <Layout>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -114,6 +118,8 @@ function AppRoutes() {
         </Routes>
         </Suspense>
       </Layout>
+      </ConfirmProvider>
+      </ToastProvider>
     </AppProvider>
   )
 }

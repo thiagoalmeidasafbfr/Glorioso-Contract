@@ -16,6 +16,8 @@ import { fmtCurrencyShort, fmtDate } from '../../lib/format'
 import NumberInput from '../NumberInput'
 import { ModalShell } from './EditModals'
 import { modalInput, modalLabel } from './styles'
+import { useToast } from '../toast-context'
+import { useConfirm } from '../confirm-context'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -48,6 +50,8 @@ export default function LoanShareModal({
   const [imagePct, setImagePct] = useState(String(current?.clubImagePct ?? 0))
   const [restoreAtEnd, setRestoreAtEnd] = useState(true)
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
+  const confirm = useConfirm()
   const [error, setError] = useState<string | null>(null)
 
   const fullSalary = workContract.base_salary ?? 0
@@ -67,6 +71,7 @@ export default function LoanShareModal({
         clubSalaryPct: sPct, clubImagePct: iPct, restoreAtEnd,
         triggers, clauses, installments, pjs, athleteName,
       })
+      toast.success('Rateio aplicado — fluxo mensal regerado.')
       onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao aplicar o rateio')
@@ -74,13 +79,14 @@ export default function LoanShareModal({
   }
 
   async function remove() {
-    if (!window.confirm('Remover o rateio? A remuneração volta ao valor integral do contrato e o fluxo é regerado.')) return
+    if (!await confirm({ title: 'Remover o rateio?', message: 'A remuneração volta ao valor integral do contrato e o fluxo é regerado.', confirmLabel: 'Remover rateio', danger: true })) return
     setSaving(true); setError(null)
     try {
       await removeLoanSalaryShare({
         workContract, loanContractId: loanContract.id,
         triggers, clauses, installments, pjs, athleteName,
       })
+      toast.success('Rateio removido.')
       onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao remover o rateio')
@@ -128,16 +134,16 @@ export default function LoanShareModal({
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label style={modalLabel}>Clube arca com (% do CLT)</label>
-          <NumberInput style={modalInput} decimals={2} grouping={false} value={salaryPct}
+          <label htmlFor="loashamod-clube-arca-com-do-clt" style={modalLabel}>Clube arca com (% do CLT)</label>
+          <NumberInput id="loashamod-clube-arca-com-do-clt" style={modalInput} decimals={2} grouping={false} value={salaryPct}
             onChange={v => setSalaryPct(v)} placeholder="0" />
           <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 4 }}>
             CLT integral {fmtCurrencyShort(fullSalary, currency)}/mês
           </div>
         </div>
         <div>
-          <label style={modalLabel}>Clube arca com (% da imagem)</label>
-          <NumberInput style={modalInput} decimals={2} grouping={false} value={imagePct}
+          <label htmlFor="loashamod-clube-arca-com-da-imagem" style={modalLabel}>Clube arca com (% da imagem)</label>
+          <NumberInput id="loashamod-clube-arca-com-da-imagem" style={modalInput} decimals={2} grouping={false} value={imagePct}
             onChange={v => setImagePct(v)} placeholder="0" />
           <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 4 }}>
             Imagem integral {fmtCurrencyShort(fullImage, currency)}/mês

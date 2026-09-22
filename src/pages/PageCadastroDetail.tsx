@@ -41,6 +41,8 @@ import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { parseRJ, toggleItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 import { approxToBRL } from '../lib/fx'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -58,6 +60,8 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
   const isClube = kind === 'clube'
   const basePath = isClube ? '/clubes' : '/intermediarios'
@@ -164,8 +168,16 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const editClause = editClauseId ? clauses.find(c => c.id === editClauseId) ?? null : null
   const flowClause = flowClauseId ? clauses.find(c => c.id === flowClauseId) ?? null : null
 
-  async function quickPay(instId: string) { await markInstallmentPaid(instId, new Date().toISOString().slice(0, 10)); await load() }
-  async function quickRevert(instId: string) { await revertInstallment(instId); await load() }
+  async function quickPay(instId: string) {
+    try { await markInstallmentPaid(instId, new Date().toISOString().slice(0, 10)); toast.success('Parcela marcada como paga.') }
+    catch (e) { toast.error('Não foi possível dar baixa na parcela.', { detail: errorMessage(e) }) }
+    await load()
+  }
+  async function quickRevert(instId: string) {
+    try { await revertInstallment(instId); toast.success('Pagamento desfeito.') }
+    catch (e) { toast.error('Não foi possível desfazer o pagamento.', { detail: errorMessage(e) }) }
+    await load()
+  }
   async function toggleRJ(l: EntityObligation) {
     await toggleItemRJ({ kind: l.kind, id: l.id }, l.notes)
     await load()
@@ -175,15 +187,15 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
     const label = isClube ? 'clube' : 'agente'
     const blocking = entityContracts.length + rows.length
     const extra = blocking > 0
-      ? `\n\nATENÇÃO: existem ${entityContracts.length} contrato(s) e ${rows.length} obrigação/parcela(s) apontando para este ${label}. Exclusão só será permitida se nada mais estiver vinculado.`
+      ? `ATENÇÃO: existem ${entityContracts.length} contrato(s) e ${rows.length} obrigação/parcela(s) apontando para este ${label}. Exclusão só será permitida se nada mais estiver vinculado.`
       : ''
-    if (!window.confirm(`Excluir permanentemente este ${label}? Esta ação não pode ser desfeita.${extra}`)) return
+    if (!await confirm({ title: `Excluir permanentemente este ${label}?`, message: ['Esta ação não pode ser desfeita.', extra].filter(Boolean).join('\n\n'), danger: true })) return
     try {
       if (isClube) await deleteClub(id); else await deleteIntermediary(id)
+      toast.success(`${isClube ? 'Clube' : 'Agente'} excluído.`)
       navigate(basePath)
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      window.alert(`Não foi possível excluir o ${label}. Verifique se há contratos ou obrigações vinculados.\n\n${msg}`)
+      toast.error(`Não foi possível excluir o ${label}. Verifique se há contratos ou obrigações vinculados.`, { detail: errorMessage(e), duration: 0 })
     }
   }
   async function registerPayment(instId: string, pmt: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
@@ -191,6 +203,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
       payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
       amount_paid_brl: pmt.valueBRL, exchange_rate: pmt.rate, notes: pmt.notes,
     })
+    toast.success('Pagamento registrado.')
     setPayInstId(null); await load()
   }
 
@@ -509,20 +522,20 @@ function NewContractFromEntityModal({ entityName, kind, athletes, onClose }: {
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
         <button onClick={go} className="btn btn-primary" disabled={!athleteId}>Continuar →</button>
       </>}>
-      <div><label style={modalLabel}>Atleta *</label>
-        <select style={modalInput} value={athleteId} onChange={e => chooseAthlete(e.target.value)}>
+      <div><label htmlFor="caddet-atleta" style={modalLabel}>Atleta *</label>
+        <select id="caddet-atleta" aria-required="true" style={modalInput} value={athleteId} onChange={e => chooseAthlete(e.target.value)}>
           <option value="">— selecione o atleta —</option>
           {sortedAthletes.map(a => <option key={a.id} value={a.id}>{a.short_name || a.full_name}</option>)}
         </select>
       </div>
-      <div><label style={modalLabel}>Atrelar a um vínculo do atleta (opcional)</label>
-        <select style={modalInput} value={relId} onChange={e => setRelId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
+      <div><label htmlFor="caddet-atrelar-a-um-vinculo-do-atle" style={modalLabel}>Atrelar a um vínculo do atleta (opcional)</label>
+        <select id="caddet-atrelar-a-um-vinculo-do-atle" style={modalInput} value={relId} onChange={e => setRelId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
           <option value="">{!athleteId ? '— escolha o atleta primeiro —' : contracts.length === 0 ? '— sem vínculos cadastrados —' : '— nenhum (contrato independente) —'}</option>
           {contracts.map(c => <option key={c.id} value={c.id}>{clabel(c)}</option>)}
         </select>
       </div>
-      <div><label style={modalLabel}>Tipo de contrato</label>
-        <select style={modalInput} value={tipo} onChange={e => setTipo(e.target.value as ContractType)}>
+      <div><label htmlFor="caddet-tipo-de-contrato" style={modalLabel}>Tipo de contrato</label>
+        <select id="caddet-tipo-de-contrato" style={modalInput} value={tipo} onChange={e => setTipo(e.target.value as ContractType)}>
           {tipos.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
         </select>
       </div>

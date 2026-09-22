@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import ImageUpload from '../components/ImageUpload'
 import RemunerationChart from '../components/RemunerationChart'
 import OwnershipBar from '../components/OwnershipBar'
@@ -55,6 +55,10 @@ import { useAuth } from '../context/AuthContext'
 import { exportWorkbook } from '../lib/xlsx-utils'
 import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteConsolidado'
 import { approxToBRL } from '../lib/fx'
+import Field from '../components/Field'
+import ModalFrame from '../components/ModalFrame'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -178,13 +182,13 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
     <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid var(--divider-strong)' }}>
       <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)', fontWeight: 700 }}>Nova Meta de Aumento Salarial</div>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10 }}>
-        <div><label style={lbl}>Descrição *</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Ex: Ao atingir 10 jogos, salário sobe" /></div>
-        <div><label style={lbl}>Métrica</label><select style={inp} value={f.metric} onChange={e => set('metric', e.target.value as TriggerMetric)}>{(Object.keys(TRIGGER_METRIC_LABELS) as TriggerMetric[]).map(m => <option key={m} value={m}>{TRIGGER_METRIC_LABELS[m]}</option>)}</select></div>
-        <div><label style={lbl}>Meta (nº)</label><input style={inp} type="number" value={f.threshold ?? ''} onChange={e => set('threshold', e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 10" /></div>
-        <div><label style={lbl}>Novo salário CLT *</label><NumberInput style={inp} value={f.new_salary || ''} onChange={v => set('new_salary', v ? Number(v) : 0)} placeholder="Ex: 600.000" /></div>
-        <div><label style={lbl}>Novo direito de imagem</label><NumberInput style={inp} value={f.new_image_value ?? ''} onChange={v => set('new_image_value', v ? Number(v) : null)} placeholder="Ex: 600.000 (opcional)" /></div>
-        <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value as Currency)}>{(['BRL','EUR','USD','GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div><label style={lbl}>Observações</label><input style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        <div><label htmlFor="athdet-descricao" style={lbl}>Descrição *</label><input id="athdet-descricao" aria-required="true" style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Ex: Ao atingir 10 jogos, salário sobe" /></div>
+        <div><label htmlFor="athdet-metrica" style={lbl}>Métrica</label><select id="athdet-metrica" style={inp} value={f.metric} onChange={e => set('metric', e.target.value as TriggerMetric)}>{(Object.keys(TRIGGER_METRIC_LABELS) as TriggerMetric[]).map(m => <option key={m} value={m}>{TRIGGER_METRIC_LABELS[m]}</option>)}</select></div>
+        <div><label htmlFor="athdet-meta-n" style={lbl}>Meta (nº)</label><input id="athdet-meta-n" style={inp} type="number" value={f.threshold ?? ''} onChange={e => set('threshold', e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 10" /></div>
+        <div><label htmlFor="athdet-novo-salario-clt" style={lbl}>Novo salário CLT *</label><NumberInput id="athdet-novo-salario-clt" aria-required="true" style={inp} value={f.new_salary || ''} onChange={v => set('new_salary', v ? Number(v) : 0)} placeholder="Ex: 600.000" /></div>
+        <div><label htmlFor="athdet-novo-direito-de-imagem" style={lbl}>Novo direito de imagem</label><NumberInput id="athdet-novo-direito-de-imagem" style={inp} value={f.new_image_value ?? ''} onChange={v => set('new_image_value', v ? Number(v) : null)} placeholder="Ex: 600.000 (opcional)" /></div>
+        <div><label htmlFor="athdet-moeda" style={lbl}>Moeda</label><select id="athdet-moeda" style={inp} value={f.currency} onChange={e => set('currency', e.target.value as Currency)}>{(['BRL','EUR','USD','GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+        <div><label htmlFor="athdet-observacoes" style={lbl}>Observações</label><input id="athdet-observacoes" style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button onClick={() => setOpen(false)} className="btn btn-outline">Cancelar</button>
@@ -240,7 +244,10 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
   })
   const [rows, setRows] = useState<RightRow[]>(rights.map(r => ({ id: r.id, holder_type: r.holder_type, holder_name: r.holder_name ?? '', percentage: String(r.percentage), notes: r.notes ?? '' })))
   const [saving, setSaving] = useState(false)
+  const [touched, setTouched] = useState(false)
+  const toast = useToast()
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+  const nameError = touched && !f.full_name.trim() ? 'Informe o nome completo.' : null
   const setRow = (i: number, patch: Partial<RightRow>) => setRows(prev => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r))
   const addRow = () => setRows(prev => [...prev, { holder_type: 'TERCEIRO', holder_name: '', percentage: '', notes: '' }])
   const removeRow = (i: number) => setRows(prev => prev.filter((_, idx) => idx !== i))
@@ -250,9 +257,10 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
   const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
 
   async function save() {
+    setTouched(true)
     if (!f.full_name.trim()) return
     if (sum > 100.01) {
-      alert(`A soma dos detentores é ${sum.toFixed(2)}%. O total não pode passar de 100%.`)
+      toast.error(`A soma dos detentores é ${sum.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%.`, { detail: 'O total não pode passar de 100%. Ajuste os percentuais e salve de novo.' })
       return
     }
     setSaving(true)
@@ -270,26 +278,32 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
         const input: NewEconomicRightInput = { holder_type: r.holder_type, holder_name: r.holder_name.trim(), percentage: parseFloat(r.percentage) || 0, notes: r.notes }
         await createEconomicRight(athlete.id, input)
       }
+      toast.success('Dados do atleta atualizados.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível salvar o atleta.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
-  const field = (label: string, key: keyof typeof f, type = 'text', opts?: string[]) => (
-    <div><label style={lbl}>{label}</label>{opts ? <select style={inp} value={f[key]} onChange={e => set(key, e.target.value)}>{opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}</select> : <input type={type} style={inp} value={f[key]} onChange={e => set(key, e.target.value)} />}</div>
+  const field = (label: string, key: keyof typeof f, type = 'text', opts?: string[], extra?: { required?: boolean; error?: string | null }) => (
+    <Field label={label} labelStyle={lbl} required={extra?.required} error={extra?.error}>
+      {opts
+        ? <select style={inp} value={f[key]} onChange={e => set(key, e.target.value)}>{opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}</select>
+        : <input type={type} style={{ ...inp, ...(extra?.error ? { borderColor: 'var(--neg)' } : null) }} value={f[key]} onChange={e => set(key, e.target.value)} onBlur={extra?.required ? () => setTouched(true) : undefined} />}
+    </Field>
   )
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar atleta</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {field('Nome completo *', 'full_name')}
+    <ModalFrame label="Editar atleta" onClose={onClose} panelStyle={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar atleta</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          {field('Nome completo', 'full_name', 'text', undefined, { required: true, error: nameError })}
           {field('Nome curto', 'short_name')}
           {field('Posição', 'position', 'text', ATHLETE_POSITIONS)}
           {field('Status', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
           <div>
-            <label style={lbl}>Categoria</label>
-            <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
+            <label htmlFor="athdet-categoria" style={lbl}>Categoria</label>
+            <select id="athdet-categoria" style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
               {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
                 <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
               ))}
@@ -300,7 +314,7 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
           {field('CPF', 'cpf')}
           {field('Passaporte', 'passport_number')}
         </div>
-        <div><label style={lbl}>Observações</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        <div><label htmlFor="athdet-observacoes-2" style={lbl}>Observações</label><textarea id="athdet-observacoes-2" style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
 
         {/* Titularidade econômica */}
         <div style={{ borderTop: '1px solid var(--divider)', paddingTop: 14 }}>
@@ -313,16 +327,16 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map((r, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 76px 1fr 30px', gap: 8, alignItems: 'center' }}>
-                <select value={r.holder_type} onChange={e => setRow(i, { holder_type: e.target.value as HolderType })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }}>
+                <select aria-label={`Tipo do detentor ${i + 1}`} value={r.holder_type} onChange={e => setRow(i, { holder_type: e.target.value as HolderType })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }}>
                   {(Object.keys(HOLDER_TYPE_LABELS) as HolderType[]).map(k => <option key={k} value={k}>{HOLDER_TYPE_LABELS[k]}</option>)}
                 </select>
-                <input placeholder="Nome do detentor" value={r.holder_name} onChange={e => setRow(i, { holder_name: e.target.value })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }} />
+                <input aria-label={`Nome do detentor ${i + 1}`} placeholder="Nome do detentor" value={r.holder_name} onChange={e => setRow(i, { holder_name: e.target.value })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <input inputMode="decimal" value={r.percentage} onChange={e => setRow(i, { percentage: e.target.value.replace(',', '.').replace(/[^\d.]/g, '') })} placeholder="0" style={{ ...inp, padding: '6px 8px', fontSize: 12, textAlign: 'right', fontFamily: fontMono }} />
+                  <input aria-label={`Percentual do detentor ${i + 1}`} inputMode="decimal" value={r.percentage} onChange={e => setRow(i, { percentage: e.target.value.replace(',', '.').replace(/[^\d.]/g, '') })} placeholder="0" style={{ ...inp, padding: '6px 8px', fontSize: 12, textAlign: 'right', fontFamily: fontMono }} />
                   <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: fontMono }}>%</span>
                 </div>
-                <input placeholder="Obs." value={r.notes} onChange={e => setRow(i, { notes: e.target.value })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }} />
-                <button onClick={() => removeRow(i)} title="Remover" style={{ padding: '6px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+                <input aria-label={`Observação do detentor ${i + 1}`} placeholder="Obs." value={r.notes} onChange={e => setRow(i, { notes: e.target.value })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }} />
+                <button onClick={() => removeRow(i)} title="Remover" aria-label={`Remover detentor ${i + 1}`} style={{ padding: '6px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>✕</button>
               </div>
             ))}
           </div>
@@ -334,12 +348,16 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
           <PjSection pjs={pjs} canEdit={canEdit} onAdd={onAddPJ} onUpdate={onUpdatePJ} onDelete={onDeletePJ} imageCountByPj={imageCountByPj} />
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+          {(nameError || sum > 100.01) && (
+            <span style={{ fontSize: 12, color: 'var(--neg)', fontFamily: font, marginRight: 'auto' }}>
+              {nameError ? 'Preencha o nome completo para salvar.' : 'A soma dos detentores passa de 100%.'}
+            </span>
+          )}
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving || !f.full_name.trim()} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
+          <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   )
 }
 
@@ -361,15 +379,17 @@ function contractLabel(c: Contract): string {
 }
 
 type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'acordos' | 'transferencias' | 'consolidado'
+// Consolidado é a aba padrão — por isso vem primeiro.
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'consolidado',    label: 'Consolidado' },
   { id: 'salario',        label: 'Salário' },
   { id: 'luvas',          label: 'Luvas' },
   { id: 'agentes',        label: 'Agentes' },
   { id: 'gatilhos',       label: 'Gatilhos e Cláusulas Diversas' },
   { id: 'acordos',        label: 'Acordos e Renegociações' },
   { id: 'transferencias', label: 'Histórico de Transferências' },
-  { id: 'consolidado',    label: 'Consolidado' },
 ]
+const isTab = (v: string | null): v is Tab => TABS.some(t => t.id === v)
 
 // Agrupamento de tipos de cláusula por natureza (usado pelas abas).
 const SALARY_IMAGE_TYPES: ClauseType[] = ['SALARIO_CETD', 'DIREITO_IMAGEM']
@@ -399,6 +419,8 @@ export default function PageAthleteDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { canEdit } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -414,7 +436,27 @@ export default function PageAthleteDetail() {
   const [loading, setLoading] = useState(true)
   const [clubIdx, setClubIdx] = useState<Map<string, string>>(new Map())
   const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
-  const [tab, setTab] = useState<Tab>('consolidado')
+  // Aba ativa na URL (?aba=salario…): sobrevive a recarregar, voltar e compartilhar link.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const abaParam = searchParams.get('aba')
+  const tab: Tab = isTab(abaParam) ? abaParam : 'consolidado'
+  const setTab = (t: Tab) => setSearchParams(prev => {
+    const n = new URLSearchParams(prev)
+    n.set('aba', t)
+    return n
+  }, { replace: true })
+  function onTabKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const i = TABS.findIndex(t => t.id === tab)
+    let next = -1
+    if (e.key === 'ArrowRight') next = (i + 1) % TABS.length
+    else if (e.key === 'ArrowLeft') next = (i - 1 + TABS.length) % TABS.length
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = TABS.length - 1
+    if (next < 0) return
+    e.preventDefault()
+    setTab(TABS[next].id)
+    document.getElementById(`aba-${TABS[next].id}`)?.focus()
+  }
   const [payClauseId, setPayClauseId] = useState<string | null>(null)
   const [payInstId, setPayInstId] = useState<string | null>(null)
   const [editInstId, setEditInstId] = useState<string | null>(null)
@@ -502,17 +544,22 @@ export default function PageAthleteDetail() {
   const warnCount = alerts.filter(a => a.alert_type === 'VENCIMENTO_PROXIMO' && !a.is_read).length
   const unreadCrit = alerts.filter(a => a.severity === 'RED' && !a.is_read).length
 
+  // Executa uma ação com toast de sucesso/erro (mensagem amigável + detalhe técnico).
+  async function run(action: () => Promise<unknown>, ok: string, fail: string) {
+    try { await action(); if (ok) toast.success(ok); return true }
+    catch (e) { console.error(fail, e); toast.error(fail, { detail: errorMessage(e) }); return false }
+  }
   async function handleDeleteContract(cid: string) {
-    if (!window.confirm('Excluir este vínculo e todo o seu fluxo (cláusulas e parcelas)? Esta ação não pode ser desfeita.')) return
-    await deleteContract(cid); loadData()
+    if (!await confirm({ title: 'Excluir este vínculo?', message: 'O vínculo e todo o seu fluxo (cláusulas e parcelas) serão excluídos. Esta ação não pode ser desfeita.', danger: true })) return
+    await run(() => deleteContract(cid), 'Vínculo excluído.', 'Não foi possível excluir o vínculo.'); loadData()
   }
   async function handleDeleteClause(clauseId: string) {
-    if (!window.confirm('Excluir esta cláusula e suas parcelas? Esta ação não pode ser desfeita.')) return
-    await deleteClause(clauseId); loadData()
+    if (!await confirm({ title: 'Excluir esta cláusula?', message: 'A cláusula e suas parcelas serão excluídas. Esta ação não pode ser desfeita.', danger: true })) return
+    await run(() => deleteClause(clauseId), 'Cláusula excluída.', 'Não foi possível excluir a cláusula.'); loadData()
   }
   async function handleDeleteClubLiab(lid: string) {
-    if (!window.confirm('Excluir esta obrigação com clube?')) return
-    await deleteClubLiability(lid); setClubLiabs(prev => prev.filter(l => l.id !== lid))
+    if (!await confirm({ title: 'Excluir esta obrigação com clube?', message: 'Esta ação não pode ser desfeita.', danger: true })) return
+    if (await run(() => deleteClubLiability(lid), 'Obrigação excluída.', 'Não foi possível excluir a obrigação.')) setClubLiabs(prev => prev.filter(l => l.id !== lid))
   }
   // Passivo "flat" (agente/clube) → obrigação com página própria e parcelas.
   // Depois de promover, abre direto o editor de fluxo (o objetivo do usuário).
@@ -525,26 +572,41 @@ export default function PageAthleteDetail() {
     setFlowClauseId(clause.id)
   }
   async function handleDeleteIntermLiab(lid: string) {
-    if (!window.confirm('Excluir esta obrigação com agente?')) return
-    await deleteIntermediaryLiability(lid); setIntermLiabs(prev => prev.filter(l => l.id !== lid))
+    if (!await confirm({ title: 'Excluir esta obrigação com agente?', message: 'Esta ação não pode ser desfeita.', danger: true })) return
+    if (await run(() => deleteIntermediaryLiability(lid), 'Obrigação excluída.', 'Não foi possível excluir a obrigação.')) setIntermLiabs(prev => prev.filter(l => l.id !== lid))
   }
-  async function handleMarkAchieved(clauseId: string) { const u = await updateClause(clauseId, { achievement_status: 'ATINGIDA', achievement_date: todayISO() }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) }
-  async function handleCancelClause(clauseId: string) { const u = await updateClause(clauseId, { payment_status: 'CANCELADA' }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) }
+  async function handleMarkAchieved(clauseId: string) {
+    await run(async () => { const u = await updateClause(clauseId, { achievement_status: 'ATINGIDA', achievement_date: todayISO() }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) },
+      'Meta marcada como atingida.', 'Não foi possível atualizar a cláusula.')
+  }
+  async function handleCancelClause(clauseId: string) {
+    if (!await confirm({ title: 'Cancelar esta obrigação?', message: 'A obrigação passa para o status CANCELADA.', confirmLabel: 'Cancelar obrigação', cancelLabel: 'Voltar', danger: true })) return
+    await run(async () => { const u = await updateClause(clauseId, { payment_status: 'CANCELADA' }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) },
+      'Obrigação cancelada.', 'Não foi possível cancelar a obrigação.')
+  }
   async function handleClausePayment(clauseId: string, p: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
-    const u = await updateClause(clauseId, { payment_status: 'PAGA', payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes })
-    setClauses(prev => prev.map(c => c.id === clauseId ? u : c)); setPayClauseId(null)
+    await run(async () => {
+      const u = await updateClause(clauseId, { payment_status: 'PAGA', payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes })
+      setClauses(prev => prev.map(c => c.id === clauseId ? u : c)); setPayClauseId(null)
+    }, 'Pagamento registrado.', 'Não foi possível registrar o pagamento.')
   }
   async function handleInstallmentPayment(instId: string, p: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
-    const u = await updateInstallment(instId, { payment_status: 'PAGA', payment_date: p.date, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes || null })
-    setInstallments(prev => prev.map(i => i.id === instId ? u : i)); setPayInstId(null)
+    await run(async () => {
+      const u = await updateInstallment(instId, { payment_status: 'PAGA', payment_date: p.date, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes || null })
+      setInstallments(prev => prev.map(i => i.id === instId ? u : i)); setPayInstId(null)
+    }, 'Pagamento da parcela registrado.', 'Não foi possível registrar o pagamento.')
   }
   async function handleRevertInstallment(instId: string) {
-    const u = await revertInstallment(instId)
-    setInstallments(prev => prev.map(i => i.id === instId ? u : i))
+    await run(async () => {
+      const u = await revertInstallment(instId)
+      setInstallments(prev => prev.map(i => i.id === instId ? u : i))
+    }, 'Pagamento desfeito — parcela volta a PENDENTE.', 'Não foi possível desfazer o pagamento.')
   }
   async function handleMarkInstallmentPaidQuick(instId: string) {
-    const u = await markInstallmentPaid(instId, todayISO())
-    setInstallments(prev => prev.map(i => i.id === instId ? u : i))
+    await run(async () => {
+      const u = await markInstallmentPaid(instId, todayISO())
+      setInstallments(prev => prev.map(i => i.id === instId ? u : i))
+    }, 'Parcela marcada como paga.', 'Não foi possível dar baixa na parcela.')
   }
   async function handleToggleRJ(kind: 'inst' | 'clause' | 'club' | 'agent', ref: string) {
     const notes =
@@ -552,7 +614,7 @@ export default function PageAthleteDetail() {
       kind === 'clause' ? (clauses.find(c => c.id === ref)?.notes ?? null) :
       kind === 'club' ? (clubLiabs.find(l => l.id === ref)?.notes ?? null) :
       (intermLiabs.find(l => l.id === ref)?.notes ?? null)
-    await toggleItemRJ({ kind, id: ref }, notes)
+    if (!await run(() => toggleItemRJ({ kind, id: ref }, notes), 'Marcação de Recuperação Judicial atualizada.', 'Não foi possível alterar a marcação de RJ.')) return
     // Recarrega apenas o que mudou.
     if (id) {
       if (kind === 'inst') setInstallments(await fetchAthleteInstallments(id))
@@ -562,7 +624,7 @@ export default function PageAthleteDetail() {
     }
   }
   async function handleRenegotiate(input: RenegotiationInput) {
-    await createRenegotiation(input)
+    if (!await run(() => createRenegotiation(input), 'Renegociação registrada.', 'Não foi possível registrar a renegociação.')) return
     setShowReneg(false)
     await loadData()
   }
@@ -577,7 +639,10 @@ export default function PageAthleteDetail() {
       pjs, athleteName: athlete.full_name, clauses, installments,
     })
   }
-  async function handleAddTrigger(input: NewSalaryTriggerInput) { if (!id) return; const c = await createSalaryTrigger(id, input); setTriggers(prev => [...prev, c]) }
+  async function handleAddTrigger(input: NewSalaryTriggerInput) {
+    if (!id) return
+    await run(async () => { const c = await createSalaryTrigger(id, input); setTriggers(prev => [...prev, c]) }, 'Meta de salário adicionada.', 'Não foi possível adicionar a meta.')
+  }
   async function handleMarkTrigger(tid: string, date: string) {
     const u = await markTriggerAchieved(tid, date)
     const next = triggers.map(t => t.id === tid ? u : t)
@@ -593,46 +658,50 @@ export default function PageAthleteDetail() {
     await loadData()
   }
   async function handleDeleteTrigger(tid: string) {
-    await deleteSalaryTrigger(tid)
+    if (!await confirm({ title: 'Remover esta meta de salário?', message: 'O fluxo mensal será regerado sem ela.', confirmLabel: 'Remover', danger: true })) return
+    if (!await run(() => deleteSalaryTrigger(tid), 'Meta removida.', 'Não foi possível remover a meta.')) return
     const next = triggers.filter(t => t.id !== tid)
     setTriggers(next)
     await regenEmpFlow(next)
     await loadData()
   }
-  async function handlePhoto(url: string | null) { if (!id) return; const u = await updateAthlete(id, { profile_photo_url: url }); setAthlete(u) }
+  async function handlePhoto(url: string | null) {
+    if (!id) return
+    await run(async () => { const u = await updateAthlete(id, { profile_photo_url: url }); setAthlete(u) }, url ? 'Foto atualizada.' : 'Foto removida.', 'Não foi possível salvar a foto.')
+  }
   async function handleDeleteAthlete() {
     if (!id || !athlete) return
-    if (!window.confirm(`Excluir o atleta "${athlete.full_name}" e TODOS os seus vínculos (contratos, salário, luvas, agentes, gatilhos, transferências, parcelas, PJs)? Esta ação é irreversível.`)) return
+    const ok = await confirm({
+      title: `Excluir o atleta "${athlete.full_name}"?`,
+      message: 'Todos os vínculos serão excluídos junto: contratos, salário, luvas, agentes, gatilhos, transferências, parcelas e PJs. Esta ação é irreversível.',
+      confirmLabel: 'Excluir atleta',
+      danger: true,
+    })
+    if (!ok) return
     try {
       await deleteAthlete(id)
+      toast.success(`Atleta "${athlete.short_name || athlete.full_name}" excluído.`)
       navigate('/atletas')
     } catch (e) {
       // Supabase devolve objetos { message, details, hint, code } — não são Error.
-      // Extrai a informação útil para o usuário em vez de mostrar "[object Object]".
-      const err = e as { message?: string; details?: string; hint?: string; code?: string } | Error | string | null | undefined
-      const parts: string[] = []
-      if (err instanceof Error) parts.push(err.message)
-      else if (typeof err === 'string') parts.push(err)
-      else if (err && typeof err === 'object') {
-        if (err.message) parts.push(err.message)
-        if (err.details) parts.push(err.details)
-        if (err.hint) parts.push(`Dica: ${err.hint}`)
-        if (err.code) parts.push(`(código ${err.code})`)
-        if (parts.length === 0) parts.push(JSON.stringify(err))
-      } else {
-        parts.push(String(err))
-      }
-      const msg = parts.join('\n')
-      // eslint-disable-next-line no-console
       console.error('deleteAthlete falhou:', e)
-      window.alert(`Não foi possível excluir o atleta.\n\n${msg}\n\nAbra o console do navegador para ver o objeto completo do erro.`)
+      toast.error('Não foi possível excluir o atleta. Verifique se há registros vinculados e tente de novo.', {
+        detail: errorMessage(e), duration: 0,
+      })
     }
   }
 
   // ── PJs ──
-  async function handleAddPJ(input: NewAthletePJInput) { if (!id) return; const p = await createPJ(id, input); setPjs(prev => [...prev, p]) }
-  async function handleUpdatePJ(pjId: string, patch: Partial<AthletePJ>) { const u = await updatePJ(pjId, patch); setPjs(prev => prev.map(p => p.id === pjId ? u : p)) }
-  async function handleDeletePJ(pjId: string) { await deletePJ(pjId); setPjs(prev => prev.filter(p => p.id !== pjId)); setImageRights(prev => prev.map(ir => ir.pj_id === pjId ? { ...ir, pj_id: null } : ir)) }
+  async function handleAddPJ(input: NewAthletePJInput) {
+    if (!id) return
+    await run(async () => { const p = await createPJ(id, input); setPjs(prev => [...prev, p]) }, 'PJ cadastrada.', 'Não foi possível cadastrar a PJ.')
+  }
+  async function handleUpdatePJ(pjId: string, patch: Partial<AthletePJ>) {
+    await run(async () => { const u = await updatePJ(pjId, patch); setPjs(prev => prev.map(p => p.id === pjId ? u : p)) }, 'PJ atualizada.', 'Não foi possível atualizar a PJ.')
+  }
+  async function handleDeletePJ(pjId: string) {
+    await run(async () => { await deletePJ(pjId); setPjs(prev => prev.filter(p => p.id !== pjId)); setImageRights(prev => prev.map(ir => ir.pj_id === pjId ? { ...ir, pj_id: null } : ir)) }, 'PJ excluída.', 'Não foi possível excluir a PJ.')
+  }
 
 
   function exportAthlete() {
@@ -713,7 +782,7 @@ export default function PageAthleteDetail() {
           <ImageUpload value={athlete.profile_photo_url} onChange={handlePhoto} fallbackText={athlete.short_name} size={80} editable={canEdit} />
           <div style={{ flex: 1, minWidth: 260 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, margin: 0 }}>{athlete.full_name}</h1>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, margin: 0 }}>{athlete.full_name}</h2>
               <span style={{ padding: '3px 10px', borderRadius: 6, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{st.label}</span>
               {unreadCrit > 0 && <span title={`${unreadCrit} alerta(s) crítico(s)`} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 10, fontWeight: 600, fontFamily: fontMono }}>{unreadCrit} {unreadCrit === 1 ? 'crítico' : 'críticos'}</span>}
               {warnCount > 0 && <span title={`${warnCount} vencimento(s) próximo(s)`} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--warn-tint)', color: 'var(--warn)', fontSize: 10, fontWeight: 600, fontFamily: fontMono }}>{warnCount} atenção</span>}
@@ -807,18 +876,23 @@ export default function PageAthleteDetail() {
         <BigNumberCard label="Custo total de luvas" totals={luvasTotals} sub="Luvas contratadas" />
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--divider)', marginBottom: 16 }}>
+      {/* Abas (padrão WAI-ARIA: setas ←/→, Home/End) */}
+      <div role="tablist" aria-label="Seções da ficha do atleta" onKeyDown={onTabKeyDown}
+        style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--divider)', marginBottom: 16, overflowX: 'auto' }}>
         {TABS.map(t => {
-          const count = 0
+          const active = tab === t.id
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '10px 18px', border: 'none', background: 'none', fontFamily: font, fontSize: 13, fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', color: tab === t.id ? 'var(--ink-primary)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent', marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button key={t.id} id={`aba-${t.id}`} role="tab" type="button"
+              aria-selected={active} aria-controls={`painel-${t.id}`} tabIndex={active ? 0 : -1}
+              onClick={() => setTab(t.id)}
+              style={{ padding: '10px 18px', border: 'none', background: 'none', fontFamily: font, fontSize: 13, fontWeight: active ? 600 : 400, cursor: 'pointer', color: active ? 'var(--ink-primary)' : 'var(--text-muted)', borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent', marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
               {t.label}
-              {count > 0 && <span style={{ padding: '1px 6px', borderRadius: 10, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 9, fontFamily: fontMono }}>{count}</span>}
             </button>
           )
         })}
       </div>
+
+      <div role="tabpanel" id={`painel-${tab}`} aria-labelledby={`aba-${tab}`}>
 
       {/* Consolidado — todo o fluxo financeiro do atleta */}
       {tab === 'consolidado' && (
@@ -1057,6 +1131,7 @@ export default function PageAthleteDetail() {
         </div>
         )
       })()}
+      </div>
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
       {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
@@ -1116,6 +1191,7 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
   const [f, setF] = useState({ legal_name: '', cnpj: '', notes: '' })
   const [editId, setEditId] = useState<string | null>(null)
   const [ef, setEf] = useState({ legal_name: '', cnpj: '', notes: '' })
+  const confirm = useConfirm()
 
   function submitNew() {
     if (!f.legal_name.trim()) return
@@ -1141,9 +1217,9 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
 
       {adding && (
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end', marginBottom: 12, padding: 12, borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-          <div><label style={pjLbl}>Razão social *</label><input style={{ ...pjInp, width: '100%' }} value={f.legal_name} onChange={e => setF(p => ({ ...p, legal_name: e.target.value }))} placeholder="Ex: Fulano Sports LTDA" /></div>
-          <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={f.cnpj} onChange={e => setF(p => ({ ...p, cnpj: e.target.value }))} /></div>
-          <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
+          <div><label htmlFor="athdet-razao-social" style={pjLbl}>Razão social *</label><input id="athdet-razao-social" aria-required="true" style={{ ...pjInp, width: '100%' }} value={f.legal_name} onChange={e => setF(p => ({ ...p, legal_name: e.target.value }))} placeholder="Ex: Fulano Sports LTDA" /></div>
+          <div><label htmlFor="athdet-cnpj" style={pjLbl}>CNPJ</label><input id="athdet-cnpj" style={{ ...pjInp, width: '100%' }} value={f.cnpj} onChange={e => setF(p => ({ ...p, cnpj: e.target.value }))} /></div>
+          <div><label htmlFor="athdet-observacoes-3" style={pjLbl}>Observações</label><input id="athdet-observacoes-3" style={{ ...pjInp, width: '100%' }} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={submitNew} disabled={!f.legal_name.trim()} className="btn btn-primary">Salvar</button>
             <button onClick={() => setAdding(false)} className="btn btn-outline">✕</button>
@@ -1157,9 +1233,9 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {pjs.map(p => editId === p.id ? (
             <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end', padding: 12, borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-              <div><label style={pjLbl}>Razão social *</label><input style={{ ...pjInp, width: '100%' }} value={ef.legal_name} onChange={e => setEf(s => ({ ...s, legal_name: e.target.value }))} /></div>
-              <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={ef.cnpj} onChange={e => setEf(s => ({ ...s, cnpj: e.target.value }))} /></div>
-              <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={ef.notes} onChange={e => setEf(s => ({ ...s, notes: e.target.value }))} /></div>
+              <div><label htmlFor="athdet-razao-social-2" style={pjLbl}>Razão social *</label><input id="athdet-razao-social-2" aria-required="true" style={{ ...pjInp, width: '100%' }} value={ef.legal_name} onChange={e => setEf(s => ({ ...s, legal_name: e.target.value }))} /></div>
+              <div><label htmlFor="athdet-cnpj-2" style={pjLbl}>CNPJ</label><input id="athdet-cnpj-2" style={{ ...pjInp, width: '100%' }} value={ef.cnpj} onChange={e => setEf(s => ({ ...s, cnpj: e.target.value }))} /></div>
+              <div><label htmlFor="athdet-observacoes-4" style={pjLbl}>Observações</label><input id="athdet-observacoes-4" style={{ ...pjInp, width: '100%' }} value={ef.notes} onChange={e => setEf(s => ({ ...s, notes: e.target.value }))} /></div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={submitEdit} className="btn btn-primary">Salvar</button>
                 <button onClick={() => setEditId(null)} className="btn btn-outline">✕</button>
@@ -1179,7 +1255,7 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
               {canEdit && (
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={() => startEdit(p)} className="btn btn-outline">Editar</button>
-                  <button onClick={() => { if (window.confirm(`Excluir a PJ "${p.legal_name}"? Os lançamentos de imagem ficarão sem PJ.`)) onDelete(p.id) }} title="Excluir" style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
+                  <button onClick={async () => { if (await confirm({ title: `Excluir a PJ "${p.legal_name}"?`, message: 'Os lançamentos de imagem ficarão sem PJ.', danger: true })) onDelete(p.id) }} title="Excluir" style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
                 </div>
               )}
             </div>
@@ -1197,6 +1273,7 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
 }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
 
   const [f, setF] = useState({
     base_salary: contract.base_salary != null ? String(contract.base_salary) : '',
@@ -1227,7 +1304,10 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
         contract: { ...contract, ...patch }, triggers, pjs, athleteName, clauses, installments,
       })
       setEditing(false)
+      toast.success('Remuneração salva — fluxo mensal regerado.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível salvar a remuneração.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
@@ -1257,11 +1337,11 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
       {editing ? (
         <div style={{ marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-            <div><label style={lbl2}>Salário CLT</label><NumberInput style={inp} value={f.base_salary} onChange={v => setF(p => ({ ...p, base_salary: v }))} /></div>
-            <div><label style={lbl2}>Direito de imagem</label><NumberInput style={inp} value={f.image_value} onChange={v => setF(p => ({ ...p, image_value: v }))} /></div>
-            <div><label style={lbl2}>Outros (moradia/aux.)</label><NumberInput style={inp} value={f.other_value} onChange={v => setF(p => ({ ...p, other_value: v }))} /></div>
-            <div><label style={lbl2}>Moeda</label>
-              <select style={inp} value={f.salary_currency} onChange={e => setF(p => ({ ...p, salary_currency: e.target.value as Currency }))}>
+            <div><label htmlFor="athdet-salario-clt" style={lbl2}>Salário CLT</label><NumberInput id="athdet-salario-clt" style={inp} value={f.base_salary} onChange={v => setF(p => ({ ...p, base_salary: v }))} /></div>
+            <div><label htmlFor="athdet-direito-de-imagem" style={lbl2}>Direito de imagem</label><NumberInput id="athdet-direito-de-imagem" style={inp} value={f.image_value} onChange={v => setF(p => ({ ...p, image_value: v }))} /></div>
+            <div><label htmlFor="athdet-outros-moradia-aux" style={lbl2}>Outros (moradia/aux.)</label><NumberInput id="athdet-outros-moradia-aux" style={inp} value={f.other_value} onChange={v => setF(p => ({ ...p, other_value: v }))} /></div>
+            <div><label htmlFor="athdet-moeda-2" style={lbl2}>Moeda</label>
+              <select id="athdet-moeda-2" style={inp} value={f.salary_currency} onChange={e => setF(p => ({ ...p, salary_currency: e.target.value as Currency }))}>
                 {(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -1789,13 +1869,18 @@ function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClos
   const [contractId, setContractId] = useState<string>(umbrella?.id ?? '')
   const [lines, setLines] = useState<FlowLine[]>([])
   const [saving, setSaving] = useState(false)
+  const [tried, setTried] = useState(false)
+  const toast = useToast()
 
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
   const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
   const valid = lines.filter(l => l.due_date && l.value > 0)
   const canSave = !!name.trim() && valid.length > 0 && !saving
+  const nameErr = tried && !name.trim() ? 'Informe o credor.' : null
+  const missing = [!name.trim() && 'credor', valid.length === 0 && 'ao menos uma parcela com data e valor'].filter(Boolean) as string[]
 
   async function save() {
+    setTried(true)
     if (!canSave) return
     setSaving(true)
     try {
@@ -1810,41 +1895,47 @@ function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClos
       })
       await createClauseInstallments(clause.id, athleteId,
         valid.map((l, i) => ({ installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency })))
+      toast.success(`Fluxo de ${title.toLowerCase()} criado com ${valid.length} parcela(s).`)
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível criar o fluxo.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 680, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalFrame label={`Novo fluxo — ${title}`} onClose={onClose} panelStyle={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 680, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Novo fluxo — {title}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             {clauseType === 'INTERMEDIACAO'
-              ? <EntityPicker kind="intermediario" label="Agente / Intermediário *" value={name} onChange={n => setName(n)} />
-              : <><label style={lbl}>Credor (atleta/agente/clube) *</label><input style={inp} value={name} onChange={e => setName(e.target.value)} placeholder="Nome do credor" /></>}
+              ? <EntityPicker kind="intermediario" label="Agente" required error={nameErr} value={name} onChange={n => setName(n)} />
+              : <Field label="Credor (atleta/agente/clube)" required error={nameErr} labelStyle={lbl}><input style={{ ...inp, ...(nameErr ? { borderColor: 'var(--neg)' } : null) }} value={name} onChange={e => setName(e.target.value)} onBlur={() => setTried(true)} placeholder="Nome do credor" /></Field>}
           </div>
-          <div><label style={lbl}>Moeda</label><select style={inp} value={currency} onChange={e => setCurrency(e.target.value as Currency)}>{(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label htmlFor="athdet-moeda-3" style={lbl}>Moeda</label><select id="athdet-moeda-3" style={inp} value={currency} onChange={e => setCurrency(e.target.value as Currency)}>{(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
-        <div><label style={lbl}>Descrição</label><input style={inp} value={desc} onChange={e => setDesc(e.target.value)} placeholder={`Ex.: Contrato de ${title.toLowerCase()} 2M em 10x`} /></div>
+        <div><label htmlFor="athdet-descricao-2" style={lbl}>Descrição</label><input id="athdet-descricao-2" style={inp} value={desc} onChange={e => setDesc(e.target.value)} placeholder={`Ex.: Contrato de ${title.toLowerCase()} 2M em 10x`} /></div>
         <div>
-          <label style={lbl}>Contrato guarda-chuva</label>
-          <select style={inp} value={contractId} onChange={e => setContractId(e.target.value)}>
+          <label htmlFor="athdet-contrato-guarda-chuva" style={lbl}>Contrato guarda-chuva</label>
+          <select id="athdet-contrato-guarda-chuva" style={inp} value={contractId} onChange={e => setContractId(e.target.value)}>
             <option value="">— nenhum (independente) —</option>
             {contracts.filter(c => TRANSFER_CONTRACT_TYPES.includes(c.type)).map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
           </select>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 4 }}>Atrela este fluxo à transferência de compra do atleta.</div>
         </div>
         <div>
-          <label style={lbl}>Fluxo de pagamento</label>
+          <div style={lbl}>Fluxo de pagamento</div>
           <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} seedRows={4} />
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+          {missing.length > 0 && (
+            <span role="status" style={{ fontSize: 12, color: tried ? 'var(--neg)' : 'var(--text-muted)', fontFamily: font, marginRight: 'auto' }}>
+              Falta: {missing.join(' e ')}.
+            </span>
+          )}
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={!canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Salvando...' : 'Salvar fluxo'}</button>
+          <button onClick={save} disabled={saving} aria-disabled={!canSave} className="btn btn-primary" style={{ opacity: canSave ? 1 : 0.55 }}>{saving ? 'Salvando...' : 'Salvar fluxo'}</button>
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   )
 }
 
@@ -1952,6 +2043,7 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
 }) {
   // Contratos aos quais este pode ser atrelado (todos do atleta, menos ele mesmo).
   const relatable = siblings.filter(c => c.id !== contract.id)
+  const toast = useToast()
   const [f, setF] = useState({
     type: contract.type,
     status: contract.status,
@@ -1997,17 +2089,19 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
       await updateContract(contract.id, patch)
       // Propaga a moeda do vínculo para as parcelas do fluxo (salário/imagem/transf.).
       await updateContractFlowsCurrency(contract.id, f.salary_currency as Currency, f.transfer_currency as Currency)
+      toast.success('Vínculo atualizado.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível salvar o vínculo.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalFrame label="Editar vínculo" onClose={onClose} panelStyle={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Editar vínculo</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div><label style={lbl}>Tipo</label>
-            <select style={inp} value={f.type} onChange={e => set('type', e.target.value)}>
+          <div><label htmlFor="athdet-tipo" style={lbl}>Tipo</label>
+            <select id="athdet-tipo" style={inp} value={f.type} onChange={e => set('type', e.target.value)}>
               <optgroup label="Transferência">
                 {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
               </optgroup>
@@ -2016,27 +2110,27 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
               </optgroup>
             </select>
           </div>
-          <div><label style={lbl}>Status</label>
-            <select style={inp} value={f.status} onChange={e => set('status', e.target.value)}>
+          <div><label htmlFor="athdet-status" style={lbl}>Status</label>
+            <select id="athdet-status" style={inp} value={f.status} onChange={e => set('status', e.target.value)}>
               <option value="ATIVO">Ativo</option><option value="ENCERRADO">Encerrado</option><option value="RESCINDIDO">Rescindido</option>
             </select>
           </div>
-          <div><label style={lbl}>Clube / Contraparte</label><input style={inp} value={f.counterpart_club} onChange={e => set('counterpart_club', e.target.value)} /></div>
-          <div><label style={lbl}>País</label><input style={inp} value={f.counterpart_country} onChange={e => set('counterpart_country', e.target.value)} /></div>
-          <div><label style={lbl}>Início</label><input style={inp} type="date" value={f.start_date} onChange={e => set('start_date', e.target.value)} /></div>
-          <div><label style={lbl}>Término</label><input style={inp} type="date" value={f.end_date} onChange={e => set('end_date', e.target.value)} /></div>
-          <div><label style={lbl}>Valor transferência</label><NumberInput style={inp} value={f.transfer_fee_gross} onChange={v => set('transfer_fee_gross', v)} /></div>
-          <div><label style={lbl}>Moeda transf.</label><select style={inp} value={f.transfer_currency} onChange={e => set('transfer_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label style={lbl}>Salário CLT/mês</label><NumberInput style={inp} value={f.base_salary} onChange={v => set('base_salary', v)} /></div>
-          <div><label style={lbl}>Imagem/mês</label><NumberInput style={inp} value={f.image_value} onChange={v => set('image_value', v)} /></div>
-          <div><label style={lbl}>Outros/mês</label><NumberInput style={inp} value={f.other_value} onChange={v => set('other_value', v)} /></div>
-          <div><label style={lbl}>Moeda salário</label><select style={inp} value={f.salary_currency} onChange={e => set('salary_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label htmlFor="athdet-clube-contraparte" style={lbl}>Clube / Contraparte</label><input id="athdet-clube-contraparte" style={inp} value={f.counterpart_club} onChange={e => set('counterpart_club', e.target.value)} /></div>
+          <div><label htmlFor="athdet-pais" style={lbl}>País</label><input id="athdet-pais" style={inp} value={f.counterpart_country} onChange={e => set('counterpart_country', e.target.value)} /></div>
+          <div><label htmlFor="athdet-inicio" style={lbl}>Início</label><input id="athdet-inicio" style={inp} type="date" value={f.start_date} onChange={e => set('start_date', e.target.value)} /></div>
+          <div><label htmlFor="athdet-termino" style={lbl}>Término</label><input id="athdet-termino" style={inp} type="date" value={f.end_date} onChange={e => set('end_date', e.target.value)} /></div>
+          <div><label htmlFor="athdet-valor-transferencia" style={lbl}>Valor transferência</label><NumberInput id="athdet-valor-transferencia" style={inp} value={f.transfer_fee_gross} onChange={v => set('transfer_fee_gross', v)} /></div>
+          <div><label htmlFor="athdet-moeda-transf" style={lbl}>Moeda transf.</label><select id="athdet-moeda-transf" style={inp} value={f.transfer_currency} onChange={e => set('transfer_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label htmlFor="athdet-salario-clt-mes" style={lbl}>Salário CLT/mês</label><NumberInput id="athdet-salario-clt-mes" style={inp} value={f.base_salary} onChange={v => set('base_salary', v)} /></div>
+          <div><label htmlFor="athdet-imagem-mes" style={lbl}>Imagem/mês</label><NumberInput id="athdet-imagem-mes" style={inp} value={f.image_value} onChange={v => set('image_value', v)} /></div>
+          <div><label htmlFor="athdet-outros-mes" style={lbl}>Outros/mês</label><NumberInput id="athdet-outros-mes" style={inp} value={f.other_value} onChange={v => set('other_value', v)} /></div>
+          <div><label htmlFor="athdet-moeda-salario" style={lbl}>Moeda salário</label><select id="athdet-moeda-salario" style={inp} value={f.salary_currency} onChange={e => set('salary_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
-        <div><label style={lbl}>Descrição</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+        <div><label htmlFor="athdet-descricao-3" style={lbl}>Descrição</label><textarea id="athdet-descricao-3" style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.description} onChange={e => set('description', e.target.value)} /></div>
         {relatable.length > 0 && (
           <div>
-            <label style={lbl}>Contrato relacionado</label>
-            <select style={inp} value={f.related_contract_id} onChange={e => set('related_contract_id', e.target.value)}>
+            <label htmlFor="athdet-contrato-relacionado" style={lbl}>Contrato relacionado</label>
+            <select id="athdet-contrato-relacionado" style={inp} value={f.related_contract_id} onChange={e => set('related_contract_id', e.target.value)}>
               <option value="">— nenhum (contrato independente) —</option>
               {relatable.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
             </select>
@@ -2052,8 +2146,7 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   )
 }
 
@@ -2129,8 +2222,13 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
   }
 
   const canSave = f.description.trim().length > 0 && (!isFuture || !!f.percentage_value || !!f.original_value)
+  const [tried, setTried] = useState(false)
+  const toast = useToast()
+  const descErr = tried && !f.description.trim() ? 'Descreva a cláusula.' : null
+  const pctErr = tried && isFuture && !f.percentage_value && !f.original_value ? 'Informe o percentual da venda futura.' : null
 
   async function save() {
+    setTried(true)
     if (!canSave) return
     setSaving(true)
     try {
@@ -2157,9 +2255,12 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
           due_date: addMonths(f.due_date, i * step),
           original_value: per,
           currency: f.currency,
-        })))
+          })))
       }
+      toast.success('Cláusula adicionada.')
       onSaved()
+    } catch (e) {
+      toast.error('Não foi possível adicionar a cláusula.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
@@ -2169,15 +2270,14 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
   const clauseTypes = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalFrame label="Nova cláusula" onClose={onClose} panelStyle={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 660, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Nova cláusula</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 3 }}>atrelada a {CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}</div>
         </div>
 
-        <div><label style={lbl}>Tipo</label>
-          <select style={inp} value={f.clause_type} onChange={e => changeType(e.target.value as ClauseType)}>
+        <div><label htmlFor="athdet-tipo-2" style={lbl}>Tipo</label>
+          <select id="athdet-tipo-2" style={inp} value={f.clause_type} onChange={e => changeType(e.target.value as ClauseType)}>
             {clauseTypes.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
           </select>
         </div>
@@ -2188,20 +2288,20 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
           </div>
         )}
 
-        <div><label style={lbl}>Descrição *</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder={isFuture ? 'Ex: Sell-on de 15% sobre venda futura ao exterior' : 'Descreva a cláusula...'} /></div>
+        <Field label="Descrição" required error={descErr} labelStyle={lbl}><input style={{ ...inp, ...(descErr ? { borderColor: 'var(--neg)' } : null) }} value={f.description} onChange={e => set('description', e.target.value)} onBlur={() => setTried(true)} placeholder={isFuture ? 'Ex: Sell-on de 15% sobre venda futura ao exterior' : 'Descreva a cláusula...'} /></Field>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
-          <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
-          <div><label style={lbl}>Percentual (%){isFuture ? ' *' : ''}</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} placeholder="Ex: 15" /></div>
-          <div><label style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><NumberInput style={{ ...inp, opacity: isFuture ? 0.55 : 1 }} value={f.original_value} onChange={v => set('original_value', v)} placeholder={isFuture ? 'a definir na venda' : '0,00'} /></div>
-          <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label style={lbl}>{isFuture ? 'Vencimento (opcional)' : 'Vencimento / 1ª parcela'}</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+          <div><label htmlFor="athdet-credor" style={lbl}>Credor</label><input id="athdet-credor" style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
+          <div><label htmlFor="athdet-devedor" style={lbl}>Devedor</label><input id="athdet-devedor" style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
+          <Field label="Percentual (%)" required={isFuture} error={pctErr} labelStyle={lbl}><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} placeholder="Ex: 15" /></Field>
+          <div><label htmlFor="athdet-valor" style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><NumberInput id="athdet-valor" style={{ ...inp, opacity: isFuture ? 0.55 : 1 }} value={f.original_value} onChange={v => set('original_value', v)} placeholder={isFuture ? 'a definir na venda' : '0,00'} /></div>
+          <div><label htmlFor="athdet-moeda-4" style={lbl}>Moeda</label><select id="athdet-moeda-4" style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label htmlFor="athdet-campo" style={lbl}>{isFuture ? 'Vencimento (opcional)' : 'Vencimento / 1ª parcela'}</label><input id="athdet-campo" style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         </div>
 
         {isSellOn && (
-          <div><label style={lbl}>Base de cálculo do Sell-on</label>
-            <select style={inp} value={f.basis} onChange={e => set('basis', e.target.value)}>
+          <div><label htmlFor="athdet-base-de-calculo-do-sell-on" style={lbl}>Base de cálculo do Sell-on</label>
+            <select id="athdet-base-de-calculo-do-sell-on" style={inp} value={f.basis} onChange={e => set('basis', e.target.value)}>
               {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
             </select>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, marginTop: 4 }}>
@@ -2212,10 +2312,10 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
 
         {!isFuture && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={lbl}>Nº parcelas</label><input style={inp} type="number" min={1} max={120} value={f.installments_total} onChange={e => set('installments_total', e.target.value)} /></div>
+            <div><label htmlFor="athdet-n-parcelas" style={lbl}>Nº parcelas</label><input id="athdet-n-parcelas" style={inp} type="number" min={1} max={120} value={f.installments_total} onChange={e => set('installments_total', e.target.value)} /></div>
             {installments > 1 && (
-              <div><label style={lbl}>Periodicidade</label>
-                <select style={inp} value={f.period} onChange={e => set('period', e.target.value)}>
+              <div><label htmlFor="athdet-periodicidade" style={lbl}>Periodicidade</label>
+                <select id="athdet-periodicidade" style={inp} value={f.period} onChange={e => set('period', e.target.value)}>
                   {(Object.keys(NEW_CLAUSE_PERIOD_LABEL) as NewClausePeriod[]).map(p => <option key={p} value={p}>{NEW_CLAUSE_PERIOD_LABEL[p]}</option>)}
                 </select>
               </div>
@@ -2229,15 +2329,19 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
           </div>
         )}
 
-        {!isSellOn && <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} placeholder="Ex: sobre o valor de uma venda futura" /></div>}
-        <div><label style={lbl}>Notas</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        {!isSellOn && <div><label htmlFor="athdet-condicao-gatilho" style={lbl}>Condição / gatilho</label><input id="athdet-condicao-gatilho" style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} placeholder="Ex: sobre o valor de uma venda futura" /></div>}
+        <div><label htmlFor="athdet-notas" style={lbl}>Notas</label><textarea id="athdet-notas" style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+          {!canSave && (
+            <span role="status" style={{ fontSize: 12, color: tried ? 'var(--neg)' : 'var(--text-muted)', fontFamily: font, marginRight: 'auto' }}>
+              Falta: {[!f.description.trim() && 'descrição', isFuture && !f.percentage_value && !f.original_value && 'percentual'].filter(Boolean).join(' e ')}.
+            </span>
+          )}
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving || !canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
+          <button onClick={save} disabled={saving} aria-disabled={!canSave} className="btn btn-primary" style={{ opacity: canSave ? 1 : 0.55 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   )
 }
 
@@ -2534,8 +2638,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
   const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,20,16,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 760, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <ModalFrame label="Nova renegociação" onClose={onClose} panelStyle={{ background: 'var(--cream-card)', borderRadius: 12, padding: 26, width: 760, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>Nova renegociação</div>
 
         {/* Seleção de itens */}
@@ -2584,12 +2687,12 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-            <div><label style={lbl}>Dívida selecionada</label><input style={{ ...inp, fontFamily: fontMono }} value={`${currency} ${sum.toLocaleString('pt-BR')}`} disabled /></div>
-            <div><label style={lbl}>Novo total ({currency})</label><NumberInput style={{ ...inp, fontFamily: fontMono }} value={mode === 'custom' ? (scheduleSum || '') : (touchedTotal ? newTotal : (sum || ''))} onChange={v => { setTouchedTotal(true); setNewTotal(v) }} disabled={mode === 'custom'} placeholder="Igual à dívida" /></div>
-            <div><label style={lbl}>Desconto</label><input style={{ ...inp, fontFamily: fontMono, color: discount > 0 ? 'var(--pos)' : discount < 0 ? 'var(--neg)' : undefined }} value={`${currency} ${discount.toLocaleString('pt-BR')}`} disabled /></div>
-            <div><label style={lbl}>{mode === 'custom' ? 'Data 1ª parcela' : 'Data-base'}</label><input style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-            <div><label style={lbl}>Nº de parcelas</label><input style={inp} type="number" min={1} step={1} value={count} onChange={e => setCount(e.target.value)} /></div>
-            <div><label style={lbl}>Periodicidade (meses)</label><input style={inp} type="number" min={1} step={1} value={period} onChange={e => setPeriod(e.target.value)} disabled={mode === 'custom'} /></div>
+            <div><label htmlFor="athdet-divida-selecionada" style={lbl}>Dívida selecionada</label><input id="athdet-divida-selecionada" style={{ ...inp, fontFamily: fontMono }} value={`${currency} ${sum.toLocaleString('pt-BR')}`} disabled /></div>
+            <div><label htmlFor="athdet-novo-total" style={lbl}>Novo total ({currency})</label><NumberInput id="athdet-novo-total" style={{ ...inp, fontFamily: fontMono }} value={mode === 'custom' ? (scheduleSum || '') : (touchedTotal ? newTotal : (sum || ''))} onChange={v => { setTouchedTotal(true); setNewTotal(v) }} disabled={mode === 'custom'} placeholder="Igual à dívida" /></div>
+            <div><label htmlFor="athdet-desconto" style={lbl}>Desconto</label><input id="athdet-desconto" style={{ ...inp, fontFamily: fontMono, color: discount > 0 ? 'var(--pos)' : discount < 0 ? 'var(--neg)' : undefined }} value={`${currency} ${discount.toLocaleString('pt-BR')}`} disabled /></div>
+            <div><label htmlFor="athdet-campo-2" style={lbl}>{mode === 'custom' ? 'Data 1ª parcela' : 'Data-base'}</label><input id="athdet-campo-2" style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+            <div><label htmlFor="athdet-n-de-parcelas" style={lbl}>Nº de parcelas</label><input id="athdet-n-de-parcelas" style={inp} type="number" min={1} step={1} value={count} onChange={e => setCount(e.target.value)} /></div>
+            <div><label htmlFor="athdet-periodicidade-meses" style={lbl}>Periodicidade (meses)</label><input id="athdet-periodicidade-meses" style={inp} type="number" min={1} step={1} value={period} onChange={e => setPeriod(e.target.value)} disabled={mode === 'custom'} /></div>
           </div>
 
           {mode === 'custom' && (
@@ -2619,7 +2722,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
             </div>
           )}
 
-          <div style={{ marginTop: 12 }}><label style={lbl}>Observações do acordo</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={note} onChange={e => setNote(e.target.value)} placeholder="Termos, motivo do desconto, referência do aditivo..." /></div>
+          <div style={{ marginTop: 12 }}><label htmlFor="athdet-observacoes-do-acordo" style={lbl}>Observações do acordo</label><textarea id="athdet-observacoes-do-acordo" style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={note} onChange={e => setNote(e.target.value)} placeholder="Termos, motivo do desconto, referência do aditivo..." /></div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -2627,7 +2730,6 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={submit} disabled={!canSave || saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : '#ccc', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Renegociando...' : 'Renegociar'}</button>
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   )
 }

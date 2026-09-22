@@ -65,7 +65,7 @@ export default function PageLogin() {
         {/* Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{
+            <label htmlFor="log-e-mail" style={{
               display: 'block',
               fontFamily: fontLabel,
               fontSize: 9,
@@ -77,7 +77,7 @@ export default function PageLogin() {
             }}>
               E-mail
             </label>
-            <input
+            <input id="log-e-mail"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -101,7 +101,7 @@ export default function PageLogin() {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={{
+            <label htmlFor="log-senha" style={{
               display: 'block',
               fontFamily: fontLabel,
               fontSize: 9,
@@ -113,7 +113,7 @@ export default function PageLogin() {
             }}>
               Senha
             </label>
-            <input
+            <input id="log-senha"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}

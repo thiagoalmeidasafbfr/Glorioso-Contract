@@ -190,11 +190,11 @@ function NewModal({ kind, onClose, onSaved }: { kind: Kind; onClose: () => void;
       <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
         <ImageUpload value={logo} onChange={setLogo} fallbackText={name} size={88} rounded={!isClube} maxSize={512} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div><label style={modalLabel}>Nome *</label><input style={modalInput} value={name} onChange={e => setName(e.target.value)} placeholder={isClube ? 'Ex: Benfica' : 'Ex: Agência XYZ'} /></div>
-          <div><label style={modalLabel}>{isClube ? 'País' : 'Contato'}</label><input style={modalInput} value={sub} onChange={e => setSub(e.target.value)} /></div>
+          <div><label htmlFor="cad-nome" style={modalLabel}>Nome *</label><input id="cad-nome" aria-required="true" style={modalInput} value={name} onChange={e => setName(e.target.value)} placeholder={isClube ? 'Ex: Benfica' : 'Ex: Agência XYZ'} /></div>
+          <div><label htmlFor="cad-campo" style={modalLabel}>{isClube ? 'País' : 'Contato'}</label><input id="cad-campo" style={modalInput} value={sub} onChange={e => setSub(e.target.value)} /></div>
         </div>
       </div>
-      <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 54, resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} /></div>
+      <div><label htmlFor="cad-observacoes" style={modalLabel}>Observações</label><textarea id="cad-observacoes" style={{ ...modalInput, minHeight: 54, resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} /></div>
     </ModalShell>
   )
 }

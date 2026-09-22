@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   fetchAthletes, createAthlete, fetchAllEconomicRights,
   fetchAllClauses, fetchAllInstallments, fetchAllAlerts,
@@ -17,6 +17,11 @@ import { Icon, IconButton } from '../components/Icon'
 import SheetIO from '../components/SheetIO'
 import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
+import Field from '../components/Field'
+import { useDialogA11y } from '../components/useDialogA11y'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -90,13 +95,18 @@ interface NewAthleteModalProps {
 }
 
 function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
+  const toast = useToast()
+  const dialogRef = useDialogA11y<HTMLDivElement>(onClose)
   const [f, setF] = useState({
     full_name: '', short_name: '', birth_date: '', nationality: 'Brasil',
     cpf: '', passport_number: '',
     current_status: 'ATIVO' as AthleteStatus, category: 'PROFISSIONAL' as AthleteCategory,
     position: '', notes: '',
   })
+  const [touched, setTouched] = useState(false)
+  const [saving, setSaving] = useState(false)
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+  const nameError = touched && !f.full_name.trim() ? 'Informe o nome completo do atleta.' : null
 
   const inp: React.CSSProperties = {
     width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13,
@@ -104,50 +114,61 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
     color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
   }
   const lbl: React.CSSProperties = {
-    fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.14em',
+    fontSize: 11, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.12em',
     textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block',
   }
-  const field = (label: string, key: string, type = 'text', opts?: string[]) => (
-    <div>
-      <label style={lbl}>{label}</label>
+  const field = (label: string, key: string, type = 'text', opts?: string[], extra?: { required?: boolean; error?: string | null; onBlur?: () => void }) => (
+    <Field label={label} labelStyle={lbl} required={extra?.required} error={extra?.error}>
       {opts ? (
         <select style={inp} value={(f as Record<string, string>)[key]} onChange={e => set(key, e.target.value)}>
-          {opts.map(o => <option key={o} value={o}>{o}</option>)}
+          {opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}
         </select>
       ) : (
-        <input type={type} style={inp} value={(f as Record<string, string>)[key]} onChange={e => set(key, e.target.value)} />
+        <input type={type} style={{ ...inp, ...(extra?.error ? { borderColor: 'var(--neg)' } : null) }} value={(f as Record<string, string>)[key]}
+          onChange={e => set(key, e.target.value)} onBlur={extra?.onBlur} />
       )}
-    </div>
+    </Field>
   )
 
   async function handleSave() {
+    setTouched(true)
     if (!f.full_name.trim()) return
-    const a = await createAthlete({
-      full_name: f.full_name.trim(),
-      short_name: f.short_name.trim() || f.full_name.trim().split(' ')[0],
-      birth_date: f.birth_date || null,
-      nationality: f.nationality || null,
-      cpf: f.cpf || null,
-      passport_number: f.passport_number || null,
-      agent_name: null,
-      agent_contact: null,
-      current_status: f.current_status,
-      category: f.category,
-      position: f.position || null,
-      profile_photo_url: null,
-      notes: f.notes || null,
-    })
-    onSave(a)
-    onClose()
+    setSaving(true)
+    try {
+      const a = await createAthlete({
+        full_name: f.full_name.trim(),
+        short_name: f.short_name.trim() || f.full_name.trim().split(' ')[0],
+        birth_date: f.birth_date || null,
+        nationality: f.nationality || null,
+        cpf: f.cpf || null,
+        passport_number: f.passport_number || null,
+        agent_name: null,
+        agent_contact: null,
+        current_status: f.current_status,
+        category: f.category,
+        position: f.position || null,
+        profile_photo_url: null,
+        notes: f.notes || null,
+      })
+      toast.success(`Atleta "${a.short_name}" cadastrado.`)
+      onSave(a)
+      onClose()
+    } catch (e) {
+      toast.error('Não foi possível cadastrar o atleta.', { detail: errorMessage(e) })
+    } finally { setSaving(false) }
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 28, width: 600, maxWidth: '96vw', border: '1px solid var(--divider)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, marginBottom: 4 }}>Novo Atleta</div>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="novo-atleta-titulo"
+        style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 28, width: 600, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <h2 id="novo-atleta-titulo" style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, marginBottom: 4 }}>Novo Atleta</h2>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>
+          Campos marcados com <span style={{ color: 'var(--neg)' }} aria-hidden="true">*</span> são obrigatórios.
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {field('Nome Completo *', 'full_name')}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          {field('Nome Completo', 'full_name', 'text', undefined, { required: true, error: nameError, onBlur: () => setTouched(true) })}
           {field('Nome Curto / Alcunha', 'short_name')}
           {field('Data de Nascimento', 'birth_date', 'date')}
           {field('Nacionalidade', 'nationality')}
@@ -155,29 +176,27 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           {field('Passaporte', 'passport_number')}
           {field('Posição', 'position', 'text', ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante'])}
           {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
-          <div>
-            <label style={lbl}>Categoria</label>
+          <Field label="Categoria" labelStyle={lbl}>
             <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
               {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
                 <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
               ))}
             </select>
-          </div>
+          </Field>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>
           Agentes são vinculados a cada transferência/vínculo, não ao atleta. Cadastre-os ao criar um vínculo.
         </div>
 
-        <div>
-          <label style={lbl}>Observações</label>
+        <Field label="Observações" labelStyle={lbl}>
           <textarea style={{ ...inp, minHeight: 60, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} />
-        </div>
+        </Field>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+          {nameError && <span style={{ fontSize: 12, color: 'var(--neg)', fontFamily: font, marginRight: 'auto' }}>Preencha o nome completo para continuar.</span>}
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={handleSave} disabled={!f.full_name.trim()}
-            style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: f.full_name.trim() ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
-            Criar Atleta
+          <button onClick={handleSave} disabled={saving} className="btn btn-primary">
+            {saving ? 'Criando…' : 'Criar Atleta'}
           </button>
         </div>
       </div>
@@ -198,6 +217,18 @@ function AlertCount({ kind, count }: { kind: 'atraso' | 'breve'; count: number }
   )
 }
 
+type AthleteRow = { a: Athlete; owners: string; stats: { overdue: number; soon: number; nextDue: string | null; unread: number } }
+// Chaves de ordenação da tabela (fora do componente para não recriar a cada render).
+const ROW_ACCESSORS: SortAccessors<AthleteRow> = {
+  name: r => r.a.short_name,
+  status: r => STATUS_LABELS[r.a.current_status],
+  country: r => r.a.nationality,
+  owners: r => (r.owners === '—' ? null : r.owners),
+  position: r => `${String(positionOrder(r.a.position)).padStart(2, '0')} ${r.a.short_name}`,
+  nextDue: r => r.stats.nextDue,
+  alerts: r => r.stats.overdue * 1000 + r.stats.soon,
+}
+
 export default function PageAthletesList() {
   const navigate = useNavigate()
   const [athletes, setAthletes] = useState<Athlete[]>([])
@@ -210,6 +241,7 @@ export default function PageAthletesList() {
   const [installments, setInstallments] = useState<ClauseInstallment[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const toast = useToast()
 
   function loadAll() {
     fetchAthletes().then(data => { setAthletes(data); setLoading(false) }).catch(() => setLoading(false))
@@ -259,10 +291,10 @@ export default function PageAthletesList() {
   }
 
   const th: React.CSSProperties = {
-    padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase',
+    padding: '8px 12px', fontSize: 11, fontWeight: 500, textTransform: 'uppercase',
     background: 'var(--tbl-head)', color: 'var(--ink-secondary)',
     borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono,
-    letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1,
+    letterSpacing: '0.12em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1,
     textAlign: 'center',
   }
   const td: React.CSSProperties = {
@@ -286,6 +318,9 @@ export default function PageAthletesList() {
     return parts.join(' · ')
   }
 
+  const rows: AthleteRow[] = filtered.map(a => ({ a, stats: getAthleteStats(a.id), owners: ownershipText(rightsByAthlete[a.id]) }))
+  const { sorted: sortedRows, sort } = useSortable(rows, 'position', { accessors: ROW_ACCESSORS })
+
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Atletas" subtitle="Gestão de plantel · Botafogo SAF" />
@@ -293,13 +328,13 @@ export default function PageAthletesList() {
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <label htmlFor="atletas-busca" style={{ display: 'block', fontSize: 11, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <input id="atletas-busca" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
+          <label htmlFor="atletas-status" style={{ display: 'block', fontSize: 11, fontFamily: fontMono, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</label>
+          <select id="atletas-status" value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
             style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
@@ -324,6 +359,7 @@ export default function PageAthletesList() {
               if (r.dupSkipped) parts.push(`${r.dupSkipped} já existente(s)`)
               if (r.invalid) parts.push(`${r.invalid} grupo(s) inválido(s)`)
               setImportMsg('Importado: ' + parts.join(' · '))
+              toast.success('Importação concluída.', { detail: parts.join(' · ') })
             } else {
               const rows = sheets['Atletas'] ?? sheets[Object.keys(sheets)[0]] ?? []
               let n = 0
@@ -348,6 +384,7 @@ export default function PageAthletesList() {
                 n++
               }
               setImportMsg(`Importado: ${n} atleta(s)`)
+              toast.success(`Importação concluída: ${n} atleta(s).`)
             }
             loadAll()
           }}
@@ -355,7 +392,7 @@ export default function PageAthletesList() {
       </div>
 
       {importMsg && (
-        <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--gold-deep)', letterSpacing: '0.04em', marginBottom: 14 }}>
+        <div role="status" style={{ fontFamily: fontMono, fontSize: 12, color: 'var(--gold-deep)', letterSpacing: '0.04em', marginBottom: 14 }}>
           {importMsg}
         </div>
       )}
@@ -366,15 +403,15 @@ export default function PageAthletesList() {
           <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ ...th, width: 52 }}></th>
-                <th style={{ ...th, width: 200, textAlign: 'left' }}>Nome</th>
-                <th style={{ ...th, width: 110 }}>Status</th>
-                <th style={{ ...th, width: 90 }}>País</th>
-                <th style={{ ...th, width: 220 }}>Detentores</th>
-                <th style={{ ...th, width: 140 }}>Posição</th>
-                <th style={{ ...th, width: 120 }}>Próx. Venc.</th>
-                <th style={{ ...th, width: 110 }}>Alertas</th>
-                <th style={{ ...th, width: 70 }}></th>
+                <th style={{ ...th, width: 52 }}><span className="sr-only">Foto</span></th>
+                <SortHeader k="name" sort={sort} style={{ ...th, width: 200, textAlign: 'left' }}>Nome</SortHeader>
+                <SortHeader k="status" sort={sort} style={{ ...th, width: 110 }}>Status</SortHeader>
+                <SortHeader k="country" sort={sort} style={{ ...th, width: 90 }}>País</SortHeader>
+                <SortHeader k="owners" sort={sort} style={{ ...th, width: 220 }}>Detentores</SortHeader>
+                <SortHeader k="position" sort={sort} style={{ ...th, width: 140 }}>Posição</SortHeader>
+                <SortHeader k="nextDue" sort={sort} style={{ ...th, width: 120 }}>Próx. Venc.</SortHeader>
+                <SortHeader k="alerts" sort={sort} style={{ ...th, width: 110 }}>Alertas</SortHeader>
+                <th style={{ ...th, width: 70 }}><span className="sr-only">Ações</span></th>
               </tr>
             </thead>
             <tbody>
@@ -395,8 +432,7 @@ export default function PageAthletesList() {
                   )}
                 </td></tr>
               )}
-              {filtered.map(a => {
-                const stats = getAthleteStats(a.id)
+              {sortedRows.map(({ a, stats }) => {
                 const st = STATUS_STYLE[a.current_status]
                 return (
                   <tr key={a.id} style={{ cursor: 'pointer' }}
@@ -409,8 +445,10 @@ export default function PageAthletesList() {
                       </div>
                     </td>
                     <td style={{ ...td, width: 200, textAlign: 'left' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.short_name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
+                      {/* Link real: teclado, clique do meio e "abrir em nova aba". */}
+                      <Link to={`/atletas/${a.id}`} className="row-link" onClick={e => e.stopPropagation()}
+                        style={{ display: 'block', fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.short_name}</Link>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
                     </td>
                     <td style={{ ...td, width: 110 }}>
                       <span style={{ padding: '3px 8px', borderRadius: 5, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase' }}>

@@ -501,8 +501,8 @@ export default function PageAthleteNewContract() {
           {existingContracts.length > 0 && (
             <div style={cardStyle}>
               <div style={{ ...sectionTitle, marginBottom: 12 }}>Contrato relacionado (opcional)</div>
-              <label style={labelStyle}>Atrelar este contrato a um vínculo existente</label>
-              <select value={relatedId} onChange={e => setRelatedId(e.target.value)} style={inputStyle}>
+              <label htmlFor="athnewcon-atrelar-este-contrato-a-um-v" style={labelStyle}>Atrelar este contrato a um vínculo existente</label>
+              <select id="athnewcon-atrelar-este-contrato-a-um-v" value={relatedId} onChange={e => setRelatedId(e.target.value)} style={inputStyle}>
                 <option value="">— nenhum (contrato independente) —</option>
                 {existingContracts.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
               </select>
@@ -524,8 +524,8 @@ export default function PageAthleteNewContract() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
-                <label style={labelStyle}>Tipo de vínculo</label>
-                <select value={contract.type} onChange={e => setContractField('type', e.target.value as ContractType)} style={inputStyle}>
+                <label htmlFor="athnewcon-tipo-de-vinculo" style={labelStyle}>Tipo de vínculo</label>
+                <select id="athnewcon-tipo-de-vinculo" value={contract.type} onChange={e => setContractField('type', e.target.value as ContractType)} style={inputStyle}>
                   <optgroup label="Transferência">
                     {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
                   </optgroup>
@@ -535,8 +535,8 @@ export default function PageAthleteNewContract() {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Status</label>
-                <select value={contract.status} onChange={e => setContractField('status', e.target.value as ContractStatus)} style={inputStyle}>
+                <label htmlFor="athnewcon-status" style={labelStyle}>Status</label>
+                <select id="athnewcon-status" value={contract.status} onChange={e => setContractField('status', e.target.value as ContractStatus)} style={inputStyle}>
                   <option value="ATIVO">Ativo</option>
                   <option value="ENCERRADO">Encerrado</option>
                   <option value="RESCINDIDO">Rescindido</option>
@@ -560,18 +560,18 @@ export default function PageAthleteNewContract() {
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>País da contraparte</label>
-                    <input value={contract.counterpart_country} onChange={e => setContractField('counterpart_country', e.target.value)} placeholder="Ex: Espanha" style={inputStyle} />
+                    <label htmlFor="athnewcon-pais-da-contraparte" style={labelStyle}>País da contraparte</label>
+                    <input id="athnewcon-pais-da-contraparte" value={contract.counterpart_country} onChange={e => setContractField('counterpart_country', e.target.value)} placeholder="Ex: Espanha" style={inputStyle} />
                   </div>
                 </>
               )}
               <div>
-                <label style={labelStyle}>Data de início *</label>
-                <input type="date" value={contract.start_date} onChange={e => setContractField('start_date', e.target.value)} style={inputStyle} />
+                <label htmlFor="athnewcon-data-de-inicio" style={labelStyle}>Data de início *</label>
+                <input id="athnewcon-data-de-inicio" aria-required="true" type="date" value={contract.start_date} onChange={e => setContractField('start_date', e.target.value)} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Data de término</label>
-                <input type="date" value={contract.end_date} onChange={e => setContractField('end_date', e.target.value)} style={inputStyle} />
+                <label htmlFor="athnewcon-data-de-termino" style={labelStyle}>Data de término</label>
+                <input id="athnewcon-data-de-termino" type="date" value={contract.end_date} onChange={e => setContractField('end_date', e.target.value)} style={inputStyle} />
               </div>
             </div>
           </div>
@@ -585,8 +585,8 @@ export default function PageAthleteNewContract() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, alignItems: 'end' }}>
               <div>
-                <label style={labelStyle}>Valor total</label>
-                <NumberInput
+                <label htmlFor="athnewcon-valor-total" style={labelStyle}>Valor total</label>
+                <NumberInput id="athnewcon-valor-total"
                   value={contract.transfer_fee_gross ?? ''}
                   onChange={v => setContractField('transfer_fee_gross', v ? parseFloat(v) : null)}
                   placeholder="Ex: 30.000.000"
@@ -594,25 +594,25 @@ export default function PageAthleteNewContract() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Moeda</label>
-                <select value={contract.transfer_currency} onChange={e => setContractField('transfer_currency', e.target.value as Currency)} style={inputStyle}>
+                <label htmlFor="athnewcon-moeda" style={labelStyle}>Moeda</label>
+                <select id="athnewcon-moeda" value={contract.transfer_currency} onChange={e => setContractField('transfer_currency', e.target.value as Currency)} style={inputStyle}>
                   {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Nº parcelas</label>
-                <input type="number" min={1} max={120} value={transferInst}
+                <label htmlFor="athnewcon-n-parcelas" style={labelStyle}>Nº parcelas</label>
+                <input id="athnewcon-n-parcelas" type="number" min={1} max={120} value={transferInst}
                   onChange={e => setTransferInst(Math.max(1, parseInt(e.target.value) || 1))} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Periodicidade</label>
-                <select value={transferPeriod} onChange={e => setTransferPeriod(e.target.value as TransferPeriod)} style={inputStyle}>
+                <label htmlFor="athnewcon-periodicidade" style={labelStyle}>Periodicidade</label>
+                <select id="athnewcon-periodicidade" value={transferPeriod} onChange={e => setTransferPeriod(e.target.value as TransferPeriod)} style={inputStyle}>
                   {(Object.keys(PERIOD_LABEL) as TransferPeriod[]).map(p => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>1ª parcela</label>
-                <input type="date" value={transferFirstDate} onChange={e => setTransferFirst(e.target.value)} style={inputStyle} />
+                <label htmlFor="athnewcon-1-parcela" style={labelStyle}>1ª parcela</label>
+                <input id="athnewcon-1-parcela" type="date" value={transferFirstDate} onChange={e => setTransferFirst(e.target.value)} style={inputStyle} />
               </div>
               <button type="button" onClick={generateTransferLines} className="btn btn-outline"
                 disabled={!transferTotalField} style={{ justifyContent: 'center', whiteSpace: 'nowrap' }}>
@@ -645,23 +645,23 @@ export default function PageAthleteNewContract() {
             <div style={{ ...sectionTitle, marginBottom: 16 }}>Remuneração mensal (paga pelo Botafogo)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <div>
-                <label style={labelStyle}>Salário CLT</label>
-                <NumberInput value={contract.base_salary ?? ''}
+                <label htmlFor="athnewcon-salario-clt" style={labelStyle}>Salário CLT</label>
+                <NumberInput id="athnewcon-salario-clt" value={contract.base_salary ?? ''}
                   onChange={v => setContractField('base_salary', v ? parseFloat(v) : null)} placeholder="Ex: 200.000" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Direito de imagem</label>
-                <NumberInput value={contract.image_value ?? ''}
+                <label htmlFor="athnewcon-direito-de-imagem" style={labelStyle}>Direito de imagem</label>
+                <NumberInput id="athnewcon-direito-de-imagem" value={contract.image_value ?? ''}
                   onChange={v => setContractField('image_value', v ? parseFloat(v) : null)} placeholder="Ex: 200.000" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Outros (moradia/aux.)</label>
-                <NumberInput value={contract.other_value ?? ''}
+                <label htmlFor="athnewcon-outros-moradia-aux" style={labelStyle}>Outros (moradia/aux.)</label>
+                <NumberInput id="athnewcon-outros-moradia-aux" value={contract.other_value ?? ''}
                   onChange={v => setContractField('other_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Moeda</label>
-                <select value={contract.salary_currency} onChange={e => setContractField('salary_currency', e.target.value as Currency)} style={inputStyle}>
+                <label htmlFor="athnewcon-moeda-2" style={labelStyle}>Moeda</label>
+                <select id="athnewcon-moeda-2" value={contract.salary_currency} onChange={e => setContractField('salary_currency', e.target.value as Currency)} style={inputStyle}>
                   {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
@@ -727,8 +727,8 @@ export default function PageAthleteNewContract() {
               {fixPtax && (
                 <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
                   <div>
-                    <label style={labelStyle}>PTAX (moeda/BRL)</label>
-                    <NumberInput decimals={4} grouping={false} value={fixPtaxRate}
+                    <label htmlFor="athnewcon-ptax-moeda-brl" style={labelStyle}>PTAX (moeda/BRL)</label>
+                    <NumberInput id="athnewcon-ptax-moeda-brl" decimals={4} grouping={false} value={fixPtaxRate}
                       onChange={v => setFixPtaxRate(v)} placeholder="Ex: 5,5000" style={inputStyle} />
                   </div>
                   <div style={{ ...noteBox, fontFamily: "var(--font-body)", fontSize: 12 }}>
@@ -769,34 +769,34 @@ export default function PageAthleteNewContract() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginTop: 12 }}>
                       {!ag.futureSale && (
                         <div>
-                          <label style={labelStyle}>Comissão / valor</label>
-                          <NumberInput value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle}
+                          <label htmlFor={`athnewcon-comissao-valor-${i}`} style={labelStyle}>Comissão / valor</label>
+                          <NumberInput id={`athnewcon-comissao-valor-${i}`} value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle}
                             disabled={agValid.length > 0} />
                         </div>
                       )}
                       {ag.futureSale && (
                         <div>
-                          <label style={labelStyle}>% da venda futura</label>
-                          <NumberInput decimals={2} grouping={false} value={ag.futurePct} onChange={v => setAgent(i, { futurePct: v })} placeholder="Ex: 10" style={inputStyle} />
+                          <label htmlFor={`athnewcon-da-venda-futura-${i}`} style={labelStyle}>% da venda futura</label>
+                          <NumberInput id={`athnewcon-da-venda-futura-${i}`} decimals={2} grouping={false} value={ag.futurePct} onChange={v => setAgent(i, { futurePct: v })} placeholder="Ex: 10" style={inputStyle} />
                         </div>
                       )}
                       <div>
-                        <label style={labelStyle}>Moeda</label>
-                        <select value={ag.currency} onChange={e => setAgent(i, { currency: e.target.value as Currency })} style={inputStyle}>
+                        <label htmlFor={`athnewcon-moeda-3-${i}`} style={labelStyle}>Moeda</label>
+                        <select id={`athnewcon-moeda-3-${i}`} value={ag.currency} onChange={e => setAgent(i, { currency: e.target.value as Currency })} style={inputStyle}>
                           {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={labelStyle}>Direção</label>
-                        <select value={ag.direction} onChange={e => setAgent(i, { direction: e.target.value as LiabilityDirection })} style={inputStyle}>
+                        <label htmlFor={`athnewcon-direcao-${i}`} style={labelStyle}>Direção</label>
+                        <select id={`athnewcon-direcao-${i}`} value={ag.direction} onChange={e => setAgent(i, { direction: e.target.value as LiabilityDirection })} style={inputStyle}>
                           <option value="A_PAGAR">A pagar</option>
                           <option value="A_RECEBER">A receber</option>
                         </select>
                       </div>
                       {ag.futureSale && (
                         <div>
-                          <label style={labelStyle}>Base de cálculo</label>
-                          <select value={ag.futureBasis} onChange={e => setAgent(i, { futureBasis: e.target.value as SellOnBasis })} style={inputStyle}>
+                          <label htmlFor={`athnewcon-base-de-calculo-${i}`} style={labelStyle}>Base de cálculo</label>
+                          <select id={`athnewcon-base-de-calculo-${i}`} value={ag.futureBasis} onChange={e => setAgent(i, { futureBasis: e.target.value as SellOnBasis })} style={inputStyle}>
                             {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
                           </select>
                         </div>
@@ -852,8 +852,8 @@ export default function PageAthleteNewContract() {
           </div>
 
           <div style={cardStyle}>
-            <label style={labelStyle}>Descrição / observações</label>
-            <textarea value={contract.description} onChange={e => setContractField('description', e.target.value)} rows={3} placeholder="Notas gerais sobre o vínculo..." style={{ ...inputStyle, resize: 'vertical' }} />
+            <label htmlFor="athnewcon-descricao-observacoes" style={labelStyle}>Descrição / observações</label>
+            <textarea id="athnewcon-descricao-observacoes" value={contract.description} onChange={e => setContractField('description', e.target.value)} rows={3} placeholder="Notas gerais sobre o vínculo..." style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
         </div>
       )}
@@ -888,57 +888,57 @@ export default function PageAthleteNewContract() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Tipo</label>
-                    <select value={cl.clause_type} onChange={e => setClauseField(idx, 'clause_type', e.target.value as ClauseType)} style={inputStyle}>
+                    <label htmlFor={`athnewcon-tipo-${idx}`} style={labelStyle}>Tipo</label>
+                    <select id={`athnewcon-tipo-${idx}`} value={cl.clause_type} onChange={e => setClauseField(idx, 'clause_type', e.target.value as ClauseType)} style={inputStyle}>
                       {CLAUSE_TYPES.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
                     </select>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Descrição *</label>
-                    <input value={cl.description ?? ''} onChange={e => setClauseField(idx, 'description', e.target.value)} placeholder="Descreva a cláusula..." style={inputStyle} />
+                    <label htmlFor={`athnewcon-descricao-${idx}`} style={labelStyle}>Descrição *</label>
+                    <input id={`athnewcon-descricao-${idx}`} aria-required="true" value={cl.description ?? ''} onChange={e => setClauseField(idx, 'description', e.target.value)} placeholder="Descreva a cláusula..." style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Credor</label>
-                    <input value={cl.creditor_party ?? ''} onChange={e => setClauseField(idx, 'creditor_party', e.target.value)} style={inputStyle} />
+                    <label htmlFor={`athnewcon-credor-${idx}`} style={labelStyle}>Credor</label>
+                    <input id={`athnewcon-credor-${idx}`} value={cl.creditor_party ?? ''} onChange={e => setClauseField(idx, 'creditor_party', e.target.value)} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Devedor</label>
-                    <input value={cl.debtor_party ?? ''} onChange={e => setClauseField(idx, 'debtor_party', e.target.value)} style={inputStyle} />
+                    <label htmlFor={`athnewcon-devedor-${idx}`} style={labelStyle}>Devedor</label>
+                    <input id={`athnewcon-devedor-${idx}`} value={cl.debtor_party ?? ''} onChange={e => setClauseField(idx, 'debtor_party', e.target.value)} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Valor</label>
-                    <NumberInput value={cl.original_value ?? ''} onChange={v => setClauseField(idx, 'original_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} disabled={clValid.length > 0} />
+                    <label htmlFor={`athnewcon-valor-${idx}`} style={labelStyle}>Valor</label>
+                    <NumberInput id={`athnewcon-valor-${idx}`} value={cl.original_value ?? ''} onChange={v => setClauseField(idx, 'original_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} disabled={clValid.length > 0} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Moeda</label>
-                    <select value={cl.currency ?? 'EUR'} onChange={e => setClauseField(idx, 'currency', e.target.value as Currency)} style={inputStyle}>
+                    <label htmlFor={`athnewcon-moeda-4-${idx}`} style={labelStyle}>Moeda</label>
+                    <select id={`athnewcon-moeda-4-${idx}`} value={cl.currency ?? 'EUR'} onChange={e => setClauseField(idx, 'currency', e.target.value as Currency)} style={inputStyle}>
                       {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={labelStyle}>% (se aplicável)</label>
-                    <NumberInput decimals={2} grouping={false} value={cl.percentage_value ?? ''} onChange={v => setClauseField(idx, 'percentage_value', v ? parseFloat(v) : null)} placeholder="Ex: 15" style={inputStyle} />
+                    <label htmlFor={`athnewcon-se-aplicavel-${idx}`} style={labelStyle}>% (se aplicável)</label>
+                    <NumberInput id={`athnewcon-se-aplicavel-${idx}`} decimals={2} grouping={false} value={cl.percentage_value ?? ''} onChange={v => setClauseField(idx, 'percentage_value', v ? parseFloat(v) : null)} placeholder="Ex: 15" style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Vencimento (parcela única)</label>
-                    <input type="date" value={cl.due_date ?? ''} onChange={e => setClauseField(idx, 'due_date', e.target.value)} style={inputStyle} disabled={clValid.length > 0} />
+                    <label htmlFor={`athnewcon-vencimento-parcela-unica-${idx}`} style={labelStyle}>Vencimento (parcela única)</label>
+                    <input id={`athnewcon-vencimento-parcela-unica-${idx}`} type="date" value={cl.due_date ?? ''} onChange={e => setClauseField(idx, 'due_date', e.target.value)} style={inputStyle} disabled={clValid.length > 0} />
                   </div>
                   {SELL_ON_CLAUSE_TYPES.includes(cl.clause_type as ClauseType) ? (
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Base de cálculo do Sell-on</label>
-                      <select value={cl.condition_description === sellOnConditionText('VALOR_TOTAL') ? 'VALOR_TOTAL' : 'MAIS_VALIA'} onChange={e => setClauseField(idx, 'condition_description', sellOnConditionText(e.target.value as SellOnBasis))} style={inputStyle}>
+                      <label htmlFor={`athnewcon-base-de-calculo-do-sell-on-${idx}`} style={labelStyle}>Base de cálculo do Sell-on</label>
+                      <select id={`athnewcon-base-de-calculo-do-sell-on-${idx}`} value={cl.condition_description === sellOnConditionText('VALOR_TOTAL') ? 'VALOR_TOTAL' : 'MAIS_VALIA'} onChange={e => setClauseField(idx, 'condition_description', sellOnConditionText(e.target.value as SellOnBasis))} style={inputStyle}>
                         {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
                       </select>
                     </div>
                   ) : (
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Condição / gatilho</label>
-                      <input value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder="Ex: Aprovação em 25 jogos na liga" style={inputStyle} />
+                      <label htmlFor={`athnewcon-condicao-gatilho-${idx}`} style={labelStyle}>Condição / gatilho</label>
+                      <input id={`athnewcon-condicao-gatilho-${idx}`} value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder="Ex: Aprovação em 25 jogos na liga" style={inputStyle} />
                     </div>
                   )}
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Notas</label>
-                    <input value={cl.notes ?? ''} onChange={e => setClauseField(idx, 'notes', e.target.value)} style={inputStyle} />
+                    <label htmlFor={`athnewcon-notas-${idx}`} style={labelStyle}>Notas</label>
+                    <input id={`athnewcon-notas-${idx}`} value={cl.notes ?? ''} onChange={e => setClauseField(idx, 'notes', e.target.value)} style={inputStyle} />
                   </div>
                 </div>
 

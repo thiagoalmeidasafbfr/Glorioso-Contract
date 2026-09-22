@@ -28,6 +28,8 @@ import KpiPill from '../components/KpiPill'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
+import { useToast, errorMessage } from '../components/toast-context'
+import { useConfirm } from '../components/confirm-context'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -53,6 +55,8 @@ const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes
 
 export default function PageRecuperacaoJudicial() {
   const { profile } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
   const [rows, setRows] = useState<RJRow[]>([])
   const [ptax, setPtax] = useState<Record<string, number>>({})
@@ -236,8 +240,11 @@ export default function PageRecuperacaoJudicial() {
 
   async function unmark(r: RJRow) {
     if (!canEdit) return
-    if (!confirm(`Retirar "${r.descricao || r.natureza}" da Recuperação Judicial?`)) return
-    await unmarkItemRJ({ kind: r.kind, id: r.id }, r.notes)
+    if (!await confirm({ title: `Retirar "${r.descricao || r.natureza}" da Recuperação Judicial?`, message: 'O item volta a contar como a pagar corrente.', confirmLabel: 'Retirar da RJ' })) return
+    try {
+      await unmarkItemRJ({ kind: r.kind, id: r.id }, r.notes)
+      toast.success('Item retirado da Recuperação Judicial.')
+    } catch (e) { toast.error('Não foi possível retirar o item da RJ.', { detail: errorMessage(e) }) }
     await load()
   }
 
@@ -281,19 +288,19 @@ export default function PageRecuperacaoJudicial() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
+          <label htmlFor="recjud-busca" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
+          <input id="recjud-busca" value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
             style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
-          <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 240 }}>
+          <label htmlFor="recjud-credor" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
+          <select id="recjud-credor" value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 240 }}>
             {credores.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <label htmlFor="recjud-status" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <select id="recjud-status" value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>

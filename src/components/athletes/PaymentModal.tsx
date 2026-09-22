@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Currency } from '../../types/athlete-system'
 import NumberInput from '../NumberInput'
 import { approxRateBRL } from '../../lib/fx'
+import ModalFrame from '../ModalFrame'
 
 interface PaymentModalProps {
   label: string
@@ -46,27 +47,23 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
   }
 
   const labelStyle: React.CSSProperties = {
-    fontFamily: "var(--font-label)", fontSize: 10,
+    fontFamily: "var(--font-label)", fontSize: 11,
     fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-    color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
+    color: 'var(--text-muted)', display: 'block', marginBottom: 4,
   }
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }}
-    >
-      <div style={{
+    <ModalFrame label={`Registrar pagamento — ${label}`} onClose={onClose}
+      overlayStyle={{ background: 'rgba(0,0,0,0.45)' }}
+      panelStyle={{
         background: 'var(--cream-card, #faf6ed)', border: '1px solid var(--gold-line, var(--divider-strong))',
         borderRadius: 12, padding: 28, width: 420, maxWidth: '95vw',
         boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
       }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{
-            fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500,
-            letterSpacing: '0.18em', textTransform: 'uppercase',
+            fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 600,
+            letterSpacing: '0.14em', textTransform: 'uppercase',
             color: 'var(--accent)', marginBottom: 4,
           }}>
             Registrar Pagamento
@@ -74,20 +71,20 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
           <div style={{ fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: 'var(--ink, #1a1410)' }}>
             {label}
           </div>
-          <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'rgba(26,20,16,0.55)', marginTop: 2 }}>
+          <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
             Valor previsto: {sym} {value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={labelStyle}>Data do pagamento</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+            <label htmlFor="paymod-data-do-pagamento" style={labelStyle}>Data do pagamento</label>
+            <input id="paymod-data-do-pagamento" type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
           </div>
 
           <div>
-            <label style={labelStyle}>Valor recebido ({sym})</label>
-            <NumberInput
+            <label htmlFor="paymod-valor-recebido" style={labelStyle}>Valor recebido ({sym})</label>
+            <NumberInput id="paymod-valor-recebido"
               value={valueCurrency || ''}
               onChange={v => setValueCurrency(v ? parseFloat(v) : 0)}
               style={inputStyle}
@@ -96,13 +93,13 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
 
           {currency !== 'BRL' && (
             <div>
-              <label style={labelStyle}>
+              <label htmlFor="paymod-taxa-de-cambio-1-r-ptax-esti" style={labelStyle}>
                 Taxa de câmbio (1 {currency} = R$)
-                <span style={{ fontWeight: 400, color: 'rgba(26,20,16,0.40)', marginLeft: 6 }}>
+                <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
                   PTAX estimado: {defaultRate.toFixed(2)}
                 </span>
               </label>
-              <NumberInput
+              <NumberInput id="paymod-taxa-de-cambio-1-r-ptax-esti"
                 decimals={4} grouping={false}
                 value={rate || ''}
                 onChange={v => setRate(v ? parseFloat(v) : defaultRate)}
@@ -122,8 +119,8 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
           )}
 
           <div>
-            <label style={labelStyle}>Observações</label>
-            <textarea
+            <label htmlFor="paymod-observacoes" style={labelStyle}>Observações</label>
+            <textarea id="paymod-observacoes"
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
@@ -140,7 +137,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
               background: 'transparent', border: '1px solid rgba(26,20,16,0.15)',
               borderRadius: 7, padding: '8px 18px', fontSize: 12,
               fontFamily: "var(--font-body)", cursor: 'pointer',
-              color: 'rgba(26,20,16,0.55)',
+              color: 'var(--text-secondary)',
             }}
           >
             Cancelar
@@ -158,7 +155,6 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             Confirmar
           </button>
         </div>
-      </div>
-    </div>
+    </ModalFrame>
   )
 }

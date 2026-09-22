@@ -10,7 +10,7 @@
 //   • o gerador automático (valor total ÷ nº parcelas × periodicidade) é um
 //     painel opcional, recolhido por padrão, para não poluir a tela.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { Currency } from '../types/athlete-system'
 import { addMonths, todayISO } from '../lib/format'
 import NumberInput from './NumberInput'
@@ -66,6 +66,7 @@ export default function FlowBuilder({
   /** Esconde o gerador automático (telas que já têm o próprio, ex.: transferência). */
   showGenerator?: boolean
 }) {
+  const uid = useId()
   const [mode, setMode] = useState<'total' | 'parcela'>('total')
   const [amount, setAmount] = useState('')          // total OU valor por parcela
   const [count, setCount] = useState(12)
@@ -151,33 +152,33 @@ export default function FlowBuilder({
         <div style={{ border: '1px solid var(--divider)', borderRadius: 10, padding: 12, background: 'var(--bg-subtle)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, alignItems: 'end' }}>
             <div>
-              <label style={lbl}>Base</label>
-              <select style={input} value={mode} onChange={e => setMode(e.target.value as 'total' | 'parcela')}>
+              <label htmlFor={`${uid}-base`} style={lbl}>Base</label>
+              <select id={`${uid}-base`} style={input} value={mode} onChange={e => setMode(e.target.value as 'total' | 'parcela')}>
                 <option value="total">Valor total</option>
                 <option value="parcela">Valor / parcela</option>
               </select>
             </div>
             <div>
-              <label style={lbl}>{mode === 'total' ? 'Valor total' : 'Valor por parcela'}</label>
-              <NumberInput style={input} value={amount} onChange={v => setAmount(v)} placeholder="0,00" />
+              <label htmlFor={`${uid}-campo`} style={lbl}>{mode === 'total' ? 'Valor total' : 'Valor por parcela'}</label>
+              <NumberInput id={`${uid}-campo`} style={input} value={amount} onChange={v => setAmount(v)} placeholder="0,00" />
             </div>
             <div>
-              <label style={lbl}>Nº parcelas</label>
-              <input style={input} type="number" min={1} max={600} value={count} onChange={e => setCount(Math.max(1, parseInt(e.target.value) || 1))} />
+              <label htmlFor={`${uid}-n-parcelas`} style={lbl}>Nº parcelas</label>
+              <input id={`${uid}-n-parcelas`} style={input} type="number" min={1} max={600} value={count} onChange={e => setCount(Math.max(1, parseInt(e.target.value) || 1))} />
             </div>
             <div>
-              <label style={lbl}>Periodicidade</label>
-              <select style={input} value={period} onChange={e => setPeriod(e.target.value as Period)}>
+              <label htmlFor={`${uid}-periodicidade`} style={lbl}>Periodicidade</label>
+              <select id={`${uid}-periodicidade`} style={input} value={period} onChange={e => setPeriod(e.target.value as Period)}>
                 {(Object.keys(PERIOD_LABEL) as Period[]).map(p => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}
               </select>
             </div>
             <div>
-              <label style={lbl}>1ª parcela</label>
-              <input style={input} type="date" value={first} onChange={e => setFirst(e.target.value)} />
+              <label htmlFor={`${uid}-1-parcela`} style={lbl}>1ª parcela</label>
+              <input id={`${uid}-1-parcela`} style={input} type="date" value={first} onChange={e => setFirst(e.target.value)} />
             </div>
             <div>
-              <label style={lbl}>Dia venc.</label>
-              <input style={input} type="number" min={1} max={28} value={dueDay} onChange={e => setDueDay(e.target.value)} placeholder="—" />
+              <label htmlFor={`${uid}-dia-venc`} style={lbl}>Dia venc.</label>
+              <input id={`${uid}-dia-venc`} style={input} type="number" min={1} max={28} value={dueDay} onChange={e => setDueDay(e.target.value)} placeholder="—" />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>

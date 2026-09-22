@@ -7,6 +7,7 @@ import { useRef, useState } from 'react'
 import { parseWorkbookFile } from '../lib/xlsx-utils'
 import { importWorkbook, type ImportReport } from '../lib/importSheets'
 import PageHero from '../components/PageHero'
+import { useToast, errorMessage } from '../components/toast-context'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -22,6 +23,7 @@ export default function PageImportarPlanilhas() {
   const [busy, setBusy] = useState(false)
   const [report, setReport] = useState<ImportReport | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const toast = useToast()
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (e.target) e.target.value = ''
@@ -37,8 +39,8 @@ export default function PageImportarPlanilhas() {
   async function confirm() {
     if (!sheets) return
     setBusy(true); setError(null)
-    try { setReport(await importWorkbook(sheets)) }
-    catch (err) { setError(`Erro na importação: ${(err as Error).message}`) }
+    try { setReport(await importWorkbook(sheets)); toast.success(`Importação de "${fileName}" concluída.`, { detail: 'Veja o relatório de reconciliação abaixo.' }) }
+    catch (err) { setError(`Erro na importação: ${(err as Error).message}`); toast.error('A importação falhou.', { detail: errorMessage(err) }) }
     finally { setBusy(false) }
   }
 
