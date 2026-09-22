@@ -1,5 +1,9 @@
 // src/types/athlete-system.ts
 // Tipos TypeScript gerados a partir do schema do Supabase (004_athletes_system.sql)
+import type {
+  AprovacaoFields, AutoriaFields, MetaRJFields, MetaClauseFields, MetaTriggerFields,
+  BaixaFields, AlertaFields, StatusAprovacao,
+} from './governanca'
 
 export type AthleteStatus = 'ATIVO' | 'EMPRESTADO' | 'VENDIDO' | 'DESLIGADO'
 
@@ -56,6 +60,7 @@ export type InstallmentStatus = 'PENDENTE' | 'PAGA' | 'EM_ATRASO' | 'CANCELADA'
 
 export type AlertType =
   | 'VENCIMENTO_PROXIMO' | 'EM_ATRASO' | 'SELL_ON_PENDENTE_REVISAO' | 'ATINGIMENTO_PENDENTE'
+  | 'CONTRATO_EXPIRANDO' | 'GATILHO_PROXIMO'
 
 export type AlertSeverity = 'RED' | 'YELLOW' | 'GREEN'
 
@@ -121,7 +126,7 @@ export interface NewEconomicRightInput {
   notes: string
 }
 
-export interface Contract {
+export interface Contract extends AprovacaoFields, AutoriaFields {
   id: string
   athlete_id: string
   // Contrato-pai ao qual este está atrelado (ex.: intermediação/sell-on de uma
@@ -145,7 +150,7 @@ export interface Contract {
   updated_at: string
 }
 
-export interface Clause {
+export interface Clause extends AprovacaoFields, AutoriaFields, MetaClauseFields {
   id: string
   source_key?: string | null
   contract_id: string
@@ -177,7 +182,7 @@ export interface Clause {
   updated_at: string
 }
 
-export interface ClauseInstallment {
+export interface ClauseInstallment extends BaixaFields, AutoriaFields, MetaRJFields {
   id: string
   clause_id: string
   athlete_id: string
@@ -195,7 +200,7 @@ export interface ClauseInstallment {
   updated_at: string
 }
 
-export interface Alert {
+export interface Alert extends AlertaFields {
   id: string
   athlete_id: string
   clause_id: string | null
@@ -252,6 +257,8 @@ export interface NewContractInput {
   other_value: number | null
   description: string
   status: ContractStatus
+  // 022: 'RASCUNHO' exige aprovação da Controladoria; omitido = APROVADO (default do banco).
+  status_aprovacao?: StatusAprovacao
 }
 
 export interface NewClauseInput {
@@ -353,7 +360,7 @@ export type TriggerMetric =
 
 export type TriggerStatus = 'PENDENTE' | 'ATINGIDA' | 'NAO_ATINGIDA'
 
-export interface SalaryTrigger {
+export interface SalaryTrigger extends MetaTriggerFields {
   id: string
   athlete_id: string
   contract_id: string | null
@@ -387,7 +394,7 @@ export interface NewSalaryTriggerInput {
 export type LiabilityDirection = 'A_PAGAR' | 'A_RECEBER'
 export type LiabilityStatus = 'PENDENTE' | 'PAGA' | 'EM_ATRASO' | 'CANCELADA'
 
-export interface ClubLiability {
+export interface ClubLiability extends MetaRJFields {
   id: string
   source_key?: string | null
   athlete_id: string
@@ -422,7 +429,7 @@ export interface NewClubLiabilityInput {
   notes: string
 }
 
-export interface IntermediaryLiability {
+export interface IntermediaryLiability extends MetaRJFields {
   id: string
   source_key?: string | null
   athlete_id: string

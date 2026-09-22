@@ -25,6 +25,7 @@ import type {
 } from '../types/athlete-system'
 import { isOverdue, isDueSoon, addMonths } from './format'
 import { approxRateBRL } from './fx'
+import { withStructuredMeta } from './metadados'
 
 // Nomes das tabelas no localStore (modo navegador — formas legadas "achatadas").
 const T = {
@@ -94,7 +95,8 @@ function fromAcFK<R>(r: Row): R {
   if ('contrato_id' in o) { o.contract_id = o.contrato_id; delete o.contrato_id }
   if ('clausula_fin_id' in o) { o.clause_id = o.clausula_fin_id; delete o.clausula_fin_id }
   if ('parcela_fin_id' in o) { o.installment_id = o.parcela_fin_id; delete o.parcela_fin_id }
-  return o as R
+  // 025: colunas estruturadas (RJ, acordo, rateio) prevalecem sobre `notes`.
+  return withStructuredMeta(o) as R
 }
 
 // Status do atleta: legado (DESLIGADO) ↔ robusto (LIBERADO); LESIONADO→ATIVO na leitura.
@@ -165,6 +167,10 @@ function fromAcContract(r: Row): Contract {
     description: r.descricao ?? null,
     created_by: r.created_by ?? null,
     created_at: r.created_at, updated_at: r.updated_at,
+    // 021/022 — autoria e aprovação (ausentes antes das migrations).
+    created_by_uid: r.created_by_uid ?? null, updated_by: r.updated_by ?? null,
+    status_aprovacao: r.status_aprovacao ?? null, aprovado_por: r.aprovado_por ?? null,
+    aprovado_em: r.aprovado_em ?? null, motivo_rejeicao: r.motivo_rejeicao ?? null,
   }
 }
 function toAcContract(c: Partial<Contract>): Row {
@@ -187,6 +193,8 @@ function toAcContract(c: Partial<Contract>): Row {
   if (c.other_value !== undefined) o.other_value = c.other_value
   if (c.description !== undefined) o.descricao = c.description
   if (c.created_by !== undefined) o.created_by = c.created_by
+  // 022: só envia quando informado (default do banco = APROVADO).
+  if (c.status_aprovacao) o.status_aprovacao = c.status_aprovacao
   return o
 }
 
@@ -986,14 +994,40 @@ export async function updateInstallment(id: string, input: Partial<ClauseInstall
   return fromAcFK<ClauseInstallment>(data)
 }
 
+// Baixa/estorno: no Supabase usam as RPCs da migration 023, que gravam também
+// valor pago na moeda, PTAX efetiva, autor (pago_por) e momento (pago_em), e
+// recalculam o status da cláusula-mãe. Erros 42501/22023 sobem com mensagem.
+async function rpcInstallment(fn: string, args: Record<string, unknown>): Promise<ClauseInstallment> {
+  const { data, error } = await supabase.rpc(fn, args)
+  if (error) {
+    if (error.code === '42501') throw new Error(`Sem permissão: ${error.message}`)
+    throw error
+  }
+  return fromAcFK<ClauseInstallment>(data as Row)
+}
+
 /** Marca uma parcela como paga (check rápido) usando o valor previsto. */
 export async function markInstallmentPaid(id: string, date: string): Promise<ClauseInstallment> {
-  return updateInstallment(id, { payment_status: 'PAGA', payment_date: date })
+  if (!USE_SUPABASE) return updateInstallment(id, { payment_status: 'PAGA', payment_date: date })
+  // p_valor_pago/p_ptax nulos → valor original e PTAX (fixada → ac_taxas_cambio).
+  return rpcInstallment('baixar_parcela', { p_id: id, p_data: date, p_valor_pago: null, p_ptax: null })
 }
 
 /** Reverte a parcela para pendente (desfaz o check de pagamento). */
 export async function revertInstallment(id: string): Promise<ClauseInstallment> {
-  return updateInstallment(id, { payment_status: 'PENDENTE', payment_date: null, amount_paid_brl: null, exchange_rate: null })
+  if (!USE_SUPABASE) return updateInstallment(id, { payment_status: 'PENDENTE', payment_date: null, amount_paid_brl: null, exchange_rate: null })
+  try {
+    return await rpcInstallment('estornar_baixa', { p_id: id })
+  } catch (e) {
+    // estornar_baixa é só master/tesouraria; o Jurídico mantém o estorno que já
+    // tinha via UPDATE direto (RLS 020 permite) — sem pago_por/valor_pago_moeda.
+    if (!(e instanceof Error) || !e.message.startsWith('Sem permissão')) throw e
+    const patch = { payment_status: 'PENDENTE' as const, payment_date: null, amount_paid_brl: null, exchange_rate: null, valor_pago_moeda: null, ptax_utilizada: null, pago_por: null, pago_em: null }
+    const { data, error } = await supabase.from(AC.installments).update(patch).eq('id', id).select()
+    if (error) throw error
+    if (!data?.length) throw e
+    return fromAcFK<ClauseInstallment>(data[0])
+  }
 }
 
 export async function registerInstallmentPayment(id: string, payment: PaymentInput): Promise<ClauseInstallment> {
@@ -1004,36 +1038,45 @@ export async function registerInstallmentPayment(id: string, payment: PaymentInp
     exchange_rate: payment.exchange_rate,
     notes: payment.notes || null,
   }
-  if (!USE_SUPABASE) return local.update<ClauseInstallment>(T.installments, id, patch)
-  const { data, error } = await supabase.from(AC.installments).update(nn(patch)).eq('id', id).select().single()
-  if (error) throw error
-  return fromAcFK<ClauseInstallment>(data)
+  if (!USE_SUPABASE) return local.update<ClauseInstallment>(T.installments, id, { ...patch, valor_pago_moeda: payment.amount_paid_currency, ptax_utilizada: payment.exchange_rate, pago_em: new Date().toISOString() })
+  const paid = await rpcInstallment('baixar_parcela', {
+    p_id: id, p_data: payment.payment_date,
+    p_valor_pago: payment.amount_paid_currency || null,
+    p_ptax: payment.exchange_rate || null,
+  })
+  // Observações não fazem parte da RPC: grava à parte (coluna livre p/ tesouraria).
+  if (!payment.notes) return paid
+  const { data, error } = await supabase.from(AC.installments).update({ notes: payment.notes }).eq('id', id).select()
+  if (error || !data?.length) return paid
+  return fromAcFK<ClauseInstallment>(data[0])
 }
 
 // ── Alerts ────────────────────────────────────────────────────────────────
 
 export async function fetchAthleteAlerts(athleteId: string): Promise<Alert[]> {
-  if (!USE_SUPABASE) return local.where<Alert>(T.alerts, 'athlete_id', athleteId)
+  if (!USE_SUPABASE) return local.where<Alert>(T.alerts, 'athlete_id', athleteId).filter(a => !a.resolvido_em)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
-  const { data, error } = await supabase.from(AC.alerts).select('*').eq('atleta_id', athleteId).order('created_at', { ascending: false })
+  const { data, error } = await supabase.from(AC.alerts).select('*').eq('atleta_id', athleteId).is('resolvido_em', null).order('created_at', { ascending: false })
   if (error) throw error
   return data.map(r => fromAcFK<Alert>(r))
 }
 
 export async function fetchAllAlerts(): Promise<Alert[]> {
   const sev = { RED: 0, YELLOW: 1, GREEN: 2 }
-  if (!USE_SUPABASE) return local.all<Alert>(T.alerts).sort((a, b) => {
+  if (!USE_SUPABASE) return local.all<Alert>(T.alerts).filter(a => !a.resolvido_em).sort((a, b) => {
     if (sev[a.severity] !== sev[b.severity]) return sev[a.severity] - sev[b.severity]
     return b.created_at.localeCompare(a.created_at)
   })
-  const { data, error } = await supabase.from(AC.alerts).select('*').order('severity').order('created_at', { ascending: false })
+  // 027: alertas resolvidos (condição deixou de valer) ficam fora.
+  const { data, error } = await supabase.from(AC.alerts).select('*').is('resolvido_em', null).order('severity').order('created_at', { ascending: false })
   if (error) throw error
   return data.map(r => fromAcFK<Alert>(r))
 }
 
 export async function markAlertRead(id: string): Promise<void> {
   if (!USE_SUPABASE) { local.update<Alert>(T.alerts, id, { is_read: true }); return }
-  const { error } = await supabase.from(AC.alerts).update({ is_read: true }).eq('id', id)
+  // 027: RPC funciona para qualquer perfil ativo (UPDATE direto só master/jurídico).
+  const { error } = await supabase.rpc('marcar_alerta_lido', { p_id: id, p_lido: true })
   if (error) throw error
 }
 

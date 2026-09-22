@@ -36,6 +36,12 @@ const PageImportarPlanilhas = lazy(() => import('./pages/PageImportarPlanilhas')
 const PageAmortizacao = lazy(() => import('./pages/PageAmortizacao'))
 const PagePremissas = lazy(() => import('./pages/PagePremissas'))
 
+// Governança (Fase 3) e alertas
+const PageAlertas = lazy(() => import('./pages/PageAlertas'))
+const PageAprovacoes = lazy(() => import('./pages/PageAprovacoes'))
+const PageUsuarios = lazy(() => import('./pages/PageUsuarios'))
+const PageAuditoria = lazy(() => import('./pages/PageAuditoria'))
+
 function RouteFallback() {
   return (
     <div role="status" aria-live="polite" style={{ padding: 32, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)' }}>
@@ -109,6 +115,12 @@ function AppRoutes() {
           {/* Importar / Exportar */}
           <Route path="/dados" element={<PageDados />} />
           <Route path="/dados/planilhas" element={<PageImportarPlanilhas />} />
+
+          {/* Governança e alertas (as páginas checam o papel; o banco garante) */}
+          <Route path="/alertas" element={<PageAlertas />} />
+          <Route path="/aprovacoes" element={<PageAprovacoes />} />
+          <Route path="/admin/usuarios" element={<PageUsuarios />} />
+          <Route path="/admin/auditoria" element={<PageAuditoria />} />
 
           <Route path="*" element={<Navigate to="/atletas" replace />} />
         </Routes>

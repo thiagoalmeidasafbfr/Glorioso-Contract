@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { supabase, USE_SUPABASE, type UserProfile } from '../lib/supabase'
+import { supabase, USE_SUPABASE, type UserProfile, type UserRole } from '../lib/supabase'
+import { roleCan, type Capability } from '../lib/permissoes'
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextValue {
@@ -11,21 +12,30 @@ interface AuthContextValue {
   isMaster: boolean
   /** Pode criar/editar dados contratuais. Modo local (sem Supabase) = sempre. */
   canEdit: boolean
+  /** Papel efetivo (null = sem perfil ou perfil inativo). Modo local = 'master'. */
+  role: UserRole | null
+  /** Capacidade por papel (matriz da migration 020). Modo local = sempre true. */
+  can: (cap: Capability) => boolean
 }
 
 // Sem Supabase o app é monousuário (localStorage): tudo liberado. Com Supabase,
 // perfil ausente ou desativado NUNCA edita — antes `!profile` liberava tudo.
 function permissionsFor(profile: UserProfile | null) {
-  if (!USE_SUPABASE) return { isMaster: true, canEdit: true }
+  if (!USE_SUPABASE) return { isMaster: true, canEdit: true, role: 'master' as UserRole, can: () => true }
   const active = !!profile && profile.ativo !== false
-  const isMaster = active && profile!.role === 'master'
-  return { isMaster, canEdit: isMaster || (active && profile!.role === 'juridico') }
+  const role: UserRole | null = active ? profile!.role : null
+  const isMaster = role === 'master'
+  return {
+    isMaster, role,
+    canEdit: roleCan(role, 'editarContratos'),
+    can: (cap: Capability) => roleCan(role, cap),
+  }
 }
 
 const AuthContext = createContext<AuthContextValue>({
   session: null, profile: null, loading: true,
   signIn: async () => null, signOut: async () => {},
-  isMaster: false, canEdit: false,
+  isMaster: false, canEdit: false, role: null, can: () => false,
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {

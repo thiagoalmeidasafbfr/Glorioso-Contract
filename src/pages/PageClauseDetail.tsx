@@ -27,6 +27,8 @@ import RowActions, { ActionLegend } from '../components/RowActions'
 import { InstallmentEditModal } from '../components/modals/EditModals'
 import { parseRJ, toggleItemRJ, markManyRJ, unmarkItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import PagamentoInfo from '../components/PagamentoInfo'
+import { mensagemErro } from '../lib/governanca'
 
 const font = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -52,8 +54,10 @@ const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpac
 export default function PageClauseDetail() {
   const { clauseId } = useParams<{ clauseId: string }>()
   const navigate = useNavigate()
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { canEdit, can } = useAuth()
+  // Tesouraria dá baixa/estorna sem editar o contrato (RPCs 023).
+  const canPay = can('baixarParcelas')
+  const canRevert = canEdit || can('estornarBaixa')
 
   const [clause, setClause] = useState<Clause | null>(null)
   const [athlete, setAthlete] = useState<Athlete | null>(null)
@@ -118,10 +122,12 @@ export default function PageClauseDetail() {
     return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{name}</RefLink> : <>{name}</>
   }
 
-  async function handleQuickPay(id: string) { await markInstallmentPaid(id, todayISO()); load() }
-  async function handleRevert(id: string) { await revertInstallment(id); load() }
+  // Baixa/estorno via RPC (023): erros de permissão/PTAX ausente sobem com mensagem.
+  const fail = (e: unknown) => window.alert(mensagemErro(e))
+  async function handleQuickPay(id: string) { try { await markInstallmentPaid(id, todayISO()) } catch (e) { fail(e) } load() }
+  async function handleRevert(id: string) { try { await revertInstallment(id) } catch (e) { fail(e) } load() }
   async function handlePay(id: string, p: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
-    await registerInstallmentPayment(id, { payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes })
+    try { await registerInstallmentPayment(id, { payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes }) } catch (e) { fail(e); return }
     setPayInstId(null); load()
   }
   async function handleDelete() {
@@ -318,11 +324,12 @@ export default function PageClauseDetail() {
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>
                     {fmtCurrencyShort(p.original_value, p.currency)}
                     {rj && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
+                    {paid && <PagamentoInfo inst={p} />}
                   </span>
                   <Badge status={p.payment_status} />
-                  {canEdit && (
+                  {(canEdit || canPay) && (
                     <RowActions small={false}
-                      edit={{ onClick: () => setEditInstId(p.id), label: `Editar parcela ${p.installment_number}` }}
+                      edit={canEdit ? { onClick: () => setEditInstId(p.id), label: `Editar parcela ${p.installment_number}` } : undefined}
                       markPaid={{
                         onClick: !paid && !cancelled ? () => handleQuickPay(p.id) : undefined,
                         reason: paid ? 'parcela já paga' : 'parcela cancelada',
@@ -331,8 +338,8 @@ export default function PageClauseDetail() {
                         onClick: !paid && !cancelled ? () => setPayInstId(p.id) : undefined,
                         reason: paid ? 'parcela já paga' : 'parcela cancelada',
                       }}
-                      revert={{ onClick: paid ? () => handleRevert(p.id) : undefined, reason: 'a parcela não está paga' }}
-                      rj={rj
+                      revert={{ onClick: paid && canRevert ? () => handleRevert(p.id) : undefined, reason: paid ? 'sem permissão para estornar' : 'a parcela não está paga' }}
+                      rj={!canEdit ? undefined : rj
                         ? { onClick: () => unmarkParcRJ(p.id), marked: true }
                         : (!paid && !cancelled ? { onClick: async () => { await toggleItemRJ({ kind: 'inst', id: p.id }, p.notes, rjDate); await load() } } : undefined)}
                     />

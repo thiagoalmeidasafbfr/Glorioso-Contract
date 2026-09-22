@@ -184,6 +184,8 @@ export default function PageAthleteNewContract() {
   // taxa BRL para toda a vida do contrato (transferência, salário, imagem,
   // agentes e cláusulas geradas por este vínculo).
   const [fixPtax, setFixPtax] = useState(false)
+  // 022: contrato nasce RASCUNHO e só vale após aprovação da Controladoria.
+  const [asDraft, setAsDraft] = useState(false)
   const [fixPtaxRate, setFixPtaxRate] = useState('')
   const fixedRate = fixPtax && fixPtaxRate ? parseFloat(fixPtaxRate) : null
   const hasFxCurrency =
@@ -312,6 +314,7 @@ export default function PageAthleteNewContract() {
         ...contract,
         transfer_fee_gross: willGenTransfer ? transferTotal : contract.transfer_fee_gross,
         related_contract_id: relatedId || undefined,
+        ...(asDraft ? { status_aprovacao: 'RASCUNHO' as const } : {}),
       })
       const buying = contract.type === 'ENTRADA' || contract.type === 'EMPRESTIMO_ENTRADA'
 
@@ -1054,6 +1057,13 @@ export default function PageAthleteNewContract() {
             </div>
           )}
         </div>
+      )}
+
+      {step === 3 && (
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', marginTop: 20, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)' }}>
+          <input type="checkbox" checked={asDraft} onChange={e => setAsDraft(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+          <span><strong>Salvar como rascunho</strong> (requer aprovação da Controladoria) — o vínculo aparece como “Rascunho” e pode ser enviado para revisão na ficha do atleta.</span>
+        </label>
       )}
 
       {/* ── Navigation buttons ── */}

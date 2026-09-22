@@ -7,7 +7,7 @@ import PaymentModal from '../components/athletes/PaymentModal'
 import {
   fetchAthlete, updateAthlete, deleteAthlete, updateContract, updateContractFlowsCurrency, deleteContract, fetchAthleteContracts, fetchAthleteClauses,
   fetchAthleteInstallments, createClause, createClauseInstallments, deleteClause,
-  updateInstallment, markInstallmentPaid, revertInstallment,
+  markInstallmentPaid, revertInstallment, registerInstallmentPayment,
   deleteClubLiability, deleteIntermediaryLiability,
   fetchAthleteAlerts, updateClause,
   fetchAthleteEconomicRights, createEconomicRight, deleteEconomicRight,
@@ -52,6 +52,9 @@ import { loanShareTriggers, decodeLoanShare, splitLoanSalary } from '../lib/loan
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
 import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
+import AprovacaoStatus from '../components/AprovacaoStatus'
+import DocumentosAtleta from '../components/DocumentosAtleta'
+import HistoricoAuditoria from '../components/HistoricoAuditoria'
 import { exportWorkbook } from '../lib/xlsx-utils'
 import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteConsolidado'
 import { approxToBRL } from '../lib/fx'
@@ -360,7 +363,7 @@ function contractLabel(c: Contract): string {
   return parts.join(' · ')
 }
 
-type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'acordos' | 'transferencias' | 'consolidado'
+type Tab = 'salario' | 'luvas' | 'agentes' | 'gatilhos' | 'acordos' | 'transferencias' | 'consolidado' | 'documentos' | 'historico'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'salario',        label: 'Salário' },
   { id: 'luvas',          label: 'Luvas' },
@@ -369,6 +372,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'acordos',        label: 'Acordos e Renegociações' },
   { id: 'transferencias', label: 'Histórico de Transferências' },
   { id: 'consolidado',    label: 'Consolidado' },
+  { id: 'documentos',     label: 'Documentos' },
+  { id: 'historico',      label: 'Histórico' },   // só papéis com verAuditoria
 ]
 
 // Agrupamento de tipos de cláusula por natureza (usado pelas abas).
@@ -398,7 +403,7 @@ function umbrellaContract(contracts: Contract[]): Contract | null {
 export default function PageAthleteDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { canEdit } = useAuth()
+  const { canEdit, can } = useAuth()
 
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -535,7 +540,7 @@ export default function PageAthleteDetail() {
     setClauses(prev => prev.map(c => c.id === clauseId ? u : c)); setPayClauseId(null)
   }
   async function handleInstallmentPayment(instId: string, p: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
-    const u = await updateInstallment(instId, { payment_status: 'PAGA', payment_date: p.date, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes || null })
+    const u = await registerInstallmentPayment(instId, { payment_date: p.date, amount_paid_currency: p.valueCurrency, amount_paid_brl: p.valueBRL, exchange_rate: p.rate, notes: p.notes })
     setInstallments(prev => prev.map(i => i.id === instId ? u : i)); setPayInstId(null)
   }
   async function handleRevertInstallment(instId: string) {
@@ -809,7 +814,7 @@ export default function PageAthleteDetail() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--divider)', marginBottom: 16 }}>
-        {TABS.map(t => {
+        {TABS.filter(t => t.id !== 'historico' || can('verAuditoria')).map(t => {
           const count = 0
           return (
             <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '10px 18px', border: 'none', background: 'none', fontFamily: font, fontSize: 13, fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', color: tab === t.id ? 'var(--ink-primary)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent', marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -967,6 +972,7 @@ export default function PageAthleteDetail() {
                   </span>
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ct.counterpart_country}</span>}
                   <StatusBadge status={ct.status} map={{ ATIVO: { bg: '#e6ece2', fg: '#3a6f3a' }, ENCERRADO: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' }, RESCINDIDO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' } }} />
+                  <AprovacaoStatus tabela="ac_contratos" row={ct} titulo={contractLabel(ct)} onChanged={loadData} />
                   {parent && (
                     <span title={`Contrato vinculado a ${contractLabel(parent)}`} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--accent-tint2)', border: '1px solid var(--divider-strong)', color: 'var(--ink-secondary)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       ↳ vinculado a {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}
@@ -1016,6 +1022,7 @@ export default function PageAthleteDetail() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-subtle)' }}>
                             <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)' }}>
                               {CLAUSE_TYPE_LABELS[cl.clause_type]} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>· {cl.description}</span>
+                              {' '}<AprovacaoStatus tabela="ac_clausulas_fin" row={cl} titulo={cl.description} onChanged={loadData} />
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(totalCl, cl.currency)}{parc.length ? ` · ${parc.length}x` : ''}</span>
@@ -1057,6 +1064,10 @@ export default function PageAthleteDetail() {
         </div>
         )
       })()}
+
+      {/* Documentos (024) e Histórico de auditoria (021) */}
+      {tab === 'documentos' && <DocumentosAtleta athleteId={athlete.id} contracts={contracts} />}
+      {tab === 'historico' && can('verAuditoria') && <HistoricoAuditoria atletaId={athlete.id} />}
 
       {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
       {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
