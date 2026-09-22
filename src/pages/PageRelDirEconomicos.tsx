@@ -12,6 +12,8 @@ import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon, IconButton } from '../components/Icon'
 import RowActions from '../components/RowActions'
 
@@ -23,6 +25,9 @@ interface AthleteRow {
   status: 'OK' | 'PARCIAL' | 'SEM_LANCAMENTO'
   bfrPct: number
 }
+
+// Ordenação: atleta pelo nome; o resto usa o campo da linha.
+const DIR_ACCESSORS: SortAccessors<AthleteRow> = { atleta: r => r.athlete.full_name }
 
 const STATUS_STYLE: Record<AthleteRow['status'], { bg: string; fg: string; label: string }> = {
   OK:             { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)', label: '—' },
@@ -117,6 +122,8 @@ export default function PageRelDirEconomicos() {
   const expandAll   = () => setExpanded(new Set(filtered.filter(r => r.holders.length > 0).map(r => r.athlete.id)))
   const collapseAll = () => setExpanded(new Set())
 
+  const { sorted, sort } = useSortable(filtered, 'atleta', { accessors: DIR_ACCESSORS })
+
   const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
@@ -128,13 +135,13 @@ export default function PageRelDirEconomicos() {
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta ou detentor..."
+          <label htmlFor="reldireconomicos-busca" style={{ display: 'block', fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <input id="reldireconomicos-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta ou detentor..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
+          <label htmlFor="reldireconomicos-status" style={{ display: 'block', fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</label>
+          <select id="reldireconomicos-status" value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['PARCIAL', 'SEM_LANCAMENTO'] as const).map(s => (
@@ -154,16 +161,16 @@ export default function PageRelDirEconomicos() {
             <thead>
               <tr>
                 <th style={{ ...th, width: 36 }} aria-label="Expandir" />
-                <th style={th}>Atleta</th>
-                <th style={{ ...th, textAlign: 'right' }}>Total</th>
-                <th style={{ ...th }}>Detentores</th>
+                <SortHeader k="atleta" sort={sort} style={th}>Atleta</SortHeader>
+                <SortHeader k="total" sort={sort} style={{ ...th, textAlign: 'right' }}>Total</SortHeader>
+                <SortHeader k="bfrPct" sort={sort} style={{ ...th }}>Detentores</SortHeader>
                 <th style={{ ...th, textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta.</td></tr>}
-              {filtered.map(r => {
+              {sorted.map(r => {
                 const isOpen = expanded.has(r.athlete.id)
                 const canExpand = r.holders.length > 0
                 return (

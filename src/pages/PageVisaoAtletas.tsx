@@ -10,7 +10,7 @@
 //     o detalhe e dar baixa.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllClauses, fetchAllInstallments,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
@@ -23,6 +23,8 @@ import { fmtCurrencyShort, fmtDate } from '../lib/format'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon, IconButton } from '../components/Icon'
 import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
@@ -62,9 +64,10 @@ function ByCurrency({ totals }: { totals: Partial<Record<Currency, number>> }) {
 }
 
 type Filter = 'todos' | 'atraso' | 'aberto'
+// Ordenação da tabela: o atleta pelo nome; demais colunas pelo campo da linha.
+const VISAO_ACCESSORS: SortAccessors<AthleteOverview> = { atleta: r => r.athlete.full_name }
 
 export default function PageVisaoAtletas() {
-  const navigate = useNavigate()
   const [rows, setRows] = useState<AthleteOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -145,6 +148,8 @@ export default function PageVisaoAtletas() {
     exportWorkbook([{ name: 'Visão por atleta', cols, rows: out }], 'visao-consolidada-atletas.xlsx')
   }
 
+  const { sorted, sort } = useSortable(visible, null, { accessors: VISAO_ACCESSORS })
+
   const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
@@ -157,8 +162,8 @@ export default function PageVisaoAtletas() {
       {/* Filtros + totais */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <label htmlFor="visaoatletas-busca" style={{ display: 'block', fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <input id="visaoatletas-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -176,23 +181,23 @@ export default function PageVisaoAtletas() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 240px)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
               <th style={{ ...th, width: 36 }} aria-label="Expandir" />
-              <th style={{ ...th, minWidth: 180 }}>Atleta / natureza</th>
-              <th style={{ ...th, minWidth: 110 }}>Situação</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em aberto</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em atraso (aprox. BRL)</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 140 }} title="Obrigações incluídas no processo de Recuperação Judicial — devidas mas fora do em atraso.">Em Rec. Judicial</th>
-              <th style={{ ...th, minWidth: 130 }}>Atraso desde</th>
-              <th style={{ ...th, minWidth: 110 }}>Próx. venc.</th>
+              <SortHeader k="atleta" sort={sort} style={{ ...th, minWidth: 180 }}>Atleta / natureza</SortHeader>
+              <SortHeader k="status" sort={sort} style={{ ...th, minWidth: 110 }}>Situação</SortHeader>
+              <SortHeader k="openBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em aberto</SortHeader>
+              <SortHeader k="overdueBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em atraso (aprox. BRL)</SortHeader>
+              <SortHeader k="rjBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 140 }} title="Obrigações incluídas no processo de Recuperação Judicial — devidas mas fora do em atraso.">Em Rec. Judicial</SortHeader>
+              <SortHeader k="daysLate" sort={sort} style={{ ...th, minWidth: 130 }}>Atraso desde</SortHeader>
+              <SortHeader k="nextDue" sort={sort} style={{ ...th, minWidth: 110 }}>Próx. venc.</SortHeader>
               <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
-              {visible.map(r => {
+              {sorted.map(r => {
                 const open = expanded.has(r.athlete.id)
                 const shown = r.natures.filter(n => n.totalCount > 0)
                 return [
@@ -230,10 +235,7 @@ export default function PageVisaoAtletas() {
                   // ── linhas por natureza (filhas) ──
                   ...(open ? shown.map(n => (
                     <NatureRow key={`${r.athlete.id}:${n.key}`} n={n} td={td}
-                      onOpen={() => {
-                        if (n.focusClauseId) navigate(`/obrigacoes/${n.focusClauseId}`)
-                        else navigate(`/atletas/${r.athlete.id}`)
-                      }} />
+                      to={n.focusClauseId ? `/obrigacoes/${n.focusClauseId}` : `/atletas/${r.athlete.id}`} />
                   )) : []),
                 ]
               })}
@@ -248,18 +250,18 @@ export default function PageVisaoAtletas() {
   )
 }
 
-function NatureRow({ n, td, onOpen }: {
-  n: NatureSummary; td: React.CSSProperties; onOpen: () => void
+function NatureRow({ n, td, to }: {
+  n: NatureSummary; td: React.CSSProperties; to: string
 }) {
   const late = n.status === 'EM_ATRASO'
   return (
     <tr style={{ background: 'var(--bg-subtle)' }}>
       <td style={td} />
       <td style={{ ...td, paddingLeft: 6 }}>
-        <button onClick={onOpen}
-          style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>
+        <Link to={to} className="row-link"
+          style={{ fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>
           {n.label}
-        </button>
+        </Link>
         <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: mono, marginTop: 2 }}>
           {n.openCount} em aberto · {n.paidCount} paga(s) de {n.totalCount}
         </div>
@@ -282,7 +284,7 @@ function NatureRow({ n, td, onOpen }: {
       <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{n.nextDue ? fmtDate(n.nextDue) : '—'}</td>
       <td style={{ ...td, textAlign: 'right' }}>
         <RowActions open={{
-          onClick: onOpen,
+          to,
           label: n.focusClauseId ? 'Abrir a obrigação (a mais atrasada)' : 'Abrir a ficha do atleta',
         }} />
       </td>

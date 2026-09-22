@@ -325,7 +325,7 @@ export default function PageDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
                 { to: '/atletas', label: 'Lista de Atletas' },
-                { to: '/album', label: 'Portfolio de Atletas' },
+                { to: '/album', label: 'Portfólio de Atletas' },
                 { to: '/relatorios/consolidado', label: 'Relatório Consolidado' },
                 { to: '/clubes', label: 'Obrigações — Clubes' },
                 { to: '/intermediarios', label: 'Obrigações — Agentes' },

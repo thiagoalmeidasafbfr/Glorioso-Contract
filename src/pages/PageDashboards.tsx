@@ -289,7 +289,7 @@ export default function PageDashboards() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: 18, marginTop: 18 }}>
 
             {/* Clubes — pagar vs receber */}
-            <Panel eyebrow="Clubes" title="A pagar vs a receber" subtitle="Transfer fee, sell-on, solidariedade — fluxo mensal (aprox. BRL)">
+            <Panel eyebrow="Clubes" title="A pagar vs a receber" subtitle="Taxa de transferência, sell-on, solidariedade — fluxo mensal (aprox. BRL)">
               {clube.length === 0 ? <Empty /> : (
                 <>
                   <ChartLegend items={[{ name: 'A pagar', color: C.pay, dash: false }, { name: 'A receber', color: C.recv, dash: true }]} />
@@ -333,12 +333,12 @@ export default function PageDashboards() {
             </Panel>
 
             {/* Top overdue por natureza */}
-            <Panel eyebrow="Ranking" title="Top overdue por natureza" subtitle="Exposição vencida agrupada por tipo de obrigação">
+            <Panel eyebrow="Ranking" title="Maiores atrasos por natureza" subtitle="Exposição vencida agrupada por tipo de obrigação">
               <HRank data={overdueByNat} color={C.pay} empty="Nada em atraso 🎉" />
             </Panel>
 
             {/* Aging pie */}
-            <Panel eyebrow="Ranking" title="Aging da lista de vencidos" subtitle="Distribuição da exposição por faixa de atraso">
+            <Panel eyebrow="Ranking" title="Vencidos por faixa de atraso" subtitle="Distribuição da exposição por faixa de atraso">
               {aging.length === 0 ? <Empty msg="Nada em atraso 🎉" /> : (
                 <ResponsiveContainer width="100%" height={Math.max(240, aging.length * 20 + 200)}>
                   <PieChart>
@@ -363,22 +363,22 @@ export default function PageDashboards() {
             </Panel>
 
             {/* Top overdue por clubes */}
-            <Panel eyebrow="Ranking" title="Top overdue por clubes" subtitle="Clubes com maior exposição vencida">
+            <Panel eyebrow="Ranking" title="Maiores atrasos por clube" subtitle="Clubes com maior exposição vencida">
               <HRank data={overdueByClube} color={C.pay} empty="Nada em atraso com clubes" />
             </Panel>
 
             {/* Top overdue por agentes */}
-            <Panel eyebrow="Ranking" title="Top overdue por agentes" subtitle="Intermediários com maior exposição vencida">
+            <Panel eyebrow="Ranking" title="Maiores atrasos por agente" subtitle="Agentes com maior exposição vencida">
               <HRank data={overdueByAgente} color={C.pay} empty="Nada em atraso com agentes" />
             </Panel>
 
             {/* Top clubes mais pagos últimos 90 dias */}
-            <Panel eyebrow="Ranking" title="Top clubes mais pagos · 90 dias" subtitle="Volume liquidado nos últimos 90 dias">
+            <Panel eyebrow="Ranking" title="Clubes mais pagos · 90 dias" subtitle="Volume liquidado nos últimos 90 dias">
               <HRank data={topPayClube90} color={C.recv} empty="Sem pagamentos a clubes nos últimos 90 dias" />
             </Panel>
 
             {/* Top agentes mais pagos últimos 90 dias */}
-            <Panel eyebrow="Ranking" title="Top agentes mais pagos · 90 dias" subtitle="Volume liquidado nos últimos 90 dias">
+            <Panel eyebrow="Ranking" title="Agentes mais pagos · 90 dias" subtitle="Volume liquidado nos últimos 90 dias">
               <HRank data={topPayAgente90} color={C.recv} empty="Sem pagamentos a agentes nos últimos 90 dias" />
             </Panel>
           </div>

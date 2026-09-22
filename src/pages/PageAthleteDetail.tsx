@@ -438,7 +438,7 @@ export default function PageAthleteDetail() {
   const [agentIdx, setAgentIdx] = useState<Map<string, string>>(new Map())
   // Aba ativa na URL (?aba=salario…): sobrevive a recarregar, voltar e compartilhar link.
   const [searchParams, setSearchParams] = useSearchParams()
-  const abaParam = searchParams.get('aba')
+  const abaParam = searchParams.get('aba') ?? searchParams.get('tab')
   const tab: Tab = isTab(abaParam) ? abaParam : 'consolidado'
   const setTab = (t: Tab) => setSearchParams(prev => {
     const n = new URLSearchParams(prev)
@@ -870,7 +870,7 @@ export default function PageAthleteDetail() {
 
       {/* Big numbers — custos consolidados por natureza */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
-        <BigNumberCard label="Custo total de transfer" totals={transferTotals} sub="Transfer fee (fixo + variável)" />
+        <BigNumberCard label="Custo total de transferência" totals={transferTotals} sub="Taxa de transferência (fixa + variável)" />
         <BigNumberCard label="Salário + imagem (atual)" totals={{ [salImgCurrency]: salImgMonthly }} sub="Remuneração mensal vigente" color="var(--gold-deep)" />
         <BigNumberCard label="Custo total de intermediação" totals={intermTotals} sub="Agentes (cláusulas + passivos)" />
         <BigNumberCard label="Custo total de luvas" totals={luvasTotals} sub="Luvas contratadas" />
@@ -1528,7 +1528,7 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
 // ── ConsolidadoTab — todo o fluxo financeiro do atleta ───────────────────────
 function ConsolidadoTab({
   clauses, installments, clubLiabs, intermLiabs, canEdit, clubIdx, agentIdx,
-  onOpenClause, onEditInst, onEditClause, onFlowClause, onPayInst, onQuickPayInst, onRevertInst,
+  onEditInst, onEditClause, onFlowClause, onPayInst, onQuickPayInst, onRevertInst,
   onDeleteClause, onEditLiab, onDeleteLiab, onConvertLiab, onToggleRJ,
 }: {
   clauses: Clause[]; installments: ClauseInstallment[]; clubLiabs: ClubLiability[]; intermLiabs: IntermediaryLiability[]
@@ -1644,7 +1644,7 @@ function ConsolidadoTab({
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {it.clauseRef
-                        ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir a obrigação">{it.nat}</button>
+                        ? <Link to={`/obrigacoes/${it.clauseRef}`} className="row-link" style={{ color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }} title="Abrir a obrigação">{it.nat}</Link>
                         : it.nat}
                       {parseRJ(it.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(parseRJ(it.notes)!.filedAt)}`}>RJ</span>}
                     </td>
@@ -1701,7 +1701,7 @@ function ConsolidadoTab({
 // ── AccessoryFlowTab — Luvas / Agentes (estilo relatório) + novo fluxo ────────
 function AccessoryFlowTab({
   kind, athleteId, clauses, installments, intermLiabs, contracts, canEdit, clubIdx, agentIdx,
-  onOpenClause, onSaved, onEditClause, onFlowClause, onEditInst, onPayInst, onQuickPayInst, onRevertInst,
+  onSaved, onEditClause, onFlowClause, onEditInst, onPayInst, onQuickPayInst, onRevertInst,
   onEditLiab, onGenerateLiabFlow,
 }: {
   kind: 'luvas' | 'agentes'
@@ -1805,7 +1805,7 @@ function AccessoryFlowTab({
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>
                       {r.clauseRef
-                        ? <button onClick={() => onOpenClause(r.clauseRef!)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>{r.natureza}</button>
+                        ? <Link to={`/obrigacoes/${r.clauseRef}`} className="row-link" style={{ color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>{r.natureza}</Link>
                         : r.natureza}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{r.descricao || '—'}</td>

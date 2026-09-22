@@ -282,8 +282,8 @@ export default function PageAmortizacao() {
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <label htmlFor="amortizacao-busca" style={{ display: 'block', fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <input id="amortizacao-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <KpiPill label="Intangível (BRL)" value={fmtCurrencyShort(totals.intangible, 'BRL')} tone="neutral" />

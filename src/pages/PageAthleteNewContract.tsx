@@ -20,6 +20,8 @@ import NumberInput from '../components/NumberInput'
 import PageHero from '../components/PageHero'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import { Icon, IconButton } from '../components/Icon'
+import Field from '../components/Field'
+import { useToast } from '../components/toast-context'
 
 // ── Step types ────────────────────────────────────────────────────────────
 
@@ -129,6 +131,11 @@ export default function PageAthleteNewContract() {
 
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [step, setStep] = useState<Step>(1)
+  const toast = useToast()
+  // Validação do passo 1: erros aparecem no blur do campo ou ao tentar avançar.
+  const [triedStep1, setTriedStep1] = useState(false)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const touch = (k: string) => setTouched(t => (t[k] ? t : { ...t, [k]: true }))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -247,7 +254,23 @@ export default function PageAthleteNewContract() {
 
   // Transferência exige contraparte; contratos acessórios não (a parte pode ser
   // o agente, informado na seção de agentes, ou nem se aplicar).
-  const step1Valid = contract.start_date && (isTransferContractType(contract.type) ? !!contract.counterpart_club.trim() : true)
+  const clubRequired = isTransferContractType(contract.type)
+  const step1Valid = !!contract.start_date && (clubRequired ? !!contract.counterpart_club.trim() : true)
+  const step1Missing = [
+    clubRequired && !contract.counterpart_club.trim() ? 'clube / contraparte' : null,
+    !contract.start_date ? 'data de início' : null,
+  ].filter(Boolean) as string[]
+  const clubErr = (triedStep1 || touched.club) && clubRequired && !contract.counterpart_club.trim() ? 'Informe o clube ou a contraparte da transferência.' : null
+  const startErr = (triedStep1 || touched.start) && !contract.start_date ? 'Informe a data de início do vínculo.' : null
+  function goNext() {
+    if (step === 1 && !step1Valid) {
+      setTriedStep1(true)
+      // Leva o foco ao primeiro campo com erro.
+      requestAnimationFrame(() => (document.querySelector('[aria-invalid="true"]') as HTMLElement | null)?.focus())
+      return
+    }
+    setStep(s => (s + 1) as Step)
+  }
 
   // ── Step 2 handlers ──────────────────────────────────────────────────────
 
@@ -443,9 +466,11 @@ export default function PageAthleteNewContract() {
           })))
         }
       }
+      toast.success('Vínculo salvo com suas cláusulas e parcelas.')
       navigate(`/atletas/${id}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao salvar')
+      toast.error('Não foi possível salvar o vínculo.', { detail: e instanceof Error ? e.message : String(e) })
     } finally {
       setSaving(false)
     }
@@ -548,10 +573,12 @@ export default function PageAthleteNewContract() {
                 </div>
               ) : (
                 <>
-                  <div>
+                  <div onBlur={() => touch('club')}>
                     <EntityPicker
                       kind="clube"
-                      label={isTransferContractType(contract.type) ? 'Clube / Contraparte *' : 'Clube / Contraparte'}
+                      label="Clube / Contraparte"
+                      required={clubRequired}
+                      error={clubErr}
                       value={contract.counterpart_club}
                       onChange={(name, sub) => {
                         setContractField('counterpart_club', name)
@@ -565,10 +592,10 @@ export default function PageAthleteNewContract() {
                   </div>
                 </>
               )}
-              <div>
-                <label htmlFor="athnewcon-data-de-inicio" style={labelStyle}>Data de início *</label>
-                <input id="athnewcon-data-de-inicio" aria-required="true" type="date" value={contract.start_date} onChange={e => setContractField('start_date', e.target.value)} style={inputStyle} />
-              </div>
+              <Field label="Data de início" required error={startErr} labelStyle={labelStyle}>
+                <input type="date" value={contract.start_date} onChange={e => setContractField('start_date', e.target.value)} onBlur={() => touch('start')}
+                  style={{ ...inputStyle, ...(startErr ? { borderColor: 'var(--neg)' } : null) }} />
+              </Field>
               <div>
                 <label htmlFor="athnewcon-data-de-termino" style={labelStyle}>Data de término</label>
                 <input id="athnewcon-data-de-termino" type="date" value={contract.end_date} onChange={e => setContractField('end_date', e.target.value)} style={inputStyle} />
@@ -1063,10 +1090,16 @@ export default function PageAthleteNewContract() {
             <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline">← Voltar</button>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {step === 1 && !step1Valid && (
+            <span id="passo1-falta" role="status" style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: triedStep1 ? 'var(--neg)' : 'var(--text-muted)' }}>
+              Para avançar, preencha: {step1Missing.join(' e ')}.
+            </span>
+          )}
           <Link to={`/atletas/${id}`} className="btn btn-ghost">Cancelar</Link>
           {step < 3 ? (
-            <button onClick={() => setStep(s => (s + 1) as Step)} disabled={step === 1 && !step1Valid} className="btn btn-primary">
+            <button onClick={goNext} aria-disabled={step === 1 && !step1Valid} aria-describedby={step === 1 && !step1Valid ? 'passo1-falta' : undefined}
+              className="btn btn-primary" style={{ opacity: step === 1 && !step1Valid ? 0.55 : 1 }}>
               Próximo →
             </button>
           ) : (

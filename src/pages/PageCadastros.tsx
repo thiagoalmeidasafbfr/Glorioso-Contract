@@ -8,7 +8,7 @@
 // só os passivos flat — como antes — zerava clubes que têm obrigações reais.
 
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   fetchClubs, createClub, fetchAllClubLiabilities,
   fetchIntermediaries, createIntermediary, fetchAllIntermediaryLiabilities,
@@ -40,7 +40,6 @@ interface Entry {
 const toBRL = (v: number, c: Currency) => approxToBRL(v, c)
 
 export default function PageCadastros({ kind }: { kind: Kind }) {
-  const navigate = useNavigate()
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -120,10 +119,8 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
           {filtered.map(e => (
-            <div key={e.id} className="card" role="button" tabIndex={0}
-              style={{ padding: 16, cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center' }}
-              onClick={() => navigate(`${basePath}/${e.id}`)}
-              onKeyDown={ev => { if (ev.key === 'Enter') navigate(`${basePath}/${e.id}`) }}>
+            <Link key={e.id} to={`${basePath}/${e.id}`} className="card row-link"
+              style={{ padding: 16, cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center', textDecoration: 'none' }}>
               <div style={{ width: 52, height: 52, borderRadius: isClube ? 10 : '50%', overflow: 'hidden', background: 'var(--cream-inset)', border: '1px solid var(--divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {e.logo
                   ? <img src={e.logo} alt="" style={{ width: '100%', height: '100%', objectFit: isClube ? 'contain' : 'cover' }} />
@@ -142,7 +139,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
                 </div>
               </div>
               <Icon name="chevronRight" size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            </div>
+            </Link>
           ))}
         </div>
       )}

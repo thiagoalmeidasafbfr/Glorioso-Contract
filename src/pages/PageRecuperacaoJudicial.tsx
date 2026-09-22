@@ -26,6 +26,8 @@ import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import KpiPill from '../components/KpiPill'
 import RefLink from '../components/RefLink'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
 import { useToast, errorMessage } from '../components/toast-context'
@@ -268,6 +270,24 @@ export default function PageRecuperacaoJudicial() {
     exportWorkbook([{ name: 'Recuperação Judicial', cols, rows: data }], 'recuperacao-judicial.xlsx')
   }
 
+  // Ordenação das duas tabelas (clique no cabeçalho).
+  type Group = (typeof byCreditor)[number]
+  const { sorted: sortedGroups, sort: sortG } = useSortable<Group>(byCreditor, 'total', { initialDir: 'desc' })
+  const detailAccessors = useMemo<SortAccessors<RJRow>>(() => ({
+    dueDate: r => r.dueDate,
+    atleta: r => r.atleta,
+    credor: r => r.credor,
+    natureza: r => r.natureza,
+    descricao: r => r.descricao,
+    valor: r => r.valor,
+    valorBRL: r => brlOf(r),
+    atraso: r => { const d = r.dueDate ? daysFromToday(r.dueDate) : null; return d !== null && d < 0 && OPEN.has(r.status) ? -d : 0 },
+    filedAt: r => r.filedAt,
+    status: r => r.status,
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- brlOf depende só de ptax
+  }), [ptax, today])
+  const { sorted: sortedRows, sort } = useSortable(filtered, null, { accessors: detailAccessors })
+
   const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
@@ -311,22 +331,22 @@ export default function PageRecuperacaoJudicial() {
         Detalhamento por credor
       </div>
       <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: '60vh' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, minWidth: 180 }}>Credor</th>
-              <th style={{ ...th, minWidth: 130 }}>Natureza predominante</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Lançamentos</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Vencidos</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Atraso máx.</th>
-              <th style={{ ...th, minWidth: 120 }}>Próx. vencimento</th>
-              <th style={{ ...th, minWidth: 120 }}>Protocolo RJ</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Total (BRL PTAX)</th>
+              <SortHeader k="credor" sort={sortG} style={{ ...th, minWidth: 180 }}>Credor</SortHeader>
+              <SortHeader k="topNatureza" sort={sortG} style={{ ...th, minWidth: 130 }}>Natureza predominante</SortHeader>
+              <SortHeader k="count" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 100 }}>Lançamentos</SortHeader>
+              <SortHeader k="overdueCount" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 100 }}>Vencidos</SortHeader>
+              <SortHeader k="maxDelayDays" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 130 }}>Atraso máx.</SortHeader>
+              <SortHeader k="nextDue" sort={sortG} style={{ ...th, minWidth: 120 }}>Próx. vencimento</SortHeader>
+              <SortHeader k="earliestFiledAt" sort={sortG} style={{ ...th, minWidth: 120 }}>Protocolo RJ</SortHeader>
+              <SortHeader k="total" sort={sortG} style={{ ...th, textAlign: 'right', minWidth: 130 }}>Total (BRL PTAX)</SortHeader>
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum lançamento marcado como Recuperação Judicial.</td></tr>}
-              {byCreditor.map(g => (
+              {sortedGroups.map(g => (
                 <tr key={g.credor}>
                   <td style={{ ...td, fontWeight: 600 }}>{g.credor}</td>
                   <td style={{ ...td, color: 'var(--text-secondary)' }}>{g.topNatureza}</td>
@@ -348,25 +368,25 @@ export default function PageRecuperacaoJudicial() {
         Lançamentos incluídos
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, minWidth: 100 }}>Vencimento</th>
-              <th style={{ ...th, minWidth: 140 }}>Atleta</th>
-              <th style={{ ...th, minWidth: 150 }}>Credor</th>
-              <th style={{ ...th, minWidth: 130 }}>Natureza</th>
-              <th style={{ ...th, minWidth: 200 }}>Descrição</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Valor (BRL PTAX)</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Atraso</th>
-              <th style={{ ...th, minWidth: 110 }}>Protocolo</th>
-              <th style={{ ...th, minWidth: 90 }}>Status</th>
+              <SortHeader k="dueDate" sort={sort} style={{ ...th, minWidth: 100 }}>Vencimento</SortHeader>
+              <SortHeader k="atleta" sort={sort} style={{ ...th, minWidth: 140 }}>Atleta</SortHeader>
+              <SortHeader k="credor" sort={sort} style={{ ...th, minWidth: 150 }}>Credor</SortHeader>
+              <SortHeader k="natureza" sort={sort} style={{ ...th, minWidth: 130 }}>Natureza</SortHeader>
+              <SortHeader k="descricao" sort={sort} style={{ ...th, minWidth: 200 }}>Descrição</SortHeader>
+              <SortHeader k="valor" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</SortHeader>
+              <SortHeader k="valorBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }}>Valor (BRL PTAX)</SortHeader>
+              <SortHeader k="atraso" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 100 }}>Atraso</SortHeader>
+              <SortHeader k="filedAt" sort={sort} style={{ ...th, minWidth: 110 }}>Protocolo</SortHeader>
+              <SortHeader k="status" sort={sort} style={{ ...th, minWidth: 90 }}>Status</SortHeader>
               {canEdit && <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>}
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum lançamento em RJ.</td></tr>}
-              {filtered.map(r => {
+              {sortedRows.map(r => {
                 const d = r.dueDate ? daysFromToday(r.dueDate) : null
                 const isLate = d !== null && d < 0 && OPEN.has(r.status)
                 return (

@@ -233,7 +233,7 @@ export default function PageClauseDetail() {
             <dt style={dt}>Transação vinculada</dt>
             <dd style={dd}>
               {contract
-                ? <RefLink to={`/atletas/${contract.athlete_id}?tab=historico`} title="Abrir vínculo">{CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}{contract.start_date ? ` · ${fmtDate(contract.start_date)}` : ''}</RefLink>
+                ? <RefLink to={`/atletas/${contract.athlete_id}?aba=transferencias`} title="Abrir vínculo">{CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}{contract.start_date ? ` · ${fmtDate(contract.start_date)}` : ''}</RefLink>
                 : <span style={{ color: 'var(--text-muted)' }}>Nenhuma</span>}
               {parent && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>↳ vínculo pai: {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}</div>}
             </dd>

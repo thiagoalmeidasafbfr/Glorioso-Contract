@@ -22,6 +22,8 @@ import { fetchPtaxRates, toBRL, ptaxRateFor } from '../lib/ptax'
 import PageHero from '../components/PageHero'
 import KpiPill from '../components/KpiPill'
 import RefLink from '../components/RefLink'
+import { useSortable, type SortAccessors } from '../components/useSortable'
+import { SortHeader } from '../components/SortableTable'
 import { Icon } from '../components/Icon'
 import RowActions, { ActionLegend } from '../components/RowActions'
 import PaymentModal from '../components/athletes/PaymentModal'
@@ -299,6 +301,19 @@ export default function PageConsolidado() {
     exportWorkbook([{ name: 'Consolidado', cols, rows }], 'consolidado-movimentacoes.xlsx')
   }
 
+  const sortAccessors = useMemo<SortAccessors<Mov>>(() => ({
+    date: m => m.date,
+    atleta: m => m.atleta,
+    natureza: m => m.natureza,
+    contraparte: m => m.contraparte,
+    dir: m => m.dir,
+    valor: m => m.valor,
+    valorBRL: m => effectiveBRL(m),
+    status: m => m.status,
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- effectiveBRL depende só de ptax
+  }), [ptax])
+  const { sorted, sort } = useSortable(filtered, 'date', { accessors: sortAccessors })
+
   const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
@@ -370,36 +385,37 @@ export default function PageConsolidado() {
         <ActionLegend items={['open', 'edit', 'schedule', 'generate', 'markPaid', 'pay', 'revert']} />
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 240px)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
               {canEdit && (
                 <th style={{ ...th, width: 34, textAlign: 'center' }}>
                   <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    aria-label="Selecionar todos os passivos elegíveis (a pagar, fora da RJ)"
                     title="Selecionar todos os passivos elegíveis (a pagar, fora da RJ)" />
                 </th>
               )}
-              <th style={{ ...th, minWidth: 90 }}>Vencimento</th>
-              <th style={{ ...th, minWidth: 140 }}>Atleta</th>
-              <th style={{ ...th, minWidth: 150 }}>Natureza</th>
-              <th style={{ ...th, minWidth: 150 }}>Contraparte</th>
-              <th style={{ ...th, minWidth: 80 }}>Direção</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }} title="Convertido pela PTAX atual do Banco Central">Valor (BRL PTAX)</th>
-              <th style={{ ...th, minWidth: 90 }}>Status</th>
+              <SortHeader k="date" sort={sort} style={{ ...th, minWidth: 90 }}>Vencimento</SortHeader>
+              <SortHeader k="atleta" sort={sort} style={{ ...th, minWidth: 140 }}>Atleta</SortHeader>
+              <SortHeader k="natureza" sort={sort} style={{ ...th, minWidth: 150 }}>Natureza</SortHeader>
+              <SortHeader k="contraparte" sort={sort} style={{ ...th, minWidth: 150 }}>Contraparte</SortHeader>
+              <SortHeader k="dir" sort={sort} style={{ ...th, minWidth: 80 }}>Direção</SortHeader>
+              <SortHeader k="valor" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</SortHeader>
+              <SortHeader k="valorBRL" sort={sort} style={{ ...th, textAlign: 'right', minWidth: 120 }} title="Convertido pela PTAX atual do Banco Central">Valor (BRL PTAX)</SortHeader>
+              <SortHeader k="status" sort={sort} style={{ ...th, minWidth: 90 }}>Status</SortHeader>
               <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>Ações</th>
             </tr></thead>
             <tbody>
               {loading && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
-              {filtered.map(m => {
+              {sorted.map(m => {
                 const late = isOverdue(m.date, m.status)
                 return (
                   <tr key={m.id} style={{ background: m.rjFiledAt ? 'var(--warn-tint, #fff4e0)' : late ? 'var(--row-late-bg)' : 'transparent' }}>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'center', padding: '9px 6px' }}>
                         {canMarkRJ(m) ? (
-                          <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleOne(m.id)} />
+                          <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleOne(m.id)} aria-label={`Selecionar ${m.natureza} de ${m.atleta}`} />
                         ) : m.rjFiledAt ? (
                           <button title={`Em RJ desde ${fmtDate(m.rjFiledAt)} — clique para remover`}
                             onClick={() => unmarkRJ(m)}

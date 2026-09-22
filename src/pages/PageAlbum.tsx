@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllEconomicRights, fetchAllClauses,
 } from '../lib/athleteQueries'
@@ -79,18 +79,20 @@ interface CardProps {
   athlete: Athlete
   rights: EconomicRight[]
   activeClauses: number
-  onOpen: () => void
+  to: string
 }
 
-function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
+function AthleteSticker({ athlete, rights, activeClauses, to }: CardProps) {
   const [hover, setHover] = useState(false)
   const st = STATUS_STYLE[athlete.current_status]
   const age = calcAge(athlete.birth_date)
   const bfr = rights.length > 0 ? bfrShare(rights) : null
 
   return (
-    <button
-      onClick={onOpen}
+    <Link
+      to={to}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -102,7 +104,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
           : '0 2px 10px rgba(0,0,0,0.07)',
         transform: hover ? 'translateY(-5px)' : 'translateY(0)',
         transition: 'transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease',
-        cursor: 'pointer', padding: 0, font: 'inherit', width: '100%',
+        cursor: 'pointer', padding: 0, font: 'inherit', width: '100%', color: 'inherit', textDecoration: 'none',
       }}
     >
       {/* Foto */}
@@ -179,7 +181,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
           </div>
         )}
       </div>
-    </button>
+    </Link>
   )
 }
 
@@ -199,7 +201,6 @@ const NO_POSITION = 'Sem posição'
 type OwnershipFilter = 'Todos' | 'COM_BFR' | 'SEM_BFR'
 
 export default function PageAlbum() {
-  const navigate = useNavigate()
   const [athletes, setAthletes] = useState<Athlete[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -283,7 +284,7 @@ export default function PageAlbum() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Portfolio de Atletas" subtitle="Plantel · Botafogo SAF" />
+      <PageHero title="Portfólio de Atletas" subtitle="Plantel · Botafogo SAF" />
       <div style={{ marginTop: -4, marginBottom: 24, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, maxWidth: 620 }}>
         Cada atleta traz foto e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.
       </div>
@@ -364,7 +365,7 @@ export default function PageAlbum() {
                     athlete={a}
                     rights={rightsByAthlete[a.id] ?? []}
                     activeClauses={activeClausesByAthlete[a.id] ?? 0}
-                    onOpen={() => navigate(`/atletas/${a.id}`)}
+                    to={`/atletas/${a.id}`}
                   />
                 ))}
               </div>

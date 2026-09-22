@@ -27,6 +27,8 @@ import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import EntityPicker from '../components/EntityPicker'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
+import Field from '../components/Field'
+import { useToast, errorMessage } from '../components/toast-context'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -115,6 +117,11 @@ export default function PageWizard() {
   const [linkContractId, setLinkContractId] = useState('')
 
   const [description, setDescription] = useState('')
+  const toast = useToast()
+  // Erros inline: aparecem no blur do campo ou depois de tentar avançar.
+  const [tried, setTried] = useState<Record<number, boolean>>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const touch = (k: string) => setTouched(t => (t[k] ? t : { ...t, [k]: true }))
 
   useEffect(() => { fetchAthletes().then(setAthletes) }, [])
 
@@ -152,6 +159,9 @@ export default function PageWizard() {
       setAthletes(prev => [...prev, a].sort((x, y) => x.full_name.localeCompare(y.full_name)))
       setCreatingAth(false); setNewAth({ full_name: '', position: '' })
       pickAthlete(a)
+      toast.success(`Atleta "${a.short_name}" criado e selecionado.`)
+    } catch (e) {
+      toast.error('Não foi possível criar o atleta.', { detail: errorMessage(e) })
     } finally { setSavingAth(false) }
   }
 
@@ -174,6 +184,19 @@ export default function PageWizard() {
     }
   }
   const blocked = blockedReason()
+  const show = (k: string) => !!tried[step] || !!touched[k]
+  const athleteErr = step === 1 && !athleteId && tried[1] ? 'Selecione um atleta da lista ou crie um novo.' : null
+  const benefErr = step === 1 && !beneficiary.trim() && show('benef')
+    ? (nature?.benef === 'atleta' ? 'Informe o beneficiário.' : 'Informe a contraparte.') : null
+  const startErr = step === 1 && nature?.isMovement && !startDate && show('start') ? 'Informe a data de início do vínculo.' : null
+  function goNext() {
+    if (blocked) {
+      setTried(t => ({ ...t, [step]: true }))
+      requestAnimationFrame(() => (document.querySelector('[aria-invalid="true"]') as HTMLElement | null)?.focus())
+      return
+    }
+    setStep(s => s + 1)
+  }
 
   async function handleSave() {
     if (!nature || !athleteId || valid.length === 0) return
@@ -224,9 +247,11 @@ export default function PageWizard() {
           installment_number: i + 1, due_date: l.due_date, original_value: l.value, currency,
         })))
       }
+      toast.success(`${nature.label} registrado com ${sorted.length} parcela(s).`)
       navigate(`/obrigacoes/${clause.id}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao salvar')
+      toast.error('Não foi possível criar a obrigação.', { detail: errorMessage(e) })
     } finally { setSaving(false) }
   }
 
@@ -302,7 +327,7 @@ export default function PageWizard() {
           {/* Atleta */}
           <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
-              <div style={sectionTitle}>Atleta {athlete ? '' : '*'}</div>
+              <div style={sectionTitle} id="wiz-atleta-titulo">Atleta {!athlete && <span aria-hidden="true" style={{ color: 'var(--neg)' }}>*</span>}</div>
               <button onClick={() => setCreatingAth(v => !v)} className="btn btn-outline">
                 <Icon name={creatingAth ? 'x' : 'plus'} size={14} /> {creatingAth ? 'Cancelar' : 'Novo atleta'}
               </button>
@@ -339,7 +364,9 @@ export default function PageWizard() {
             )}
 
             {!athlete && (<>
-              <input style={{ ...input, marginBottom: 10 }} placeholder="Buscar atleta..." value={athleteQuery} onChange={e => setAthleteQuery(e.target.value)} />
+              <input aria-labelledby="wiz-atleta-titulo" aria-invalid={athleteErr ? true : undefined} aria-describedby={athleteErr ? 'wiz-atleta-erro' : undefined}
+                style={{ ...input, marginBottom: 10, ...(athleteErr ? { borderColor: 'var(--neg)' } : null) }} placeholder="Buscar atleta..." value={athleteQuery} onChange={e => setAthleteQuery(e.target.value)} />
+              {athleteErr && <div id="wiz-atleta-erro" role="alert" style={{ fontSize: 12, color: 'var(--neg)', fontFamily: font, marginBottom: 8 }}>{athleteErr}</div>}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
                 {filteredAthletes.map(a => (
                   <button key={a.id} onClick={() => pickAthlete(a)}
@@ -366,16 +393,15 @@ export default function PageWizard() {
                   <option value="A_RECEBER">Botafogo recebe (a receber)</option>
                 </select>
               </div>
-              <div>
+              <div onBlur={() => touch('benef')}>
                 {nature.benef === 'clube' ? (
-                  <EntityPicker kind="clube" label={direction === 'A_PAGAR' ? 'Clube (pago a) *' : 'Clube (recebido de) *'} value={beneficiary} onChange={(name, sub) => { setBeneficiary(name); if (sub) setCountry(sub) }} />
+                  <EntityPicker kind="clube" required error={benefErr} label={direction === 'A_PAGAR' ? 'Clube (pago a)' : 'Clube (recebido de)'} value={beneficiary} onChange={(name, sub) => { setBeneficiary(name); if (sub) setCountry(sub) }} />
                 ) : nature.benef === 'agente' ? (
-                  <EntityPicker kind="intermediario" label="Agente *" value={beneficiary} onChange={name => setBeneficiary(name)} />
+                  <EntityPicker kind="intermediario" required error={benefErr} label="Agente" value={beneficiary} onChange={name => setBeneficiary(name)} />
                 ) : (
-                  <>
-                    <label htmlFor="wiz-campo" style={lbl}>{direction === 'A_PAGAR' ? 'Pago a *' : 'Recebido de *'}</label>
-                    <input id="wiz-campo" style={input} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder="Nome do beneficiário" />
-                  </>
+                  <Field label={direction === 'A_PAGAR' ? 'Pago a' : 'Recebido de'} required error={benefErr} labelStyle={lbl}>
+                    <input style={{ ...input, ...(benefErr ? { borderColor: 'var(--neg)' } : null) }} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder="Nome do beneficiário" />
+                  </Field>
                 )}
               </div>
             </div>
@@ -383,7 +409,7 @@ export default function PageWizard() {
             {nature.isMovement ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div><label htmlFor="wiz-pais-da-contraparte" style={lbl}>País da contraparte</label><input id="wiz-pais-da-contraparte" style={input} value={country} onChange={e => setCountry(e.target.value)} placeholder="Ex: Espanha" /></div>
-                <div><label htmlFor="wiz-inicio-do-vinculo" style={lbl}>Início do vínculo *</label><input id="wiz-inicio-do-vinculo" aria-required="true" style={input} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+                <Field label="Início do vínculo" required error={startErr} labelStyle={lbl}><input style={{ ...input, ...(startErr ? { borderColor: 'var(--neg)' } : null) }} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} onBlur={() => touch('start')} /></Field>
                 <div><label htmlFor="wiz-termino" style={lbl}>Término</label><input id="wiz-termino" style={input} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
               </div>
             ) : (
@@ -466,9 +492,10 @@ export default function PageWizard() {
           {step === 0 ? 'Cancelar' : '← Voltar'}
         </button>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {blocked && <span style={hint}>{blocked}</span>}
+          {blocked && <span id="wiz-bloqueio" role="status" style={{ ...hint, color: tried[step] ? 'var(--neg)' : undefined }}>{blocked}</span>}
           {step < 3 ? (
-            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo →</button>
+            <button onClick={goNext} aria-disabled={!!blocked} aria-describedby={blocked ? 'wiz-bloqueio' : undefined}
+              className="btn btn-primary" style={{ opacity: blocked ? 0.55 : 1 }}>Próximo →</button>
           ) : (
             <button onClick={handleSave} disabled={saving || valid.length === 0} className="btn btn-primary">
               {saving ? 'Criando...' : 'Criar e abrir obrigação'}
