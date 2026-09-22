@@ -19,6 +19,9 @@ export function normAthleteRef(v: unknown): string | null {
   const s = clean(v)
   if (!s) return null
   if (/^\d+$/.test(s)) return s.padStart(11, '0')
+  // CPF formatado ("012.345.678-90", ou sem o zero: "12.345.678-90") → mesma
+  // chave do CPF numérico; antes gerava uma chave diferente para o mesmo atleta.
+  if (/^\d{1,3}\.\d{3}\.\d{3}-\d{2}$/.test(s)) return s.replace(/\D/g, '').padStart(11, '0')
   return s.toUpperCase().replace(/\s+/g, '')
 }
 

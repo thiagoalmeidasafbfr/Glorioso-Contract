@@ -113,10 +113,16 @@ export function addDays(iso: string, n: number): string {
   return d.toISOString().split('T')[0]
 }
 
-// Adiciona N meses a uma data ISO
+// Adiciona N meses a uma data ISO. O dia é limitado ao último dia do mês de
+// destino (31/01 + 1 mês → 28/02 ou 29/02), em vez do overflow do Date
+// (que levava a 03/03 e "pulava" fevereiro nos fluxos de parcelas).
 export function addMonths(iso: string, n: number): string {
   const d = new Date(iso + 'T12:00:00Z')
-  d.setMonth(d.getMonth() + n)
+  const day = d.getUTCDate()
+  d.setUTCDate(1)
+  d.setUTCMonth(d.getUTCMonth() + n)
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()
+  d.setUTCDate(Math.min(day, lastDay))
   return d.toISOString().split('T')[0]
 }
 

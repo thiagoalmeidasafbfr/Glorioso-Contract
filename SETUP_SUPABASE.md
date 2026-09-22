@@ -44,6 +44,7 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 16. `016_gatilho_imagem.sql`
 17. `017_ptax_fixada.sql`
 18. `018_premissas_atleta.sql`  ← **aba de PREMISSAS por atleta (Fase 1 do modelo do CFO)**
+19. `019_seguranca_perfis.sql`  ← **segurança de perfis: papel não vem do signup, perfil inativo sem acesso**
 
 > **IMPORTANTE:** rode **todas** as migrations acima, em ordem. Se pular alguma,
 > a aba correspondente falha com um erro do tipo *"Could not find the table

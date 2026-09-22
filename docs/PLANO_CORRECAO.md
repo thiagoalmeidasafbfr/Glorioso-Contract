@@ -21,7 +21,7 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 | 1.7 | Tabela de câmbio única (`src/lib/fx.ts`) substituindo as taxas duplicadas em 9+ arquivos | ✅ |
 | 1.8 | Aviso visível quando o app roda em modo local (sem Supabase) | ✅ |
 | 1.9 | Decidir fonte única da verdade: ponte `014` (usada pelo app) × núcleo `012` (vazio) | ⬜ decisão |
-| 1.10 | Bloquear build de produção sem `VITE_USE_SUPABASE=true` | ⬜ |
+| 1.10 | Bloquear build de produção sem `VITE_USE_SUPABASE=true` (`vite.config.ts`; escape `VITE_ALLOW_LOCAL_BUILD=true` p/ demo/CI) | ✅ |
 | 1.11 | PTAX histórica persistida (`ac_taxas_cambio`) + conversão por data de vencimento/pagamento | ⬜ |
 
 ## Fase 2 — UX essencial (quick wins)
@@ -73,5 +73,33 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 
 ## Transversal
 
-- Testes unitários para `salaryFlow`, `loanSalary`, `renegotiation`, amortização + CI (lint/build/test).
-- Remover `src-backup-20260424/` e `src/App.css` morto; corrigir `docs/ESPECIFICACOES.md` (referência a `FLUXO_INPUT.md`, enum `NAO_APLICAVEL`).
+| # | Item | Status |
+|---|---|---|
+| T.1 | Testes unitários (Vitest, `npm test`) para `salaryFlow`, `loanSalary`, `renegotiation`, `salary`, `remflow`, `liabilityFlow`, `ownership`, `judicialRecovery`, `format`, `fx`/`ptax`, `importCanon`, `importHelpers` — `src/lib/__tests__/` | ✅ |
+| T.2 | Testes da amortização — a matemática está dentro de `PageAmortizacao.tsx`; extrair para `src/lib/amortization.ts` e testar | ⬜ |
+| T.3 | CI (`.github/workflows/ci.yml`): Node 20/22, `tsc -b`, lint, test, build | ✅ |
+| T.4 | Lint do projeto inteiro bloqueante no CI (hoje informativo: 11 erros legados em `src/pages`, `src/components`, `src/context`) | ⬜ |
+| T.5 | Remover `src-backup-20260424/` e `src/App.css` morto | ✅ |
+| T.6 | Corrigir `docs/ESPECIFICACOES.md` (referência a `FLUXO_INPUT.md`, enum `ac_avaliacao_status`, migrations 018/019, papéis, estado atual × proposta) e README real | ✅ |
+
+Bugs encontrados pelos testes e corrigidos em `src/lib`:
+
+- `format.addMonths`: 31/01 + 1 mês virava 03/03 (overflow do `Date`), pulando
+  fevereiro em fluxos de parcelas e renegociações; agora limita ao último dia do mês.
+- `renegotiation` (`splitEqual`): divisão igual feita em ponto flutuante gerava
+  parcelas desiguais (ex.: 1.009,80 em 10x → 9 × 100,97 + 101,07); agora em centavos.
+- `importCanon.normAthleteRef`: CPF formatado (`012.345.678-90`) gerava chave
+  diferente do CPF numérico; agora normaliza para 11 dígitos.
+
+Pendências observadas (não corrigidas — exigem mudança de UI ou de regra):
+
+- `loanSalary`: o rateio usa `base_salary`/`image_value` do contrato como valor
+  integral, ignorando degraus de gatilhos já atingidos antes do empréstimo (a
+  prévia do `LoanShareModal` faz o mesmo). Um gatilho atingido durante o
+  empréstimo também sobrepõe o rateio.
+- `renegotiation.createRenegotiation`: sobrescreve o `notes` original da
+  parcela/cláusula de origem (ex.: perde uma marca `[RJ:…]`); o desfazer não o recupera.
+- `salaryFlow`: parcelas de salário/imagem `CANCELADA` (renegociadas) não
+  contam como "pagas" e são recriadas ao regenerar o fluxo.
+- `importCanon.num`: texto sem dígitos (ex.: "a definir") vira `0`, não `null`
+  (mantido: entra no `source_key` e mudar quebraria a idempotência).
