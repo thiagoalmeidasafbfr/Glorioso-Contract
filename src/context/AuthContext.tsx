@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- arquivo de contexto: provider + hook useAuth */
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { supabase, USE_SUPABASE, type UserProfile, type UserRole } from '../lib/supabase'
 import { roleCan, type Capability } from '../lib/permissoes'
@@ -43,6 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(USE_SUPABASE)
 
+  async function fetchProfile(userId: string) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    setProfile(data as UserProfile | null)
+    setLoading(false)
+  }
+
   useEffect(() => {
     if (!USE_SUPABASE) return
 
@@ -61,15 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data as UserProfile | null)
-    setLoading(false)
-  }
 
   async function signIn(email: string, password: string): Promise<string | null> {
     const { error } = await supabase.auth.signInWithPassword({ email, password })

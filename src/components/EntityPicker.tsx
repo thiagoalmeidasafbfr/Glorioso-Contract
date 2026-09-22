@@ -52,9 +52,11 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
       setList(is.map((i: Intermediary) => ({ id: i.id, name: i.name, sub: i.contact ?? '' })))
     }
   }
-  useEffect(() => { load() }, [kind]) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- carga da lista ao trocar o tipo
+  useEffect(() => { load() }, [kind])
 
   // Sincroniza o campo com o value externo (edição de item já salvo).
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- espelha o value controlado de fora
   useEffect(() => { setQuery(value) }, [value])
 
   // Fecha o dropdown ao clicar fora do componente.

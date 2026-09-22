@@ -78,7 +78,7 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 | T.1 | Testes unitários (Vitest, `npm test`) para `salaryFlow`, `loanSalary`, `renegotiation`, `salary`, `remflow`, `liabilityFlow`, `ownership`, `judicialRecovery`, `format`, `fx`/`ptax`, `importCanon`, `importHelpers` — `src/lib/__tests__/` | ✅ |
 | T.2 | Testes da amortização — a matemática está dentro de `PageAmortizacao.tsx`; extrair para `src/lib/amortization.ts` e testar | ⬜ |
 | T.3 | CI (`.github/workflows/ci.yml`): Node 20/22, `tsc -b`, lint, test, build | ✅ |
-| T.4 | Lint do projeto inteiro bloqueante no CI (hoje informativo: 11 erros legados em `src/pages`, `src/components`, `src/context`) | ⬜ |
+| T.4 | Lint do projeto inteiro bloqueante no CI (hoje informativo: 11 erros legados em `src/pages`, `src/components`, `src/context`) | ✅ erros corrigidos; lint completo bloqueante no CI |
 | T.5 | Remover `src-backup-20260424/` e `src/App.css` morto | ✅ |
 | T.6 | Corrigir `docs/ESPECIFICACOES.md` (referência a `FLUXO_INPUT.md`, enum `ac_avaliacao_status`, migrations 018/019, papéis, estado atual × proposta) e README real | ✅ |
 

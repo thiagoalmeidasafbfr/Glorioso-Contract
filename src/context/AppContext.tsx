@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- arquivo de contexto: provider + hook + constantes de moeda */
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { translations, type Lang } from '../i18n/translations'
 

@@ -38,13 +38,8 @@ jobs:
       - name: Lint (src/lib + configs)
         run: npm run lint:lib
 
-      # Lint completo: ainda há 11 erros pré-existentes em src/pages,
-      # src/components e src/context (react-hooks/set-state-in-effect,
-      # react-refresh/only-export-components, react-hooks/immutability).
-      # Fica informativo até serem corrigidos; depois remova o continue-on-error.
-      - name: Lint (projeto inteiro, informativo)
+      - name: Lint (projeto inteiro)
         run: npm run lint
-        continue-on-error: true
 
       - name: Testes
         run: npm test

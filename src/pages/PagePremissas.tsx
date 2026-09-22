@@ -89,6 +89,7 @@ function CellInput(props: {
   placeholder?: string
 }) {
   const [v, setV] = useState<string>(props.value == null ? '' : String(props.value))
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- espelha o value controlado de fora
   useEffect(() => { setV(props.value == null ? '' : String(props.value)) }, [props.value])
   return (
     <input
@@ -185,6 +186,7 @@ export default function PagePremissas() {
     } finally { setLoading(false) }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de dados no mount
   useEffect(() => { void load() }, [load])
 
   // Persistência otimista — atualiza o state, dispara PATCH, reverte se falhar.

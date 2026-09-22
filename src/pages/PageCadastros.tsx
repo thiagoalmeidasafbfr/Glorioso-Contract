@@ -73,7 +73,8 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [kind]) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- carga ao trocar o tipo de cadastro
+  useEffect(() => { load() }, [kind])
 
   const filtered = useMemo(() => {
     const list = entries.filter(e => e.name.toLowerCase().includes(search.toLowerCase()))
