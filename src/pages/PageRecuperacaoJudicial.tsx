@@ -52,8 +52,7 @@ interface RJRow {
 const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
 
 export default function PageRecuperacaoJudicial() {
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { canEdit } = useAuth()
   const [rows, setRows] = useState<RJRow[]>([])
   const [ptax, setPtax] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)

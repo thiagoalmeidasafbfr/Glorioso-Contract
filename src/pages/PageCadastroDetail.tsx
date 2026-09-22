@@ -57,8 +57,7 @@ const STATUS_TONE: Record<string, { l: string; t: 'pos' | 'neg' | 'neutral' }> =
 export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { canEdit } = useAuth()
   const isClube = kind === 'clube'
   const basePath = isClube ? '/clubes' : '/intermediarios'
 

@@ -61,8 +61,7 @@ interface Mov {
 const isBFR = (s: string | null | undefined) => !!s && (s.toLowerCase().includes('botafogo') || s.toLowerCase() === 'bfr')
 
 export default function PageConsolidado() {
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { canEdit } = useAuth()
   const [movs, setMovs] = useState<Mov[]>([])
   // Registros brutos — necessários para abrir os modais de edição de qualquer linha.
   const [clauses, setClauses] = useState<Clause[]>([])
