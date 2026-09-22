@@ -44,7 +44,7 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 
 | # | Item | Status |
 |---|---|---|
-| 3.1 | Papéis: `juridico`, `tesouraria`, `controladoria`, `assessor`, `futebol`, `rh`, `diretoria` + RLS por papel | 🚧 back (020) + front: `UserRole` com 8 papéis, `can()` por papel (`src/lib/permissoes.ts`), papel real no rodapé, tela `/admin/usuarios`. Falta validar em Supabase real e aplicar `can()` nas demais telas (a maioria ainda usa `canEdit`) |
+| 3.1 | Papéis: `juridico`, `tesouraria`, `controladoria`, `assessor`, `futebol`, `rh`, `diretoria` + RLS por papel | ✅ back (020) + front: 8 papéis, matriz única `src/lib/permissoes.ts` (`can()`; `roleGate` delega a ela), gestão em `/admin/usuarios`; Tesouraria dá baixa/estorna na ficha do atleta, obrigação, Consolidado e cadastros. Não testado contra Supabase real |
 | 3.2 | Trilha de auditoria (tabela `ac_auditoria` + trigger genérico) e `created_by` real | ✅ back (021) + front: aba "Histórico" na ficha do atleta e `/admin/auditoria` com filtros (tabela, usuário, período). Não testado contra Supabase real |
 | 3.3 | Workflow RASCUNHO → EM_REVISÃO → APROVADO (Controladoria aprova) | ✅ back (022) + front: chip + ações em contratos/cláusulas da ficha (aba Transferências), fila `/aprovacoes`, opção "Salvar como rascunho" no novo contrato. Não testado contra Supabase real |
 | 3.4 | Baixa de parcela com valor pago, PTAX efetiva e autor | ✅ back (023) + front: baixa/estorno via RPC, "pago por/em" na página da obrigação, Tesouraria dá baixa na página da obrigação. Não testado contra Supabase real; demais telas ainda escondem os botões de quem não tem `canEdit` |
@@ -76,7 +76,7 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 | # | Item | Status |
 |---|---|---|
 | T.1 | Testes unitários (Vitest, `npm test`) para `salaryFlow`, `loanSalary`, `renegotiation`, `salary`, `remflow`, `liabilityFlow`, `ownership`, `judicialRecovery`, `format`, `fx`/`ptax`, `importCanon`, `importHelpers` — `src/lib/__tests__/` | ✅ |
-| T.2 | Testes da amortização — a matemática está dentro de `PageAmortizacao.tsx`; extrair para `src/lib/amortization.ts` e testar | ⬜ |
+| T.2 | Testes da amortização — matemática extraída para `src/lib/amortization.ts` (`buildAthleteCalcs`, `calcSale`) com 11 testes | ✅ |
 | T.3 | CI (`.github/workflows/ci.yml`): Node 20/22, `tsc -b`, lint, test, build | ✅ |
 | T.4 | Lint do projeto inteiro bloqueante no CI (hoje informativo: 11 erros legados em `src/pages`, `src/components`, `src/context`) | ✅ erros corrigidos; lint completo bloqueante no CI |
 | T.5 | Remover `src-backup-20260424/` e `src/App.css` morto | ✅ |

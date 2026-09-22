@@ -59,7 +59,10 @@ const STATUS_TONE: Record<string, { l: string; t: 'pos' | 'neg' | 'neutral' }> =
 export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { canEdit } = useAuth()
+  const { canEdit, can } = useAuth()
+  // Tesouraria dá baixa/estorna sem editar o contrato (RPCs 023).
+  const canPay = canEdit || can('baixarParcelas')
+  const canRevert = canEdit || can('estornarBaixa')
   const toast = useToast()
   const confirm = useConfirm()
   const isClube = kind === 'clube'
@@ -198,12 +201,15 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
     }
   }
   async function registerPayment(instId: string, pmt: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
-    await registerInstallmentPayment(instId, {
-      payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
-      amount_paid_brl: pmt.valueBRL, exchange_rate: pmt.rate, notes: pmt.notes,
-    })
-    toast.success('Pagamento registrado.')
-    setPayInstId(null); await load()
+    try {
+      await registerInstallmentPayment(instId, {
+        payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
+        amount_paid_brl: pmt.valueBRL, exchange_rate: pmt.rate, notes: pmt.notes,
+      })
+      toast.success('Pagamento registrado.')
+      setPayInstId(null)
+    } catch (e) { toast.error('Não foi possível registrar o pagamento.', { detail: errorMessage(e) }) }
+    await load()
   }
 
   // Passivo flat → obrigação com parcelas: promove e abre o editor de fluxo.
@@ -401,15 +407,15 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                         schedule={l.clauseId ? { onClick: canEdit ? () => setFlowClauseId(l.clauseId!) : undefined, reason: 'sem permissão de edição' } : undefined}
                         generate={!l.clauseId && liab ? { onClick: canEdit ? () => generateFlowFor(l.kind as 'club' | 'agent', liab) : undefined, reason: 'sem permissão de edição' } : undefined}
                         markPaid={{
-                          onClick: canEdit && inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => quickPay(inst.id) : undefined,
+                          onClick: canPay && inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => quickPay(inst.id) : undefined,
                           reason: !inst ? 'gere as parcelas para dar baixa' : inst.payment_status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
                         }}
                         pay={{
-                          onClick: canEdit && inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => setPayInstId(inst.id) : undefined,
+                          onClick: canPay && inst && inst.payment_status !== 'PAGA' && inst.payment_status !== 'CANCELADA' ? () => setPayInstId(inst.id) : undefined,
                           reason: !inst ? 'gere as parcelas para registrar o pagamento' : inst.payment_status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
                         }}
                         revert={{
-                          onClick: canEdit && inst && inst.payment_status === 'PAGA' ? () => quickRevert(inst.id) : undefined,
+                          onClick: canRevert && inst && inst.payment_status === 'PAGA' ? () => quickRevert(inst.id) : undefined,
                           reason: 'a parcela não está paga',
                         }}
                         rj={canEdit && l.direction === 'A_PAGAR' ? { onClick: () => toggleRJ(l), marked: !!parseRJ(l.notes) } : undefined}

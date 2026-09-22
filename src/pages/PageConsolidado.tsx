@@ -66,7 +66,10 @@ interface Mov {
 const isBFR = (s: string | null | undefined) => isBFRParty(s)
 
 export default function PageConsolidado() {
-  const { canEdit } = useAuth()
+  const { canEdit, can } = useAuth()
+  // Tesouraria dá baixa/estorna sem editar o contrato (RPCs 023).
+  const canPay = canEdit || can('baixarParcelas')
+  const canRevert = canEdit || can('estornarBaixa')
   const toast = useToast()
   const confirm = useConfirm()
   const [movs, setMovs] = useState<Mov[]>([])
@@ -176,14 +179,26 @@ export default function PageConsolidado() {
     if (agent) return `/intermediarios/${agent}`
     return null
   }
-  async function quickPay(id: string) { await markInstallmentPaid(id, todayISO()); await load() }
-  async function quickRevert(id: string) { await revertInstallment(id); await load() }
+  async function quickPay(id: string) {
+    try { await markInstallmentPaid(id, todayISO()); toast.success('Parcela marcada como paga.') }
+    catch (e) { toast.error('Não foi possível dar baixa na parcela.', { detail: errorMessage(e) }) }
+    await load()
+  }
+  async function quickRevert(id: string) {
+    try { await revertInstallment(id); toast.success('Pagamento desfeito.') }
+    catch (e) { toast.error('Não foi possível desfazer o pagamento.', { detail: errorMessage(e) }) }
+    await load()
+  }
   async function registerPayment(id: string, pmt: { date: string; valueCurrency: number; valueBRL: number; rate: number; notes: string }) {
-    await registerInstallmentPayment(id, {
-      payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
-      amount_paid_brl: pmt.valueBRL, exchange_rate: pmt.rate, notes: pmt.notes,
-    })
-    setPayInstId(null); await load()
+    try {
+      await registerInstallmentPayment(id, {
+        payment_date: pmt.date, amount_paid_currency: pmt.valueCurrency,
+        amount_paid_brl: pmt.valueBRL, exchange_rate: pmt.rate, notes: pmt.notes,
+      })
+      toast.success('Pagamento registrado.')
+      setPayInstId(null)
+    } catch (e) { toast.error('Não foi possível registrar o pagamento.', { detail: errorMessage(e) }) }
+    await load()
   }
   async function generateFlowFor(kind: 'club' | 'agent', id: string) {
     const liab = kind === 'club' ? cLiabs.find(l => l.id === id) : iLiabs.find(l => l.id === id)
@@ -463,15 +478,15 @@ export default function PageConsolidado() {
                         schedule={m.clauseId ? { onClick: canEdit ? () => setFlowClauseId(m.clauseId!) : undefined, reason: 'sem permissão de edição' } : undefined}
                         generate={!m.clauseId ? { onClick: canEdit ? () => generateFlowFor(m.kind as 'club' | 'agent', m.id) : undefined, reason: 'sem permissão de edição' } : undefined}
                         markPaid={{
-                          onClick: canEdit && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' ? () => quickPay(m.id) : undefined,
+                          onClick: canPay && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' ? () => quickPay(m.id) : undefined,
                           reason: m.kind !== 'inst' ? 'gere as parcelas para dar baixa' : m.status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
                         }}
                         pay={{
-                          onClick: canEdit && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' ? () => setPayInstId(m.id) : undefined,
+                          onClick: canPay && m.kind === 'inst' && m.status !== 'PAGA' && m.status !== 'CANCELADA' ? () => setPayInstId(m.id) : undefined,
                           reason: m.kind !== 'inst' ? 'gere as parcelas para registrar o pagamento' : m.status === 'PAGA' ? 'parcela já paga' : 'parcela cancelada',
                         }}
                         revert={{
-                          onClick: canEdit && m.kind === 'inst' && m.status === 'PAGA' ? () => quickRevert(m.id) : undefined,
+                          onClick: canRevert && m.kind === 'inst' && m.status === 'PAGA' ? () => quickRevert(m.id) : undefined,
                           reason: 'a parcela não está paga',
                         }}
                       />
