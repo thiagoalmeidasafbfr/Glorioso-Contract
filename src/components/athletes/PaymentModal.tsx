@@ -112,7 +112,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             <div style={{
               background: 'var(--accent-tint)', border: '1px solid var(--divider-strong)',
               borderRadius: 7, padding: '8px 12px',
-              fontFamily: "var(--font-label)", fontSize: 11, color: 'var(--accent)',
+              fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--accent)',
             }}>
               R$ {valueBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>

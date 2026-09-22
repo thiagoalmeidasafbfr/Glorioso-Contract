@@ -288,7 +288,7 @@ export default function PageRecuperacaoJudicial() {
   }), [ptax, today])
   const { sorted: sortedRows, sort } = useSortable(filtered, null, { accessors: detailAccessors })
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
@@ -308,18 +308,18 @@ export default function PageRecuperacaoJudicial() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label htmlFor="recjud-busca" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
+          <label htmlFor="recjud-busca" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
           <input id="recjud-busca" value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
             style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label htmlFor="recjud-credor" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
+          <label htmlFor="recjud-credor" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
           <select id="recjud-credor" value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 240 }}>
             {credores.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="recjud-status" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <label htmlFor="recjud-status" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
           <select id="recjud-status" value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -327,7 +327,7 @@ export default function PageRecuperacaoJudicial() {
       </div>
 
       {/* ── Agrupamento por credor ─────────────────────────────────────── */}
-      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
+      <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
         Detalhamento por credor
       </div>
       <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
@@ -353,8 +353,8 @@ export default function PageRecuperacaoJudicial() {
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>{g.count}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.overdueCount > 0 ? 'var(--neg)' : 'var(--text-muted)', fontWeight: g.overdueCount > 0 ? 600 : 400 }}>{g.overdueCount}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.maxDelayDays > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{g.maxDelayDays > 0 ? `${g.maxDelayDays} dias` : '—'}</td>
-                  <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{g.nextDue ? fmtDate(g.nextDue) : '—'}</td>
-                  <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(g.earliestFiledAt)}</td>
+                  <td style={{ ...td, fontFamily: mono, fontSize: 12 }}>{g.nextDue ? fmtDate(g.nextDue) : '—'}</td>
+                  <td style={{ ...td, fontFamily: mono, fontSize: 12, color: 'var(--text-secondary)' }}>{fmtDate(g.earliestFiledAt)}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>{fmtCurrencyShort(g.total, 'BRL')}</td>
                 </tr>
               ))}
@@ -364,7 +364,7 @@ export default function PageRecuperacaoJudicial() {
       </div>
 
       {/* ── Detalhe por lançamento ─────────────────────────────────────── */}
-      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
+      <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
         Lançamentos incluídos
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -391,18 +391,18 @@ export default function PageRecuperacaoJudicial() {
                 const isLate = d !== null && d < 0 && OPEN.has(r.status)
                 return (
                   <tr key={`${r.kind}-${r.id}`}>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 700 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 700 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title="Abrir atleta">{r.atleta}</RefLink></td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.credor}</td>
                     <td style={td}>{r.natureza}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.descricao}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 12 }}>{r.descricao}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(r.valor, r.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}>{fmtCurrencyShort(brlOf(r), 'BRL')}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: isLate ? 'var(--neg)' : 'var(--text-muted)', fontWeight: isLate ? 600 : 400 }}>{isLate ? `${-d!} dias` : '—'}</td>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
                     <td style={td}>
                       <span style={{
-                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
+                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600,
                         fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
                         background: r.status === 'PAGA' ? 'var(--pos-tint)' : r.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
                         color: r.status === 'PAGA' ? 'var(--pos)' : r.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
@@ -411,7 +411,7 @@ export default function PageRecuperacaoJudicial() {
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => unmark(r)}
-                          style={{ background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 6, padding: '3px 8px', fontFamily: mono, fontSize: 9, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                          style={{ background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 6, padding: '3px 8px', fontFamily: mono, fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-secondary)', cursor: 'pointer' }}
                           title="Retirar este lançamento da Recuperação Judicial">
                           Retirar da RJ
                         </button>
@@ -424,7 +424,7 @@ export default function PageRecuperacaoJudicial() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: mono }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', fontFamily: mono }}>
         {filtered.length} lançamento(s) · {byCreditor.length} credor(es)
       </div>
     </div>

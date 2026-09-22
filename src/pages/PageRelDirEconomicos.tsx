@@ -124,7 +124,7 @@ export default function PageRelDirEconomicos() {
 
   const { sorted, sort } = useSortable(filtered, 'atleta', { accessors: DIR_ACCESSORS })
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   return (
@@ -135,12 +135,12 @@ export default function PageRelDirEconomicos() {
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <label htmlFor="reldireconomicos-busca" style={{ display: 'block', fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <label htmlFor="reldireconomicos-busca" style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
           <input id="reldireconomicos-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta ou detentor..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <label htmlFor="reldireconomicos-status" style={{ display: 'block', fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</label>
+          <label htmlFor="reldireconomicos-status" style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</label>
           <select id="reldireconomicos-status" value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
@@ -189,12 +189,12 @@ export default function PageRelDirEconomicos() {
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {r.holders.slice(0, 3).map((h, i) => (
-                            <span key={i} style={{ fontSize: 11, fontFamily: 'var(--font-label)', padding: '2px 8px', borderRadius: 5, background: 'var(--cream-inset)', color: HOLDER_COLOR[h.holderType], border: '1px solid var(--divider-soft)' }}>
+                            <span key={i} style={{ fontSize: 12, fontFamily: 'var(--font-label)', padding: '2px 8px', borderRadius: 5, background: 'var(--cream-inset)', color: HOLDER_COLOR[h.holderType], border: '1px solid var(--divider-soft)' }}>
                               {h.holderName} · {h.percentage.toFixed(0)}%
                             </span>
                           ))}
-                          {r.holders.length > 3 && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>+{r.holders.length - 3}</span>}
-                          {r.holders.length === 0 && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>—</span>}
+                          {r.holders.length > 3 && <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>+{r.holders.length - 3}</span>}
+                          {r.holders.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>—</span>}
                         </div>
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
@@ -221,7 +221,7 @@ export default function PageRelDirEconomicos() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>
         {filtered.length} atleta(s){stats.parcial > 0 ? ` · ${stats.parcial} parcial(is)` : ''}
       </div>
     </div>

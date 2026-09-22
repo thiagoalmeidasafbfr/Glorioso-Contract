@@ -42,7 +42,7 @@ const C = {
   pay: '#8a3524', recv: '#2f6b3a', warn: '#c98a1a',
   gold: '#14110d', goldLine: '#14110d', goldFill: '#14110d',
   surface: '#ffffff',
-  grid: 'rgba(20,17,13,0.07)', axis: 'rgba(20,17,13,0.45)',
+  grid: 'rgba(20,17,13,0.07)', axis: '#6b645d',
   crosshair: 'rgba(20,17,13,0.35)',
 }
 
@@ -246,7 +246,7 @@ export default function PageDashboards() {
                 <div key={t.label} className="stat-tile" style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 0, minHeight: 132 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: t.dot, flexShrink: 0, boxShadow: `0 0 0 3px ${hexA(t.dot, 0.12)}` }} />
-                    <span style={{ fontFamily: mono, fontSize: 9.5, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>{t.label}</span>
+                    <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>{t.label}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, lineHeight: 1 }}>
                     <span style={{ fontFamily: display, fontSize: 15, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.01em' }}>{p.sym}</span>
@@ -255,7 +255,7 @@ export default function PageDashboards() {
                   </div>
                   <div style={{ marginTop: 'auto', paddingTop: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
                     <span style={{ height: 1, width: 16, background: 'var(--divider-strong)' }} />
-                    <span style={{ fontFamily: mono, fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>{t.sub}</span>
+                    <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>{t.sub}</span>
                   </div>
                 </div>
               )
@@ -270,8 +270,8 @@ export default function PageDashboards() {
                 <ResponsiveContainer width="100%" height={340}>
                   <LineChart data={allDir} margin={{ top: 16, right: 56, bottom: 4, left: 8 }}>
                     <CartesianGrid vertical={false} stroke={C.grid} />
-                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={18} tickMargin={10} />
-                    <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
+                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: mono, fill: C.axis }} minTickGap={18} tickMargin={10} />
+                    <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 11, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
                     <Tooltip content={<BreakdownTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
                     <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2.4} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
                       <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={allDir.length} />} />
@@ -296,8 +296,8 @@ export default function PageDashboards() {
                   <ResponsiveContainer width="100%" height={244}>
                     <LineChart data={clube} margin={{ top: 8, right: 56, bottom: 4, left: 8 }}>
                       <CartesianGrid vertical={false} stroke={C.grid} />
-                      <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
-                      <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
+                      <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
+                      <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 11, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
                       <Tooltip content={<BreakdownTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
                       <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
                         <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={clube.length} />} />
@@ -323,8 +323,8 @@ export default function PageDashboards() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} stroke={C.grid} />
-                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
-                    <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 10, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
+                    <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: mono, fill: C.axis }} minTickGap={14} tickMargin={10} />
+                    <YAxis tickLine={false} axisLine={false} width={64} tick={{ fontSize: 11, fontFamily: mono, fill: C.axis }} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
                     <Tooltip content={<MoneyTip leadKey="total" />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
                     <Area type="monotone" dataKey="total" name="Custo mensal" stroke={C.goldLine} strokeWidth={2} strokeLinecap="round" fill="url(#gSal)" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }} />
                   </AreaChart>
@@ -352,7 +352,7 @@ export default function PageDashboards() {
               {aging.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6, marginTop: 8 }}>
                   {aging.map((b, i) => (
-                    <span key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: mono, fontSize: 10.5, color: 'var(--ink-secondary)' }}>
+                    <span key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: mono, fontSize: 12, color: 'var(--ink-secondary)' }}>
                       <span style={{ width: 10, height: 10, borderRadius: 2, background: AGING_COLORS[i % AGING_COLORS.length] }} />
                       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</span>
                       <strong style={{ marginLeft: 'auto', fontWeight: 700 }}>{fmtCurrencyShort(b.total, 'BRL')}</strong>
@@ -455,11 +455,11 @@ function Panel({ eyebrow, title, subtitle, tall, children }: { eyebrow?: string;
         {eyebrow && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
             <span style={{ height: 1, width: 16, background: 'var(--gold)', opacity: 0.65 }} />
-            <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gold)' }}>{eyebrow}</span>
+            <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gold)' }}>{eyebrow}</span>
           </div>
         )}
         <div style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', letterSpacing: '-0.01em' }}>{title}</div>
-        {subtitle && <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.03em' }}>{subtitle}</div>}
+        {subtitle && <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.03em' }}>{subtitle}</div>}
       </div>
       {children}
     </div>
@@ -470,7 +470,7 @@ function ChartLegend({ items }: { items: { name: string; color: string; dash?: b
   return (
     <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end', marginTop: -4, marginBottom: 6 }}>
       {items.map(it => (
-        <span key={it.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: font, fontSize: 11, color: 'var(--ink-secondary)' }}>
+        <span key={it.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: font, fontSize: 12, color: 'var(--ink-secondary)' }}>
           <svg width="20" height="8" aria-hidden>
             <line x1="1" y1="4" x2="19" y2="4" stroke={it.color} strokeWidth="2" strokeLinecap="round" strokeDasharray={it.dash ? '5 3' : undefined} />
           </svg>
@@ -495,7 +495,7 @@ function HRank({ data, color, empty }: { data: { parte: string; valor: number }[
         <YAxis type="category" dataKey="parte" width={132} tickLine={false} axisLine={false} tick={{ fontSize: 11, fontFamily: font, fill: 'var(--ink-secondary)' }} />
         <Tooltip content={<MoneyTip />} cursor={{ fill: 'rgba(26,20,16,0.04)' }} />
         <Bar dataKey="valor" name="Valor" fill={color} radius={[0, 4, 4, 0]} maxBarSize={22} barSize={20} isAnimationActive={false}>
-          <LabelList dataKey="valor" position="right" formatter={(v: unknown) => fmtCurrencyShort(Number(v), 'BRL')} style={{ fontFamily: mono, fontSize: 10, fill: 'var(--ink-secondary)' }} />
+          <LabelList dataKey="valor" position="right" formatter={(v: unknown) => fmtCurrencyShort(Number(v), 'BRL')} style={{ fontFamily: mono, fontSize: 11, fill: 'var(--ink-secondary)' }} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -509,7 +509,7 @@ function EndValueTag({ x, y, value, index, color, total }: any) {
   return (
     <g>
       <circle cx={x} cy={y} r={3.5} fill={color} stroke={C.surface} strokeWidth={2} />
-      <text x={x} y={y} dx={9} dy={3.6} fontFamily={mono} fontSize={9.5} fontWeight={600} fill={C.ink} textAnchor="start">
+      <text x={x} y={y} dx={9} dy={3.6} fontFamily={mono} fontSize={11} fontWeight={600} fill={C.ink} textAnchor="start">
         {fmtCurrencyShort(Number(value), 'BRL')}
       </text>
     </g>
@@ -531,18 +531,18 @@ function BreakdownTip({ active, payload, label }: any) {
     return (
       <div style={{ marginTop: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.75 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.75 }}>
             <svg width="14" height="6" aria-hidden><line x1="0" y1="3" x2="14" y2="3" stroke={color} strokeWidth="2" strokeLinecap="round" /></svg>
             {title}
           </span>
           <strong style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: '#f3eee2' }}>{fmtCurrencyShort(total, 'BRL')}</strong>
         </div>
         {rows.length === 0 ? (
-          <div style={{ opacity: 0.4, fontSize: 10 }}>—</div>
+          <div style={{ opacity: 0.4, fontSize: 12 }}>—</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {rows.map(([nat, v]) => (
-              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10.5, opacity: 0.82 }}>
+              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, opacity: 0.82 }}>
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nat}</span>
                 <span style={{ fontWeight: 600, opacity: 0.95 }}>{fmtCurrencyShort(v, 'BRL')}</span>
               </div>
@@ -553,8 +553,8 @@ function BreakdownTip({ active, payload, label }: any) {
     )
   }
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 240, maxWidth: 320 }}>
-      <div style={{ opacity: 0.55, marginBottom: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 9 }}>{label}</div>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 240, maxWidth: 320 }}>
+      <div style={{ opacity: 0.55, marginBottom: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 11 }}>{label}</div>
       {raw && section('A pagar', raw.pagar, raw.pagarBy, seriesColor('pagar'))}
       {raw && <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0 0' }} />}
       {raw && section('A receber', raw.receber, raw.receberBy, seriesColor('receber'))}
@@ -571,11 +571,11 @@ function MoneyTip({ active, payload, label, leadKey }: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = payload.filter((p: any) => !leadKey || p.dataKey !== leadKey)
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 158 }}>
-      <div style={{ opacity: 0.55, marginBottom: 7, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 9 }}>{label}</div>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 158 }}>
+      <div style={{ opacity: 0.55, marginBottom: 7, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 11 }}>{label}</div>
       {lead && (
         <div style={{ marginBottom: rows.length ? 8 : 0, paddingBottom: rows.length ? 8 : 0, borderBottom: rows.length ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
-          <div style={{ opacity: 0.6, fontSize: 8.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{lead.name}</div>
+          <div style={{ opacity: 0.6, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{lead.name}</div>
           <div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: '#f3eee2' }}>{fmtCurrencyShort(Number(lead.value), 'BRL')}</div>
         </div>
       )}
@@ -602,8 +602,8 @@ function PieTip({ active, payload }: any) {
   const byNat: Record<string, number> | undefined = p.payload?.byNat
   const rows = byNat ? Object.entries(byNat).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0) : []
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 220, maxWidth: 300 }}>
-      <div style={{ opacity: 0.7, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 220, maxWidth: 300 }}>
+      <div style={{ opacity: 0.7, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
         <div style={{ fontFamily: display, fontSize: 18, fontWeight: 700 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
         {pct > 0 && <div style={{ opacity: 0.6 }}>{pct.toFixed(1)}%</div>}
@@ -611,10 +611,10 @@ function PieTip({ active, payload }: any) {
       {rows.length > 0 && (
         <>
           <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0' }} />
-          <div style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginBottom: 4 }}>Por natureza</div>
+          <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginBottom: 4 }}>Por natureza</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {rows.map(([nat, v]) => (
-              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10.5, opacity: 0.85 }}>
+              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, opacity: 0.85 }}>
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nat}</span>
                 <span style={{ fontWeight: 600 }}>{fmtCurrencyShort(v, 'BRL')}</span>
               </div>

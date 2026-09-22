@@ -47,8 +47,9 @@
   /* Azul das ações de parcelas/cronograma e cinza dos ícones indisponíveis. */
   --info:           #1f5673;
   --info-tint:      rgba(31,86,115,0.10);
-  /* Ícone indisponível: 3,5:1 sobre branco (WCAG 1.4.11, não-texto ≥ 3:1). */
-  --icon-off:       #8e8881;
+  /* Ícone indisponível: ≥ 3:1 (WCAG 1.4.11, não-texto) sobre branco (3,96),
+     página (3,54) e linha em hover (3,14). Antes #b9b4ad = 2,06:1. */
+  --icon-off:       #857f78;
   /* Botão "cinza escuro com letra dourada" (exportar e afins). */
   --btn-dark-bg:    #3b3630;
   --gold-on-dark:   #dcc89a;

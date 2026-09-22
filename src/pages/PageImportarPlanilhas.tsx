@@ -83,7 +83,7 @@ export default function PageImportarPlanilhas() {
               </div>
             ))}
           </div>
-          {other.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 6 }}>Ignoradas: {other.join(', ')}</div>}
+          {other.length > 0 && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 6 }}>Ignoradas: {other.join(', ')}</div>}
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
             <button onClick={confirm} disabled={busy || known.length === 0}
               style={{ padding: '10px 22px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -97,9 +97,9 @@ export default function PageImportarPlanilhas() {
       {report && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
-            <div className="card" style={card}><div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 22 }}>{report.athletes.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 22 }}>{report.clubs.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 22 }}>{report.agents.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 22 }}>{report.athletes.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 22 }}>{report.clubs.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 22 }}>{report.agents.created}</div></div>
           </div>
 
           <div className="card" style={{ overflow: 'hidden' }}>
@@ -107,7 +107,7 @@ export default function PageImportarPlanilhas() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr>
                 {['Natureza', 'Criadas', 'Já existiam', 'Sem atleta', 'Erros'].map((h, i) => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: i === 0 ? 'left' : 'right', fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)', background: 'var(--tbl-head)', borderBottom: '1px solid var(--divider-strong)' }}>{h}</th>
+                  <th key={h} style={{ padding: '8px 14px', textAlign: i === 0 ? 'left' : 'right', fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)', background: 'var(--tbl-head)', borderBottom: '1px solid var(--divider-strong)' }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>
@@ -126,7 +126,7 @@ export default function PageImportarPlanilhas() {
 
           {Object.keys(report.pending).length > 0 && (
             <div className="card" style={{ padding: '14px 18px' }}>
-              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--warn)', marginBottom: 8 }}>Reconhecido — mapeamento em etapa futura</div>
+              <div style={{ fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--warn)', marginBottom: 8 }}>Reconhecido — mapeamento em etapa futura</div>
               {Object.entries(report.pending).map(([k, n]) => (
                 <div key={k} style={{ fontSize: 12, fontFamily: fontBody, color: 'var(--text-secondary)' }}>{k}: <span style={num}>{n}</span> linhas</div>
               ))}

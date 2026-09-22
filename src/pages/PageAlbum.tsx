@@ -114,7 +114,7 @@ function AthleteSticker({ athlete, rights, activeClauses, to }: CardProps) {
         <span style={{
           position: 'absolute', top: 8, right: 8,
           padding: '3px 9px', borderRadius: 6, background: st.bg, color: st.fg,
-          fontSize: 9, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.10em',
+          fontSize: 11, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.10em',
           textTransform: 'uppercase', boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
         }}>
           {STATUS_LABELS[athlete.current_status]}
@@ -125,7 +125,7 @@ function AthleteSticker({ athlete, rights, activeClauses, to }: CardProps) {
             position: 'absolute', bottom: 8, left: 8,
             padding: '3px 9px', borderRadius: 6,
             background: 'rgba(26,20,16,0.82)', color: 'var(--gold-soft, #d9b678)',
-            fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em',
+            fontSize: 11, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em',
             textTransform: 'uppercase',
           }}>
             {athlete.position}
@@ -143,7 +143,7 @@ function AthleteSticker({ athlete, rights, activeClauses, to }: CardProps) {
             {athlete.short_name}
           </div>
           <div style={{
-            fontFamily: font, fontSize: 11, color: 'var(--text-muted)',
+            fontFamily: font, fontSize: 12, color: 'var(--text-muted)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minHeight: 14,
           }}>
             {athlete.full_name !== athlete.short_name ? athlete.full_name : ' '}
@@ -168,7 +168,7 @@ function AthleteSticker({ athlete, rights, activeClauses, to }: CardProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <OwnershipBar rights={rights} compact showLegend={false} />
             {bfr !== null && (
-              <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+              <div style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
                 Botafogo detém <span style={{ color: 'var(--gold-deep, #8a6a2f)', fontWeight: 700 }}>
                   {Number.isInteger(bfr) ? bfr : bfr.toFixed(1).replace('.', ',')}%
                 </span>
@@ -176,7 +176,7 @@ function AthleteSticker({ athlete, rights, activeClauses, to }: CardProps) {
             )}
           </div>
         ) : (
-          <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+          <div style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
             Titularidade não cadastrada
           </div>
         )}
@@ -186,7 +186,7 @@ function AthleteSticker({ athlete, rights, activeClauses, to }: CardProps) {
 }
 
 const pill: React.CSSProperties = {
-  padding: '2px 8px', borderRadius: 20, fontSize: 10, fontFamily: fontMono,
+  padding: '2px 8px', borderRadius: 20, fontSize: 11, fontFamily: fontMono,
   background: 'var(--cream-inset)', border: '1px solid var(--divider-soft)',
   color: 'var(--text-secondary)', letterSpacing: '0.03em', whiteSpace: 'nowrap',
 }
@@ -279,7 +279,7 @@ export default function PageAlbum() {
   }, [filtered])
 
   const selWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column' }
-  const selLabel: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
+  const selLabel: React.CSSProperties = { fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
   const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
 
   return (
@@ -292,25 +292,25 @@ export default function PageAlbum() {
       {/* Toolbar de filtros */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 180 }}>
-          <div style={selLabel}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <label htmlFor="album-busca" style={{ ...selLabel, display: 'block' }}>Busca</label>
+          <input id="album-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Posição</div>
-          <select value={filterPosition} onChange={e => setFilterPosition(e.target.value)} style={selStyle}>
+          <label htmlFor="album-posicao" style={{ ...selLabel, display: 'block' }}>Posição</label>
+          <select id="album-posicao" value={filterPosition} onChange={e => setFilterPosition(e.target.value)} style={selStyle}>
             {positionOptions.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Nacionalidade</div>
-          <select value={filterNationality} onChange={e => setFilterNationality(e.target.value)} style={selStyle}>
+          <label htmlFor="album-nacionalidade" style={{ ...selLabel, display: 'block' }}>Nacionalidade</label>
+          <select id="album-nacionalidade" value={filterNationality} onChange={e => setFilterNationality(e.target.value)} style={selStyle}>
             {nationalityOptions.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Categoria</div>
-          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value as typeof filterCategory)} style={selStyle}>
+          <label htmlFor="album-categoria" style={{ ...selLabel, display: 'block' }}>Categoria</label>
+          <select id="album-categoria" value={filterCategory} onChange={e => setFilterCategory(e.target.value as typeof filterCategory)} style={selStyle}>
             <option value="Todos">Todas</option>
             {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
               <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
@@ -318,8 +318,8 @@ export default function PageAlbum() {
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Status</div>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)} style={selStyle}>
+          <label htmlFor="album-status" style={{ ...selLabel, display: 'block' }}>Status</label>
+          <select id="album-status" value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)} style={selStyle}>
             <option value="Todos">Todos</option>
             {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -327,8 +327,8 @@ export default function PageAlbum() {
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Titularidade</div>
-          <select value={filterOwnership} onChange={e => setFilterOwnership(e.target.value as OwnershipFilter)} style={selStyle}>
+          <label htmlFor="album-titularidade" style={{ ...selLabel, display: 'block' }}>Titularidade</label>
+          <select id="album-titularidade" value={filterOwnership} onChange={e => setFilterOwnership(e.target.value as OwnershipFilter)} style={selStyle}>
             <option value="Todos">Todas</option>
             <option value="COM_BFR">Com participação do Botafogo</option>
             <option value="SEM_BFR">Sem participação do Botafogo</option>
@@ -353,7 +353,7 @@ export default function PageAlbum() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--accent)', flexShrink: 0 }} />
                 <h2 style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
-                <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em' }}>
+                <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.10em' }}>
                   {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}
                 </span>
                 <div style={{ flex: 1, height: 1, background: 'var(--divider-soft)' }} />
@@ -374,7 +374,7 @@ export default function PageAlbum() {
         </div>
       )}
 
-      <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+      <div style={{ marginTop: 20, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length !== 1 ? 'figurinhas' : 'figurinha'} · {groups.length} {groups.length === 1 ? 'posição' : 'posições'}
       </div>
     </div>

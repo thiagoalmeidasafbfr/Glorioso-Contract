@@ -168,7 +168,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                   onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--accent-tint2)' : 'transparent')}
                 >
                   <div style={{ fontWeight: 500 }}>{x.name}</div>
-                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{x.sub}</div>}
+                  {x.sub && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{x.sub}</div>}
                 </button>
               ))}
             </div>
@@ -197,7 +197,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
 
           {creating && (
             <div style={{ padding: 12, borderTop: '1px solid var(--divider-soft)', background: 'var(--accent-tint)' }}>
-              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
+              <div style={{ fontFamily: fontMono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
                 Novo {isClube ? 'clube' : 'agente'}
               </div>
               <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--ink-primary)', marginBottom: 8 }}>
@@ -213,7 +213,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={() => { setCreating(false); setNewSub('') }}
-                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(26,20,16,0.15)', background: 'transparent', color: 'rgba(26,20,16,0.55)', fontSize: 12, fontFamily: fontBody, cursor: 'pointer' }}>
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(26,20,16,0.15)', background: 'transparent', color: 'var(--text-muted)', fontSize: 12, fontFamily: fontBody, cursor: 'pointer' }}>
                   Cancelar
                 </button>
                 <button type="button" onMouseDown={e => e.preventDefault()}

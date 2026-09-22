@@ -260,7 +260,7 @@ export function ClauseFlowModal({ clause, onClose, onSaved }: {
     <ModalShell title="Fluxo de parcelas" width={700} onClose={onClose}
       subtitle={`${CLAUSE_TYPE_LABELS[clause.clause_type]} · ${clause.description}`}
       footer={<>
-        <span style={{ marginRight: 'auto', fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+        <span style={{ marginRight: 'auto', fontSize: 12, color: 'var(--text-muted)', fontFamily: font }}>
           Salvar substitui as parcelas atuais. Total: <strong>{fmtCurrencyShort(total, currency)}</strong>.
         </span>
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
@@ -389,7 +389,7 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
       <div><label htmlFor="edimod-condicao" style={modalLabel}>Condição</label><input id="edimod-condicao" style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
       <div><label htmlFor="edimod-observacoes-3" style={modalLabel}>Observações</label><textarea id="edimod-observacoes-3" style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 8, background: 'var(--info-tint)', border: '1px solid rgba(31,86,115,0.22)' }}>
-        <span style={{ fontSize: 11.5, color: 'var(--ink-secondary)', fontFamily: font, flex: 1, minWidth: 220 }}>
+        <span style={{ fontSize: 12, color: 'var(--ink-secondary)', fontFamily: font, flex: 1, minWidth: 220 }}>
           Precisa de parcelas? {PROMOTE_HINT}
         </span>
         <button onClick={generateFlow} className="btn btn-outline" disabled={saving}

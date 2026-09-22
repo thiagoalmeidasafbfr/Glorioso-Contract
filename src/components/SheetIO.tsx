@@ -156,7 +156,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                         padding: '6px 14px',
                         border: 'none',
                         borderRadius: '6px 6px 0 0',
-                        fontFamily: fontMono, fontSize: 9,
+                        fontFamily: fontMono, fontSize: 11,
                         letterSpacing: '0.12em', textTransform: 'uppercase',
                         background: active ? 'var(--cream-page, #f9f7f2)' : 'transparent',
                         color: active ? '#1a1410' : 'var(--text-muted)',
@@ -175,14 +175,14 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
             <div style={{ flex: 1, overflow: 'auto', padding: '0 28px' }}>
               {activeRows.length > 0 ? (
                 <>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                       <tr>
                         {activeKeys.map(k => (
                           <th key={k} style={{
                             padding: '10px 8px 8px',
                             textAlign: 'left',
-                            fontFamily: fontMono, fontSize: 9,
+                            fontFamily: fontMono, fontSize: 11,
                             letterSpacing: '0.14em', textTransform: 'uppercase',
                             color: 'var(--ink-secondary, #6b6258)',
                             background: 'var(--cream-page, #f9f7f2)',
@@ -200,7 +200,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                           {activeKeys.map(k => (
                             <td key={k} style={{
                               padding: '6px 8px',
-                              fontFamily: fontBody, fontSize: 11,
+                              fontFamily: fontBody, fontSize: 12,
                               color: 'var(--ink-primary, #1a1410)',
                               borderBottom: '1px solid #ede9e1',
                               whiteSpace: 'nowrap',

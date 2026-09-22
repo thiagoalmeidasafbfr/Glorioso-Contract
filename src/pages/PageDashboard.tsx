@@ -152,7 +152,7 @@ export default function PageDashboard() {
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.40)', letterSpacing: '0.14em' }}>
+      <div style={{ padding: '40px', fontFamily: "var(--font-label)", fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.14em' }}>
         CARREGANDO...
       </div>
     )
@@ -172,7 +172,7 @@ export default function PageDashboard() {
           { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#7a3f2c' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
           <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
-            <div style={{ fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
+            <div style={{ fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
               {kpi.label}
             </div>
             <div style={{ fontFamily: "var(--font-label)", fontSize: 18, fontWeight: 700, color: kpi.color }}>
@@ -194,11 +194,11 @@ export default function PageDashboard() {
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,20,16,0.08)" />
-                <XAxis dataKey="label" tick={{ fontFamily: "var(--font-label)", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontFamily: "var(--font-label)", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false}
+                <XAxis dataKey="label" tick={{ fontFamily: "var(--font-label)", fontSize: 11, fill: '#6b645d' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontFamily: "var(--font-label)", fontSize: 11, fill: '#6b645d' }} axisLine={false} tickLine={false}
                   tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
                 <Tooltip
-                  contentStyle={{ fontFamily: "var(--font-label)", fontSize: 11, background: '#1a1410', border: 'none', borderRadius: 7, color: '#f3ede2' }}
+                  contentStyle={{ fontFamily: "var(--font-label)", fontSize: 12, background: '#1a1410', border: 'none', borderRadius: 7, color: '#f3ede2' }}
                   formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString('pt-BR')}`, name === 'receivable' ? 'A Receber' : 'A Pagar']}
                 />
                 <Bar dataKey="receivable" fill="#059669" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
@@ -212,7 +212,7 @@ export default function PageDashboard() {
             <div style={sectionTitle}>Vencimentos — próximos 60 dias ({dueClauses.length})</div>
             {overdueClauses.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(122,63,44,0.70)', marginBottom: 6 }}>
+                <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'rgba(122,63,44,0.70)', marginBottom: 6 }}>
                   EM ATRASO ({overdueClauses.length})
                 </div>
                 {overdueClauses.map(c => (
@@ -221,7 +221,7 @@ export default function PageDashboard() {
               </div>
             )}
             {dueClauses.length === 0 && overdueClauses.length === 0 && (
-              <div style={{ fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>
                 Nenhum vencimento nos próximos 60 dias
               </div>
             )}
@@ -229,7 +229,7 @@ export default function PageDashboard() {
               <DueRow key={c.id} clause={c} athleteName={athleteName(athleteIdForClause(c))} />
             ))}
             {dueClauses.length > 10 && (
-              <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(26,20,16,0.35)', marginTop: 8, textAlign: 'center' }}>
+              <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--text-muted)', marginTop: 8, textAlign: 'center' }}>
                 +{dueClauses.length - 10} mais
               </div>
             )}
@@ -242,7 +242,7 @@ export default function PageDashboard() {
               <thead>
                 <tr>
                   {['Moeda', 'A Receber', 'A Pagar', 'Líquido', 'Em R$'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '4px 8px', color: 'rgba(26,20,16,0.40)', fontSize: 10, fontWeight: 500, letterSpacing: '0.1em', borderBottom: '1px solid rgba(26,20,16,0.08)' }}>
+                    <th key={h} style={{ textAlign: 'left', padding: '4px 8px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', borderBottom: '1px solid rgba(26,20,16,0.08)' }}>
                       {h}
                     </th>
                   ))}
@@ -260,14 +260,14 @@ export default function PageDashboard() {
                       <td style={{ padding: '6px 8px', color: net >= 0 ? '#059669' : '#7a3f2c', fontWeight: 600 }}>
                         {net >= 0 ? '+' : ''}{net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
-                      <td style={{ padding: '6px 8px', color: 'rgba(26,20,16,0.55)' }}>
+                      <td style={{ padding: '6px 8px', color: 'var(--text-muted)' }}>
                         R$ {netBRL.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                       </td>
                     </tr>
                   )
                 })}
                 {Object.keys(exposures).length === 0 && (
-                  <tr><td colSpan={5} style={{ padding: '12px 8px', color: 'rgba(26,20,16,0.35)', textAlign: 'center' }}>Sem dados</td></tr>
+                  <tr><td colSpan={5} style={{ padding: '12px 8px', color: 'var(--text-muted)', textAlign: 'center' }}>Sem dados</td></tr>
                 )}
               </tbody>
             </table>
@@ -282,7 +282,7 @@ export default function PageDashboard() {
             </div>
 
             {unreadAlerts.length === 0 && (
-              <div style={{ fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>
                 Nenhum alerta ativo
               </div>
             )}
@@ -301,14 +301,14 @@ export default function PageDashboard() {
                           <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', marginBottom: 2 }}>
                             {alert.message}
                           </div>
-                          <Link to={`/atletas/${alert.athlete_id}`} style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'var(--accent)', textDecoration: 'none' }}>
+                          <Link to={`/atletas/${alert.athlete_id}`} style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>
                             {athleteName(alert.athlete_id)} →
                           </Link>
                         </div>
                       </div>
                       <button
                         onClick={() => handleMarkRead(alert.id)}
-                        style={{ background: 'none', border: 'none', color: 'rgba(26,20,16,0.35)', fontSize: 10, cursor: 'pointer', fontFamily: "var(--font-label)", whiteSpace: 'nowrap', flexShrink: 0 }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: "var(--font-label)", whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
                         lido
                       </button>
@@ -371,7 +371,7 @@ function DueRow({ clause, athleteName, overdue = false }: { clause: Clause; athl
         <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', fontWeight: 500 }}>
           {athleteName} — {clause.description}
         </div>
-        <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(26,20,16,0.45)', marginTop: 1 }}>
+        <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>
           {clause.due_date ? fmtDate(clause.due_date) : '—'}
         </div>
       </div>

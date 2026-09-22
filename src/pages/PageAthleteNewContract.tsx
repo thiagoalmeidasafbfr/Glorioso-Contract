@@ -97,7 +97,7 @@ const inputStyle: React.CSSProperties = {
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-label)", fontSize: 9,
+  fontFamily: "var(--font-label)", fontSize: 11,
   fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
   color: 'var(--text-muted)', display: 'block', marginBottom: 4,
 }
@@ -113,13 +113,13 @@ const sectionTitle: React.CSSProperties = {
 }
 
 const hintStyle: React.CSSProperties = {
-  fontFamily: "var(--font-body)", fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5,
+  fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5,
 }
 
 const noteBox: React.CSSProperties = {
   padding: '9px 13px', borderRadius: 8, background: 'var(--bg-subtle)',
   border: '1px solid var(--divider)', fontFamily: "var(--font-label)",
-  fontSize: 11, color: 'var(--ink-secondary)',
+  fontSize: 12, color: 'var(--ink-secondary)',
 }
 
 // ── Main component ────────────────────────────────────────────────────────
@@ -506,7 +506,7 @@ export default function PageAthleteNewContract() {
                 <span style={{
                   width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: active ? 'var(--accent)' : done ? 'var(--accent-tint2)' : 'var(--cream-inset)',
-                  fontSize: 11.5, fontWeight: 700, fontFamily: "var(--font-label)",
+                  fontSize: 12, fontWeight: 700, fontFamily: "var(--font-label)",
                   color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
                   {done ? <Icon name="check" size={13} /> : s}
@@ -700,10 +700,10 @@ export default function PageAthleteNewContract() {
                   const base = total || (contract.base_salary ?? 0)
                   if (base > 0) { setContractField('base_salary', base / 2); setContractField('image_value', base / 2) }
                 }}
-                className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 11.5 }}>
+                className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 12 }}>
                 Dividir 50% CLT / 50% imagem
               </button>
-              <span style={{ fontFamily: "var(--font-label)", fontSize: 11.5, color: 'var(--ink-secondary)' }}>
+              <span style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--ink-secondary)' }}>
                 Total: {(((contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0))).toLocaleString('pt-BR')} {contract.salary_currency}/mês
               </span>
             </div>
@@ -789,7 +789,7 @@ export default function PageAthleteNewContract() {
                 return (
                   <div key={i} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--divider)', background: 'var(--bg-subtle)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontFamily: "var(--font-label)", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
+                      <span style={{ fontFamily: "var(--font-label)", fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
                       <IconButton icon="trash" label={`Remover agente ${i + 1}`} tone="danger" onClick={() => removeAgent(i)} />
                     </div>
                     <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />

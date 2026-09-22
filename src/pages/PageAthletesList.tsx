@@ -212,7 +212,7 @@ function AlertCount({ kind, count }: { kind: 'atraso' | 'breve'; count: number }
     <span title={atraso ? `${count} parcela(s) em atraso` : `${count} parcela(s) vencendo em breve`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: atraso ? 'var(--neg)' : 'var(--warn)' }}>
       <Icon name={atraso ? 'alert' : 'clock'} size={14} />
-      <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 700 }}>{count}</span>
+      <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 700 }}>{count}</span>
     </span>
   )
 }
@@ -451,7 +451,7 @@ export default function PageAthletesList() {
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
                     </td>
                     <td style={{ ...td, width: 110 }}>
-                      <span style={{ padding: '3px 8px', borderRadius: 5, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase' }}>
+                      <span style={{ padding: '3px 8px', borderRadius: 5, background: st.bg, color: st.fg, fontSize: 11, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase' }}>
                         {STATUS_LABELS[a.current_status]}
                       </span>
                     </td>
@@ -465,7 +465,7 @@ export default function PageAthletesList() {
                           <OwnershipBadge rights={rightsByAthlete[a.id]} />
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
                       )}
                     </td>
                     <td style={{ ...td, width: 140, color: a.position ? 'var(--ink-primary)' : 'var(--text-muted)', fontSize: 12 }}>
@@ -478,7 +478,7 @@ export default function PageAthletesList() {
                       <div style={{ display: 'inline-flex', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
                         {stats.overdue > 0 && <AlertCount kind="atraso" count={stats.overdue} />}
                         {stats.soon > 0 && <AlertCount kind="breve" count={stats.soon} />}
-                        {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
+                        {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
                       </div>
                     </td>
                     <td style={{ ...td, width: 70 }}>
@@ -492,7 +492,7 @@ export default function PageAthletesList() {
         </div>
       </div>
 
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length !== 1 ? 'atletas' : 'atleta'}
       </div>
 

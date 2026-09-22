@@ -127,7 +127,7 @@ export default function PageAcordos() {
 
   const { sorted, sort } = useSortable(filtered, null)
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: fontBody, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: fontMono, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
 
@@ -140,19 +140,19 @@ export default function PageAcordos() {
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <label htmlFor="acordos-busca" style={{ display: 'block', fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
+          <label htmlFor="acordos-busca" style={{ display: 'block', fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</label>
           <input id="acordos-busca" value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, credor, observações..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <label htmlFor="acordos-atleta" style={{ display: 'block', fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Atleta</label>
+          <label htmlFor="acordos-atleta" style={{ display: 'block', fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Atleta</label>
           <select id="acordos-atleta" value={atletaFilter} onChange={e => setAtletaFilter(e.target.value)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)', maxWidth: 200 }}>
             {atletas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="acordos-andamento" style={{ display: 'block', fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Andamento</label>
+          <label htmlFor="acordos-andamento" style={{ display: 'block', fontSize: 11, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Andamento</label>
           <select id="acordos-andamento" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
@@ -204,7 +204,7 @@ export default function PageAcordos() {
                         : '—'}
                     </td>
                     <td style={{ ...td, textAlign: 'center', fontFamily: fontMono }}>{r.paid}/{r.count}</td>
-                    <td style={td}><span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span></td>
+                    <td style={td}><span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 11, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: st.bg, color: st.fg }}>{st.label}</span></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions
                         open={{ to: `/obrigacoes/${r.id}`, label: 'Abrir o acordo' }}
@@ -219,7 +219,7 @@ export default function PageAcordos() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length === 1 ? 'acordo' : 'acordos'}
       </div>
 

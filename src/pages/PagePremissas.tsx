@@ -61,7 +61,7 @@ function Head(props: { children: React.ReactNode; width?: number | string; stick
     <th style={{
       padding: '10px 8px',
       textAlign: 'left',
-      fontFamily: fontMono, fontSize: 10, fontWeight: 600,
+      fontFamily: fontMono, fontSize: 11, fontWeight: 600,
       letterSpacing: '0.10em', textTransform: 'uppercase',
       color: 'var(--ink-secondary)',
       background: 'var(--cream-inset)',
@@ -264,6 +264,7 @@ export default function PagePremissas() {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
+          aria-label="Buscar por atleta ou posição"
           placeholder="Buscar por atleta ou posição"
           style={{
             padding: '8px 10px', border: '1px solid var(--rule)', borderRadius: 6,
@@ -274,14 +275,14 @@ export default function PagePremissas() {
           {(['TODOS', ...DECISAO_OPTIONS] as const).map(d => (
             <button key={d} onClick={() => setFilter(d)} style={{
               padding: '6px 10px', border: '1px solid var(--rule)',
-              borderRadius: 6, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.10em',
+              borderRadius: 6, fontFamily: fontMono, fontSize: 11, letterSpacing: '0.10em',
               background: filter === d ? 'var(--ink-primary)' : 'var(--surface)',
               color: filter === d ? '#fff' : 'var(--ink-secondary)',
               cursor: 'pointer', textTransform: 'uppercase',
             }}>{d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d as PremissaDecisao]}</button>
           ))}
         </div>
-        <span style={{ marginLeft: 'auto', fontFamily: fontMono, fontSize: 10, color: 'var(--ink-secondary)' }}>
+        <span style={{ marginLeft: 'auto', fontFamily: fontMono, fontSize: 12, color: 'var(--ink-secondary)' }}>
           {filtered.length} {filtered.length === 1 ? 'linha' : 'linhas'}
         </span>
       </div>
@@ -335,7 +336,7 @@ export default function PagePremissas() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>Carregando...</td></tr>
+              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 12 }}>Carregando...</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr><td colSpan={31} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13 }}>
@@ -378,7 +379,7 @@ export default function PagePremissas() {
                           disabled={disabled}
                           value=""
                           onChange={e => e.target.value && linkToAthlete(r, e.target.value)}
-                          style={{ ...selectStyle(), fontSize: 11, color: 'var(--ink-secondary)' }}
+                          style={{ ...selectStyle(), fontSize: 12, color: 'var(--ink-secondary)' }}
                         >
                           <option value="">vincular a atleta existente...</option>
                           {athletes.map(a => (
@@ -413,7 +414,7 @@ export default function PagePremissas() {
                   <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.outros_encargos_pct)} disabled={disabled} align="right"
                     onCommit={v => void patch(r.id, { outros_encargos_pct: toPct(v) ?? 0 })} /></Cell>
                   <Cell align="right">
-                    <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--ink-secondary)' }}>
+                    <span style={{ fontFamily: fontMono, fontSize: 12, color: 'var(--ink-secondary)' }}>
                       {fmtPct(totalEncargos(r))}%
                     </span>
                   </Cell>
@@ -507,7 +508,7 @@ export default function PagePremissas() {
         </table>
       </div>
 
-      <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink-secondary)' }}>
+      <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 11, letterSpacing: '0.08em', color: 'var(--ink-secondary)' }}>
         Encargos padrão: INSS {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}% · FGTS {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}% · férias {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}%. Antecipação padrão: CDI {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}% a.a.
       </p>
     </div>
@@ -520,7 +521,7 @@ function btn(variant?: 'accent'): React.CSSProperties {
     border: variant === 'accent' ? '1px solid #be8c4a' : '1px solid rgba(255,255,255,0.20)',
     background: variant === 'accent' ? '#be8c4a' : 'transparent',
     color: variant === 'accent' ? '#1a1410' : '#f3eee2',
-    fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
+    fontFamily: fontMono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
     borderRadius: 6, cursor: 'pointer', fontWeight: 600,
   }
 }

@@ -83,7 +83,7 @@ export default function ImageUpload({
                 width: 24, height: 24, borderRadius: '50%',
                 background: 'var(--cream-card)', color: 'var(--neg)',
                 border: '1px solid var(--divider-strong)', cursor: 'pointer',
-                fontSize: 11, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
               ×

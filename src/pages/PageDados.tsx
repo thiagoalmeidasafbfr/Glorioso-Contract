@@ -366,14 +366,14 @@ export default function PageDados() {
 
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 18, maxWidth: 760 }}>
         Cada bloco tem um <strong>modelo</strong> (planilha em branco com as colunas), <strong>exportar</strong> (dados atuais) e <strong>importar</strong>. Onde há
-        <span style={{ fontFamily: fontMono, fontSize: 11 }}> Atleta ID</span>, preencha com o ID do atleta (exporte a aba Atletas para obter os IDs).
+        <span style={{ fontFamily: fontMono, fontSize: 12 }}> Atleta ID</span>, preencha com o ID do atleta (exporte a aba Atletas para obter os IDs).
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
         {DESCRIPTORS.map(d => (
           <div key={d.key} className="card" style={{ padding: 18 }}>
             <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', marginBottom: 2 }}>{d.label}</div>
-            <div style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', marginBottom: 14 }}>
+            <div style={{ fontFamily: fontMono, fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
               {d.cols.length} colunas{d.parent ? ` · requer ${d.parent}` : ''}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
