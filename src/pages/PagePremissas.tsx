@@ -14,6 +14,8 @@ import { ENCARGOS_DEFAULT, ANTECIPACAO_DEFAULT, DECISAO_LABELS } from '../types/
 import type { PremissaAtleta, PremissaDecisao } from '../types/premissas'
 import type { Athlete } from '../types/athlete-system'
 import { useAuth } from '../context/AuthContext'
+import PremissasSyncModal from '../components/PremissasSyncModal'
+import { loadSyncContext, computeSyncDiff, type SyncDiff } from '../lib/premissasSync'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -167,6 +169,7 @@ export default function PagePremissas() {
   const [err, setErr] = useState<string | null>(null)
   const [filter, setFilter] = useState<'TODOS' | PremissaDecisao>('TODOS')
   const [search, setSearch] = useState('')
+  const [syncDiffs, setSyncDiffs] = useState<SyncDiff[] | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null)
@@ -227,6 +230,24 @@ export default function PagePremissas() {
     (r.inss_patronal_pct ?? 0) + (r.fgts_pct ?? 0) +
     (r.decimo_terceiro_pct ?? 0) + (r.ferias_pct ?? 0) + (r.outros_encargos_pct ?? 0)
 
+  // "Puxar dos contratos": calcula o diff (linha única ou todas as vinculadas)
+  // e abre a confirmação; nada é gravado antes do OK.
+  const openSync = useCallback(async (target: Row[]) => {
+    try {
+      const ctx = await loadSyncContext()
+      const diffs = target.map(r => computeSyncDiff(r, ctx)).filter((d): d is SyncDiff => d !== null)
+      if (diffs.length === 0) { setErr('Nenhuma linha vinculada a atleta para sincronizar.'); return }
+      setSyncDiffs(diffs)
+    } catch (e) { setErr(explainError(e)) }
+  }, [])
+  const applySync = useCallback(async (patches: { id: string; patch: Partial<PremissaAtleta> }[]) => {
+    for (const { id, patch } of patches) {
+      await updatePremissa(id, patch)
+      setRows(rs => rs.map(r => r.id === id ? { ...r, ...patch } : r))
+    }
+    setSyncDiffs(null)
+  }, [])
+
   // Vincular a um atleta existente.
   const linkToAthlete = useCallback((r: Row, athleteId: string) => {
     const a = athletes.find(x => x.id === athleteId)
@@ -251,6 +272,9 @@ export default function PagePremissas() {
             </button>
             <button onClick={() => void addNew('NOVA_CONTRATACAO')} style={btn('accent')}>
               + Nova contratação
+            </button>
+            <button onClick={() => void openSync(rows.filter(r => r.atleta_id))} style={btn()} title="Atualiza salário, imagem, datas de contrato, nascimento e posição a partir do cadastro (com confirmação)">
+              Sincronizar com contratos
             </button>
           </div>
         )}
@@ -491,6 +515,10 @@ export default function PagePremissas() {
 
                   {/* Ações */}
                   <Cell align="center">
+                    {canEdit && r.atleta_id && (
+                      <IconButton icon="download" label="Puxar dos contratos" small
+                        onClick={() => void openSync([r])} />
+                    )}
                     {canEdit && (
                       <IconButton icon="trash" label="Excluir linha" tone="danger" small
                         onClick={() => void removeRow(r.id)} />
@@ -502,6 +530,8 @@ export default function PagePremissas() {
           </tbody>
         </table>
       </div>
+
+      {syncDiffs && <PremissasSyncModal diffs={syncDiffs} onClose={() => setSyncDiffs(null)} onConfirm={applySync} />}
 
       <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink-secondary)' }}>
         Encargos padrão: INSS {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}% · FGTS {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}% · férias {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}%. Antecipação padrão: CDI {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}% a.a.
