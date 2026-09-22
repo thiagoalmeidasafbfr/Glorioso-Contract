@@ -7,11 +7,11 @@ import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO } from '../lib/forma
 import { isOwnershipValid } from '../lib/ownership'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
+import { approxToBRL } from '../lib/fx'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-const RATES: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
-const toBRL = (v: number, cur: string) => v * (RATES[cur] ?? 1)
+const toBRL = approxToBRL
 
 function monthKey(iso: string) {
   return iso.slice(0, 7) // 'YYYY-MM'

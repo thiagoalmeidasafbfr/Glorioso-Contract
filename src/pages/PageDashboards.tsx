@@ -30,6 +30,7 @@ import { parseRJ } from '../lib/judicialRecovery'
 import { CLAUSE_TYPE_LABELS } from '../types/athlete-system'
 import type { Currency, ClauseType } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
+import { approxToBRL } from '../lib/fx'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -48,8 +49,7 @@ const C = {
 // Cores da pizza de aging — do dourado ao vermelho profundo.
 const AGING_COLORS = ['#a6803d', '#c98a1a', '#d16a2c', '#a6462d', '#5c1f14']
 
-const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
-const brlOf = (v: number, c: Currency) => v * (APPROX_BRL[c] ?? 1)
+const brlOf = (v: number, c: Currency) => approxToBRL(v, c)
 const OPEN = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'VENCIDA']
 const CLUB_TYPES: ClauseType[] = ['TRANSFER_FEE_FIXO', 'TRANSFER_FEE_VARIAVEL', 'SELL_ON_FEE', 'SELL_ON_FEE_RECEBER', 'SOLIDARIEDADE_FIFA', 'EMPRESTIMO_TAXA', 'CLAUSULA_RESCISORIA', 'PERCENTUAL_VENDA_ATLETA']
 const AGENT_TYPES: ClauseType[] = ['INTERMEDIACAO', 'INTERMEDIACAO_VENDA_FUTURA']

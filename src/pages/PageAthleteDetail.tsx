@@ -54,6 +54,7 @@ import { effectiveSalary } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
 import { exportWorkbook } from '../lib/xlsx-utils'
 import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteConsolidado'
+import { approxToBRL } from '../lib/fx'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -104,13 +105,12 @@ function FinancialCard({ label, value, sub, color }: { label: string; value: str
 
 // Big number multi-moeda: mostra a moeda dominante em destaque e as demais em
 // linha secundária. Usado nos KPIs de custo consolidado do atleta.
-const RATE_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 function BigNumberCard({ label, totals, sub, color }: {
   label: string; totals: Partial<Record<Currency, number>>; sub?: string; color?: string
 }) {
   const entries = (Object.entries(totals) as [Currency, number][])
     .filter(([, v]) => v)
-    .sort((a, b) => b[1] * (RATE_BRL[b[0]] ?? 1) - a[1] * (RATE_BRL[a[0]] ?? 1))
+    .sort((a, b) => approxToBRL(b[1], b[0]) - approxToBRL(a[1], a[0]))
   const primary = entries[0]
   const rest = entries.slice(1)
   return (
@@ -398,8 +398,7 @@ function umbrellaContract(contracts: Contract[]): Contract | null {
 export default function PageAthleteDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { canEdit } = useAuth()
 
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -452,7 +451,6 @@ export default function PageAthleteDetail() {
   useEffect(() => { loadData() }, [loadData])
 
   const openStatuses = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO']
-  const RATE: Record<Currency, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
   // Cálculo consolidado: parcelas + cláusulas de valor único + passivos.
   // Itens marcados como Recuperação Judicial SAEM de "A pagar" (e de "Em atraso")
   // e vão para o bucket rjPayable — mesma regra em todo o sistema.
@@ -466,7 +464,7 @@ export default function PageAthleteDetail() {
     const c = clauseById2.get(it.clause_id); if (!c) continue
     if (!openStatuses.includes(it.payment_status)) continue
     const dir = isBFRparty2(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
-    const brl = it.original_value * RATE[it.currency]
+    const brl = approxToBRL(it.original_value, it.currency)
     const isRJ = !!parseRJ(it.notes) || !!parseRJ(c.notes)
     if (dir === 'A_PAGAR') {
       if (isRJ) { rjPayable += brl; if (it.currency !== 'BRL') rjExposure[it.currency] = (rjExposure[it.currency] ?? 0) + it.original_value }
@@ -476,7 +474,7 @@ export default function PageAthleteDetail() {
   for (const c of clauses) {
     if (withInstSet.has(c.id) || !c.original_value || !openStatuses.includes(c.payment_status)) continue
     const dir = isBFRparty2(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
-    const brl = (c.original_value ?? 0) * RATE[c.currency]
+    const brl = approxToBRL(c.original_value ?? 0, c.currency)
     const isRJ = !!parseRJ(c.notes)
     if (dir === 'A_PAGAR') {
       if (isRJ) { rjPayable += brl; if (c.currency !== 'BRL') rjExposure[c.currency] = (rjExposure[c.currency] ?? 0) + (c.original_value ?? 0) }
@@ -485,7 +483,7 @@ export default function PageAthleteDetail() {
   }
   for (const l of clubLiabs) {
     if (!openStatuses.includes(l.status)) continue
-    const brl = l.amount * RATE[l.currency]
+    const brl = approxToBRL(l.amount, l.currency)
     if (l.direction === 'A_PAGAR') {
       if (parseRJ(l.notes)) { rjPayable += brl; if (l.currency !== 'BRL') rjExposure[l.currency] = (rjExposure[l.currency] ?? 0) + l.amount }
       else { payable += brl; if (l.currency !== 'BRL') exposure[l.currency] = (exposure[l.currency] ?? 0) + l.amount }
@@ -493,7 +491,7 @@ export default function PageAthleteDetail() {
   }
   for (const l of intermLiabs) {
     if (!openStatuses.includes(l.status)) continue
-    const brl = l.amount * RATE[l.currency]
+    const brl = approxToBRL(l.amount, l.currency)
     if (l.direction === 'A_PAGAR') {
       if (parseRJ(l.notes)) { rjPayable += brl; if (l.currency !== 'BRL') rjExposure[l.currency] = (rjExposure[l.currency] ?? 0) + l.amount }
       else { payable += brl; if (l.currency !== 'BRL') exposure[l.currency] = (exposure[l.currency] ?? 0) + l.amount }
@@ -1674,7 +1672,7 @@ function AccessoryFlowTab({
     for (const l of intermLiabs) rows.push({ id: l.id, kind: 'liab', parte: l.intermediary_name, natureza: 'Intermediação (passivo)', descricao: l.description ?? '', valor: l.amount, moeda: l.currency, venc: l.due_date, pag: l.settled_date, status: l.status })
   }
   rows.sort((a, b) => (a.venc ?? '9999-99-99').localeCompare(b.venc ?? '9999-99-99'))
-  const total = rows.reduce((s, r) => s + (r.valor ?? 0) * (RATE_BRL[r.moeda] ?? 1), 0)
+  const total = rows.reduce((s, r) => s + approxToBRL(r.valor ?? 0, r.moeda), 0)
 
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }

@@ -9,12 +9,23 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
   isMaster: boolean
+  /** Pode criar/editar dados contratuais. Modo local (sem Supabase) = sempre. */
+  canEdit: boolean
+}
+
+// Sem Supabase o app é monousuário (localStorage): tudo liberado. Com Supabase,
+// perfil ausente ou desativado NUNCA edita — antes `!profile` liberava tudo.
+function permissionsFor(profile: UserProfile | null) {
+  if (!USE_SUPABASE) return { isMaster: true, canEdit: true }
+  const active = !!profile && profile.ativo !== false
+  const isMaster = active && profile!.role === 'master'
+  return { isMaster, canEdit: isMaster || (active && profile!.role === 'juridico') }
 }
 
 const AuthContext = createContext<AuthContextValue>({
   session: null, profile: null, loading: true,
   signIn: async () => null, signOut: async () => {},
-  isMaster: false,
+  isMaster: false, canEdit: false,
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -64,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       session, profile, loading,
       signIn, signOut,
-      isMaster: profile?.role === 'master',
+      ...permissionsFor(profile),
     }}>
       {children}
     </AuthContext.Provider>

@@ -4,6 +4,7 @@
 // (criação em massa). Inclui atletas e vínculos, itens fundamentais.
 
 import { useRef, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 import {
   fetchAthletes, createAthlete,
   fetchAllContracts, createContract,
@@ -283,6 +284,7 @@ export default function PageDados() {
   const [confirmWipe, setConfirmWipe] = useState(false)
   const [wipeText, setWipeText] = useState('')
   const [wiping, setWiping] = useState(false)
+  const { isMaster } = useAuth()
 
   function downloadTemplate(d: Descriptor) {
     exportWorkbook([{ name: d.key.slice(0, 28), cols: d.cols, rows: [] }], `modelo-${d.key.toLowerCase()}.xlsx`)
@@ -323,13 +325,13 @@ export default function PageDados() {
           style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, color: 'var(--on-dark)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: exportingAll ? 'default' : 'pointer', opacity: exportingAll ? 0.6 : 1 }}>
           {exportingAll ? 'Exportando...' : 'Exportar toda a base'}
         </button>
-        <button onClick={() => { setConfirmWipe(true); setMsg(null) }}
+        {isMaster && <button onClick={() => { setConfirmWipe(true); setMsg(null) }}
           style={{ padding: '9px 18px', background: 'transparent', border: '1px solid rgba(216,122,96,0.55)', borderRadius: 8, color: '#e0a596', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           Apagar toda a base
-        </button>
+        </button>}
       </PageHero>
 
-      {confirmWipe && (
+      {isMaster && confirmWipe && (
         <div style={{ border: '1px solid rgba(122,63,44,0.35)', background: 'rgba(122,63,44,0.06)', borderRadius: 10, padding: 18, marginBottom: 22 }}>
           <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 700, color: '#7a3f2c', marginBottom: 6 }}>Apagar toda a base?</div>
           <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>

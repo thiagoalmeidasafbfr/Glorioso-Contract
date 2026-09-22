@@ -12,6 +12,7 @@ import type {
 } from '../types/athlete-system'
 import { daysFromToday, isOverdue } from './format'
 import { parseRJ } from './judicialRecovery'
+import { approxToBRL } from './fx'
 
 export type NatureKey =
   | 'SALARIO' | 'IMAGEM' | 'LUVAS' | 'AGENTES' | 'TRANSFER' | 'GATILHOS' | 'ACORDOS' | 'CLUBES'
@@ -52,8 +53,7 @@ const BY_CLAUSE_TYPE: Partial<Record<ClauseType, NatureKey>> = {
 const natureOf = (t: ClauseType): NatureKey => BY_CLAUSE_TYPE[t] ?? 'GATILHOS'
 
 const OPEN = ['PENDENTE', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'VENCIDA']
-const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
-const toBRL = (v: number, c: Currency) => v * (APPROX_BRL[c] ?? 1)
+const toBRL = (v: number, c: Currency) => approxToBRL(v, c)
 
 export type NatureStatus = 'EM_DIA' | 'EM_ATRASO' | 'QUITADO' | 'RENEGOCIADO' | 'SEM_LANCAMENTO'
 

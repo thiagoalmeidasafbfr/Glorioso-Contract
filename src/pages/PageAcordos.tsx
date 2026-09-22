@@ -19,10 +19,10 @@ import KpiPill from '../components/KpiPill'
 import { ClauseFlowModal } from '../components/modals/EditModals'
 import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import { useAuth } from '../context/AuthContext'
+import { approxToBRL } from '../lib/fx'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
-const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 
 type Andamento = 'QUITADO' | 'EM_ANDAMENTO' | 'PENDENTE' | 'EM_ATRASO'
 const AND_STYLE: Record<Andamento, { bg: string; fg: string; label: string }> = {
@@ -50,8 +50,7 @@ interface Row {
 }
 
 export default function PageAcordos() {
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { canEdit } = useAuth()
   const [rows, setRows] = useState<Row[]>([])
   const [acordoClauses, setAcordoClauses] = useState<Clause[]>([])
   const [editId, setEditId] = useState<string | null>(null)
@@ -110,7 +109,7 @@ export default function PageAcordos() {
     return true
   }), [rows, atletaFilter, statusFilter, search])
 
-  const totalDiscountBRL = filtered.reduce((s, r) => s + r.discount * (APPROX_BRL[r.currency] ?? 1), 0)
+  const totalDiscountBRL = filtered.reduce((s, r) => s + approxToBRL(r.discount, r.currency), 0)
 
   const exportCols: ColDef[] = [
     { key: 'atleta', header: 'Atleta' }, { key: 'credor', header: 'Credor' },

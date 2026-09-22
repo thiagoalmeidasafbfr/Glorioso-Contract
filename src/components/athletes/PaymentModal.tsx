@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Currency } from '../../types/athlete-system'
 import NumberInput from '../NumberInput'
+import { approxRateBRL } from '../../lib/fx'
 
 interface PaymentModalProps {
   label: string
@@ -20,13 +21,10 @@ const CURRENCY_SYMBOLS: Record<Currency, string> = {
   BRL: 'R$', EUR: '€', USD: '$', GBP: '£',
 }
 
-const DEFAULT_RATES: Record<Currency, number> = {
-  BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10,
-}
 
 export default function PaymentModal({ label, currency, value, onClose, onSave }: PaymentModalProps) {
   const sym = CURRENCY_SYMBOLS[currency]
-  const defaultRate = DEFAULT_RATES[currency]
+  const defaultRate = approxRateBRL(currency)
 
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [valueCurrency, setValueCurrency] = useState(value)

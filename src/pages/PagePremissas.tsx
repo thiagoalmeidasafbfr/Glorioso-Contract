@@ -159,8 +159,7 @@ function explainError(e: unknown): string {
 }
 
 export default function PagePremissas() {
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master'
+  const { isMaster: canEdit } = useAuth()
 
   const [rows, setRows] = useState<Row[]>([])
   const [athletes, setAthletes] = useState<Athlete[]>([])

@@ -23,6 +23,7 @@ import { Icon } from '../components/Icon'
 import { fmtCurrencyShort } from '../lib/format'
 import { ModalShell } from '../components/modals/EditModals'
 import { modalInput, modalLabel } from '../components/modals/styles'
+import { approxToBRL } from '../lib/fx'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -36,8 +37,7 @@ interface Entry {
   athletes: number
 }
 
-const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
-const toBRL = (v: number, c: Currency) => v * (APPROX_BRL[c] ?? 1)
+const toBRL = (v: number, c: Currency) => approxToBRL(v, c)
 
 export default function PageCadastros({ kind }: { kind: Kind }) {
   const navigate = useNavigate()

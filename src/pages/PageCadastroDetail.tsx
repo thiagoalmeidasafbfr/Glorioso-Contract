@@ -40,6 +40,7 @@ import NewObligationModal from '../components/modals/NewObligationModal'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { parseRJ, toggleItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import { approxToBRL } from '../lib/fx'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -52,7 +53,6 @@ const STATUS_TONE: Record<string, { l: string; t: 'pos' | 'neg' | 'neutral' }> =
   VENCIDA: { l: 'Vencida', t: 'neg' }, CANCELADA: { l: 'Cancelada', t: 'neutral' },
 }
 
-const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 
 export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const { id } = useParams<{ id: string }>()
@@ -147,7 +147,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
     }
     return Object.entries(acc).sort()
   }, [rows])
-  const openBRL = rows.reduce((s, r) => isOpenStatus(r.status) ? s + r.amount * (APPROX_BRL[r.currency] ?? 1) : s, 0)
+  const openBRL = rows.reduce((s, r) => isOpenStatus(r.status) ? s + approxToBRL(r.amount, r.currency) : s, 0)
 
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>CARREGANDO...</div>
   if (notFound) return (

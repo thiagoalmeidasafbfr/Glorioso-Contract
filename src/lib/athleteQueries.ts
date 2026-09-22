@@ -24,6 +24,7 @@ import type {
   NewImageRightInput, AthleteWithStats, AthletePJ, NewAthletePJInput, Currency,
 } from '../types/athlete-system'
 import { isOverdue, isDueSoon, addMonths } from './format'
+import { approxRateBRL } from './fx'
 
 // Nomes das tabelas no localStore (modo navegador — formas legadas "achatadas").
 const T = {
@@ -354,16 +355,22 @@ export async function deleteAthlete(id: string): Promise<void> {
   // para que o botão de excluir "simplesmente funcione".
   // Parcelas caem por FK das cláusulas; se a policy não permitir apagar
   // cláusula com parcelas, matamos as parcelas primeiro via cláusulas do atleta.
-  const clauseIds = (await supabase.from(AC.clauses).select('id').eq('atleta_id', id)).data?.map(r => r.id) ?? []
+  const { data: clauseRows, error: clauseErr } = await supabase.from(AC.clauses).select('id').eq('atleta_id', id)
+  if (clauseErr) throw clauseErr
+  const clauseIds = (clauseRows ?? []).map(r => r.id)
   if (clauseIds.length) {
-    await supabase.from(AC.installments).delete().in('clausula_id', clauseIds)
+    // ac_parcelas_fin referencia a cláusula por `clausula_fin_id` (014).
+    const { error } = await supabase.from(AC.installments).delete().in('clausula_fin_id', clauseIds)
+    if (error) throw error
   }
   // Filhos diretos do atleta — inclui CONTRATOS, que precisam sair ANTES das PJs
   // porque ac_contratos.entidade_contraparte_id → ac_entidades tem ON DELETE
   // RESTRICT: se o contrato de imagem ainda apontar para a PJ, o delete da PJ
-  // (ac_entidades) explode com FK 23503.
+  // (ac_entidades) explode com FK 23503. Erros intermediários interrompem a
+  // exclusão para não deixar o atleta "meio apagado" sem aviso.
   for (const table of [AC.installments, AC.clauses, AC.titular, AC.triggers, AC.clubLiab, AC.interLiab, AC.image, AC.alerts, AC.contracts]) {
-    await supabase.from(table).delete().eq('atleta_id', id)
+    const { error } = await supabase.from(table).delete().eq('atleta_id', id)
+    if (error) throw new Error(`Falha ao remover registros de ${table}: ${error.message}`)
   }
   // Agora sim as PJs do atleta (que também são ac_entidades) podem ser apagadas.
   const pjs = await loadPJs({ athleteId: id })
@@ -1076,10 +1083,7 @@ export async function fetchAthleteWithStats(id: string): Promise<AthleteWithStat
 }
 
 // Conversão aproximada p/ BRL (somente exibição — use PTAX p/ pagamentos reais).
-function getApproxBRL(currency: string): number {
-  const rates: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
-  return rates[currency] ?? 1
-}
+const getApproxBRL = approxRateBRL
 
 // ── Apagar toda a base ──────────────────────────────────────────────────────
 // Remove TODOS os registros de TODAS as tabelas do sistema. Ação destrutiva e
@@ -1122,6 +1126,10 @@ export async function deleteAllData(): Promise<void> {
     for (const table of DELETE_ORDER) local.replaceAll(table, [])
     return
   }
+  // Guarda extra além da UI: só master apaga a base inteira.
+  const { data: role, error: roleErr } = await supabase.rpc('get_my_role')
+  if (roleErr) throw roleErr
+  if (role !== 'master') throw new Error('Apenas usuários master podem apagar toda a base.')
   for (const table of DELETE_ORDER_AC) {
     // Supabase exige um filtro no delete; este casa com qualquer linha (id não nulo).
     const { error } = await supabase.from(table).delete().not('id', 'is', null)
