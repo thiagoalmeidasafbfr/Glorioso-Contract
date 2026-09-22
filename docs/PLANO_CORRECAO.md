@@ -33,12 +33,12 @@ Legenda de status: ✅ feito · 🚧 em andamento · ⬜ pendente
 | 2.3 | Layout responsivo: sidebar vira drawer em telas < 900px | ✅ |
 | 2.4 | Rota órfã `/dashboard` acessível no menu | ✅ |
 | 2.5 | Seletor de idioma escondido até o i18n estar ligado (hoje não faz nada) | ✅ |
-| 2.6 | Rótulos com `htmlFor`, erros inline por campo, `aria-invalid` | ⬜ |
-| 2.7 | Fonte mínima 12px e contraste AA (sidebar, `--text-faint`, `--icon-off`) | ⬜ |
-| 2.8 | Sistema de toasts substituindo `alert()`; diálogo de confirmação próprio | ⬜ |
-| 2.9 | Linhas de tabela navegáveis por teclado (links reais) | ⬜ |
-| 2.10 | Ordenação e cabeçalho fixo nas tabelas de relatório | ⬜ |
-| 2.11 | Aba ativa da ficha do atleta na URL; aba padrão coerente | ⬜ |
+| 2.6 | Rótulos com `htmlFor`, erros inline por campo, `aria-invalid` — `Field.tsx`; todos os `<label>` associados; erro inline + "o que falta" no Novo contrato, Assistente, Novo atleta e modais da ficha | ✅ |
+| 2.7 | Fonte mínima 12px e contraste AA (sidebar, `--text-faint`, `--icon-off`) — texto ≥ 12px, micro-rótulos maiúsculos ≥ 11px; sidebar ≥ 6,7:1, `--text-faint` 5,3:1, `--icon-off` ≥ 3:1 | ✅ |
+| 2.8 | Sistema de toasts substituindo `alert()`; diálogo de confirmação próprio — `Toast.tsx`/`useToast`, `ConfirmDialog.tsx`/`useConfirm`; nenhum `alert`/`confirm` nativo restante | ✅ |
+| 2.9 | Linhas de tabela navegáveis por teclado (links reais) — célula principal é `<Link>`; modais com `role=dialog`, Esc, foco inicial/preso/restaurado (`useDialogA11y`, `ModalFrame`) | ✅ |
+| 2.10 | Ordenação e cabeçalho fixo nas tabelas de relatório — `useSortable` + `SortHeader` (`aria-sort`, ▲▼) em 7 relatórios + lista de atletas | ✅ |
+| 2.11 | Aba ativa da ficha do atleta na URL; aba padrão coerente — `?aba=`, Consolidado primeiro, tablist ARIA com setas; h1 único | ✅ |
 
 ## Fase 3 — Governança multissetorial
 
