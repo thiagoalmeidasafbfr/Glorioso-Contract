@@ -18,6 +18,7 @@ import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import RowActions from '../components/RowActions'
+import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 
 // Direção "a pagar" / "a receber" a partir do tipo (SELL_ON_FEE = Botafogo paga
 // a antigo dono; SELL_ON_FEE_RECEBER = Botafogo recebe em revenda futura).
@@ -40,11 +41,11 @@ interface Row {
   achievedDate: string | null
 }
 
-const STATUS_STYLE: Record<Clause['achievement_status'], { bg: string; fg: string; label: string }> = {
-  PENDENTE:      { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)', label: 'Pendente'      },
-  ATINGIDA:      { bg: 'var(--pos-tint)',    fg: 'var(--pos)',            label: 'Atingido'     },
-  NAO_ATINGIDA:  { bg: 'var(--neg-tint)',    fg: 'var(--neg)',            label: 'Não atingido' },
-  NAO_APLICAVEL: { bg: 'var(--cream-inset)', fg: 'var(--text-muted)',     label: 'N/A'          },
+const STATUS_STYLE: Record<Clause['achievement_status'], ToneStyle & { label: string }> = {
+  PENDENTE:      { ...BADGE_TONES.neutral, label: 'Pendente'      },
+  ATINGIDA:      { ...BADGE_TONES.accent,  label: 'Atingido'     },
+  NAO_ATINGIDA:  { ...BADGE_TONES.outline, label: 'Não atingido' },
+  NAO_APLICAVEL: { ...BADGE_TONES.outline, label: 'N/A'          },
 }
 
 export default function PageRelSellOn() {
@@ -194,7 +195,7 @@ export default function PageRelSellOn() {
                     <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.basis}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.condition}>{r.condition || '—'}</td>
                     <td style={td}>
-                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-label)', background: st.bg, color: st.fg }}>{st.label}</span>
+                      <span style={badgeStyle(st)}>{st.label}</span>
                       {r.achievedDate && <span style={{ marginLeft: 8, fontSize: 10, fontFamily: 'var(--font-data)', color: 'var(--text-secondary)' }}>em {fmtDate(r.achievedDate)}</span>}
                     </td>
                     <td style={{ ...td, textAlign: 'right' }}>

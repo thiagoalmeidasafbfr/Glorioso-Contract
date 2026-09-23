@@ -8,12 +8,13 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchAthletes, fetchAllEconomicRights } from '../lib/athleteQueries'
 import type { Athlete, EconomicRight, HolderType } from '../types/athlete-system'
-import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
+import { HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS } from '../types/athlete-system'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon, IconButton } from '../components/Icon'
 import RowActions from '../components/RowActions'
+import { badgeStyle } from '../lib/tones'
 
 interface HolderRow { holderType: HolderType; holderName: string; percentage: number }
 interface AthleteRow {
@@ -24,18 +25,15 @@ interface AthleteRow {
   bfrPct: number
 }
 
-const STATUS_STYLE: Record<AthleteRow['status'], { bg: string; fg: string; label: string }> = {
-  OK:             { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)', label: '—' },
-  PARCIAL:        { bg: 'var(--warn-tint)',   fg: 'var(--warn)',          label: 'Parcial' },
-  SEM_LANCAMENTO: { bg: 'var(--cream-inset)', fg: 'var(--text-muted)',    label: 'Sem lançamento' },
+const STATUS_STYLE: Record<AthleteRow['status'], { label: string }> = {
+  OK:             { label: '—' },
+  PARCIAL:        { label: 'Parcial' },
+  SEM_LANCAMENTO: { label: 'Sem lançamento' },
 }
 
-const HOLDER_COLOR: Record<HolderType, string> = {
-  BFR:      'var(--pos)',
-  CLUBE:    'var(--info)',
-  AGENTE:   '#7a6244',
-  ATLETA:   'var(--warn)',
-  TERCEIRO: 'var(--text-muted)',
+// Detentor = série de dados do DS (ponto colorido); o texto fica neutro.
+function HolderDot({ type }: { type: HolderType }) {
+  return <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 'var(--radius-circle)', background: HOLDER_TYPE_COLORS[type], flex: 'none', display: 'inline-block' }} />
 }
 
 export default function PageRelDirEconomicos() {
@@ -182,8 +180,8 @@ export default function PageRelDirEconomicos() {
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {r.holders.slice(0, 3).map((h, i) => (
-                            <span key={i} style={{ fontSize: 11, fontFamily: 'var(--font-label)', padding: '2px 8px', borderRadius: 'var(--radius-xs)', background: 'var(--cream-inset)', color: HOLDER_COLOR[h.holderType] }}>
-                              {h.holderName} · {h.percentage.toFixed(0)}%
+                            <span key={i} style={{ ...badgeStyle('outline'), height: 22, fontSize: 11 }}>
+                              <HolderDot type={h.holderType} /> {h.holderName} · {h.percentage.toFixed(0)}%
                             </span>
                           ))}
                           {r.holders.length > 3 && <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>+{r.holders.length - 3}</span>}
@@ -200,10 +198,10 @@ export default function PageRelDirEconomicos() {
                       <tr key={`${r.athlete.id}-${i}`} style={{ background: 'var(--cream-page)' }}>
                         <td style={td} />
                         <td style={{ ...td, paddingLeft: 40, color: 'var(--text-secondary)' }}>
-                          <span style={{ fontSize: 10, fontFamily: 'var(--font-label)', color: HOLDER_COLOR[h.holderType], letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', marginRight: 8 }}>{HOLDER_TYPE_LABELS[h.holderType]}</span>
+                          <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 8 }}><HolderDot type={h.holderType} />{HOLDER_TYPE_LABELS[h.holderType]}</span>
                           {h.holderName}
                         </td>
-                        <td style={{ ...tdNum, fontWeight: 600, color: HOLDER_COLOR[h.holderType] }}>{h.percentage.toFixed(2)}%</td>
+                        <td style={{ ...tdNum, fontWeight: 500 }}>{h.percentage.toFixed(2)}%</td>
                         <td colSpan={2} style={td} />
                       </tr>
                     ))}

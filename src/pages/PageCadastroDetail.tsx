@@ -40,6 +40,8 @@ import NewObligationModal from '../components/modals/NewObligationModal'
 import { fmtCurrencyShort, fmtDate, isOverdue } from '../lib/format'
 import { parseRJ, toggleItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import { badgeStyle } from '../lib/tones'
+import KpiPill from '../components/KpiPill'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -153,7 +155,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   if (notFound) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: fontBody }}>
       <div style={{ color: 'var(--text-secondary)' }}>Registro não encontrado.</div>
-      <button onClick={() => navigate(basePath)} className="btn btn-outline" style={{ marginTop: 16 }}>← Voltar</button>
+      <button onClick={() => navigate(basePath)} className="btn btn-outline" style={{ marginTop: 16 }}><Icon name="chevronLeft" size={16} /> Voltar</button>
     </div>
   )
 
@@ -267,12 +269,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
             const [dir, moeda] = k.split('|')
             const pay = dir === 'A_PAGAR'
             return (
-              <div key={k} style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', background: pay ? 'var(--neg-tint)' : 'var(--pos-tint)', border: `1px solid ${pay ? 'rgba(138,53,36,0.22)' : 'rgba(47,107,58,0.22)'}` }}>
-                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: pay ? 'var(--neg)' : 'var(--pos)', marginBottom: 4 }}>
-                  {pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)
-                </div>
-                <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, fontFamily: fontMono, color: pay ? 'var(--neg)' : 'var(--pos)' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
-              </div>
+              <KpiPill key={k} label={`${pay ? 'A pagar' : 'A receber'} · ${moeda} (em aberto)`} value={fmtCurrencyShort(v, moeda as Currency)} tone={pay ? 'neg' : 'pos'} />
             )
           })}
         </div>
@@ -357,13 +354,13 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                   : l.kind === 'agent' ? intermLiabs.find(x => x.id === l.id) : null
                 const inst = l.kind === 'inst' ? installments.find(i => i.id === l.id) : null
                 return (
-                  <tr key={`${l.kind}:${l.id}`} style={{ background: parseRJ(l.notes) ? 'var(--warn-tint, #fff4e0)' : late ? 'var(--row-late-bg)' : undefined }}>
+                  <tr key={`${l.kind}:${l.id}`} style={{ background: parseRJ(l.notes) ? 'var(--surface-warning-soft)' : late ? 'var(--row-late-bg)' : undefined }}>
                     <td style={{ ...td, fontWeight: 600 }}>
                       <RefLink to={`/atletas/${l.athlete_id}`} title="Abrir atleta">{nameOf.get(l.athlete_id) ?? '—'}</RefLink>
                     </td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>
                       {l.natureza}
-                      {parseRJ(l.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 'var(--radius-xs)', background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(parseRJ(l.notes)!.filedAt)}`}>RJ</span>}
+                      {parseRJ(l.notes) && <span style={{ ...badgeStyle('warning'), marginLeft: 6 }} title={`Em RJ desde ${fmtDate(parseRJ(l.notes)!.filedAt)}`}>RJ</span>}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 330 }}>
                       {l.clauseId
@@ -506,7 +503,7 @@ function NewContractFromEntityModal({ entityName, kind, athletes, onClose }: {
       subtitle={`${isClube ? 'clube' : 'agente'}: ${entityName}`}
       footer={<>
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={go} className="btn btn-primary" disabled={!athleteId}>Continuar →</button>
+        <button onClick={go} className="btn btn-primary" disabled={!athleteId}>Continuar <Icon name="chevronRight" size={16} /></button>
       </>}>
       <div><label style={modalLabel}>Atleta *</label>
         <select style={modalInput} value={athleteId} onChange={e => chooseAthlete(e.target.value)}>

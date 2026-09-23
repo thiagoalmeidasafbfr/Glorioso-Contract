@@ -26,16 +26,17 @@ import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
+import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 
 const METRIC_LABEL: Record<TriggerMetric, string> = {
   JOGOS: 'Jogos', GOLS: 'Gols', ASSISTENCIAS: 'Assistências',
   MINUTOS: 'Minutos', TITULO: 'Título', OUTRO: 'Outro',
 }
 
-const STATUS_STYLE: Record<TriggerStatus, { bg: string; fg: string; label: string }> = {
-  PENDENTE:     { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)', label: 'Pendente' },
-  ATINGIDA:     { bg: 'var(--pos-tint)',    fg: 'var(--pos)',            label: 'Atingida' },
-  NAO_ATINGIDA: { bg: 'var(--neg-tint)',    fg: 'var(--neg)',            label: 'Não atingida' },
+const STATUS_STYLE: Record<TriggerStatus, ToneStyle & { label: string }> = {
+  PENDENTE:     { ...BADGE_TONES.neutral, label: 'Pendente' },
+  ATINGIDA:     { ...BADGE_TONES.accent,  label: 'Atingida' },
+  NAO_ATINGIDA: { ...BADGE_TONES.outline, label: 'Não atingida' },
 }
 
 type Origin = 'REMUNERACAO' | 'BONUS' | 'RESCISORIA'
@@ -232,7 +233,7 @@ export default function PageRelGatilhos() {
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.metric}</td>
                     <td style={{ ...tdMono, color: 'var(--text-secondary)', maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.threshold}>{r.threshold}</td>
                     <td style={td}>
-                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-label)', background: st.bg, color: st.fg }}>{st.label}</span>
+                      <span style={badgeStyle(st)}>{st.label}</span>
                     </td>
                     <td style={{ ...tdMono, color: 'var(--text-secondary)' }}>{r.achievedDate ? fmtDate(r.achievedDate) : '—'}</td>
                     <td style={{ ...tdMono, fontWeight: 600, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.impact}>{r.impact}</td>

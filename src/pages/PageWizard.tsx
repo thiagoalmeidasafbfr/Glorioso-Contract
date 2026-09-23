@@ -462,12 +462,12 @@ export default function PageWizard() {
       {/* Navegação */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 22, gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => step === 0 ? navigate(-1) : setStep(s => s - 1)} className="btn btn-outline">
-          {step === 0 ? 'Cancelar' : '← Voltar'}
+          {step === 0 ? 'Cancelar' : <><Icon name="chevronLeft" size={16} /> Voltar</>}
         </button>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           {blocked && <span style={hint}>{blocked}</span>}
           {step < 3 ? (
-            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo →</button>
+            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo <Icon name="chevronRight" size={16} /></button>
           ) : (
             <button onClick={handleSave} disabled={saving || valid.length === 0} className="btn btn-primary">
               {saving ? 'Criando...' : 'Criar e abrir obrigação'}

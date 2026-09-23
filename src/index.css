@@ -316,6 +316,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--ink-900); }
 .btn-ghost:active { background: var(--action-ghost-press); }
 .btn-danger, .btn-danger:hover { background: var(--surface-card); border-color: var(--border-default); color: var(--text-negative); }
 .btn-danger:hover { background: var(--surface-negative-soft); border-color: var(--surface-negative-soft); }
+/* Confirmação destrutiva: o mesmo preenchimento do Badge "negative" do DS. */
+.btn-negative, .btn-negative:hover { background: var(--red-500); color: var(--white); }
+.btn-negative:hover { background: var(--red-600); }
 .btn[disabled], .btn[aria-disabled="true"],
 .btn[disabled]:hover, .btn[aria-disabled="true"]:hover {
   background: var(--gray-100); color: var(--text-disabled); border-color: transparent; cursor: not-allowed; transform: none;

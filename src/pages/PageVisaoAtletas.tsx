@@ -26,28 +26,25 @@ import RefLink from '../components/RefLink'
 import { Icon, IconButton } from '../components/Icon'
 import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
+import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
 
-const STATUS_STYLE: Record<NatureStatus, { label: string; bg: string; fg: string }> = {
-  EM_DIA:         { label: 'Em dia',        bg: 'var(--pos-tint)',    fg: 'var(--pos)' },
-  EM_ATRASO:      { label: 'Em atraso',     bg: 'var(--neg-tint)',    fg: 'var(--neg)' },
-  QUITADO:        { label: 'Quitado',       bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)' },
-  RENEGOCIADO:    { label: 'Renegociado',   bg: 'var(--info-tint)',   fg: 'var(--info)' },
-  SEM_LANCAMENTO: { label: 'Sem lançamento', bg: 'transparent',       fg: 'var(--text-muted)' },
+const STATUS_STYLE: Record<NatureStatus, ToneStyle & { label: string }> = {
+  EM_DIA:         { ...BADGE_TONES.accent,   label: 'Em dia' },
+  EM_ATRASO:      { ...BADGE_TONES.negative, label: 'Em atraso' },
+  QUITADO:        { ...BADGE_TONES.neutral,  label: 'Quitado' },
+  RENEGOCIADO:    { ...BADGE_TONES.info,     label: 'Renegociado' },
+  SEM_LANCAMENTO: { ...BADGE_TONES.outline,  label: 'Sem lançamento' },
 }
 
 function StatusPill({ status }: { status: NatureStatus }) {
   const s = STATUS_STYLE[status]
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 9px', borderRadius: 'var(--radius-xs)',
-      fontSize: 10, fontWeight: 500, fontFamily: mono, background: s.bg, color: s.fg,
-      border: status === 'SEM_LANCAMENTO' ? '1px solid var(--divider)' : '1px solid transparent',
-    }}>
-      {status === 'EM_ATRASO' && <Icon name="alert" size={11} />}
-      {status === 'EM_DIA' && <Icon name="check" size={11} />}
+    <span style={badgeStyle(s)}>
+      {status === 'EM_ATRASO' && <Icon name="alert" size={12} />}
+      {status === 'EM_DIA' && <Icon name="check" size={12} />}
       {s.label}
     </span>
   )

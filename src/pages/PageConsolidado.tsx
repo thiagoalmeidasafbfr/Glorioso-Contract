@@ -31,6 +31,7 @@ import {
 import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import { badgeStyle } from '../lib/tones'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -301,35 +302,35 @@ export default function PageConsolidado() {
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
-          <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {atletas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
-          <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {posicoes.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
-          <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {naturezas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
-          <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {['Todos', 'Em RJ', 'Fora da RJ'].map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
@@ -342,16 +343,16 @@ export default function PageConsolidado() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
           padding: '10px 14px', marginBottom: 10, borderRadius: 'var(--radius-md)',
-          background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)',
+          background: 'var(--surface-warning-soft)',
         }}>
           <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--ink-primary)', fontWeight: 600 }}>
             {selected.size} lançamento(s) selecionado(s)
           </span>
           <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase' }}>Data protocolo RJ:</span>
           <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)}
-            style={{ padding: '6px 8px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', fontFamily: mono, fontSize: 12, background: '#fff' }} />
-          <button onClick={bulkMarkRJ} className="btn btn-outline" style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
-            Marcar como Recuperação Judicial
+            style={{ fontSize: 12 }} />
+          <button onClick={bulkMarkRJ} className="btn btn-outline" style={{ color: 'var(--text-warning)' }}>
+            Marcar como recuperação judicial
           </button>
           <button onClick={() => setSelected(new Set())} className="btn btn-outline">Limpar seleção</button>
         </div>
@@ -385,7 +386,7 @@ export default function PageConsolidado() {
               {filtered.map(m => {
                 const late = isOverdue(m.date, m.status)
                 return (
-                  <tr key={m.id} style={{ background: m.rjFiledAt ? 'var(--warn-tint, #fff4e0)' : late ? 'var(--row-late-bg)' : 'transparent' }}>
+                  <tr key={m.id} style={{ background: m.rjFiledAt ? 'var(--surface-warning-soft)' : late ? 'var(--row-late-bg)' : 'transparent' }}>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'center', padding: '9px 6px' }}>
                         {canMarkRJ(m) ? (
@@ -401,12 +402,12 @@ export default function PageConsolidado() {
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
-                      {m.rjFiledAt && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 'var(--radius-xs)', background: 'var(--warn)', color: '#fff', fontFamily: mono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(m.rjFiledAt)}`}>RJ</span>}
+                      {m.rjFiledAt && <span style={{ ...badgeStyle('warning'), marginLeft: 6 }} title={`Em RJ desde ${fmtDate(m.rjFiledAt)}`}>RJ</span>}
                     </td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
                       {(() => { const to = entityLink(m.contraparte); return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{m.contraparte}</RefLink> : m.contraparte })()}
                     </td>
-                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--neg)' : '#3a6f3a' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--text-negative)' : 'var(--text-positive)' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}
                       title={m.moeda === 'BRL' ? 'BRL'

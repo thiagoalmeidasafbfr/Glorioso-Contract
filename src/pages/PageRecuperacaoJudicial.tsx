@@ -283,17 +283,17 @@ export default function PageRecuperacaoJudicial() {
         <div style={{ flex: 1, minWidth: 240 }}>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
-            style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
-          <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 240 }}>
+          <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 240 }}>
             {credores.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
+          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>

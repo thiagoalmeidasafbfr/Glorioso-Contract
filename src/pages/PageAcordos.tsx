@@ -19,17 +19,18 @@ import KpiPill from '../components/KpiPill'
 import { ClauseFlowModal } from '../components/modals/EditModals'
 import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import { useAuth } from '../context/AuthContext'
+import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
 const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 7.10 }
 
 type Andamento = 'QUITADO' | 'EM_ANDAMENTO' | 'PENDENTE' | 'EM_ATRASO'
-const AND_STYLE: Record<Andamento, { bg: string; fg: string; label: string }> = {
-  QUITADO:      { bg: 'var(--pos-tint)', fg: 'var(--pos)', label: 'Quitado' },
-  EM_ANDAMENTO: { bg: 'var(--warn-tint)', fg: 'var(--warn)', label: 'Em andamento' },
-  PENDENTE:     { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)', label: 'Pendente' },
-  EM_ATRASO:    { bg: 'var(--neg-tint)', fg: 'var(--neg)', label: 'Em atraso' },
+const AND_STYLE: Record<Andamento, ToneStyle & { label: string }> = {
+  QUITADO:      { ...BADGE_TONES.accent, label: 'Quitado' },
+  EM_ANDAMENTO: { ...BADGE_TONES.warning, label: 'Em andamento' },
+  PENDENTE:     { ...BADGE_TONES.neutral, label: 'Pendente' },
+  EM_ATRASO:    { ...BADGE_TONES.negative, label: 'Em atraso' },
 }
 
 interface Row {
@@ -201,7 +202,7 @@ export default function PageAcordos() {
                         : '—'}
                     </td>
                     <td style={{ ...td, textAlign: 'center', fontFamily: fontMono }}>{r.paid}/{r.count}</td>
-                    <td style={td}><span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: fontMono, background: st.bg, color: st.fg }}>{st.label}</span></td>
+                    <td style={td}><span style={badgeStyle(st)}>{st.label}</span></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions
                         open={{ to: `/obrigacoes/${r.id}`, label: 'Abrir o acordo' }}

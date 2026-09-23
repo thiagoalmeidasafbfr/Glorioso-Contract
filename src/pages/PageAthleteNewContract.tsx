@@ -861,9 +861,9 @@ export default function PageAthleteNewContract() {
       {step === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {conflict && (
-            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
-              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
-                <strong>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
+            <div role="alert" style={{ background: 'var(--surface-warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-primary)' }}>
+                <strong style={{ color: 'var(--text-warning)' }}>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
               </div>
             </div>
           )}
@@ -985,9 +985,9 @@ export default function PageAthleteNewContract() {
       {step === 3 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {conflict && (
-            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
-              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
-                <strong>Conflito Sell-On detectado.</strong> Revise antes de salvar.
+            <div role="alert" style={{ background: 'var(--surface-warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-primary)' }}>
+                <strong style={{ color: 'var(--text-warning)' }}>Conflito Sell-On detectado.</strong> Revise antes de salvar.
               </div>
             </div>
           )}
@@ -1048,7 +1048,7 @@ export default function PageAthleteNewContract() {
           )}
 
           {error && (
-            <div style={{ background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.30)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--neg)' }}>
+            <div role="alert" style={{ background: 'var(--surface-negative-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--text-negative)' }}>
               {error}
             </div>
           )}
@@ -1059,7 +1059,7 @@ export default function PageAthleteNewContract() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 26, gap: 10, flexWrap: 'wrap' }}>
         <div>
           {step > 1 && (
-            <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline">← Voltar</button>
+            <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline"><Icon name="chevronLeft" size={16} /> Voltar</button>
           )}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>

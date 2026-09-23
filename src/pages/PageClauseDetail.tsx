@@ -28,23 +28,18 @@ import { InstallmentEditModal } from '../components/modals/EditModals'
 import { parseRJ, toggleItemRJ, markManyRJ, unmarkItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 import { modalInput, modalLabel } from '../components/modals/styles'
+import { PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, badgeStyle, humanizeEnum } from '../lib/tones'
 
 const font = "var(--font-body)"
 const fontMono = "var(--font-label)"
 const CUR: Currency[] = ['BRL', 'EUR', 'USD', 'GBP']
 const CLAUSE_TYPES = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
 
-const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
-  PENDENTE: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
-  PAGA: { bg: '#e5ece1', fg: '#3a6f3a' },
-  PARCIALMENTE_PAGA: { bg: 'var(--gray-150)', fg: '#7a6244' },
-  EM_ATRASO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
-  CANCELADA: { bg: 'rgba(156,163,175,0.12)', fg: '#6b7280' },
-}
+
 
 function Badge({ status }: { status: string }) {
-  const s = PAYMENT_STATUS_STYLE[status] ?? { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)' }
-  return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: fontMono, background: s.bg, color: s.fg }}>{status.replace(/_/g, ' ')}</span>
+  const tone = PAYMENT_STATUS_TONE[status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral'
+  return <span style={badgeStyle(tone)}>{PAYMENT_STATUS_LABEL[status] ?? humanizeEnum(status)}</span>
 }
 
 const inp = modalInput
@@ -100,7 +95,7 @@ export default function PageClauseDetail() {
   if (notFound || !clause) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
       <div style={{ color: 'var(--text-secondary)' }}>Obrigação não encontrada.</div>
-      <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 16 }}>← Voltar</button>
+      <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 16 }}><Icon name="chevronLeft" size={16} /> Voltar</button>
     </div>
   )
 
@@ -208,8 +203,8 @@ export default function PageClauseDetail() {
         </div>
 
         {parseRJ(clause.notes) && (
-          <div style={{ marginBottom: 14, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)', fontFamily: fontMono, fontSize: 11, color: 'var(--ink-primary)' }}>
-            <strong style={{ letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--warn)' }}>Recuperação Judicial</strong>
+          <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-warning-soft)', fontSize: 12, color: 'var(--text-primary)' }}>
+            <strong style={{ fontWeight: 600, color: 'var(--text-warning)' }}>Recuperação judicial</strong>
             {' — '}obrigação inteira incluída no processo em {fmtDate(parseRJ(clause.notes)!.filedAt)}.
           </div>
         )}
@@ -225,7 +220,7 @@ export default function PageClauseDetail() {
               {contract
                 ? <RefLink to={`/atletas/${contract.athlete_id}?tab=historico`} title="Abrir vínculo">{CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}{contract.start_date ? ` · ${fmtDate(contract.start_date)}` : ''}</RefLink>
                 : <span style={{ color: 'var(--text-secondary)' }}>Nenhuma</span>}
-              {parent && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>↳ vínculo pai: {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}</div>}
+              {parent && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>Vínculo pai: {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}</div>}
             </dd>
             <dt style={dt}>Natureza</dt><dd style={dd}>{CLAUSE_TYPE_LABELS[clause.clause_type]}</dd>
             <dt style={dt}>Credor</dt><dd style={dd}>{partyNode(clause.creditor_party)}</dd>
@@ -268,11 +263,11 @@ export default function PageClauseDetail() {
                 Selecionar todas
               </label>
               {selectedRJ.size > 0 && (
-                <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn)' }}>
+                <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 'var(--radius-md)', background: 'var(--surface-warning-soft)' }}>
                   <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{selectedRJ.size} parcela(s)</span>
                   <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Protocolo:</span>
-                  <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ padding: '3px 6px', border: '1px solid var(--divider-strong)', borderRadius: 'var(--radius-xs)', fontFamily: fontMono, fontSize: 11 }} />
-                  <button onClick={bulkMarkParcRJ} className="btn btn-outline" style={{ padding: '3px 10px', borderColor: 'var(--warn)', color: 'var(--warn)', fontSize: 11 }}>
+                  <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ minHeight: 'var(--control-h-sm)', padding: '0 8px', fontSize: 12 }} />
+                  <button onClick={bulkMarkParcRJ} className="btn btn-outline btn-sm" style={{ color: 'var(--text-warning)' }}>
                     Incluir na RJ
                   </button>
                   <button onClick={() => setSelectedRJ(new Set())} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 10 }}>limpar</button>
@@ -304,8 +299,7 @@ export default function PageClauseDetail() {
                   display: 'grid',
                   gridTemplateColumns: canEdit ? '28px 36px 120px 1fr 100px auto' : '36px 120px 1fr 100px auto',
                   gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 'var(--radius-md)',
-                  background: rj ? 'var(--warn-tint, #fff4e0)' : 'var(--bg-subtle)',
-                  border: `1px solid ${rj ? 'var(--warn)' : 'var(--divider-soft)'}`,
+                  background: rj ? 'var(--surface-warning-soft)' : 'var(--surface-sunken)',
                 }}>
                   {canEdit && (
                     <span style={{ textAlign: 'center' }}>
@@ -318,7 +312,7 @@ export default function PageClauseDetail() {
                   <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>
                     {fmtCurrencyShort(p.original_value, p.currency)}
-                    {rj && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 'var(--radius-xs)', background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
+                    {rj && <span style={{ ...badgeStyle('warning'), marginLeft: 8 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
                   </span>
                   <Badge status={p.payment_status} />
                   {canEdit && (
