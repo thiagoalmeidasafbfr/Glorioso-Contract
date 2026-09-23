@@ -61,14 +61,14 @@ const isBFRparty = (s: string) => s.toLowerCase().includes('botafogo') || s.toLo
 
 const ATHLETE_STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string; label: string }> = {
   ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a', label: 'Ativo' },
-  EMPRESTADO: { bg: 'var(--accent-tint2)', fg: '#7a6244', label: 'Emprestado' },
+  EMPRESTADO: { bg: 'var(--gray-150)', fg: '#7a6244', label: 'Emprestado' },
   VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a', label: 'Vendido' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280', label: 'Desligado' },
 }
 const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDENTE:          { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
   PAGA:              { bg: '#e6ece2', fg: '#3a6f3a' },
-  PARCIALMENTE_PAGA: { bg: 'var(--accent-tint2)', fg: '#7a6244' },
+  PARCIALMENTE_PAGA: { bg: 'var(--gray-150)', fg: '#7a6244' },
   EM_ATRASO:         { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
   CANCELADA:         { bg: 'rgba(156,163,175,0.12)', fg: '#6b7280' },
 }
@@ -188,7 +188,7 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button onClick={() => setOpen(false)} className="btn btn-outline">Cancelar</button>
-        <button onClick={submit} disabled={!f.description.trim() || !f.new_salary} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', background: (f.description.trim() && f.new_salary) ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: (f.description.trim() && f.new_salary) ? 'pointer' : 'not-allowed' }}>Adicionar Meta</button>
+        <button onClick={submit} disabled={!f.description.trim() || !f.new_salary} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', background: (f.description.trim() && f.new_salary) ? 'var(--action-inverse)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: (f.description.trim() && f.new_salary) ? 'pointer' : 'not-allowed' }}>Adicionar Meta</button>
       </div>
     </div>
   )
@@ -814,7 +814,7 @@ export default function PageAthleteDetail() {
         {TABS.map(t => {
           const count = 0
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '10px 18px', border: 'none', background: 'none', fontFamily: font, fontSize: 13, fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', color: tab === t.id ? 'var(--ink-primary)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent', marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '10px 18px', border: 'none', background: 'none', fontFamily: font, fontSize: 13, fontWeight: tab === t.id ? 600 : 400, cursor: 'pointer', color: tab === t.id ? 'var(--ink-primary)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--action-inverse)' : '2px solid transparent', marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6 }}>
               {t.label}
               {count > 0 && <span style={{ padding: '1px 6px', borderRadius: 10, background: 'var(--neg-tint)', color: 'var(--neg)', fontSize: 9, fontFamily: fontMono }}>{count}</span>}
             </button>
@@ -945,7 +945,7 @@ export default function PageAthleteDetail() {
           {transferContracts.map(ct => {
             // Só as cláusulas de transferência (transfer fee, sell-on, taxas, etc.).
             const ctClauses = clauses.filter(c => c.contract_id === ct.id && TRANSFER_FEE_TYPES.includes(c.clause_type))
-            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'var(--accent-tint2)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' }, INTERMEDIACAO: { bg: 'var(--accent-tint2)', fg: 'var(--ink-secondary)' }, LUVAS: { bg: 'var(--accent-tint2)', fg: 'var(--ink-secondary)' }, SELL_ON: { bg: 'var(--accent-tint2)', fg: 'var(--ink-secondary)' }, OUTRO: { bg: 'rgba(156,163,175,0.15)', fg: '#6b7280' } }
+            const typeStyle: Record<string, { bg: string; fg: string }> = { ENTRADA: { bg: '#e6ece2', fg: '#3a6f3a' }, SAIDA: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' }, EMPRESTIMO_SAIDA: { bg: 'var(--gray-150)', fg: '#7a6244' }, EMPRESTIMO_ENTRADA: { bg: 'rgba(111,96,118,0.12)', fg: '#6f6076' }, INTERMEDIACAO: { bg: 'var(--gray-150)', fg: 'var(--ink-secondary)' }, LUVAS: { bg: 'var(--gray-150)', fg: 'var(--ink-secondary)' }, SELL_ON: { bg: 'var(--gray-150)', fg: 'var(--ink-secondary)' }, OUTRO: { bg: 'rgba(156,163,175,0.15)', fg: '#6b7280' } }
             const ts = typeStyle[ct.type] ?? { bg: '#eee', fg: '#333' }
             // Vínculo entre contratos: pai (do qual este deriva) e filhos (que derivam deste).
             const parent = ct.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null
@@ -970,7 +970,7 @@ export default function PageAthleteDetail() {
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ct.counterpart_country}</span>}
                   <StatusBadge status={ct.status} map={{ ATIVO: { bg: '#e6ece2', fg: '#3a6f3a' }, ENCERRADO: { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' }, RESCINDIDO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' } }} />
                   {parent && (
-                    <span title={`Contrato vinculado a ${contractLabel(parent)}`} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--accent-tint2)', border: '1px solid var(--divider-strong)', color: 'var(--ink-secondary)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span title={`Contrato vinculado a ${contractLabel(parent)}`} style={{ padding: '3px 9px', borderRadius: 5, background: 'var(--gray-150)', border: '1px solid var(--divider-strong)', color: 'var(--ink-secondary)', fontSize: 10, fontWeight: 600, fontFamily: fontMono, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       ↳ vinculado a {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}
                     </span>
                   )}
@@ -1566,7 +1566,7 @@ function ConsolidadoTab({
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {it.clauseRef
-                        ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir a obrigação">{it.nat}</button>
+                        ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir a obrigação">{it.nat}</button>
                         : it.nat}
                       {parseRJ(it.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(parseRJ(it.notes)!.filedAt)}`}>RJ</span>}
                     </td>
@@ -1727,7 +1727,7 @@ function AccessoryFlowTab({
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>
                       {r.clauseRef
-                        ? <button onClick={() => onOpenClause(r.clauseRef!)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>{r.natureza}</button>
+                        ? <button onClick={() => onOpenClause(r.clauseRef!)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }}>{r.natureza}</button>
                         : r.natureza}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{r.descricao || '—'}</td>
@@ -1843,7 +1843,7 @@ function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClos
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={!canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Salvando...' : 'Salvar fluxo'}</button>
+          <button onClick={save} disabled={!canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--action-inverse)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Salvando...' : 'Salvar fluxo'}</button>
         </div>
       </div>
     </div>
@@ -2185,7 +2185,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
         </div>
 
         {isFuture && (
-          <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--accent-tint2)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 12, color: 'var(--ink-secondary)' }}>
+          <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--gray-150)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 12, color: 'var(--ink-secondary)' }}>
             Cláusula de <strong>valor futuro</strong>: informe apenas o <strong>percentual (%)</strong>. O valor será apurado quando a venda futura acontecer — deixe o valor em branco.
           </div>
         )}
@@ -2236,7 +2236,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving || !canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
+          <button onClick={save} disabled={saving || !canSave} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--text-inverse)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
         </div>
       </div>
     </div>
@@ -2599,7 +2599,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Gere as parcelas pelo nº/data acima e edite cada vencimento e valor.</span>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'var(--accent-tint)', color: 'var(--accent)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Gerar fluxo</button>
+                  <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--divider-strong)', background: 'var(--action-ghost-hover)', color: 'var(--action-inverse)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Gerar fluxo</button>
                   <button onClick={addSchedRow} className="btn btn-outline">+ Linha</button>
                 </div>
               </div>
@@ -2627,7 +2627,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginRight: 'auto' }}>{selItems.length} item(ns) → {mode === 'custom' ? `${schedule.length}x personalizado` : `${nParcelas}x de ${fmtCurrencyShort(effectiveTotal / nParcelas, currency)}`}</span>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={submit} disabled={!canSave || saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : '#ccc', color: 'var(--accent-on)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Renegociando...' : 'Renegociar'}</button>
+          <button onClick={submit} disabled={!canSave || saving} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: canSave ? 'var(--ink-primary)' : '#ccc', color: 'var(--text-inverse)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed' }}>{saving ? 'Renegociando...' : 'Renegociar'}</button>
         </div>
       </div>
     </div>

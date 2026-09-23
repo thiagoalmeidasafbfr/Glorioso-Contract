@@ -61,7 +61,7 @@ function StickerPhoto({ athlete }: { athlete: Athlete }) {
       ) : (
         <span style={{
           fontFamily: fontMono, fontSize: 52, fontWeight: 700,
-          color: 'var(--accent-line)', letterSpacing: '0.04em',
+          color: 'var(--border-default)', letterSpacing: '0.04em',
         }}>
           {getInitials(athlete.short_name)}
         </span>
@@ -69,7 +69,7 @@ function StickerPhoto({ athlete }: { athlete: Athlete }) {
       {/* Faixa de brilho dourada no topo, remete a card colecionável */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
+        background: 'linear-gradient(90deg, transparent, var(--action-inverse), transparent)',
       }} />
     </div>
   )
@@ -350,7 +350,7 @@ export default function PageAlbum() {
             <section key={g.pos}>
               {/* Cabeçalho da posição */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--accent)', flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--action-inverse)', flexShrink: 0 }} />
                 <h2 style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
                 <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em' }}>
                   {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}

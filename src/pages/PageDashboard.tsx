@@ -141,7 +141,7 @@ export default function PageDashboard() {
   // ── Styles ────────────────────────────────────────────────────────────
 
   const cardStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.55)', border: '1px solid var(--accent-tint2)',
+    background: 'rgba(255,255,255,0.55)', border: '1px solid var(--gray-150)',
     borderRadius: 10, padding: 20,
   }
 
@@ -167,8 +167,8 @@ export default function PageDashboard() {
         {[
           { label: 'A Receber', value: fmtMiC(totalReceivable), color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.20)' },
           { label: 'A Pagar', value: fmtMiC(totalPayable), color: '#7a3f2c', bg: 'rgba(122,63,44,0.07)', border: 'rgba(122,63,44,0.20)' },
-          { label: 'Saldo Líquido', value: fmtMiC(totalNet), color: totalNet >= 0 ? '#059669' : '#7a3f2c', bg: 'var(--accent-tint)', border: 'var(--divider-strong)' },
-          { label: 'Alertas Ativos', value: `${redAlerts.length} críticos · ${yellowAlerts.length} atenção`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'var(--accent-tint2)' },
+          { label: 'Saldo Líquido', value: fmtMiC(totalNet), color: totalNet >= 0 ? '#059669' : '#7a3f2c', bg: 'var(--action-ghost-hover)', border: 'var(--divider-strong)' },
+          { label: 'Alertas Ativos', value: `${redAlerts.length} críticos · ${yellowAlerts.length} atenção`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'var(--gray-150)' },
           { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#7a3f2c' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
           <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
@@ -254,7 +254,7 @@ export default function PageDashboard() {
                   const netBRL = toBRL(Math.abs(net), cur)
                   return (
                     <tr key={cur}>
-                      <td style={{ padding: '6px 8px', fontWeight: 700, color: 'var(--accent)' }}>{cur}</td>
+                      <td style={{ padding: '6px 8px', fontWeight: 700, color: 'var(--action-inverse)' }}>{cur}</td>
                       <td style={{ padding: '6px 8px', color: '#059669' }}>{v.receivable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                       <td style={{ padding: '6px 8px', color: '#7a3f2c' }}>{v.payable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                       <td style={{ padding: '6px 8px', color: net >= 0 ? '#059669' : '#7a3f2c', fontWeight: 600 }}>
@@ -301,7 +301,7 @@ export default function PageDashboard() {
                           <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', marginBottom: 2 }}>
                             {alert.message}
                           </div>
-                          <Link to={`/atletas/${alert.athlete_id}`} style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'var(--accent)', textDecoration: 'none' }}>
+                          <Link to={`/atletas/${alert.athlete_id}`} style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'var(--action-inverse)', textDecoration: 'none' }}>
                             {athleteName(alert.athlete_id)} →
                           </Link>
                         </div>
@@ -337,11 +337,11 @@ export default function PageDashboard() {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '8px 10px', borderRadius: 7, textDecoration: 'none',
                     fontFamily: "var(--font-body)", fontSize: 13, color: '#1a1410',
-                    background: 'var(--accent-tint)', border: '1px solid var(--accent-tint2)',
+                    background: 'var(--action-ghost-hover)', border: '1px solid var(--gray-150)',
                   }}
                 >
                   {link.label}
-                  <span style={{ color: 'var(--accent)', fontSize: 14 }}>→</span>
+                  <span style={{ color: 'var(--action-inverse)', fontSize: 14 }}>→</span>
                 </Link>
               ))}
             </div>

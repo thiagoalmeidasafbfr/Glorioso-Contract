@@ -140,12 +140,12 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                   onClick={() => selectItem(x)}
                   style={{
                     display: 'block', width: '100%', textAlign: 'left', border: 'none',
-                    background: x.name === value ? 'var(--accent-tint2)' : 'transparent',
+                    background: x.name === value ? 'var(--gray-150)' : 'transparent',
                     padding: '8px 12px', cursor: 'pointer', fontFamily: fontBody, fontSize: 13,
                     color: 'var(--ink-primary)', borderBottom: '1px solid var(--divider-soft)',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-tint)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--accent-tint2)' : 'transparent')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--action-ghost-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--gray-150)' : 'transparent')}
                 >
                   <div style={{ fontWeight: 500 }}>{x.name}</div>
                   {x.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{x.sub}</div>}
@@ -162,8 +162,8 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
               onClick={() => setCreating(true)}
               style={{
                 display: 'block', width: '100%', textAlign: 'left', border: 'none',
-                background: 'var(--accent-tint)', padding: '10px 12px', cursor: 'pointer',
-                fontFamily: fontBody, fontSize: 13, color: 'var(--accent)', fontWeight: 600,
+                background: 'var(--action-ghost-hover)', padding: '10px 12px', cursor: 'pointer',
+                fontFamily: fontBody, fontSize: 13, color: 'var(--action-inverse)', fontWeight: 600,
               }}>
               + Cadastrar {isClube ? 'novo clube' : 'novo agente'} "{query.trim()}"
             </button>
@@ -176,8 +176,8 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
           )}
 
           {creating && (
-            <div style={{ padding: 12, borderTop: '1px solid var(--divider-soft)', background: 'var(--accent-tint)' }}>
-              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
+            <div style={{ padding: 12, borderTop: '1px solid var(--divider-soft)', background: 'var(--action-ghost-hover)' }}>
+              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--action-inverse)', marginBottom: 8 }}>
                 Novo {isClube ? 'clube' : 'agente'}
               </div>
               <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--ink-primary)', marginBottom: 8 }}>
@@ -198,7 +198,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                 </button>
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={createNow} disabled={!query.trim() || busy}
-                  style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: query.trim() ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: fontBody, cursor: query.trim() ? 'pointer' : 'not-allowed' }}>
+                  style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: query.trim() ? 'var(--action-inverse)' : '#ccc', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: fontBody, cursor: query.trim() ? 'pointer' : 'not-allowed' }}>
                   {busy ? 'Criando...' : 'Criar e selecionar'}
                 </button>
               </div>

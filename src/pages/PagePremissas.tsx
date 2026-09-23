@@ -30,7 +30,7 @@ const DECISAO_OPTIONS: PremissaDecisao[] = [
 
 const DECISAO_COLOR: Record<PremissaDecisao, { bg: string; fg: string }> = {
   MANTER:            { bg: 'var(--pos-tint)',    fg: 'var(--pos)' },
-  RENOVAR:           { bg: 'var(--accent-tint2)', fg: '#7a6244' },
+  RENOVAR:           { bg: 'var(--gray-150)', fg: '#7a6244' },
   VENDER:            { bg: 'rgba(91,107,122,0.18)', fg: '#3c4a58' },
   RESCINDIR:         { bg: 'var(--neg-tint)',    fg: 'var(--neg)' },
   NOVA_CONTRATACAO:  { bg: 'rgba(190,140,74,0.20)', fg: '#8a5a1e' },

@@ -475,14 +475,14 @@ export default function PageAthleteNewContract() {
           const done = step > s
           return (
             <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-              {i > 0 && <div style={{ width: 34, height: 1, background: done ? 'var(--accent)' : 'var(--divider-strong)' }} />}
+              {i > 0 && <div style={{ width: 34, height: 1, background: done ? 'var(--action-inverse)' : 'var(--divider-strong)' }} />}
               <button onClick={() => done && setStep(s)} disabled={!done && !active}
                 style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', padding: '0 4px', cursor: done ? 'pointer' : 'default' }}>
                 <span style={{
                   width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: active ? 'var(--accent)' : done ? 'var(--accent-tint2)' : 'var(--cream-inset)',
+                  background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'var(--cream-inset)',
                   fontSize: 11.5, fontWeight: 700, fontFamily: "var(--font-label)",
-                  color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
+                  color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
                   {done ? <Icon name="check" size={13} /> : s}
                 </span>
@@ -682,7 +682,7 @@ export default function PageAthleteNewContract() {
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
-                <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
                   <strong>Gerar o fluxo mensal automaticamente</strong> pela vigência do contrato — uma parcela por mês, sem lançar mês a mês.
                   Salário CLT vence <strong>dia {SALARY_DUE_DAY}</strong> e imagem vence <strong>dia {IMAGE_DUE_DAY}</strong> do mês subsequente.
@@ -716,7 +716,7 @@ export default function PageAthleteNewContract() {
               <div style={{ ...sectionTitle, marginBottom: 10 }}>PTAX do contrato</div>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                 <input type="checkbox" checked={fixPtax} onChange={e => setFixPtax(e.target.checked)}
-                  style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                  style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
                   <strong>PTAX fixada</strong> — trava a taxa de câmbio deste contrato para evitar distorções cambiais.
                   Quando marcada, todos os valores em moeda estrangeira geradas por este vínculo (transferência,
@@ -803,11 +803,11 @@ export default function PageAthleteNewContract() {
                       )}
                     </div>
 
-                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--accent-tint)', border: '1px solid var(--divider)' }}>
+                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--action-ghost-hover)', border: '1px solid var(--divider)' }}>
                       <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                         <input type="checkbox" checked={ag.futureSale}
                           onChange={e => setAgent(i, { futureSale: e.target.checked, amount: e.target.checked ? '' : ag.amount, lines: e.target.checked ? [] : ag.lines, flowOpen: e.target.checked ? false : ag.flowOpen })}
-                          style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                          style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                         <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
                           <strong>Comissão sobre a venda futura deste atleta.</strong> Igual ao mecanismo de Sell-On do clube:
                           se este atleta for vendido, o agente recebe a % informada sobre o valor (ou mais-valia) da transferência.

@@ -137,7 +137,7 @@ export default function FlowBuilder({
           {showGenerator && <button type="button" onClick={() => setGenOpen(o => !o)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7,
-              border: '1px solid var(--divider-strong)', background: genOpen ? 'var(--accent-tint)' : 'transparent',
+              border: '1px solid var(--divider-strong)', background: genOpen ? 'var(--action-ghost-hover)' : 'transparent',
               color: 'var(--ink-primary)', fontFamily: font, fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
             }}>
             <Icon name={genOpen ? 'chevronDown' : 'chevronRight'} size={13} />

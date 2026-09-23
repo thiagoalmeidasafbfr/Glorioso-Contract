@@ -39,7 +39,7 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
 
 const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
   ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a' },
-  EMPRESTADO: { bg: 'var(--accent-tint2)', fg: '#7a6244' },
+  EMPRESTADO: { bg: 'var(--gray-150)', fg: '#7a6244' },
   VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
   DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
 }
@@ -177,7 +177,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={handleSave} disabled={!f.full_name.trim()}
-            style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: f.full_name.trim() ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
+            style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: f.full_name.trim() ? 'var(--action-inverse)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
             Criar Atleta
           </button>
         </div>

@@ -28,7 +28,7 @@ export default function RefLink({ to, children, title, style, stopPropagation = 
       style={{
         color: hover ? 'var(--ink-primary)' : 'inherit',
         textDecoration: 'none',
-        borderBottom: `1px dashed ${hover ? 'var(--accent)' : 'var(--accent-line)'}`,
+        borderBottom: `1px dashed ${hover ? 'var(--action-inverse)' : 'var(--border-default)'}`,
         cursor: 'pointer',
         transition: 'color 0.12s, border-color 0.12s',
         ...style,

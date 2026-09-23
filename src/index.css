@@ -1,345 +1,404 @@
 @import "tailwindcss";
-/* Fonts (Fraunces, Inter, IBM Plex Mono, JetBrains Mono, Cormorant Garamond)
-   are loaded via <link> in index.html — a CSS @import here would land after
-   Tailwind's inlined reset and be dropped as out-of-order. */
+@import "./styles/tokens.css";
+/* A fonte (Urbanist) é carregada via <link> no index.html — um @import remoto
+   aqui cairia depois do reset inline do Tailwind e seria descartado. */
 
-/* ── Glorioso Finance — Design Tokens ──────────────────────────────────────
-   Paleta Botafogo: PRETO como cor principal (textos, botões, ícones, ações) e
-   cinzas neutros nas superfícies. O dourado é apenas um DETALHE (filete do
-   cabeçalho, item ativo do menu) — nunca a cor de textos, rótulos ou links.  */
+/* ── Glorioso Finance — camada da plataforma ─────────────────────────────────
+   Os tokens do design system estão em ./styles/tokens.css (cópia literal do
+   pacote). Aqui ficam: (1) as poucas extensões que a plataforma precisa e o DS
+   não define, (2) os aliases dos nomes antigos → tokens do DS, (3) a base e as
+   classes de componente (card, btn, icon-btn, badge, tabela, campos).
+
+   Regras do DS que valem para qualquer tela nova:
+   • Urbanist é a única fonte; pesos 300/400/500/600 (500 = números/métricas).
+   • Letter-spacing só no eyebrow de 10px em CAIXA-ALTA (+.09em).
+   • O creme (--accent) é o único acento: preenchimento atrás de texto preto,
+     sempre com o filete preto (--accent-line). Ação principal = preto.
+   • Um único vermelho para problemas; sombra OU borda, nunca as duas;
+     estados nunca por opacidade.                                              */
 :root {
-  /* Brand — dourado usado com parcimônia, tom mais fechado (menos pastel) */
-  --gold:           #8f6a2a;
-  --gold-soft:      #f2efe8;   /* texto claro sobre superfícies pretas */
-  --gold-deep:      #5b544b;   /* cinza-quente: rótulos que antes eram dourados */
-  --gold-tint:      rgba(143,106,42,0.10);
-  --gold-ring:      rgba(143,106,42,0.16);
+  /* (1) Extensões — passos derivados, no mesmo espírito de --sand-800
+         ("passo acessível de texto"). O DS traz --amber-* e --lilac-* como
+         swatches de status, mas só em tons claros. */
+  --amber-100: #FFF6DC;          /* superfície suave de atenção             */
+  --amber-700: #8A6516;          /* texto/ícone de atenção sobre branco     */
+  --lilac-700: #5B56B0;          /* texto/ícone informativo sobre branco    */
+  --text-warning: var(--amber-700);
+  --text-info: var(--lilac-700);
+  --surface-warning-soft: var(--amber-100);
+  --surface-info-soft: var(--lilac-200);
+  --sidebar-w: 240px;
 
-  /* Ink — preto de verdade nos textos */
-  --ink-primary:    #100d0a;
-  --ink-secondary:  #2a2521;
+  /* (2) Aliases legados → tokens do DS. Os nomes antigos continuam válidos
+         para não quebrar estilos inline; código novo usa os tokens do DS. */
+  --font-display: var(--font-core);
+  --font-body:    var(--font-core);
+  --font-label:   var(--font-core);
+  --font-data:    var(--font-numeric);
+  --font-serif:   var(--font-core);
 
-  /* Ação primária = preto (Botafogo). Substitui o dourado nos botões/links. */
-  --accent:         #14110d;
-  --accent-hover:   #2a2521;
-  --accent-on:      #faf8f4;
-  --accent-tint:    rgba(20,17,13,0.055);
-  --accent-tint2:   rgba(20,17,13,0.10);
-  --accent-line:    rgba(20,17,13,0.18);
+  --ink:            var(--text-primary);
+  --ink-primary:    var(--text-primary);
+  --ink-secondary:  var(--gray-700);
+  --on-dark:        var(--text-inverse);
 
-  /* Superfícies — neutras (cinza-claro), sem viés avermelhado */
-  --cream-page:     #f3f2ef;
-  --cream-canvas:   #eeedea;
-  --cream-card:     #ffffff;
-  --cream-inset:    #e7e5e0;
-  --tbl-head:       #eeedea;
-  --on-dark:        #f4f2ee;
+  --gold:           var(--accent-ink-strong);
+  --gold-soft:      var(--sand-400);
+  --gold-deep:      var(--text-secondary);
+  --gold-tint:      var(--surface-accent-soft);
+  --gold-ring:      var(--border-accent);
+  --gold-line:      var(--border-subtle);
+  --gold-on-dark:   var(--sand-400);
+  --btn-dark-bg:    var(--accent);
 
-  /* Semantic */
-  --pos:            #2f6b3a;
-  --pos-tint:       #e6ede6;
-  --neg:            #8a3524;
-  --neg-tint:       #f3e6e2;
-  --warn:           #8a6516;
-  --warn-tint:      rgba(138,101,22,0.12);
-  --neutral:        #55606a;
-  --neutral-tint:   #e8eaec;
-  /* Azul das ações de parcelas/cronograma e cinza dos ícones indisponíveis. */
-  --info:           #1f5673;
-  --info-tint:      rgba(31,86,115,0.10);
-  --icon-off:       #b9b4ad;
-  /* Botão "cinza escuro com letra dourada" (exportar e afins). */
-  --btn-dark-bg:    #3b3630;
-  --gold-on-dark:   #dcc89a;
+  /* O "accent" antigo era a ação preta; no DS --accent é o creme. */
+  --accent-on:      var(--text-inverse);
+  --accent-tint:    var(--action-ghost-hover);
+  --accent-tint2:   var(--gray-150);
 
-  /* Structure — bordas neutras */
-  --divider:        rgba(20,17,13,0.10);
-  --divider-soft:   rgba(20,17,13,0.06);
-  --divider-strong: rgba(20,17,13,0.18);
-  --sidebar-w:      220px;
+  --cream-page:     var(--surface-page);
+  --cream-canvas:   var(--surface-card);
+  --cream-card:     var(--surface-card);
+  --cream-inset:    var(--surface-sunken);
+  --surface:        var(--surface-card);
+  --tbl-head:       var(--surface-card);
 
-  /* Shadows */
-  --shadow-hair:    0 1px 2px rgba(16,13,10,0.05);
-  --shadow-card:    0 1px 2px rgba(16,13,10,0.05), 0 8px 20px -16px rgba(16,13,10,0.30);
-  --shadow-panel:   0 4px 10px -6px rgba(16,13,10,0.12), 0 20px 40px -20px rgba(16,13,10,0.34);
+  --pos:            var(--text-positive);
+  --pos-tint:       var(--surface-accent);
+  --neg:            var(--text-negative);
+  --neg-tint:       var(--surface-negative-soft);
+  --warn:           var(--text-warning);
+  --warn-tint:      var(--surface-warning-soft);
+  --info:           var(--text-info);
+  --info-tint:      var(--surface-info-soft);
+  --neutral:        var(--text-secondary);
+  --neutral-tint:   var(--gray-150);
+  --icon-off:       var(--text-disabled);
 
-  /* ── Sistema tipográfico (rebranding 2026) ─────────────────────────────
-     Regra única: NÃO usar nomes de fonte hardcoded em componentes ou
-     páginas — sempre var(--font-*). A hierarquia divide o texto em cinco
-     papéis semânticos, e o papel decide fonte, peso e tratamento:
+  --divider:        var(--border-subtle);
+  --divider-soft:   var(--border-subtle);
+  --divider-strong: var(--border-default);
+  --rule:           var(--border-subtle);
+  --rule-strong:    var(--border-default);
 
-     • display  → grandes cabeçalhos (heros, títulos de página). Manrope 700–800.
-     • body     → texto corrido, campos, botões, células de descrição. Inter 400–600.
-     • label    → micro-rótulos maiúsculos com letter-spacing (eyebrow, headers de
-                  tabela, badges). JetBrains Mono 500, uppercase.
-     • data     → conteúdo numérico (moeda, %, datas, contagens). JetBrains Mono com
-                  font-variant-numeric: tabular-nums.
-     • serif    → alias de compatibilidade — hoje aponta pro display; se um dia
-                  voltar um par serif, muda só aqui. */
-  /* Rebrand 2026-07: unifica toda a UI em Manrope (o usuário preferiu esse
-     look mais moderno; JetBrains Mono e Inter foram descontinuadas). Para
-     números tabulares, usamos font-variant-numeric: tabular-nums no CSS de
-     cada bloco de dados (Manrope suporta o feature). */
-  --font-display:   'Manrope', system-ui, sans-serif;
-  --font-body:      'Manrope', system-ui, sans-serif;
-  --font-label:     'Manrope', system-ui, sans-serif;
-  --font-data:      'Manrope', system-ui, sans-serif;
-  --font-serif:     var(--font-display);
+  --shadow-hair:    var(--shadow-card);
+  --shadow-panel:   var(--shadow-pop);
 
-  /* Aliases used by page inline styles */
-  --page-bg:            var(--cream-page);
-  --card-bg:            var(--cream-card);
-  --card-border:        var(--divider);
+  --page-bg:            var(--surface-page);
+  --card-bg:            var(--surface-card);
+  --card-border:        var(--border-subtle);
   --card-shadow:        var(--shadow-card);
-  --text-primary:       var(--ink-primary);
-  --text-secondary:     #38322c;
-  --text-muted:         #6b645d;
-  --text-faint:         rgba(16,13,10,0.38);
-  --table-header-bg:    var(--tbl-head);
-  --table-header-color: var(--ink-secondary);
-  --table-row-even:     #faf9f7;
-  --table-row-hover:    var(--cream-inset);
-  --table-border:       var(--divider);
-  --bg-subtle:          #f6f5f2;
-  --bg-subtle2:         var(--cream-inset);
-  --input-bg:           var(--cream-card);
-  --input-border:       rgba(20,17,13,0.16);
-  --input-color:        var(--ink-primary);
-  --row-late-bg:        var(--neg-tint);
-  --scrollbar-track:    var(--cream-inset);
-  --scrollbar-thumb:    rgba(20,17,13,0.22);
-  --scrollbar-thumb-hover: rgba(20,17,13,0.40);
+  --text-faint:         var(--text-disabled);
+  --table-header-bg:    var(--surface-card);
+  --table-header-color: var(--text-muted);
+  --table-row-even:     var(--surface-card);
+  --table-row-hover:    var(--surface-sunken);
+  --table-border:       var(--border-subtle);
+  --bg-subtle:          var(--surface-sunken);
+  --bg-subtle2:         var(--gray-150);
+  --input-bg:           var(--surface-card);
+  --input-border:       var(--border-subtle);
+  --input-color:        var(--text-primary);
+  --row-late-bg:        var(--surface-negative-soft);
+  --scrollbar-track:    transparent;
+  --scrollbar-thumb:    var(--gray-300);
+  --scrollbar-thumb-hover: var(--gray-500);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
+/* ── (3) Base (tokens/base.css do DS, conciliada com o preflight do Tailwind) ── */
+html { -webkit-text-size-adjust: 100%; }
 body {
-  font-family: var(--font-body);
-  background: var(--cream-page);
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-core);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+  font-weight: var(--font-weight-regular);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
-  color: var(--ink-primary);
 }
-
 #root { width: 100%; }
+a { color: var(--text-link); text-decoration: none; transition: color var(--duration-fast) var(--ease-out); }
+a:hover { color: var(--gray-700); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+a:focus-visible { border-radius: var(--radius-xs); }
+::selection { background: var(--sand-500); color: var(--ink-900); }
+h1, h2, h3, h4, p { margin: 0; }
 
-/* ── Cards ── */
-.card {
-  background: var(--cream-card);
-  border-radius: 12px;
-  border: 1px solid var(--divider);
-  box-shadow: var(--shadow-card);
-  transition: box-shadow 0.18s ease, border-color 0.18s ease;
-}
-.card:hover { box-shadow: var(--shadow-panel); border-color: var(--divider-strong); }
-
-/* ── KPI classes ── */
-.kpi-label {
-  font-family: var(--font-label);
-  font-size: 9px;
-  font-weight: 500;
-  color: var(--text-muted);
+/* ── Tipografia utilitária ───────────────────────────────────────────────── */
+.eyebrow {
+  font-size: var(--text-overline-size);
+  line-height: var(--text-overline-line);
+  letter-spacing: var(--text-overline-tracking);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-muted);
 }
-.kpi-value {
-  font-family: var(--font-data);
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--ink-primary);
-  line-height: 1.2;
+.metric {
+  font-size: var(--text-metric-size);
+  line-height: var(--text-metric-line);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--text-metric-tracking);
   font-variant-numeric: tabular-nums;
 }
-.kpi-sub {
-  font-family: var(--font-body);
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 2px;
+.caption { font-size: var(--text-body-size); color: var(--text-secondary); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── Cards — branco, sem borda, raio 14, sombra quase invisível ──────────── */
+.card {
+  background: var(--surface-card);
+  border-radius: var(--radius-card);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--duration-base) var(--ease-out);
 }
+.card:hover { box-shadow: var(--shadow-raised); }
+.card-sunken { background: var(--surface-sunken); box-shadow: none; }
+.card-sunken:hover { box-shadow: none; }
+.card-inverse { background: var(--surface-inverse); color: var(--text-inverse); box-shadow: none; }
+.card-inverse:hover { box-shadow: none; }
+.card-outline { box-shadow: none; border-color: var(--border-default); }
+.card-outline:hover { box-shadow: none; }
 
-/* ── Tables ── */
-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: auto; }
+/* Legado dos dashboards — mesmos tokens do card. */
+.stat-tile, .panel-card {
+  background: var(--surface-card);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--duration-base) var(--ease-out);
+}
+.stat-tile:hover, .panel-card:hover { box-shadow: var(--shadow-raised); }
 
-thead th {
-  background: var(--tbl-head);
-  padding: 8px 10px;
-  text-align: left;
-  font-family: var(--font-label);
-  font-weight: 600;
-  font-size: 9px;
+/* ── KPI (MetricCard compacto) ───────────────────────────────────────────── */
+.kpi-label {
+  font-size: var(--text-overline-size);
+  line-height: var(--text-overline-line);
+  letter-spacing: var(--text-overline-tracking);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--ink-secondary);
-  border-bottom: 1px solid var(--divider-strong);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-muted);
+}
+.kpi-value {
+  font-size: var(--text-title-size);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -.01em;
+  color: var(--text-primary);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-sub { font-size: var(--text-body-sm-size); color: var(--text-secondary); margin-top: 2px; }
+
+/* ── Tabelas — linhas separadas por filete, cabeçalho em eyebrow ─────────── */
+table { width: 100%; border-collapse: collapse; font-size: var(--text-body-sm-size); table-layout: auto; }
+thead th {
+  background: var(--surface-card);
+  padding: 10px 12px;
+  text-align: left;
+  font-family: var(--font-core);
+  font-weight: var(--font-weight-regular);
+  font-size: var(--text-overline-size);
+  line-height: var(--text-overline-line);
+  text-transform: uppercase;
+  letter-spacing: var(--text-overline-tracking);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-default);
   position: sticky;
   top: 0;
   z-index: 1;
   white-space: nowrap;
 }
-
-tbody tr { border-bottom: 1px solid var(--divider-soft); }
-tbody tr:nth-child(even) { background: var(--table-row-even); }
-tbody tr:hover { background: var(--cream-inset) !important; }
-
+tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background-color var(--duration-fast) var(--ease-out); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface-sunken) !important; }
 tbody td {
-  padding: 8px 10px;
-  color: var(--ink-primary);
-  font-family: var(--font-data);
-  font-size: 12px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-core);
+  font-size: var(--text-body-sm-size);
   white-space: normal;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
 }
+thead th[style*="cursor: pointer"]:hover { color: var(--text-primary); }
 
-/* ── Chips / Badges ── */
-.chip, .badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-family: var(--font-label);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-}
-.chip-pos,  .badge-ativo      { background: var(--pos-tint);  color: var(--pos); }
-.chip-neg,  .badge-inativo    { background: var(--neg-tint);  color: var(--neg); }
-.chip-gold, .badge-emprestado { background: var(--accent-tint2); color: var(--ink-secondary); }
-.chip-neutral               { border: 1px solid var(--divider-strong); color: var(--ink-secondary); }
-.badge-acordo               { background: var(--accent-tint2);  color: var(--ink-secondary); }
-
-/* ── Inputs & Selects ── */
-select, input[type="text"] {
-  background: var(--cream-card);
-  border: 1px solid var(--input-border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: var(--font-body);
-  color: var(--ink-primary);
-  outline: none;
-  transition: border-color 0.15s;
-}
-select:focus, input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-tint2);
-}
-
-/* ── Botões de ícone ──────────────────────────────────────────────────────
-   A COR faz parte do vocabulário da ação (não é decoração):
-     preto   → abrir / editar          azul  → parcelas (cronograma, gerar)
-     verde   → pagamento               âmbar → desfazer
-     vermelho→ excluir                 cinza → indisponível (ícone continua visível) */
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+/* ── Badges (pílula, 18px, 10px/500) ─────────────────────────────────────── */
+.badge, .chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 18px; padding: 0 7px;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink-primary);
+  font-family: var(--font-core);
+  font-size: var(--text-overline-size);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+.badge-md { height: 24px; padding: 0 10px; font-size: var(--text-body-sm-size); }
+.chip-pos, .badge-ativo, .badge-accent { background: var(--surface-accent); color: var(--ink-900); border-color: var(--accent-line); }
+.chip-neg, .badge-inativo, .badge-negative { background: var(--red-500); color: var(--white); }
+.chip-gold, .badge-emprestado, .badge-acordo, .badge-neutral { background: var(--gray-150); color: var(--text-secondary); }
+.chip-neutral, .badge-outline { background: var(--surface-card); color: var(--text-primary); border-color: var(--border-default); }
+.badge-inverse { background: var(--surface-inverse); color: var(--text-inverse); }
+.badge-warning { background: var(--amber-400); color: var(--ink-900); }
+.badge-info { background: var(--lilac-200); color: var(--ink-900); }
+
+/* ── Campos (36px, raio 10, filete claro; foco = borda preta) ────────────── */
+select, input[type="text"], input[type="email"], input[type="password"], input[type="search"],
+input[type="number"], input[type="date"], input[type="month"], input[type="tel"], input[type="url"], textarea {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  font-family: var(--font-core);
+  font-size: var(--text-body-size);
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition-control);
+}
+select, input[type="text"], input[type="email"], input[type="password"], input[type="search"],
+input[type="number"], input[type="date"], input[type="month"], input[type="tel"], input[type="url"] {
+  min-height: var(--control-h-md);
+  padding: 6px 12px;
+}
+textarea { padding: 8px 12px; line-height: var(--text-body-line); }
+select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 34px;
   cursor: pointer;
-  padding: 0;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  /* chevron-down (Lucide) a 45% de opacidade, como no Select do DS */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-opacity='.45' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
 }
-.icon-btn:hover { background: var(--accent-tint); border-color: var(--divider-strong); }
-.icon-btn:active { background: var(--accent-tint2); }
-.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-.icon-btn.info    { color: var(--info); }
-.icon-btn.info:hover    { background: var(--info-tint);  border-color: rgba(31,86,115,0.25); }
-.icon-btn.success { color: var(--pos); }
-.icon-btn.success:hover { background: var(--pos-tint);   border-color: rgba(47,107,58,0.25); }
-.icon-btn.warn    { color: var(--warn); }
-.icon-btn.warn:hover    { background: var(--warn-tint);  border-color: rgba(138,101,22,0.25); }
-.icon-btn.danger  { color: var(--neg); }
-.icon-btn.danger:hover  { background: var(--neg-tint);   border-color: rgba(138,53,36,0.25); }
-.icon-btn.muted   { color: var(--text-muted); }
-
-/* Indisponível: cinza, sem hover, sem cursor de clique — mas ainda visível,
-   para a linha manter o mesmo conjunto de ações em todas as tabelas. */
-.icon-btn[disabled],
-.icon-btn[aria-disabled="true"] {
-  color: var(--icon-off);
-  cursor: default;
-  background: transparent;
-  border-color: transparent;
+select:focus, input:focus, textarea:focus { border-color: var(--border-focus); }
+select:disabled, input:disabled, textarea:disabled {
+  background-color: var(--gray-100); color: var(--text-disabled); border-color: transparent; cursor: not-allowed;
 }
-.icon-btn[disabled]:hover,
-.icon-btn[aria-disabled="true"]:hover { background: transparent; border-color: transparent; }
+::placeholder { color: var(--text-muted); opacity: 1; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--ink-900); }
 
-.icon-btn.sm { width: 22px; height: 22px; border-radius: 5px; }
-
-/* ── Botões de ação ───────────────────────────────────────────────────────
-   UMA forma para todos os botões de ação do sistema (toolbars, modais, cards):
-   pílula pequena, fonte mono em caixa alta. Só a COR muda:
-     .btn-primary → preto com letra branca      (ação principal)
-     .btn-dark    → cinza escuro com dourado    (exportar / ação secundária forte)
-     .btn-outline → cinza claro com letra preta (ação neutra: importar, cancelar)
-     .btn-ghost   → sem preenchimento           (ação terciária)
-     .btn-danger  → vermelho                    (excluir)                        */
+/* ── Botões (Button do DS: 36px, raio 10, 14px/500, caixa de frase) ──────────
+     .btn-primary → preto (ação principal)       .btn-accent → creme + filete
+     .btn-outline → branco com filete (neutra)   .btn-ghost  → sem preenchimento
+     .btn-danger  → texto vermelho (excluir)     .btn-dark   → alias de accent  */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 8px 18px;
-  border-radius: 999px;
-  font-family: var(--font-label);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  height: var(--control-h-md);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  font-family: var(--font-core);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  border: 1px solid transparent;
   text-decoration: none;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: var(--transition-control);
 }
-.btn-primary { background: var(--accent); color: #ffffff; }
-.btn-primary:hover { background: var(--accent-hover); }
-.btn-dark { background: var(--btn-dark-bg); color: var(--gold-on-dark); }
-.btn-dark:hover { background: #4a443c; }
-.btn-outline { background: var(--cream-inset); border-color: var(--divider-strong); color: var(--ink-primary); }
-.btn-outline:hover { background: #dedad2; }
-.btn-ghost { background: transparent; border-color: transparent; color: var(--ink-secondary); }
-.btn-ghost:hover { background: var(--accent-tint); }
-.btn-danger { background: transparent; border-color: rgba(138,53,36,0.35); color: var(--neg); }
-.btn-danger:hover { background: var(--neg-tint); }
-.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
-/* Variação de tamanho para toolbars densas — mantém a mesma forma. */
-.btn-sm { padding: 6px 14px; font-size: 9px; }
+.btn:active:not([disabled]):not([aria-disabled="true"]) { transform: scale(var(--press-scale)); }
+.btn svg { flex: none; }
+.btn-primary, .btn-primary:hover { background: var(--action-inverse); color: var(--text-inverse); }
+.btn-primary:hover { background: var(--action-inverse-hover); }
+.btn-primary:active { background: var(--ink-600); }
+.btn-accent, .btn-dark, .btn-accent:hover, .btn-dark:hover { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent-line); }
+.btn-accent:hover, .btn-dark:hover { background: var(--accent-hover); }
+.btn-accent:active, .btn-dark:active { background: var(--accent-press); }
+.btn-outline, .btn-outline:hover { background: var(--surface-card); border-color: var(--border-default); color: var(--text-primary); }
+.btn-outline:hover { background: var(--surface-sunken); }
+.btn-outline:active { background: var(--gray-150); }
+.btn-ghost, .btn-ghost:hover { background: transparent; color: var(--text-primary); }
+.btn-ghost:hover { background: var(--action-ghost-hover); }
+.btn-ghost:active { background: var(--action-ghost-press); }
+.btn-danger, .btn-danger:hover { background: var(--surface-card); border-color: var(--border-default); color: var(--text-negative); }
+.btn-danger:hover { background: var(--surface-negative-soft); border-color: var(--surface-negative-soft); }
+.btn[disabled], .btn[aria-disabled="true"],
+.btn[disabled]:hover, .btn[aria-disabled="true"]:hover {
+  background: var(--gray-100); color: var(--text-disabled); border-color: transparent; cursor: not-allowed; transform: none;
+}
+.btn-sm { height: var(--control-h-sm); padding: 0 var(--space-3); font-size: var(--text-body-sm-size); gap: 6px; }
+.btn-lg { height: var(--control-h-lg); padding: 0 22px; }
+.btn-pill { border-radius: var(--radius-pill); }
+.btn-block { display: flex; width: 100%; }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--cream-inset); }
-::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+/* ── Botões de ícone (IconButton do DS) ──────────────────────────────────────
+   A COR continua fazendo parte do vocabulário da ação — agora nos tons de
+   status do DS: preto → abrir/editar · lilás → parcelas · areia → pagamento ·
+   âmbar → desfazer · vermelho → excluir · cinza → indisponível.             */
+.icon-btn {
+  position: relative;
+  display: inline-grid; place-items: center;
+  width: var(--control-h-sm); height: var(--control-h-sm);
+  padding: 0;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition-control);
+}
+.icon-btn:hover { background: var(--action-ghost-hover); border-color: var(--border-subtle); }
+.icon-btn:active { background: var(--action-ghost-press); transform: scale(var(--press-scale)); }
+.icon-btn.outline { background: var(--surface-card); border-color: var(--border-subtle); }
+.icon-btn.outline:hover { background: var(--surface-sunken); }
+.icon-btn.solid, .icon-btn.solid:hover { background: var(--action-inverse); border-color: transparent; color: var(--text-inverse); }
+.icon-btn.solid:hover { background: var(--action-inverse-hover); }
+.icon-btn.md { width: var(--control-h-md); height: var(--control-h-md); }
+
+.icon-btn.info    { color: var(--text-info); }
+.icon-btn.info:hover    { background: var(--surface-info-soft); border-color: transparent; }
+.icon-btn.success { color: var(--text-positive); }
+.icon-btn.success:hover { background: var(--surface-accent); border-color: var(--accent-line-soft); }
+.icon-btn.warn    { color: var(--text-warning); }
+.icon-btn.warn:hover    { background: var(--surface-warning-soft); border-color: transparent; }
+.icon-btn.danger  { color: var(--text-negative); }
+.icon-btn.danger:hover  { background: var(--surface-negative-soft); border-color: transparent; }
+.icon-btn.muted   { color: var(--text-muted); }
+
+/* Indisponível: cinza e sem clique, mas visível — a linha mantém o mesmo
+   conjunto de ações em todas as tabelas. */
+.icon-btn[disabled], .icon-btn[aria-disabled="true"],
+.icon-btn[disabled]:hover, .icon-btn[aria-disabled="true"]:hover {
+  color: var(--text-disabled); background: transparent; border-color: transparent; cursor: not-allowed; transform: none;
+}
+.icon-btn.sm { width: 24px; height: 24px; border-radius: var(--radius-sm); }
+
+/* ── Abas sublinhadas (SegmentedTabs do DS) ──────────────────────────────── */
+.seg-tabs { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.seg-tab {
+  padding: 2px 0 5px; background: none; border: none; border-bottom: 1.5px solid transparent;
+  font-family: var(--font-core); font-size: var(--text-body-size); font-weight: var(--font-weight-regular);
+  color: var(--text-muted); cursor: pointer; transition: var(--transition-control); white-space: nowrap;
+}
+.seg-tab:hover { color: var(--text-primary); }
+.seg-tab[aria-selected="true"] { color: var(--text-primary); font-weight: var(--font-weight-medium); border-bottom-color: var(--ink-900); }
+
+/* ── Modais (sheet do DS: raio 28 → usamos 20 em diálogos densos) ────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: var(--space-4);
+  background: var(--surface-scrim);
+  backdrop-filter: blur(var(--blur-scrim));
+}
+.modal-panel {
+  background: var(--surface-card);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-pop);
+  max-width: 96vw; max-height: 92vh; overflow-y: auto;
+}
+
+/* ── Scrollbar discreta ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-pill); }
 ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
-/* ── Sort header hover ── */
-thead th[style*="cursor: pointer"]:hover { background: var(--cream-inset); }
-
-/* ── Dashboard: stat tiles & chart panels ── */
-.stat-tile {
-  background: var(--cream-card);
-  border: 1px solid var(--divider);
-  border-radius: 12px;
-  box-shadow: var(--shadow-hair);
-  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
-}
-.stat-tile:hover {
-  box-shadow: var(--shadow-card);
-  border-color: var(--divider-strong);
-  transform: translateY(-1px);
-}
-.panel-card {
-  background: var(--cream-card);
-  border: 1px solid var(--divider);
-  border-radius: 14px;
-  box-shadow: var(--shadow-hair);
-  transition: box-shadow 0.18s ease;
-}
-.panel-card:hover { box-shadow: var(--shadow-card); }
-
+/* ── Movimento: respeita prefers-reduced-motion cortando para o estado final ── */
 @media (prefers-reduced-motion: reduce) {
-  .stat-tile, .panel-card, .icon-btn, .btn { transition: none; }
-  .stat-tile:hover { transform: none; }
+  *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+  .btn:active, .icon-btn:active { transform: none !important; }
 }

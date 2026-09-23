@@ -1,0 +1,113 @@
+/* ── Glorioso Finance Design System — tokens ─────────────────────────────────
+   Cópia LITERAL de tokens/*.css do pacote "Glorioso Finance Design System"
+   (colors, typography, spacing, radii, elevation, motion). Não edite valores
+   aqui: ajustes específicos da plataforma ficam em src/index.css.
+   A fonte (Urbanist) é carregada via <link> no index.html — um @import remoto
+   depois do Tailwind seria descartado como fora de ordem. */
+
+/* tokens/colors.css */
+:root{
+/* ---- base palette (from Ledgerix brand sheet) ---- */
+--sand-50:#FEFEFD;--sand-100:#FAF9F6;--sand-200:#F7F6F2;--sand-300:#F4F3EE;
+--sand-400:#F2F0EB;--sand-500:#E4E0D4;--sand-600:#D3CDBC;--sand-700:#8E8776;--sand-800:#59533F;
+--ink-900:#000000;--ink-800:#121214;--ink-700:#1C1C1F;--ink-600:#2B2B2F;
+--gray-700:#4E4D51;--gray-600:#77767A;--gray-500:#AAA9AB;--gray-400:#C6C5C8;--gray-300:#DBDADD;
+--gray-200:#E6E6E8;--gray-150:#ECECEE;--gray-100:#F0F0F1;--gray-50:#F7F7F8;--white:#FFFFFF;
+--red-400:#FF7A6E;--red-500:#FF5C4D;--red-600:#E8402F;
+--amber-400:#FFD36B;--amber-500:#FFC02E;
+--lilac-200:#E6E4FA;--lilac-300:#D8D6F5;--lilac-400:#BCB8EC;
+
+/* ---- semantic: text ---- */
+--text-primary:var(--ink-900);--text-secondary:var(--gray-600);--text-muted:var(--gray-500);
+--text-disabled:var(--gray-400);--text-inverse:var(--white);--text-on-accent:var(--ink-900);
+--text-positive:var(--sand-800);--text-negative:var(--red-600);--text-link:var(--ink-900);
+
+/* ---- semantic: surface ---- */
+--surface-page:var(--gray-100);--surface-card:var(--white);--surface-sunken:var(--gray-50);
+--surface-raised:var(--white);--surface-inverse:var(--ink-900);--surface-inverse-soft:var(--ink-700);
+--surface-accent:var(--sand-400);--surface-accent-soft:var(--sand-200);
+--surface-negative-soft:#FFE9E6;--surface-scrim:rgba(0,0,0,.45);--surface-glass:rgba(255,255,255,.72);
+
+/* ---- semantic: border ---- */
+--border-subtle:var(--gray-200);--border-default:var(--gray-300);--border-strong:var(--gray-500);
+--border-inverse:rgba(255,255,255,.16);--border-accent:var(--sand-600);--border-focus:var(--ink-900);
+
+/* ---- semantic: interactive ---- */
+--accent:var(--sand-400);--accent-hover:var(--sand-500);--accent-press:var(--sand-600);
+/* the brand colour is near-white, so accent fills carry a hairline to stay visible on light surfaces */
+--accent-line:var(--ink-900);--accent-line-soft:var(--sand-600);
+/* a light fill is unreadable in a chart, so data ink uses the deep step */
+--accent-ink-strong:var(--sand-700);
+--action-inverse:var(--ink-900);--action-inverse-hover:var(--ink-700);
+--action-ghost-hover:var(--gray-50);--action-ghost-press:var(--gray-150);
+
+/* ---- data visualisation ---- */
+--chart-1:var(--sand-700);--chart-2:var(--ink-900);--chart-3:var(--gray-500);
+--chart-4:var(--lilac-300);--chart-5:var(--gray-300);--chart-grid:var(--gray-200);
+--chart-track:var(--gray-200);--chart-hatch:rgba(142,135,118,.35);
+
+/* ---- brand gradients (used on covers, tags, out-of-home) ---- */
+--gradient-mint:linear-gradient(180deg,#FFFFFF 0%,#FAF9F6 55%,#F2F0EB 100%); /* @kind color */
+--gradient-mint-soft:radial-gradient(120% 90% at 50% 120%,#E4E0D4 0%,rgba(242,240,235,0) 70%); /* @kind color */
+--gradient-ink:linear-gradient(180deg,#1C1C1F 0%,#000000 100%); /* @kind color */
+}
+
+
+/* tokens/typography.css */
+:root{
+--font-weight-light:300;--font-weight-regular:400;--font-weight-medium:500;--font-weight-semibold:600;
+--text-display-size:64px;--text-display-line:1.02;--text-display-weight:600;--text-display-tracking:-.03em;
+--text-hero-size:48px;--text-hero-line:1.06;--text-hero-weight:400;--text-hero-tracking:-.02em;
+--text-metric-size:44px;--text-metric-line:1.05;--text-metric-weight:500;--text-metric-tracking:-.02em;
+--text-h1-size:36px;--text-h1-line:1.14;--text-h1-weight:600;--text-h1-tracking:-.02em;
+--text-h2-size:28px;--text-h2-line:1.2;--text-h2-weight:500;--text-h2-tracking:-.015em;
+--text-title-size:24px;--text-title-line:1.25;--text-title-weight:400;--text-title-tracking:-.01em;
+--text-subtitle-size:18px;--text-subtitle-line:1.35;--text-subtitle-weight:400;
+--text-body-size:14px;--text-body-line:1.5;--text-body-weight:400;
+--text-body-sm-size:12px;--text-body-sm-line:1.5;--text-body-sm-weight:400;
+--text-caption-size:11px;--text-caption-line:1.4;--text-caption-weight:400;
+--text-overline-size:10px;--text-overline-line:1.2;--text-overline-weight:400;--text-overline-tracking:.09em;
+}
+
+
+/* tokens/spacing.css */
+:root{
+--space-0:0px;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;
+--space-7:32px;--space-8:40px;--space-9:56px;--space-10:80px;--space-11:120px;
+--gutter-card:20px;--gutter-card-sm:14px;--gutter-screen:32px;--gutter-screen-mobile:16px;
+--layout-max:1280px;--layout-rail:56px;--layout-topbar:56px;--layout-bottombar:64px;
+--control-h-sm:28px;--control-h-md:36px;--control-h-lg:44px;--tap-min:44px;
+}
+
+
+/* tokens/radii.css */
+:root{
+--radius-xs:6px;--radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-2xl:28px;
+--radius-pill:999px;--radius-circle:50%;
+--radius-control:10px;--radius-card:14px;--radius-tile:20px;--radius-sheet:28px;
+}
+
+
+/* tokens/elevation.css */
+:root{
+--shadow-none:none;
+--shadow-hairline:0 0 0 1px var(--border-subtle);
+--shadow-card:0 1px 2px rgba(0,0,0,.04),0 10px 28px rgba(0,0,0,.045);
+--shadow-raised:0 2px 4px rgba(0,0,0,.05),0 16px 40px rgba(0,0,0,.07);
+--shadow-pop:0 8px 16px rgba(0,0,0,.06),0 24px 56px rgba(0,0,0,.12);
+--shadow-inset-top:inset 0 1px 0 rgba(255,255,255,.6);
+--blur-glass:18px;--blur-scrim:6px;
+}
+
+
+/* tokens/motion.css */
+:root{
+--ease-out:cubic-bezier(.22,.61,.36,1); /* @kind other */--ease-in-out:cubic-bezier(.65,.05,.36,1); /* @kind other */--ease-entrance:cubic-bezier(.16,.84,.44,1); /* @kind other */
+--duration-instant:80ms; /* @kind other */--duration-fast:140ms; /* @kind other */--duration-base:200ms; /* @kind other */--duration-slow:320ms; /* @kind other */--duration-reveal:520ms; /* @kind other */
+--transition-control:background-color var(--duration-fast) var(--ease-out),border-color var(--duration-fast) var(--ease-out),color var(--duration-fast) var(--ease-out),transform var(--duration-fast) var(--ease-out); /* @kind other */
+--press-scale:.97; /* @kind other */
+}
+
+
+/* tokens/fonts.css (famílias; o @import do Google Fonts foi para o index.html) */
+:root{--font-core:"Urbanist","Helvetica Neue",Helvetica,Arial,sans-serif;--font-numeric:"Urbanist","Helvetica Neue",Helvetica,Arial,sans-serif;--font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}

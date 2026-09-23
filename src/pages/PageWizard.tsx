@@ -245,14 +245,14 @@ export default function PageWizard() {
             <button key={s} onClick={() => done && setStep(i)} disabled={!done && !active}
               style={{
                 display: 'flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 20,
-                background: active ? 'var(--accent)' : done ? 'var(--accent-tint2)' : 'transparent',
+                background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'transparent',
                 border: `1px solid ${active || done ? 'var(--divider-strong)' : 'var(--divider)'}`,
                 cursor: done ? 'pointer' : 'default',
               }}>
-              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                 {done ? <Icon name="check" size={12} /> : i + 1}
               </span>
-              <span style={{ fontFamily: font, fontSize: 11.5, fontWeight: active ? 700 : 500, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
+              <span style={{ fontFamily: font, fontSize: 11.5, fontWeight: active ? 700 : 500, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
             </button>
           )
         })}
@@ -280,8 +280,8 @@ export default function PageWizard() {
                   <button key={n.key} onClick={() => pickNature(n)}
                     style={{
                       textAlign: 'left', padding: '12px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: font,
-                      background: natureKey === n.key ? 'var(--accent-tint2)' : 'transparent',
-                      border: `1px solid ${natureKey === n.key ? 'var(--accent)' : 'var(--divider-strong)'}`,
+                      background: natureKey === n.key ? 'var(--gray-150)' : 'transparent',
+                      border: `1px solid ${natureKey === n.key ? 'var(--action-inverse)' : 'var(--divider-strong)'}`,
                     }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-primary)' }}>{n.label}</div>
                     <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
@@ -330,7 +330,7 @@ export default function PageWizard() {
             )}
 
             {athlete && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--accent-tint)', border: '1px solid var(--divider-strong)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)' }}>
                 <Icon name="check" size={14} />
                 <span style={{ fontFamily: font, fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)' }}>{athlete.full_name}</span>
                 <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>· {athlete.position || 'posição não informada'}</span>

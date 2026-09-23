@@ -257,7 +257,7 @@ function NatureRow({ n, td, onOpen }: {
       <td style={td} />
       <td style={{ ...td, paddingLeft: 6 }}>
         <button onClick={onOpen}
-          style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>
+          style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }}>
           {n.label}
         </button>
         <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: mono, marginTop: 2 }}>

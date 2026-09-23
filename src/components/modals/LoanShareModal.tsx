@@ -155,7 +155,7 @@ export default function LoanShareModal({
 
       <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: loanContract.end_date ? 'pointer' : 'default', opacity: loanContract.end_date ? 1 : 0.6 }}>
         <input type="checkbox" checked={restoreAtEnd && !!loanContract.end_date} disabled={!loanContract.end_date}
-          onChange={e => setRestoreAtEnd(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+          onChange={e => setRestoreAtEnd(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
         <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
           {loanContract.end_date
             ? <>Voltar à remuneração integral após <strong>{fmtDate(loanContract.end_date)}</strong> (fim do empréstimo).</>

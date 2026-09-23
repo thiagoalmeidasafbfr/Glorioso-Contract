@@ -70,7 +70,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
           <div style={{
             fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500,
             letterSpacing: '0.18em', textTransform: 'uppercase',
-            color: 'var(--accent)', marginBottom: 4,
+            color: 'var(--action-inverse)', marginBottom: 4,
           }}>
             Registrar Pagamento
           </div>
@@ -116,9 +116,9 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
 
           {currency !== 'BRL' && (
             <div style={{
-              background: 'var(--accent-tint)', border: '1px solid var(--divider-strong)',
+              background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)',
               borderRadius: 7, padding: '8px 12px',
-              fontFamily: "var(--font-label)", fontSize: 11, color: 'var(--accent)',
+              fontFamily: "var(--font-label)", fontSize: 11, color: 'var(--action-inverse)',
             }}>
               R$ {valueBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
@@ -152,7 +152,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             onClick={handleSave}
             disabled={!date || valueCurrency <= 0}
             style={{
-              background: 'var(--accent)', border: 'none', borderRadius: 7,
+              background: 'var(--action-inverse)', border: 'none', borderRadius: 7,
               padding: '8px 22px', fontSize: 12, fontWeight: 600,
               fontFamily: "var(--font-body)", cursor: 'pointer',
               color: '#fff', opacity: (!date || valueCurrency <= 0) ? 0.5 : 1,

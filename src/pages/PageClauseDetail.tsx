@@ -36,7 +36,7 @@ const CLAUSE_TYPES = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
 const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDENTE: { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
   PAGA: { bg: '#e5ece1', fg: '#3a6f3a' },
-  PARCIALMENTE_PAGA: { bg: 'var(--accent-tint2)', fg: '#7a6244' },
+  PARCIALMENTE_PAGA: { bg: 'var(--gray-150)', fg: '#7a6244' },
   EM_ATRASO: { bg: 'var(--neg-tint)', fg: 'var(--neg)' },
   CANCELADA: { bg: 'rgba(156,163,175,0.12)', fg: '#6b7280' },
 }
