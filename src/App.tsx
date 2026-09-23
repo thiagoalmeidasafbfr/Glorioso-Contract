@@ -42,7 +42,7 @@ function AppRoutes() {
         minHeight: '100vh', background: '#1a1410',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontFamily: "var(--font-label)", fontSize: 11,
-        color: 'rgba(243,238,226,0.40)', letterSpacing: '0.14em',
+        color: 'rgba(243,238,226,0.40)',
       }}>
         CARREGANDO...
       </div>

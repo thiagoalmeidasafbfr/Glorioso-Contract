@@ -59,9 +59,9 @@ function Head(props: { children: React.ReactNode; width?: number | string; stick
     <th style={{
       padding: '10px 8px',
       textAlign: 'left',
-      fontFamily: fontMono, fontSize: 10, fontWeight: 600,
-      letterSpacing: '0.10em', textTransform: 'uppercase',
-      color: 'var(--ink-secondary)',
+      fontFamily: fontMono, fontSize: 10, fontWeight: 400,
+      letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
+      color: 'var(--text-muted)',
       background: 'var(--cream-inset)',
       borderBottom: '1px solid var(--rule)',
       position: props.sticky ? 'sticky' as const : undefined,
@@ -271,10 +271,9 @@ export default function PagePremissas() {
           {(['TODOS', ...DECISAO_OPTIONS] as const).map(d => (
             <button key={d} onClick={() => setFilter(d)} style={{
               padding: '6px 10px', border: '1px solid var(--rule)',
-              borderRadius: 6, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.10em',
-              background: filter === d ? 'var(--ink-primary)' : 'var(--surface)',
+              borderRadius: 6, fontFamily: fontMono, fontSize: 10, background: filter === d ? 'var(--ink-primary)' : 'var(--surface)',
               color: filter === d ? '#fff' : 'var(--ink-secondary)',
-              cursor: 'pointer', textTransform: 'uppercase',
+              cursor: 'pointer',
             }}>{d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d as PremissaDecisao]}</button>
           ))}
         </div>
@@ -504,7 +503,7 @@ export default function PagePremissas() {
         </table>
       </div>
 
-      <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink-secondary)' }}>
+      <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, color: 'var(--ink-secondary)' }}>
         Encargos padrão: INSS {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}% · FGTS {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}% · férias {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}%. Antecipação padrão: CDI {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}% a.a.
       </p>
     </div>
@@ -517,8 +516,7 @@ function btn(variant?: 'accent'): React.CSSProperties {
     border: variant === 'accent' ? '1px solid #be8c4a' : '1px solid rgba(255,255,255,0.20)',
     background: variant === 'accent' ? '#be8c4a' : 'transparent',
     color: variant === 'accent' ? '#1a1410' : '#f3eee2',
-    fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
-    borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+    fontFamily: fontMono, fontSize: 10, borderRadius: 6, cursor: 'pointer', fontWeight: 500,
   }
 }
 

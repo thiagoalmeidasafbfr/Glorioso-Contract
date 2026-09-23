@@ -98,7 +98,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
     borderRadius: 7, padding: '8px 10px', fontSize: 13, color: '#1a1410', fontFamily: fontBody, boxSizing: 'border-box',
   }
   const lblStyle: React.CSSProperties = {
-    fontFamily: fontMono, fontSize: 10, fontWeight: 500, letterSpacing: '0.12em',
+    fontFamily: fontMono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)',
     textTransform: 'uppercase', color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
   }
 
@@ -148,7 +148,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                   onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--gray-150)' : 'transparent')}
                 >
                   <div style={{ fontWeight: 500 }}>{x.name}</div>
-                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{x.sub}</div>}
+                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{x.sub}</div>}
                 </button>
               ))}
             </div>
@@ -170,14 +170,14 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
           )}
 
           {filtered.length === 0 && !query.trim() && (
-            <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody }}>
+            <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>
               Nenhum {isClube ? 'clube' : 'agente'} cadastrado ainda.
             </div>
           )}
 
           {creating && (
             <div style={{ padding: 12, borderTop: '1px solid var(--divider-soft)', background: 'var(--action-ghost-hover)' }}>
-              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--action-inverse)', marginBottom: 8 }}>
+              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--action-inverse)', marginBottom: 8 }}>
                 Novo {isClube ? 'clube' : 'agente'}
               </div>
               <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--ink-primary)', marginBottom: 8 }}>

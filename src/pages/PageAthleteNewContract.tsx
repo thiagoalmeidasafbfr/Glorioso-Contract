@@ -95,9 +95,9 @@ const inputStyle: React.CSSProperties = {
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-label)", fontSize: 9,
-  fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-  color: 'var(--text-muted)', display: 'block', marginBottom: 4,
+  fontFamily: "var(--font-label)", fontSize: 10,
+  fontWeight: 600, textTransform: 'uppercase' as const,
+  color: 'var(--text-secondary)', display: 'block', marginBottom: 4,
 }
 
 const cardStyle: React.CSSProperties = {
@@ -106,12 +106,12 @@ const cardStyle: React.CSSProperties = {
 }
 
 const sectionTitle: React.CSSProperties = {
-  fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 800,
-  letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-primary)',
+  fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 400,
+  letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--ink-primary)',
 }
 
 const hintStyle: React.CSSProperties = {
-  fontFamily: "var(--font-body)", fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5,
+  fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5,
 }
 
 const noteBox: React.CSSProperties = {
@@ -459,7 +459,7 @@ export default function PageAthleteNewContract() {
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
       <PageHero title="Novo Contrato" subtitle={athlete?.full_name ?? 'Novo contrato · Botafogo SAF'} />
       {/* Breadcrumb */}
-      <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
         <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
         <span>/</span>
         <Link to={`/atletas/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete?.short_name ?? '...'}</Link>
@@ -481,12 +481,12 @@ export default function PageAthleteNewContract() {
                 <span style={{
                   width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'var(--cream-inset)',
-                  fontSize: 11.5, fontWeight: 700, fontFamily: "var(--font-label)",
+                  fontSize: 12, fontWeight: 600, fontFamily: "var(--font-label)",
                   color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
                   {done ? <Icon name="check" size={13} /> : s}
                 </span>
-                <span style={{ fontFamily: "var(--font-body)", fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
                   {labels[i]}
                 </span>
               </button>
@@ -673,10 +673,10 @@ export default function PageAthleteNewContract() {
                   const base = total || (contract.base_salary ?? 0)
                   if (base > 0) { setContractField('base_salary', base / 2); setContractField('image_value', base / 2) }
                 }}
-                className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 11.5 }}>
+                className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 12 }}>
                 Dividir 50% CLT / 50% imagem
               </button>
-              <span style={{ fontFamily: "var(--font-label)", fontSize: 11.5, color: 'var(--ink-secondary)' }}>
+              <span style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--ink-secondary)' }}>
                 Total: {(((contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0))).toLocaleString('pt-BR')} {contract.salary_currency}/mês
               </span>
             </div>
@@ -762,7 +762,7 @@ export default function PageAthleteNewContract() {
                 return (
                   <div key={i} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--divider)', background: 'var(--bg-subtle)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontFamily: "var(--font-label)", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
+                      <span style={{ fontFamily: "var(--font-label)", fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
                       <IconButton icon="trash" label={`Remover agente ${i + 1}`} tone="danger" onClick={() => removeAgent(i)} />
                     </div>
                     <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
@@ -870,7 +870,7 @@ export default function PageAthleteNewContract() {
           )}
 
           {clauses.length === 0 && (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-muted)', fontFamily: "var(--font-body)", fontSize: 13 }}>
+            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-secondary)', fontFamily: "var(--font-body)", fontSize: 13 }}>
               Nenhuma cláusula extra. Salário, imagem, transferência e agentes já foram tratados no passo anterior —
               use este passo para sell-on, bônus, solidariedade, rescisória e afins.
             </div>
@@ -1080,5 +1080,5 @@ export default function PageAthleteNewContract() {
   )
 }
 
-const dtStyle: React.CSSProperties = { color: 'var(--text-muted)', fontWeight: 500 }
+const dtStyle: React.CSSProperties = { color: 'var(--text-secondary)', fontWeight: 500 }
 const ddStyle: React.CSSProperties = { margin: 0, color: 'var(--ink-primary)' }

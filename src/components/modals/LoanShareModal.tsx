@@ -89,8 +89,8 @@ export default function LoanShareModal({
 
   const cell = (label: string, value: string, hi?: boolean) => (
     <div style={{ padding: '10px 14px', borderRadius: 9, background: hi ? 'var(--pos-tint)' : 'var(--bg-subtle)', border: `1px solid ${hi ? 'rgba(47,107,58,0.25)' : 'var(--divider)'}` }}>
-      <div style={{ fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: hi ? 'var(--pos)' : 'var(--text-muted)', marginBottom: 5 }}>{label}</div>
-      <div style={{ fontSize: 17, fontWeight: 700, fontFamily: mono, color: hi ? 'var(--pos)' : 'var(--ink-primary)' }}>{value}</div>
+      <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: hi ? 'var(--pos)' : 'var(--text-muted)', marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 17, fontWeight: 600, fontFamily: mono, color: hi ? 'var(--pos)' : 'var(--ink-primary)' }}>{value}</div>
     </div>
   )
 
@@ -131,7 +131,7 @@ export default function LoanShareModal({
           <label style={modalLabel}>Clube arca com (% do CLT)</label>
           <NumberInput style={modalInput} decimals={2} grouping={false} value={salaryPct}
             onChange={v => setSalaryPct(v)} placeholder="0" />
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>
             CLT integral {fmtCurrencyShort(fullSalary, currency)}/mês
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function LoanShareModal({
           <label style={modalLabel}>Clube arca com (% da imagem)</label>
           <NumberInput style={modalInput} decimals={2} grouping={false} value={imagePct}
             onChange={v => setImagePct(v)} placeholder="0" />
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>
             Imagem integral {fmtCurrencyShort(fullImage, currency)}/mês
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function LoanShareModal({
       </label>
 
       {existing.length > 0 && (
-        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: font, padding: '9px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, padding: '9px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider)' }}>
           Rateio já aplicado: {existing.length} degrau(s) na linha do tempo de remuneração
           (aba <strong>Gatilhos</strong>). Atualizar recalcula o fluxo; remover devolve o valor integral.
         </div>

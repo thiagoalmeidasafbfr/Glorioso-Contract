@@ -72,7 +72,7 @@ const card: React.CSSProperties = {
   borderRadius: 12, padding: 20, boxShadow: 'var(--shadow-hair)',
 }
 const lbl: React.CSSProperties = {
-  fontFamily: mono, fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
+  fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
   color: 'var(--text-muted)', display: 'block', marginBottom: 5,
 }
 const input: React.CSSProperties = {
@@ -80,10 +80,10 @@ const input: React.CSSProperties = {
   borderRadius: 7, padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
 }
 const sectionTitle: React.CSSProperties = {
-  fontFamily: mono, fontSize: 11, fontWeight: 800, letterSpacing: '0.16em',
+  fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)',
   textTransform: 'uppercase', color: 'var(--ink-primary)',
 }
-const hint: React.CSSProperties = { fontFamily: font, fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }
+const hint: React.CSSProperties = { fontFamily: font, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }
 
 export default function PageWizard() {
   const navigate = useNavigate()
@@ -249,10 +249,10 @@ export default function PageWizard() {
                 border: `1px solid ${active || done ? 'var(--divider-strong)' : 'var(--divider)'}`,
                 cursor: done ? 'pointer' : 'default',
               }}>
-              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 600, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                 {done ? <Icon name="check" size={12} /> : i + 1}
               </span>
-              <span style={{ fontFamily: font, fontSize: 11.5, fontWeight: active ? 700 : 500, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
+              <span style={{ fontFamily: font, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
             </button>
           )
         })}
@@ -283,9 +283,9 @@ export default function PageWizard() {
                       background: natureKey === n.key ? 'var(--gray-150)' : 'transparent',
                       border: `1px solid ${natureKey === n.key ? 'var(--action-inverse)' : 'var(--divider-strong)'}`,
                     }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-primary)' }}>{n.label}</div>
-                    <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
-                    <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: 6 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)' }}>{n.label}</div>
+                    <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
+                    <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: 6 }}>
                       {n.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}{n.isMovement ? ' · cria vínculo' : ''}
                     </div>
                   </button>
@@ -333,7 +333,7 @@ export default function PageWizard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)' }}>
                 <Icon name="check" size={14} />
                 <span style={{ fontFamily: font, fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)' }}>{athlete.full_name}</span>
-                <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>· {athlete.position || 'posição não informada'}</span>
+                <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>· {athlete.position || 'posição não informada'}</span>
                 <button onClick={() => { setAthleteId(''); setContracts([]); setLinkContractId('') }} className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }}>Trocar</button>
               </div>
             )}
@@ -347,7 +347,7 @@ export default function PageWizard() {
                       textAlign: 'left', padding: '9px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: font, fontSize: 13,
                       background: 'transparent', border: '1px solid var(--divider)', color: 'var(--ink-primary)',
                     }}>
-                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)' }}>· {a.position || '—'}</span>
+                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)' }}>· {a.position || '—'}</span>
                   </button>
                 ))}
                 {filteredAthletes.length === 0 && <div style={hint}>Nenhum atleta encontrado. Use “Novo atleta” acima.</div>}
@@ -450,7 +450,7 @@ export default function PageWizard() {
             <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {[...valid].sort((a, b) => a.due_date.localeCompare(b.due_date)).map((l, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr', gap: 10, padding: '6px 10px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>{i + 1}</span>
+                  <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{i + 1}</span>
                   <span style={{ fontFamily: mono, fontSize: 12 }}>{fmtDate(l.due_date)}</span>
                   <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 600, textAlign: 'right' }}>{fmtCurrencyShort(l.value, currency)}</span>
                 </div>
@@ -483,7 +483,7 @@ export default function PageWizard() {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12 }}>
-      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k}</span>
+      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: 'var(--text-overline-tracking)' }}>{k}</span>
       <span>{v}</span>
     </div>
   )
@@ -495,7 +495,7 @@ function Pill({ label, value }: { label: string; value: string }) {
       display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 7,
       background: 'var(--bg-subtle)', border: '1px solid var(--divider)', maxWidth: 320,
     }}>
-      <span style={{ fontFamily: mono, fontSize: 8.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
       <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
     </span>
   )

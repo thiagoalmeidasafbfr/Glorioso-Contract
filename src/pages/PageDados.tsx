@@ -331,12 +331,12 @@ export default function PageDados() {
 
       {confirmWipe && (
         <div style={{ border: '1px solid rgba(122,63,44,0.35)', background: 'rgba(122,63,44,0.06)', borderRadius: 10, padding: 18, marginBottom: 22 }}>
-          <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 700, color: '#7a3f2c', marginBottom: 6 }}>Apagar toda a base?</div>
+          <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: '#7a3f2c', marginBottom: 6 }}>Apagar toda a base?</div>
           <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
             Isto remove <strong>permanentemente</strong> todos os atletas, vínculos, cláusulas, parcelas, titularidade,
             metas de salário, passivos, direito de imagem, PJs, clubes e agentes. Esta ação <strong>não pode ser desfeita</strong>.
             Recomendamos <strong>Exportar toda a base</strong> antes de continuar.
-            Para confirmar, digite <span style={{ fontFamily: fontMono, fontWeight: 700 }}>APAGAR</span> abaixo.
+            Para confirmar, digite <span style={{ fontFamily: fontMono, fontWeight: 600 }}>APAGAR</span> abaixo.
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input
@@ -368,7 +368,7 @@ export default function PageDados() {
         {DESCRIPTORS.map(d => (
           <div key={d.key} className="card" style={{ padding: 18 }}>
             <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', marginBottom: 2 }}>{d.label}</div>
-            <div style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', marginBottom: 14 }}>
+            <div style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-secondary)', marginBottom: 14 }}>
               {d.cols.length} colunas{d.parent ? ` · requer ${d.parent}` : ''}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -43,13 +43,13 @@ export default function KpiPill({ label, value, tone = 'neutral' }: Props) {
       minHeight: 36, minWidth: 0,
     }}>
       <div style={{
-        fontFamily: 'var(--font-label)', fontSize: 8.5, fontWeight: 500,
-        letterSpacing: '0.14em', textTransform: 'uppercase',
+        fontFamily: 'var(--font-label)', fontSize: 10, fontWeight: 400,
+        letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
         color: tone === 'neutral' ? 'var(--text-muted)' : fg,
         lineHeight: 1.1,
       }}>{label}</div>
       <div style={{
-        fontFamily: 'var(--font-data)', fontSize: 14, fontWeight: 700,
+        fontFamily: 'var(--font-data)', fontSize: 14, fontWeight: 600,
         color: fg, marginTop: 2, lineHeight: 1.1,
         whiteSpace: 'nowrap',
       }}>{value}</div>

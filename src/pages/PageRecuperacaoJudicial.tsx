@@ -261,7 +261,7 @@ export default function PageRecuperacaoJudicial() {
     exportWorkbook([{ name: 'Recuperação Judicial', cols, rows: data }], 'recuperacao-judicial.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
@@ -281,18 +281,18 @@ export default function PageRecuperacaoJudicial() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
             style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
           <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)', maxWidth: 240 }}>
             {credores.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
           <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface, #fff)', color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -300,7 +300,7 @@ export default function PageRecuperacaoJudicial() {
       </div>
 
       {/* ── Agrupamento por credor ─────────────────────────────────────── */}
-      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
+      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '6px 0 10px' }}>
         Detalhamento por credor
       </div>
       <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
@@ -317,8 +317,8 @@ export default function PageRecuperacaoJudicial() {
               <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Total (BRL PTAX)</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum lançamento marcado como Recuperação Judicial.</td></tr>}
+              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum lançamento marcado como Recuperação Judicial.</td></tr>}
               {byCreditor.map(g => (
                 <tr key={g.credor}>
                   <td style={{ ...td, fontWeight: 600 }}>{g.credor}</td>
@@ -328,7 +328,7 @@ export default function PageRecuperacaoJudicial() {
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.maxDelayDays > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{g.maxDelayDays > 0 ? `${g.maxDelayDays} dias` : '—'}</td>
                   <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{g.nextDue ? fmtDate(g.nextDue) : '—'}</td>
                   <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(g.earliestFiledAt)}</td>
-                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>{fmtCurrencyShort(g.total, 'BRL')}</td>
+                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(g.total, 'BRL')}</td>
                 </tr>
               ))}
             </tbody>
@@ -337,7 +337,7 @@ export default function PageRecuperacaoJudicial() {
       </div>
 
       {/* ── Detalhe por lançamento ─────────────────────────────────────── */}
-      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', margin: '6px 0 10px' }}>
+      <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '6px 0 10px' }}>
         Lançamentos incluídos
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -357,8 +357,8 @@ export default function PageRecuperacaoJudicial() {
               {canEdit && <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>}
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum lançamento em RJ.</td></tr>}
+              {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum lançamento em RJ.</td></tr>}
               {filtered.map(r => {
                 const d = r.dueDate ? daysFromToday(r.dueDate) : null
                 const isLate = d !== null && d < 0 && OPEN.has(r.status)
@@ -375,16 +375,15 @@ export default function PageRecuperacaoJudicial() {
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
                     <td style={td}>
                       <span style={{
-                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
-                        fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
-                        background: r.status === 'PAGA' ? 'var(--pos-tint)' : r.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
+                        display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 500,
+                        fontFamily: mono, background: r.status === 'PAGA' ? 'var(--pos-tint)' : r.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
                         color: r.status === 'PAGA' ? 'var(--pos)' : r.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
                       }}>{r.status.replace(/_/g, ' ')}</span>
                     </td>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => unmark(r)}
-                          style={{ background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 6, padding: '3px 8px', fontFamily: mono, fontSize: 9, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                          style={{ background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 6, padding: '3px 8px', fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer' }}
                           title="Retirar este lançamento da Recuperação Judicial">
                           Retirar da RJ
                         </button>
@@ -397,7 +396,7 @@ export default function PageRecuperacaoJudicial() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: mono }}>
+      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono }}>
         {filtered.length} lançamento(s) · {byCreditor.length} credor(es)
       </div>
     </div>

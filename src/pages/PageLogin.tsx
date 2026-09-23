@@ -43,7 +43,7 @@ export default function PageLogin() {
           <h1 style={{
             fontFamily: fontDisplay,
             fontSize: '2rem',
-            fontWeight: 700,
+            fontWeight: 600,
             color: '#f5f2ec',
             letterSpacing: '-0.025em',
             lineHeight: 1.08,
@@ -55,7 +55,7 @@ export default function PageLogin() {
             fontFamily: fontLabel,
             fontSize: 10,
             color: 'rgba(243,238,226,0.38)',
-            letterSpacing: '0.18em',
+            letterSpacing: 'var(--text-overline-tracking)',
             textTransform: 'uppercase',
           }}>
             SAF BOTAFOGO
@@ -68,10 +68,10 @@ export default function PageLogin() {
             <label style={{
               display: 'block',
               fontFamily: fontLabel,
-              fontSize: 9,
-              fontWeight: 500,
+              fontSize: 10,
+              fontWeight: 400,
               color: 'rgba(243,238,226,0.45)',
-              letterSpacing: '0.18em',
+              letterSpacing: 'var(--text-overline-tracking)',
               textTransform: 'uppercase',
               marginBottom: 6,
             }}>
@@ -104,10 +104,10 @@ export default function PageLogin() {
             <label style={{
               display: 'block',
               fontFamily: fontLabel,
-              fontSize: 9,
-              fontWeight: 500,
+              fontSize: 10,
+              fontWeight: 400,
               color: 'rgba(243,238,226,0.45)',
-              letterSpacing: '0.18em',
+              letterSpacing: 'var(--text-overline-tracking)',
               textTransform: 'uppercase',
               marginBottom: 6,
             }}>
@@ -162,10 +162,8 @@ export default function PageLogin() {
               borderRadius: 999,
               padding: '12px 20px',
               fontFamily: fontLabel,
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 500,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s',
             }}
@@ -177,10 +175,9 @@ export default function PageLogin() {
         <div style={{
           marginTop: 32,
           fontFamily: fontLabel,
-          fontSize: 9,
+          fontSize: 10,
           color: 'rgba(243,238,226,0.20)',
           textAlign: 'center',
-          letterSpacing: '0.10em',
         }}>
           Acesso restrito — SAF Botafogo
         </div>

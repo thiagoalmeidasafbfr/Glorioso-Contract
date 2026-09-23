@@ -33,12 +33,12 @@ const input: React.CSSProperties = {
   borderRadius: 7, padding: '7px 9px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
 }
 const lbl: React.CSSProperties = {
-  fontFamily: mono, fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+  fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
   color: 'var(--text-muted)', display: 'block', marginBottom: 3,
 }
 const sectionLbl: React.CSSProperties = {
-  fontFamily: mono, fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
-  color: 'var(--ink-secondary)',
+  fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
+  color: 'var(--text-muted)',
 }
 
 // competência = 1ª data + i×passo; se dueDay definido, força o dia do vencimento.
@@ -138,7 +138,7 @@ export default function FlowBuilder({
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7,
               border: '1px solid var(--divider-strong)', background: genOpen ? 'var(--action-ghost-hover)' : 'transparent',
-              color: 'var(--ink-primary)', fontFamily: font, fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
+              color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}>
             <Icon name={genOpen ? 'chevronDown' : 'chevronRight'} size={13} />
             Gerar automaticamente
@@ -196,7 +196,7 @@ export default function FlowBuilder({
       {/* Linhas (sempre editáveis) */}
       <div>
         {lines.length === 0 ? (
-          <div style={{ padding: '16px 12px', textAlign: 'center', fontFamily: font, fontSize: 12.5, color: 'var(--text-muted)', border: '1px dashed var(--divider-strong)', borderRadius: 8 }}>
+          <div style={{ padding: '16px 12px', textAlign: 'center', fontFamily: font, fontSize: 12, color: 'var(--text-secondary)', border: '1px dashed var(--divider-strong)', borderRadius: 8 }}>
             Nenhuma parcela ainda. Use o botão abaixo para lançar linha por linha{showGenerator ? ' ou “Gerar automaticamente”' : ''}.
           </div>
         ) : (
@@ -210,7 +210,7 @@ export default function FlowBuilder({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
               {lines.map((l, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 1fr 30px', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{i + 1}</span>
+                  <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)', textAlign: 'right' }}>{i + 1}</span>
                   <input style={input} type="date" aria-label={`Vencimento da parcela ${i + 1}`}
                     value={l.due_date} onChange={e => setLine(i, { due_date: e.target.value })} />
                   <NumberInput style={{ ...input, fontFamily: mono }} value={l.value || ''} placeholder="0,00"
@@ -226,7 +226,7 @@ export default function FlowBuilder({
           style={{
             marginTop: 8, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             padding: '9px 0', borderRadius: 8, border: '1px dashed var(--divider-strong)', background: 'transparent',
-            color: 'var(--ink-primary)', fontFamily: font, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+            color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}>
           <Icon name="plus" size={14} /> Adicionar parcela
         </button>

@@ -66,14 +66,14 @@ export default function PageImportarPlanilhas() {
             style={{ padding: '11px 26px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {busy ? 'Lendo...' : 'Selecionar arquivo .xlsx'}
           </button>
-          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody }}>Envie um arquivo por vez (Ativos ou Passivos).</div>
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>Envie um arquivo por vez (Ativos ou Passivos).</div>
         </div>
       )}
 
       {sheets && !report && (
         <div className="card" style={{ padding: 22 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: fontBody, marginBottom: 4 }}>{fileName}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody, marginBottom: 14 }}>Abas reconhecidas para importação:</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 14 }}>Abas reconhecidas para importação:</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 8, marginBottom: 8 }}>
             {known.map(s => (
               <div key={s} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)', fontFamily: fontBody, fontSize: 12 }}>
@@ -81,7 +81,7 @@ export default function PageImportarPlanilhas() {
               </div>
             ))}
           </div>
-          {other.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono, marginTop: 6 }}>Ignoradas: {other.join(', ')}</div>}
+          {other.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 6 }}>Ignoradas: {other.join(', ')}</div>}
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
             <button onClick={confirm} disabled={busy || known.length === 0}
               style={{ padding: '10px 22px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -95,9 +95,9 @@ export default function PageImportarPlanilhas() {
       {report && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
-            <div className="card" style={card}><div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 22 }}>{report.athletes.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 22 }}>{report.clubs.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 22 }}>{report.agents.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 22 }}>{report.athletes.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 22 }}>{report.clubs.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 22 }}>{report.agents.created}</div></div>
           </div>
 
           <div className="card" style={{ overflow: 'hidden' }}>
@@ -105,7 +105,7 @@ export default function PageImportarPlanilhas() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr>
                 {['Natureza', 'Criadas', 'Já existiam', 'Sem atleta', 'Erros'].map((h, i) => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: i === 0 ? 'left' : 'right', fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-secondary)', background: 'var(--tbl-head)', borderBottom: '1px solid var(--divider-strong)' }}>{h}</th>
+                  <th key={h} style={{ padding: '8px 14px', textAlign: i === 0 ? 'left' : 'right', fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'var(--tbl-head)', borderBottom: '1px solid var(--divider-strong)' }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>
@@ -113,7 +113,7 @@ export default function PageImportarPlanilhas() {
                   <tr key={k}>
                     <td style={{ padding: '9px 14px', fontFamily: fontBody, fontSize: 13, borderBottom: '1px solid var(--divider-soft)' }}>{k}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: 'var(--pos)', borderBottom: '1px solid var(--divider-soft)' }}>{v.created}</td>
-                    <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-soft)' }}>{v.skipped}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: 'var(--text-secondary)', borderBottom: '1px solid var(--divider-soft)' }}>{v.skipped}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: v.orphan ? 'var(--neg)' : 'var(--text-muted)', borderBottom: '1px solid var(--divider-soft)' }}>{v.orphan}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', ...num, color: v.error ? 'var(--neg)' : 'var(--text-muted)', borderBottom: '1px solid var(--divider-soft)' }}>{v.error}</td>
                   </tr>
@@ -124,7 +124,7 @@ export default function PageImportarPlanilhas() {
 
           {Object.keys(report.pending).length > 0 && (
             <div className="card" style={{ padding: '14px 18px' }}>
-              <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--warn)', marginBottom: 8 }}>Reconhecido — mapeamento em etapa futura</div>
+              <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--warn)', marginBottom: 8 }}>Reconhecido — mapeamento em etapa futura</div>
               {Object.entries(report.pending).map(([k, n]) => (
                 <div key={k} style={{ fontSize: 12, fontFamily: fontBody, color: 'var(--text-secondary)' }}>{k}: <span style={num}>{n}</span> linhas</div>
               ))}

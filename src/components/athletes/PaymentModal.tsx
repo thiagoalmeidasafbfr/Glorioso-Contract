@@ -49,7 +49,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
 
   const labelStyle: React.CSSProperties = {
     fontFamily: "var(--font-label)", fontSize: 10,
-    fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+    fontWeight: 500, textTransform: 'uppercase' as const,
     color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
   }
 
@@ -68,8 +68,8 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
       }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{
-            fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500,
-            letterSpacing: '0.18em', textTransform: 'uppercase',
+            fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 400,
+            letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
             color: 'var(--action-inverse)', marginBottom: 4,
           }}>
             Registrar Pagamento

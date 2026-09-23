@@ -129,20 +129,20 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
           fontFamily: fontMono, fontSize: 10, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
         }}>
           <div style={{ opacity: 0.7 }}>{fmtDate(hv.iso)}{hv.t > todayT ? ' · projeção' : ''}</div>
-          <div style={{ fontWeight: 700 }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
+          <div style={{ fontWeight: 600 }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 11, color: 'var(--text-muted)' }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 11, color: 'var(--text-secondary)' }}>
         <span><span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--gold)', verticalAlign: 'middle', marginRight: 6 }} />Remuneração total/mês</span>
         <span><span style={{ display: 'inline-block', width: 16, height: 0, borderTop: '2px dashed var(--gold)', verticalAlign: 'middle', marginRight: 6, opacity: 0.6 }} />Projeção</span>
         <span style={{ fontFamily: fontMono, color: 'var(--ink-primary)' }}>Hoje: {fmtCurrencyShort(currentTotal, contract.salary_currency)}/mês</span>
       </div>
       <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-deep, var(--ink-secondary))' }}>
+        <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
           Total até o fim do contrato ({nMonths} {nMonths === 1 ? 'mês' : 'meses'})
         </span>
-        <span style={{ fontFamily: fontMono, fontSize: 18, fontWeight: 700, color: 'var(--ink-primary)' }}>
+        <span style={{ fontFamily: fontMono, fontSize: 18, fontWeight: 600, color: 'var(--ink-primary)' }}>
           {fmtCurrencyShort(totalAteFim, contract.salary_currency)}
         </span>
       </div>

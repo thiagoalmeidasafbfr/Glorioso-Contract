@@ -146,13 +146,13 @@ export default function PageDashboard() {
   }
 
   const sectionTitle: React.CSSProperties = {
-    fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 800,
-    letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-primary)', marginBottom: 14,
+    fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 400,
+    letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--ink-primary)', marginBottom: 14,
   }
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.40)', letterSpacing: '0.14em' }}>
+      <div style={{ padding: '40px', fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.40)' }}>
         CARREGANDO...
       </div>
     )
@@ -172,10 +172,10 @@ export default function PageDashboard() {
           { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#7a3f2c' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
           <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
-            <div style={{ fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
+            <div style={{ fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
               {kpi.label}
             </div>
-            <div style={{ fontFamily: "var(--font-label)", fontSize: 18, fontWeight: 700, color: kpi.color }}>
+            <div style={{ fontFamily: "var(--font-label)", fontSize: 18, fontWeight: 600, color: kpi.color }}>
               {kpi.value}
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function PageDashboard() {
               <thead>
                 <tr>
                   {['Moeda', 'A Receber', 'A Pagar', 'Líquido', 'Em R$'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '4px 8px', color: 'rgba(26,20,16,0.40)', fontSize: 10, fontWeight: 500, letterSpacing: '0.1em', borderBottom: '1px solid rgba(26,20,16,0.08)' }}>
+                    <th key={h} style={{ textAlign: 'left', padding: '4px 8px', color: 'rgba(26,20,16,0.40)', fontSize: 10, fontWeight: 500, borderBottom: '1px solid rgba(26,20,16,0.08)' }}>
                       {h}
                     </th>
                   ))}
@@ -254,7 +254,7 @@ export default function PageDashboard() {
                   const netBRL = toBRL(Math.abs(net), cur)
                   return (
                     <tr key={cur}>
-                      <td style={{ padding: '6px 8px', fontWeight: 700, color: 'var(--action-inverse)' }}>{cur}</td>
+                      <td style={{ padding: '6px 8px', fontWeight: 600, color: 'var(--action-inverse)' }}>{cur}</td>
                       <td style={{ padding: '6px 8px', color: '#059669' }}>{v.receivable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                       <td style={{ padding: '6px 8px', color: '#7a3f2c' }}>{v.payable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                       <td style={{ padding: '6px 8px', color: net >= 0 ? '#059669' : '#7a3f2c', fontWeight: 600 }}>

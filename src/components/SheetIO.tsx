@@ -103,10 +103,10 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
               flexShrink: 0,
             }}>
               <div>
-                <div style={{ fontFamily: fontMono, fontSize: 9, color: 'rgba(243,238,226,0.45)', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 6 }}>
+                <div style={{ fontFamily: fontMono, fontSize: 10, color: 'rgba(243,238,226,0.45)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', marginBottom: 6 }}>
                   Preview de Importação
                 </div>
-                <div style={{ fontFamily: fontDisplay, fontSize: '1.3rem', fontWeight: 700, color: '#f5f2ec', lineHeight: 1.1 }}>
+                <div style={{ fontFamily: fontDisplay, fontSize: '1.3rem', fontWeight: 600, color: '#f5f2ec', lineHeight: 1.1 }}>
                   {totalRows} {totalRows === 1 ? 'registro' : 'registros'} encontrados
                 </div>
               </div>
@@ -137,8 +137,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                         padding: '6px 14px',
                         border: 'none',
                         borderRadius: '6px 6px 0 0',
-                        fontFamily: fontMono, fontSize: 9,
-                        letterSpacing: '0.12em', textTransform: 'uppercase',
+                        fontFamily: fontMono, fontSize: 10,
                         background: active ? 'var(--cream-page, #f9f7f2)' : 'transparent',
                         color: active ? '#1a1410' : '#999',
                         cursor: 'pointer',
@@ -163,8 +162,8 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                           <th key={k} style={{
                             padding: '10px 8px 8px',
                             textAlign: 'left',
-                            fontFamily: fontMono, fontSize: 9,
-                            letterSpacing: '0.14em', textTransform: 'uppercase',
+                            fontFamily: fontMono, fontSize: 10,
+                            letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
                             color: 'var(--ink-secondary, #6b6258)',
                             background: 'var(--cream-page, #f9f7f2)',
                             borderBottom: '1px solid #e0dbd0',
@@ -196,7 +195,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                     </tbody>
                   </table>
                   {activeRows.length > 12 && (
-                    <div style={{ padding: '10px 8px', fontFamily: fontMono, fontSize: 9, color: '#aaa', letterSpacing: '0.10em' }}>
+                    <div style={{ padding: '10px 8px', fontFamily: fontMono, fontSize: 10, color: '#aaa' }}>
                       + {activeRows.length - 12} linhas adicionais não exibidas
                     </div>
                   )}

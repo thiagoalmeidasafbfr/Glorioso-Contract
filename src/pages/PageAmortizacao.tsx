@@ -273,7 +273,7 @@ export default function PageAmortizacao() {
     monthly: visible.reduce((s, r) => s + r.monthlyAmortBRL, 0),
   }), [visible])
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
@@ -282,7 +282,7 @@ export default function PageAmortizacao() {
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
+          <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
@@ -309,10 +309,10 @@ export default function PageAmortizacao() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando PTAX e cadastros…</td></tr>
+                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando PTAX e cadastros…</td></tr>
               )}
               {!loading && visible.length === 0 && (
-                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta cadastrado.</td></tr>
+                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta cadastrado.</td></tr>
               )}
               {!loading && visible.map(r => {
                 const isOpen = expandedId === r.athlete.id
@@ -321,10 +321,10 @@ export default function PageAmortizacao() {
                   <>
                     <tr key={r.athlete.id} style={{ background: 'var(--cream-card)', cursor: 'pointer' }}
                       onClick={() => setExpandedId(isOpen ? null : r.athlete.id)}>
-                      <td style={{ ...td, textAlign: 'center', fontFamily: mono, color: 'var(--text-muted)' }}>{isOpen ? '▾' : '▸'}</td>
-                      <td style={{ ...td, fontWeight: 700 }}>
+                      <td style={{ ...td, textAlign: 'center', fontFamily: mono, color: 'var(--text-secondary)' }}>{isOpen ? '▾' : '▸'}</td>
+                      <td style={{ ...td, fontWeight: 600 }}>
                         {r.athlete.short_name || r.athlete.full_name}
-                        <div style={{ fontSize: 10.5, fontFamily: mono, color: 'var(--text-muted)', fontWeight: 400 }}>
+                        <div style={{ fontSize: 11, fontFamily: mono, color: 'var(--text-secondary)', fontWeight: 400 }}>
                           {r.athlete.position ?? '—'} · {r.athlete.current_status}
                         </div>
                       </td>
@@ -332,11 +332,11 @@ export default function PageAmortizacao() {
                         {r.entryContractStart ? fmtDate(r.entryContractStart) : '—'}
                         {' → '}
                         {r.entryContractEnd ? fmtDate(r.entryContractEnd) : '—'}
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
                           {r.contractMonths ? `${r.contractMonths} m · restam ${r.monthsRemaining}` : 'sem contrato de entrada'}
                         </div>
                       </td>
-                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>
+                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>
                         {r.intangibleBRL > 0 ? fmtCurrencyShort(r.intangibleBRL, 'BRL') : '—'}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>
@@ -345,7 +345,7 @@ export default function PageAmortizacao() {
                       <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>
                         {r.accumAmortBRL > 0 ? fmtCurrencyShort(r.accumAmortBRL, 'BRL') : '—'}
                       </td>
-                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700, color: r.residualBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600, color: r.residualBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
                         {r.residualBRL > 0 ? fmtCurrencyShort(r.residualBRL, 'BRL') : '—'}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontSize: 11 }}>{fmtPercent(pct)}</td>
@@ -364,7 +364,7 @@ export default function PageAmortizacao() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-muted)', fontFamily: mono }}>
+      <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono }}>
         Amortização linear pelo prazo do contrato de entrada; PTAX corrente do BACEN quando disponível.
       </div>
     </div>
@@ -381,9 +381,9 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
   const result = useMemo(() => calcSale(sale, c, ptax), [sale, c, ptax])
 
   const sec: React.CSSProperties = { padding: '14px 18px', borderTop: '1px solid var(--divider-soft)' }
-  const secTitle: React.CSSProperties = { fontFamily: mono, fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--gold, #be8c4a)', marginBottom: 10 }
+  const secTitle: React.CSSProperties = { fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }
   const kvRow: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }
-  const label: React.CSSProperties = { fontFamily: mono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }
+  const label: React.CSSProperties = { fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }
   const val: React.CSSProperties = { fontFamily: mono, fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)' }
   const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: mono, color: 'var(--ink-primary)' }
 
@@ -393,7 +393,7 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
       <div style={sec}>
         <div style={secTitle}>1. Composição do intangível</div>
         {c.intangibleItems.length === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Sem cláusulas de Transfer Fee / Intermediação / Luvas cadastradas para o contrato de entrada.</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Sem cláusulas de Transfer Fee / Intermediação / Luvas cadastradas para o contrato de entrada.</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -412,9 +412,9 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
                 </tr>
               ))}
               <tr>
-                <td style={{ ...detTd, fontWeight: 700 }}>Total do intangível</td>
+                <td style={{ ...detTd, fontWeight: 600 }}>Total do intangível</td>
                 <td style={detTd} />
-                <td style={{ ...detTd, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>{fmtCurrencyShort(c.intangibleBRL, 'BRL')}</td>
+                <td style={{ ...detTd, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(c.intangibleBRL, 'BRL')}</td>
               </tr>
             </tbody>
           </table>
@@ -445,7 +445,7 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
           <div><div style={label}>Intermed. venda futura (BRL)</div><div style={val}>{fmtCurrencyShort(c.intermedFutureBRL, 'BRL')}</div></div>
         </div>
         {(c.sellOnPayees.length + c.solidariedadePayees.length + c.intermedFuturePayees.length + c.clubLiabilities.length + c.intermLiabilities.length) === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Nenhuma obrigação cadastrada para este atleta.</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Nenhuma obrigação cadastrada para este atleta.</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -518,7 +518,7 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
               <option value="BRL">BRL</option><option value="EUR">EUR</option>
               <option value="USD">USD</option><option value="GBP">GBP</option>
             </select>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3, fontFamily: mono }}>
+            <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 3, fontFamily: mono }}>
               PTAX: {ptaxRateFor(sale.saleCurrency, ptax).toLocaleString('pt-BR', { minimumFractionDigits: 4 })}
             </div>
           </div>
@@ -577,9 +577,9 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
 }
 
 const detTh: React.CSSProperties = {
-  padding: '7px 10px', fontSize: 9, fontFamily: mono, letterSpacing: '0.12em',
+  padding: '7px 10px', fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)',
   textTransform: 'uppercase', color: 'var(--text-muted)', textAlign: 'left',
-  borderBottom: '1px solid var(--divider-soft)', fontWeight: 600,
+  borderBottom: '1px solid var(--divider-soft)', fontWeight: 400,
 }
 const detTd: React.CSSProperties = {
   padding: '7px 10px', fontSize: 12, fontFamily: font, color: 'var(--ink-primary)',

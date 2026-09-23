@@ -97,11 +97,11 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
 
       {/* Resumo + ordenação */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ fontFamily: fontMono, fontSize: 11.5, color: 'var(--text-muted)' }}>
+        <div style={{ fontFamily: fontMono, fontSize: 12, color: 'var(--text-secondary)' }}>
           {filtered.length} {isClube ? 'clube(s)' : 'agente(s)'} · em aberto (aprox.) <strong style={{ color: 'var(--ink-primary)' }}>{fmtCurrencyShort(totalOpen, 'BRL')}</strong>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
+          <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
           {(['nome', 'valor'] as const).map(s => (
             <button key={s} onClick={() => setSort(s)}
               className={`btn btn-sm ${sort === s ? 'btn-primary' : 'btn-outline'}`}>
@@ -112,9 +112,9 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
       </div>
 
       {loading ? (
-        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>Carregando...</div>
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>Carregando...</div>
       ) : filtered.length === 0 ? (
-        <div className="card" style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontBody }}>
+        <div className="card" style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontBody }}>
           Nenhum {isClube ? 'clube' : 'agente'} cadastrado.
         </div>
       ) : (
@@ -127,21 +127,21 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
               <div style={{ width: 52, height: 52, borderRadius: isClube ? 10 : '50%', overflow: 'hidden', background: 'var(--cream-inset)', border: '1px solid var(--divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {e.logo
                   ? <img src={e.logo} alt="" style={{ width: '100%', height: '100%', objectFit: isClube ? 'contain' : 'cover' }} />
-                  : <span style={{ fontFamily: fontMono, fontSize: 15, fontWeight: 700, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
+                  : <span style={{ fontFamily: fontMono, fontSize: 15, fontWeight: 600, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
-                {e.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
+                {e.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 5 }}>
                   {e.count} obrigaç{e.count === 1 ? 'ão' : 'ões'}
                   {e.athletes > 0 && <> · {e.athletes} atleta{e.athletes === 1 ? '' : 's'}</>}
                 </div>
-                <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 700, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 600, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
                   {fmtCurrencyShort(e.openBRL, 'BRL')}
-                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-muted)' }}> em aberto</span>
+                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-secondary)' }}> em aberto</span>
                 </div>
               </div>
-              <Icon name="chevronRight" size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <Icon name="chevronRight" size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
             </div>
           ))}
         </div>

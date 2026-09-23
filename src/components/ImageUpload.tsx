@@ -52,7 +52,7 @@ export default function ImageUpload({
         {value ? (
           <img src={value} alt="" style={{ width: '100%', height: '100%', objectFit: rounded ? 'cover' : 'contain', objectPosition: 'center' }} />
         ) : (
-          <span style={{ fontFamily: fontMono, fontSize: size * 0.30, fontWeight: 600, color: 'var(--gold-deep)', letterSpacing: '0.04em' }}>
+          <span style={{ fontFamily: fontMono, fontSize: size * 0.30, fontWeight: 600, color: 'var(--gold-deep)' }}>
             {initials || '—'}
           </span>
         )}

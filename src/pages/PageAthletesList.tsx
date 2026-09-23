@@ -104,7 +104,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
     color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
   }
   const lbl: React.CSSProperties = {
-    fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.14em',
+    fontSize: 10, fontWeight: 400, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)',
     textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block',
   }
   const field = (label: string, key: string, type = 'text', opts?: string[]) => (
@@ -145,7 +145,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 28, width: 600, maxWidth: '96vw', border: '1px solid var(--divider)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font, marginBottom: 4 }}>Novo Atleta</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font, marginBottom: 4 }}>Novo Atleta</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {field('Nome Completo *', 'full_name')}
@@ -165,7 +165,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
             </select>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>
           Agentes são vinculados a cada transferência/vínculo, não ao atleta. Cadastre-os ao criar um vínculo.
         </div>
 
@@ -194,7 +194,7 @@ function AlertCount({ kind, count }: { kind: 'atraso' | 'breve'; count: number }
     <span title={atraso ? `${count} parcela(s) em atraso` : `${count} parcela(s) vencendo em breve`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: atraso ? 'var(--neg)' : 'var(--warn)' }}>
       <Icon name={atraso ? 'alert' : 'clock'} size={14} />
-      <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 700 }}>{count}</span>
+      <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{count}</span>
     </span>
   )
 }
@@ -260,10 +260,10 @@ export default function PageAthletesList() {
   }
 
   const th: React.CSSProperties = {
-    padding: '8px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase',
-    background: 'var(--tbl-head)', color: 'var(--ink-secondary)',
+    padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase',
+    background: 'var(--tbl-head)', color: 'var(--text-muted)',
     borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono,
-    letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1,
+    letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1,
     textAlign: 'center',
   }
   const td: React.CSSProperties = {
@@ -294,12 +294,12 @@ export default function PageAthletesList() {
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
             style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
@@ -356,7 +356,7 @@ export default function PageAthletesList() {
       </div>
 
       {importMsg && (
-        <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--gold-deep)', letterSpacing: '0.04em', marginBottom: 14 }}>
+        <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--gold-deep)', marginBottom: 14 }}>
           {importMsg}
         </div>
       )}
@@ -380,10 +380,10 @@ export default function PageAthletesList() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>
                   <div style={{ marginBottom: 12 }}>
                     {athletes.length === 0
                       ? 'Nenhum atleta cadastrado ainda.'
@@ -411,10 +411,10 @@ export default function PageAthletesList() {
                     </td>
                     <td style={{ ...td, width: 200, textAlign: 'left' }}>
                       <div style={{ fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.short_name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
                     </td>
                     <td style={{ ...td, width: 110 }}>
-                      <span style={{ padding: '3px 8px', borderRadius: 5, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.10em', textTransform: 'uppercase' }}>
+                      <span style={{ padding: '3px 8px', borderRadius: 5, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 500, fontFamily: fontMono }}>
                         {STATUS_LABELS[a.current_status]}
                       </span>
                     </td>
@@ -428,7 +428,7 @@ export default function PageAthletesList() {
                           <OwnershipBadge rights={rightsByAthlete[a.id]} />
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>—</span>
                       )}
                     </td>
                     <td style={{ ...td, width: 140, color: a.position ? 'var(--ink-primary)' : 'var(--text-muted)', fontSize: 12 }}>
@@ -441,7 +441,7 @@ export default function PageAthletesList() {
                       <div style={{ display: 'inline-flex', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
                         {stats.overdue > 0 && <AlertCount kind="atraso" count={stats.overdue} />}
                         {stats.soon > 0 && <AlertCount kind="breve" count={stats.soon} />}
-                        {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
+                        {stats.overdue === 0 && stats.soon === 0 && <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>—</span>}
                       </div>
                     </td>
                     <td style={{ ...td, width: 70 }}>
@@ -455,7 +455,7 @@ export default function PageAthletesList() {
         </div>
       </div>
 
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length !== 1 ? 'atletas' : 'atleta'}
       </div>
 

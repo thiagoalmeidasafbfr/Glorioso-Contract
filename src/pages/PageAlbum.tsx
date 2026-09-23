@@ -60,8 +60,8 @@ function StickerPhoto({ athlete }: { athlete: Athlete }) {
         />
       ) : (
         <span style={{
-          fontFamily: fontMono, fontSize: 52, fontWeight: 700,
-          color: 'var(--border-default)', letterSpacing: '0.04em',
+          fontFamily: fontMono, fontSize: 52, fontWeight: 600,
+          color: 'var(--border-default)',
         }}>
           {getInitials(athlete.short_name)}
         </span>
@@ -112,8 +112,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
         <span style={{
           position: 'absolute', top: 8, right: 8,
           padding: '3px 9px', borderRadius: 6, background: st.bg, color: st.fg,
-          fontSize: 9, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.10em',
-          textTransform: 'uppercase', boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+          fontSize: 10, fontWeight: 500, fontFamily: fontMono, boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
         }}>
           {STATUS_LABELS[athlete.current_status]}
         </span>
@@ -123,8 +122,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
             position: 'absolute', bottom: 8, left: 8,
             padding: '3px 9px', borderRadius: 6,
             background: 'rgba(26,20,16,0.82)', color: 'var(--gold-soft, #d9b678)',
-            fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em',
-            textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 500, fontFamily: fontMono,
           }}>
             {athlete.position}
           </span>
@@ -135,13 +133,13 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
       <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div>
           <div style={{
-            fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)',
+            fontFamily: font, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)',
             lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {athlete.short_name}
           </div>
           <div style={{
-            fontFamily: font, fontSize: 11, color: 'var(--text-muted)',
+            fontFamily: font, fontSize: 11, color: 'var(--text-secondary)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minHeight: 14,
           }}>
             {athlete.full_name !== athlete.short_name ? athlete.full_name : ' '}
@@ -166,15 +164,15 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <OwnershipBar rights={rights} compact showLegend={false} />
             {bfr !== null && (
-              <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-                Botafogo detém <span style={{ color: 'var(--gold-deep, #8a6a2f)', fontWeight: 700 }}>
+              <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>
+                Botafogo detém <span style={{ color: 'var(--gold-deep, #8a6a2f)', fontWeight: 600 }}>
                   {Number.isInteger(bfr) ? bfr : bfr.toFixed(1).replace('.', ',')}%
                 </span>
               </div>
             )}
           </div>
         ) : (
-          <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+          <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>
             Titularidade não cadastrada
           </div>
         )}
@@ -186,7 +184,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
 const pill: React.CSSProperties = {
   padding: '2px 8px', borderRadius: 20, fontSize: 10, fontFamily: fontMono,
   background: 'var(--cream-inset)', border: '1px solid var(--divider-soft)',
-  color: 'var(--text-secondary)', letterSpacing: '0.03em', whiteSpace: 'nowrap',
+  color: 'var(--text-secondary)', whiteSpace: 'nowrap',
 }
 
 // Ordem de exibição das posições (agrupamento do álbum).
@@ -278,7 +276,7 @@ export default function PageAlbum() {
   }, [filtered])
 
   const selWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column' }
-  const selLabel: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
+  const selLabel: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
   const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
 
   return (
@@ -337,11 +335,11 @@ export default function PageAlbum() {
 
       {/* Figurinhas agrupadas por posição */}
       {loading ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12, padding: 60 }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12, padding: 60 }}>
           Carregando...
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: font, fontSize: 13, padding: 60 }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: font, fontSize: 13, padding: 60 }}>
           Nenhum atleta encontrado com os filtros atuais.
         </div>
       ) : (
@@ -351,8 +349,8 @@ export default function PageAlbum() {
               {/* Cabeçalho da posição */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--action-inverse)', flexShrink: 0 }} />
-                <h2 style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
-                <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em' }}>
+                <h2 style={{ fontFamily: font, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
+                <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-secondary)' }}>
                   {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}
                 </span>
                 <div style={{ flex: 1, height: 1, background: 'var(--divider-soft)' }} />
@@ -373,7 +371,7 @@ export default function PageAlbum() {
         </div>
       )}
 
-      <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+      <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length !== 1 ? 'figurinhas' : 'figurinha'} · {groups.length} {groups.length === 1 ? 'posição' : 'posições'}
       </div>
     </div>

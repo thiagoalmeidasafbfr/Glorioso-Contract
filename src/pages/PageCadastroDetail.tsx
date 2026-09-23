@@ -149,15 +149,15 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   }, [rows])
   const openBRL = rows.reduce((s, r) => isOpenStatus(r.status) ? s + r.amount * (APPROX_BRL[r.currency] ?? 1) : s, 0)
 
-  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>CARREGANDO...</div>
+  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>CARREGANDO...</div>
   if (notFound) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: fontBody }}>
-      <div style={{ color: 'var(--text-muted)' }}>Registro não encontrado.</div>
+      <div style={{ color: 'var(--text-secondary)' }}>Registro não encontrado.</div>
       <button onClick={() => navigate(basePath)} className="btn btn-outline" style={{ marginTop: 16 }}>← Voltar</button>
     </div>
   )
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: '0.14em', textAlign: 'left', whiteSpace: 'nowrap' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textAlign: 'left', whiteSpace: 'nowrap' }
   const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: fontBody, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   const editInst = editInstId ? installments.find(i => i.id === editInstId) ?? null : null
@@ -204,8 +204,8 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title={name} subtitle={isClube ? 'Clube · Botafogo SAF' : 'Agente · Botafogo SAF'} />
-      <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody }}>
-        <Link to={basePath} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{isClube ? 'Clubes' : 'Agentes'}</Link>
+      <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>
+        <Link to={basePath} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{isClube ? 'Clubes' : 'Agentes'}</Link>
         <span style={{ margin: '0 6px' }}>/</span>
         <span style={{ color: 'var(--ink-primary)' }}>{name}</span>
       </div>
@@ -230,7 +230,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h1 style={{ fontFamily: fontBody, fontSize: 23, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
+                <h1 style={{ fontFamily: fontBody, fontSize: 23, fontWeight: 600, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
                 {canEdit && <IconButton icon="edit" label="Editar cadastro" onClick={() => setEditing(true)} />}
                 {canEdit && <IconButton icon="trash" label={`Excluir ${isClube ? 'clube' : 'agente'}`} tone="danger" onClick={handleDeleteEntity} />}
               </div>
@@ -268,10 +268,10 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
             const pay = dir === 'A_PAGAR'
             return (
               <div key={k} style={{ padding: '10px 14px', borderRadius: 9, background: pay ? 'var(--neg-tint)' : 'var(--pos-tint)', border: `1px solid ${pay ? 'rgba(138,53,36,0.22)' : 'rgba(47,107,58,0.22)'}` }}>
-                <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: pay ? 'var(--neg)' : 'var(--pos)', marginBottom: 4 }}>
+                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: pay ? 'var(--neg)' : 'var(--pos)', marginBottom: 4 }}>
                   {pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)
                 </div>
-                <div style={{ fontSize: 17, fontWeight: 700, fontFamily: fontMono, color: pay ? 'var(--neg)' : 'var(--pos)' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
+                <div style={{ fontSize: 17, fontWeight: 600, fontFamily: fontMono, color: pay ? 'var(--neg)' : 'var(--pos)' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
               </div>
             )
           })}
@@ -283,7 +283,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
         <div className="card" style={{ marginBottom: 16, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
             <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-primary)', fontFamily: fontBody }}>Vínculos com {isClube ? 'este clube' : 'este agente'}</span>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>{entityContracts.length} contrato(s)</span>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>{entityContracts.length} contrato(s)</span>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -319,11 +319,11 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-primary)', fontFamily: fontBody }}>Obrigações vinculadas</span>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11.5, fontFamily: fontBody, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, fontFamily: fontBody, color: 'var(--text-secondary)', cursor: 'pointer' }}>
               <input type="checkbox" checked={onlyOpen} onChange={e => setOnlyOpen(e.target.checked)} />
               Só em aberto
             </label>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>{visible.length} linha(s)</span>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>{visible.length} linha(s)</span>
           </div>
         </div>
         <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--divider-soft)', background: 'var(--bg-subtle)' }}>
@@ -345,7 +345,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
             </thead>
             <tbody>
               {visible.length === 0 && (
-                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
+                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>
                   Nenhuma obrigação vinculada a este {isClube ? 'clube' : 'agente'}.
                   {canEdit && <> Use <strong>Nova obrigação</strong> para lançar valores e parcelas.</>}
                 </td></tr>
@@ -363,7 +363,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                     </td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>
                       {l.natureza}
-                      {parseRJ(l.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(parseRJ(l.notes)!.filedAt)}`}>RJ</span>}
+                      {parseRJ(l.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(parseRJ(l.notes)!.filedAt)}`}>RJ</span>}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 330 }}>
                       {l.clauseId
@@ -443,8 +443,8 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ textAlign: 'right' }}>
-      <div style={{ fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 19, fontWeight: 700, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{value}</div>
+      <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 19, fontWeight: 600, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{value}</div>
     </div>
   )
 }
@@ -452,9 +452,8 @@ function Kpi({ label, value }: { label: string; value: string }) {
 function Badge({ label, tone }: { label: string; tone: 'pos' | 'neg' | 'neutral' }) {
   return (
     <span style={{
-      display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600,
-      fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase',
-      background: tone === 'pos' ? 'var(--pos-tint)' : tone === 'neg' ? 'var(--neg-tint)' : 'var(--cream-inset)',
+      display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 500,
+      fontFamily: fontMono, background: tone === 'pos' ? 'var(--pos-tint)' : tone === 'neg' ? 'var(--neg-tint)' : 'var(--cream-inset)',
       color: tone === 'pos' ? 'var(--pos)' : tone === 'neg' ? 'var(--neg)' : 'var(--ink-secondary)',
     }}>{label}</span>
   )
@@ -526,7 +525,7 @@ function NewContractFromEntityModal({ entityName, kind, athletes, onClose }: {
           {tipos.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
         </select>
       </div>
-      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: fontBody }}>
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>
         No cadastro do contrato você já define os valores e o <strong>fluxo de parcelas</strong> — a contraparte vem preenchida.
       </div>
     </ModalShell>

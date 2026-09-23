@@ -121,7 +121,7 @@ export default function Layout({ children }: Props) {
             <div style={{ minWidth: 0 }}>
               <img src="/logo-saf.png" alt="Botafogo SAF" style={{ height: 30, objectFit: 'contain' }}
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              <div style={{ fontFamily: fontMono, fontSize: 8.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.38)', marginTop: 10 }}>
+              <div style={{ fontFamily: fontMono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.38)', marginTop: 10 }}>
                 Gestão Contratual
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function Layout({ children }: Props) {
           {NAV_SECTIONS.map((section, i) => (
             <div key={i} style={{ marginBottom: 14 }}>
               {section.label && !collapsed && (
-                <div style={{ fontFamily: fontMono, fontSize: 8.5, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.34)', padding: '4px 22px 8px' }}>
+                <div style={{ fontFamily: fontMono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.34)', padding: '4px 22px 8px' }}>
                   {section.label}
                 </div>
               )}
@@ -160,7 +160,7 @@ export default function Layout({ children }: Props) {
         {!collapsed && (
           <div style={{ padding: '14px 22px 18px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <div style={{ fontFamily: fontMono, fontSize: 8.5, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.32)', marginBottom: 6 }}>Moeda</div>
+              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.32)', marginBottom: 6 }}>Moeda</div>
               <select value={currency} onChange={e => setCurrency(e.target.value as AppCurrency)}
                 style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: 'rgba(243,238,226,0.82)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 7, padding: '6px 10px', fontSize: 12, fontFamily: fontMono, cursor: 'pointer' }}>
                 {CURRENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value} style={{ background: '#1a1410' }}>{opt.label}</option>)}
@@ -176,7 +176,7 @@ export default function Layout({ children }: Props) {
                       flex: 1, background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
                       border: `1px solid ${active ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.08)'}`,
                       color: active ? '#ffffff' : 'rgba(243,238,226,0.40)',
-                      borderRadius: 6, padding: '4px 0', fontFamily: fontMono, fontSize: 9, letterSpacing: '0.10em', cursor: 'pointer',
+                      borderRadius: 6, padding: '4px 0', fontFamily: fontMono, fontSize: 10, cursor: 'pointer',
                     }}>{l}</button>
                 )
               })}
@@ -184,14 +184,14 @@ export default function Layout({ children }: Props) {
 
             {USE_SUPABASE && profile && (
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
-                <div style={{ fontFamily: fontMono, fontSize: 8.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.42)', marginBottom: 3 }}>
+                <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.42)', marginBottom: 3 }}>
                   {profile.role === 'master' ? 'Master' : 'Jurídico'}
                 </div>
                 <div style={{ fontFamily: fontBody, fontSize: 11, color: 'rgba(243,238,226,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 8 }}>
                   {profile.email}
                 </div>
                 <button onClick={() => signOut()}
-                  style={{ width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '6px 8px', fontFamily: fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(243,238,226,0.52)', cursor: 'pointer' }}>
+                  style={{ width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '6px 8px', fontFamily: fontMono, fontSize: 10, color: 'rgba(243,238,226,0.52)', cursor: 'pointer' }}>
                   Sair
                 </button>
               </div>

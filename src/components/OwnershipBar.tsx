@@ -41,7 +41,7 @@ export default function OwnershipBar({ rights, compact = false, showLegend = tru
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
             {!compact && r.percentage >= 12 && (
-              <span style={{ fontSize: 9, fontFamily: fontMono, fontWeight: 700, color: '#fff' }}>
+              <span style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: '#fff' }}>
                 {fmtPct(r.percentage)}
               </span>
             )}
@@ -59,13 +59,13 @@ export default function OwnershipBar({ rights, compact = false, showLegend = tru
       {showLegend && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: compact ? 8 : 14, marginTop: compact ? 5 : 8, alignItems: 'center' }}>
           {sorted.map(r => r.percentage > 0 && (
-            <span key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: compact ? 10 : 11, color: 'var(--text-muted)' }}>
+            <span key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: compact ? 10 : 11, color: 'var(--text-secondary)' }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: HOLDER_TYPE_COLORS[r.holder_type], display: 'inline-block', flexShrink: 0 }} />
               {HOLDER_TYPE_LABELS[r.holder_type]}{r.holder_name && r.holder_type !== 'BFR' ? ` (${r.holder_name})` : ''} {fmtPct(r.percentage)}
             </span>
           ))}
           <span style={{
-            marginLeft: 'auto', fontSize: compact ? 10 : 11, fontFamily: fontMono, fontWeight: 700,
+            marginLeft: 'auto', fontSize: compact ? 10 : 11, fontFamily: fontMono, fontWeight: 600,
             color: valid ? 'var(--pos)' : 'var(--neg)',
             background: valid ? 'var(--pos-tint)' : 'var(--neg-tint)',
             padding: '1px 8px', borderRadius: 5, whiteSpace: 'nowrap',
@@ -85,7 +85,7 @@ export function OwnershipBadge({ rights }: { rights: EconomicRight[] }) {
   return (
     <span title={`Soma dos direitos = ${fmtPct(sumOwnership(rights))} (deveria ser 100%)`}
       style={{
-        fontSize: 9, fontFamily: fontMono, fontWeight: 700, color: 'var(--neg)',
+        fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: 'var(--neg)',
         background: 'var(--neg-tint)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap',
       }}>
       ⚠ {fmtPct(sumOwnership(rights))}

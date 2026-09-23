@@ -43,11 +43,11 @@ const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
 
 function Badge({ status }: { status: string }) {
   const s = PAYMENT_STATUS_STYLE[status] ?? { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)' }
-  return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em', textTransform: 'uppercase', background: s.bg, color: s.fg }}>{status.replace(/_/g, ' ')}</span>
+  return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 500, fontFamily: fontMono, background: s.bg, color: s.fg }}>{status.replace(/_/g, ' ')}</span>
 }
 
 const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 7, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
-const lbl: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+const lbl: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
 
 export default function PageClauseDetail() {
   const { clauseId } = useParams<{ clauseId: string }>()
@@ -95,10 +95,10 @@ export default function PageClauseDetail() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
-  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>CARREGANDO...</div>
+  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>CARREGANDO...</div>
   if (notFound || !clause) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
-      <div style={{ color: 'var(--text-muted)' }}>Obrigação não encontrada.</div>
+      <div style={{ color: 'var(--text-secondary)' }}>Obrigação não encontrada.</div>
       <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 16 }}>← Voltar</button>
     </div>
   )
@@ -181,7 +181,7 @@ export default function PageClauseDetail() {
     <div style={{ padding: '28px 32px', maxWidth: 920, margin: '0 auto' }}>
       <PageHero title={clause.description || CLAUSE_TYPE_LABELS[clause.clause_type]} subtitle={`${CLAUSE_TYPE_LABELS[clause.clause_type]} · ${athlete?.short_name ?? athlete?.full_name ?? 'Atleta'}`} />
 
-      <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-muted)', marginBottom: 18, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)', marginBottom: 18, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
         <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
         <span>/</span>
         {athlete && <><Link to={`/atletas/${athlete.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete.short_name ?? athlete.full_name}</Link><span>/</span></>}
@@ -191,7 +191,7 @@ export default function PageClauseDetail() {
       {/* Dados da obrigação */}
       <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', fontWeight: 700 }}>Dados da obrigação</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>Dados da obrigação</div>
           {canEdit && (
             <IconRow>
               <IconButton
@@ -208,7 +208,7 @@ export default function PageClauseDetail() {
 
         {parseRJ(clause.notes) && (
           <div style={{ marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)', fontFamily: fontMono, fontSize: 11, color: 'var(--ink-primary)' }}>
-            <strong style={{ letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--warn)' }}>Recuperação Judicial</strong>
+            <strong style={{ letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--warn)' }}>Recuperação Judicial</strong>
             {' — '}obrigação inteira incluída no processo em {fmtDate(parseRJ(clause.notes)!.filedAt)}.
           </div>
         )}
@@ -223,8 +223,8 @@ export default function PageClauseDetail() {
             <dd style={dd}>
               {contract
                 ? <RefLink to={`/atletas/${contract.athlete_id}?tab=historico`} title="Abrir vínculo">{CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}{contract.start_date ? ` · ${fmtDate(contract.start_date)}` : ''}</RefLink>
-                : <span style={{ color: 'var(--text-muted)' }}>Nenhuma</span>}
-              {parent && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>↳ vínculo pai: {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}</div>}
+                : <span style={{ color: 'var(--text-secondary)' }}>Nenhuma</span>}
+              {parent && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>↳ vínculo pai: {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}</div>}
             </dd>
             <dt style={dt}>Natureza</dt><dd style={dd}>{CLAUSE_TYPE_LABELS[clause.clause_type]}</dd>
             <dt style={dt}>Credor</dt><dd style={dd}>{partyNode(clause.creditor_party)}</dd>
@@ -240,7 +240,7 @@ export default function PageClauseDetail() {
       <div className="card" style={{ padding: '20px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div>
-            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-secondary)', fontWeight: 700 }}>Fluxo de pagamento</div>
+            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>Fluxo de pagamento</div>
             <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--text-secondary)', marginTop: 4 }}>
               {installments.length > 0 ? `${installments.length} parcela${installments.length !== 1 ? 's' : ''} · ${fmtCurrencyShort(paidParc, clause.currency)} pago de ${fmtCurrencyShort(total, clause.currency)}` : `Sem parcelas · total ${fmtCurrencyShort(total, clause.currency)}`}
             </div>
@@ -269,12 +269,12 @@ export default function PageClauseDetail() {
               {selectedRJ.size > 0 && (
                 <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 6, background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn)' }}>
                   <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{selectedRJ.size} parcela(s)</span>
-                  <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Protocolo:</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Protocolo:</span>
                   <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ padding: '3px 6px', border: '1px solid var(--divider-strong)', borderRadius: 4, fontFamily: fontMono, fontSize: 11 }} />
                   <button onClick={bulkMarkParcRJ} className="btn btn-outline" style={{ padding: '3px 10px', borderColor: 'var(--warn)', color: 'var(--warn)', fontSize: 11 }}>
                     Incluir na RJ
                   </button>
-                  <button onClick={() => setSelectedRJ(new Set())} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 10 }}>limpar</button>
+                  <button onClick={() => setSelectedRJ(new Set())} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 10 }}>limpar</button>
                 </span>
               )}
               {parcRJ.length > 0 && (
@@ -288,7 +288,7 @@ export default function PageClauseDetail() {
         )}
 
         {installments.length === 0 ? (
-          <div style={{ fontFamily: font, fontSize: 13, color: 'var(--text-muted)', padding: '10px 0' }}>
+          <div style={{ fontFamily: font, fontSize: 13, color: 'var(--text-secondary)', padding: '10px 0' }}>
             Nenhuma parcela cadastrada. Use "{installments.length ? 'Editar' : 'Gerar'} fluxo" para lançar as parcelas (ex.: dividir {fmtCurrencyShort(total, clause.currency)} em vencimentos).
           </div>
         ) : (
@@ -310,14 +310,14 @@ export default function PageClauseDetail() {
                     <span style={{ textAlign: 'center' }}>
                       {!rj && !paid && !cancelled
                         ? <input type="checkbox" checked={selectedRJ.has(p.id)} onChange={() => toggleParcSel(p.id)} />
-                        : <span style={{ color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 10 }}>—</span>}
+                        : <span style={{ color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 10 }}>—</span>}
                     </span>
                   )}
-                  <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{p.installment_number}</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)', textAlign: 'right' }}>{p.installment_number}</span>
                   <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>
                     {fmtCurrencyShort(p.original_value, p.currency)}
-                    {rj && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.10em' }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
+                    {rj && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
                   </span>
                   <Badge status={p.payment_status} />
                   {canEdit && (
@@ -350,7 +350,7 @@ export default function PageClauseDetail() {
   )
 }
 
-const dt: React.CSSProperties = { color: 'var(--text-muted)', fontWeight: 500 }
+const dt: React.CSSProperties = { color: 'var(--text-secondary)', fontWeight: 500 }
 const dd: React.CSSProperties = { margin: 0, color: 'var(--ink-primary)' }
 
 // ── Formulário de edição dos dados da cláusula ───────────────────────────────
@@ -437,7 +437,7 @@ function FlowEditor({ clause, installments, onSaved }: { clause: Clause; install
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} defaultFirst={clause.due_date ?? ''} seedRows={4} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>Salvar substitui as parcelas atuais. Total: <strong>{fmtCurrencyShort(total, currency)}</strong>.</span>
+        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Salvar substitui as parcelas atuais. Total: <strong>{fmtCurrencyShort(total, currency)}</strong>.</span>
         <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
       </div>
     </div>

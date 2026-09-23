@@ -26,8 +26,8 @@ export default function PageHero({ title, subtitle, children }: Props) {
         <div style={{
           fontFamily: "var(--font-label)",
           fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: '0.2em',
+          fontWeight: 400,
+          letterSpacing: 'var(--text-overline-tracking)',
           textTransform: 'uppercase',
           color: 'rgba(243,240,232,0.66)',
           marginBottom: 8,
@@ -41,7 +41,7 @@ export default function PageHero({ title, subtitle, children }: Props) {
         <h1 style={{
           fontFamily: "var(--font-display)",
           fontSize: 'clamp(1.6rem, 3.2vw, 2.35rem)',
-          fontWeight: 700,
+          fontWeight: 600,
           lineHeight: 1.06,
           letterSpacing: '-0.028em',
           color: '#f7f3ea',

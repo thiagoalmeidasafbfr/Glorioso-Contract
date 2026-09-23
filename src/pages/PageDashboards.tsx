@@ -234,7 +234,7 @@ export default function PageDashboards() {
       <PageHero title="Painel executivo" subtitle="Controle financeiro · Botafogo SAF" />
 
       {loading ? (
-        <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-muted)', letterSpacing: '0.1em', padding: '40px 4px' }}>CARREGANDO…</div>
+        <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-secondary)', padding: '40px 4px' }}>CARREGANDO…</div>
       ) : (
         <>
           {/* ── Big numbers editoriais ── */}
@@ -246,16 +246,16 @@ export default function PageDashboards() {
                 <div key={t.label} className="stat-tile" style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 0, minHeight: 132 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: t.dot, flexShrink: 0, boxShadow: `0 0 0 3px ${hexA(t.dot, 0.12)}` }} />
-                    <span style={{ fontFamily: mono, fontSize: 9.5, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>{t.label}</span>
+                    <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{t.label}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, lineHeight: 1 }}>
-                    <span style={{ fontFamily: display, fontSize: 15, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.01em' }}>{p.sym}</span>
-                    <span style={{ fontFamily: display, fontSize: 'clamp(1.7rem, 2.4vw, 2.3rem)', fontWeight: 700, letterSpacing: '-0.02em', color: alarm ? C.pay : 'var(--ink-primary)' }}>{p.num}</span>
-                    {p.suffix && <span style={{ fontFamily: display, fontSize: 'clamp(1rem, 1.4vw, 1.3rem)', fontWeight: 700, color: 'var(--text-faint)' }}>{p.suffix}</span>}
+                    <span style={{ fontFamily: display, fontSize: 15, fontWeight: 600, color: 'var(--text-faint)' }}>{p.sym}</span>
+                    <span style={{ fontFamily: display, fontSize: 'clamp(1.7rem, 2.4vw, 2.3rem)', fontWeight: 600, letterSpacing: '-0.02em', color: alarm ? C.pay : 'var(--ink-primary)' }}>{p.num}</span>
+                    {p.suffix && <span style={{ fontFamily: display, fontSize: 'clamp(1rem, 1.4vw, 1.3rem)', fontWeight: 600, color: 'var(--text-faint)' }}>{p.suffix}</span>}
                   </div>
                   <div style={{ marginTop: 'auto', paddingTop: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
                     <span style={{ height: 1, width: 16, background: 'var(--divider-strong)' }} />
-                    <span style={{ fontFamily: mono, fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>{t.sub}</span>
+                    <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>{t.sub}</span>
                   </div>
                 </div>
               )
@@ -352,10 +352,10 @@ export default function PageDashboards() {
               {aging.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6, marginTop: 8 }}>
                   {aging.map((b, i) => (
-                    <span key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: mono, fontSize: 10.5, color: 'var(--ink-secondary)' }}>
+                    <span key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: mono, fontSize: 11, color: 'var(--ink-secondary)' }}>
                       <span style={{ width: 10, height: 10, borderRadius: 2, background: AGING_COLORS[i % AGING_COLORS.length] }} />
                       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</span>
-                      <strong style={{ marginLeft: 'auto', fontWeight: 700 }}>{fmtCurrencyShort(b.total, 'BRL')}</strong>
+                      <strong style={{ marginLeft: 'auto', fontWeight: 600 }}>{fmtCurrencyShort(b.total, 'BRL')}</strong>
                     </span>
                   ))}
                 </div>
@@ -455,11 +455,11 @@ function Panel({ eyebrow, title, subtitle, tall, children }: { eyebrow?: string;
         {eyebrow && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
             <span style={{ height: 1, width: 16, background: 'var(--gold)', opacity: 0.65 }} />
-            <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gold)' }}>{eyebrow}</span>
+            <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{eyebrow}</span>
           </div>
         )}
-        <div style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', letterSpacing: '-0.01em' }}>{title}</div>
-        {subtitle && <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.03em' }}>{subtitle}</div>}
+        <div style={{ fontFamily: font, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', letterSpacing: '-0.01em' }}>{title}</div>
+        {subtitle && <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)', marginTop: 3 }}>{subtitle}</div>}
       </div>
       {children}
     </div>
@@ -482,7 +482,7 @@ function ChartLegend({ items }: { items: { name: string; color: string; dash?: b
 }
 
 function Empty({ msg = 'Sem dados.' }: { msg?: string }) {
-  return <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: mono, fontSize: 12, color: 'var(--text-muted)' }}>{msg}</div>
+  return <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: mono, fontSize: 12, color: 'var(--text-secondary)' }}>{msg}</div>
 }
 
 // Ranking horizontal reutilizável.
@@ -531,18 +531,18 @@ function BreakdownTip({ active, payload, label }: any) {
     return (
       <div style={{ marginTop: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.75 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', opacity: 0.75 }}>
             <svg width="14" height="6" aria-hidden><line x1="0" y1="3" x2="14" y2="3" stroke={color} strokeWidth="2" strokeLinecap="round" /></svg>
             {title}
           </span>
-          <strong style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: '#f3eee2' }}>{fmtCurrencyShort(total, 'BRL')}</strong>
+          <strong style={{ fontFamily: display, fontSize: 14, fontWeight: 600, color: '#f3eee2' }}>{fmtCurrencyShort(total, 'BRL')}</strong>
         </div>
         {rows.length === 0 ? (
           <div style={{ opacity: 0.4, fontSize: 10 }}>—</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {rows.map(([nat, v]) => (
-              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10.5, opacity: 0.82 }}>
+              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, opacity: 0.82 }}>
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nat}</span>
                 <span style={{ fontWeight: 600, opacity: 0.95 }}>{fmtCurrencyShort(v, 'BRL')}</span>
               </div>
@@ -554,7 +554,7 @@ function BreakdownTip({ active, payload, label }: any) {
   }
   return (
     <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 240, maxWidth: 320 }}>
-      <div style={{ opacity: 0.55, marginBottom: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 9 }}>{label}</div>
+      <div style={{ opacity: 0.55, marginBottom: 6, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', fontSize: 10 }}>{label}</div>
       {raw && section('A pagar', raw.pagar, raw.pagarBy, seriesColor('pagar'))}
       {raw && <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0 0' }} />}
       {raw && section('A receber', raw.receber, raw.receberBy, seriesColor('receber'))}
@@ -572,11 +572,11 @@ function MoneyTip({ active, payload, label, leadKey }: any) {
   const rows = payload.filter((p: any) => !leadKey || p.dataKey !== leadKey)
   return (
     <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 158 }}>
-      <div style={{ opacity: 0.55, marginBottom: 7, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 9 }}>{label}</div>
+      <div style={{ opacity: 0.55, marginBottom: 7, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', fontSize: 10 }}>{label}</div>
       {lead && (
         <div style={{ marginBottom: rows.length ? 8 : 0, paddingBottom: rows.length ? 8 : 0, borderBottom: rows.length ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
-          <div style={{ opacity: 0.6, fontSize: 8.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{lead.name}</div>
-          <div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: '#f3eee2' }}>{fmtCurrencyShort(Number(lead.value), 'BRL')}</div>
+          <div style={{ opacity: 0.6, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', marginBottom: 3 }}>{lead.name}</div>
+          <div style={{ fontFamily: display, fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', color: '#f3eee2' }}>{fmtCurrencyShort(Number(lead.value), 'BRL')}</div>
         </div>
       )}
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -603,18 +603,18 @@ function PieTip({ active, payload }: any) {
   const rows = byNat ? Object.entries(byNat).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0) : []
   return (
     <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 220, maxWidth: 300 }}>
-      <div style={{ opacity: 0.7, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
+      <div style={{ opacity: 0.7, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-        <div style={{ fontFamily: display, fontSize: 18, fontWeight: 700 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
+        <div style={{ fontFamily: display, fontSize: 18, fontWeight: 600 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
         {pct > 0 && <div style={{ opacity: 0.6 }}>{pct.toFixed(1)}%</div>}
       </div>
       {rows.length > 0 && (
         <>
           <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0' }} />
-          <div style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, marginBottom: 4 }}>Por natureza</div>
+          <div style={{ fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', opacity: 0.55, marginBottom: 4 }}>Por natureza</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {rows.map(([nat, v]) => (
-              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 10.5, opacity: 0.85 }}>
+              <div key={nat} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, opacity: 0.85 }}>
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nat}</span>
                 <span style={{ fontWeight: 600 }}>{fmtCurrencyShort(v, 'BRL')}</span>
               </div>
