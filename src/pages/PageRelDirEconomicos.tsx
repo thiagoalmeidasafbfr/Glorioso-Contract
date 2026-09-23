@@ -8,12 +8,13 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchAthletes, fetchAllEconomicRights } from '../lib/athleteQueries'
 import type { Athlete, EconomicRight, HolderType } from '../types/athlete-system'
-import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
+import { HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS } from '../types/athlete-system'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
 import PageHero from '../components/PageHero'
 import RefLink from '../components/RefLink'
 import { Icon, IconButton } from '../components/Icon'
 import RowActions from '../components/RowActions'
+import { badgeStyle } from '../lib/tones'
 
 interface HolderRow { holderType: HolderType; holderName: string; percentage: number }
 interface AthleteRow {
@@ -24,18 +25,15 @@ interface AthleteRow {
   bfrPct: number
 }
 
-const STATUS_STYLE: Record<AthleteRow['status'], { bg: string; fg: string; label: string }> = {
-  OK:             { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)', label: '—' },
-  PARCIAL:        { bg: 'var(--warn-tint)',   fg: 'var(--warn)',          label: 'Parcial' },
-  SEM_LANCAMENTO: { bg: 'var(--cream-inset)', fg: 'var(--text-muted)',    label: 'Sem lançamento' },
+const STATUS_STYLE: Record<AthleteRow['status'], { label: string }> = {
+  OK:             { label: '—' },
+  PARCIAL:        { label: 'Parcial' },
+  SEM_LANCAMENTO: { label: 'Sem lançamento' },
 }
 
-const HOLDER_COLOR: Record<HolderType, string> = {
-  BFR:      'var(--pos)',
-  CLUBE:    'var(--info)',
-  AGENTE:   '#7a6244',
-  ATLETA:   'var(--warn)',
-  TERCEIRO: 'var(--text-muted)',
+// Detentor = série de dados do DS (ponto colorido); o texto fica neutro.
+function HolderDot({ type }: { type: HolderType }) {
+  return <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 'var(--radius-circle)', background: HOLDER_TYPE_COLORS[type], flex: 'none', display: 'inline-block' }} />
 }
 
 export default function PageRelDirEconomicos() {
@@ -117,25 +115,25 @@ export default function PageRelDirEconomicos() {
   const expandAll   = () => setExpanded(new Set(filtered.filter(r => r.holders.length > 0).map(r => r.athlete.id)))
   const collapseAll = () => setExpanded(new Set())
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 500, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: '0.16em', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Direitos Econômicos" subtitle="Consolidado de titularidade por atleta · Botafogo, parceiros, agentes e terceiros">
-        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={14} /> Exportar</button>
+      <PageHero title="Direitos Econômicos" section="Relatórios" subtitle="Consolidado de titularidade por atleta · Botafogo, parceiros, agentes e terceiros">
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta ou detentor..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-label)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
+            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['PARCIAL', 'SEM_LANCAMENTO'] as const).map(s => (
               <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
@@ -161,8 +159,8 @@ export default function PageRelDirEconomicos() {
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta.</td></tr>}
+              {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta.</td></tr>}
               {filtered.map(r => {
                 const isOpen = expanded.has(r.athlete.id)
                 const canExpand = r.holders.length > 0
@@ -182,12 +180,12 @@ export default function PageRelDirEconomicos() {
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {r.holders.slice(0, 3).map((h, i) => (
-                            <span key={i} style={{ fontSize: 11, fontFamily: 'var(--font-label)', padding: '2px 8px', borderRadius: 5, background: 'var(--cream-inset)', color: HOLDER_COLOR[h.holderType], border: '1px solid var(--divider-soft)' }}>
-                              {h.holderName} · {h.percentage.toFixed(0)}%
+                            <span key={i} style={{ ...badgeStyle('outline'), height: 22, fontSize: 11 }}>
+                              <HolderDot type={h.holderType} /> {h.holderName} · {h.percentage.toFixed(0)}%
                             </span>
                           ))}
-                          {r.holders.length > 3 && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>+{r.holders.length - 3}</span>}
-                          {r.holders.length === 0 && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>—</span>}
+                          {r.holders.length > 3 && <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>+{r.holders.length - 3}</span>}
+                          {r.holders.length === 0 && <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}>—</span>}
                         </div>
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
@@ -200,10 +198,10 @@ export default function PageRelDirEconomicos() {
                       <tr key={`${r.athlete.id}-${i}`} style={{ background: 'var(--cream-page)' }}>
                         <td style={td} />
                         <td style={{ ...td, paddingLeft: 40, color: 'var(--text-secondary)' }}>
-                          <span style={{ fontSize: 11, fontFamily: 'var(--font-label)', color: HOLDER_COLOR[h.holderType], letterSpacing: '0.10em', textTransform: 'uppercase', marginRight: 8 }}>{HOLDER_TYPE_LABELS[h.holderType]}</span>
+                          <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 8 }}><HolderDot type={h.holderType} />{HOLDER_TYPE_LABELS[h.holderType]}</span>
                           {h.holderName}
                         </td>
-                        <td style={{ ...tdNum, fontWeight: 600, color: HOLDER_COLOR[h.holderType] }}>{h.percentage.toFixed(2)}%</td>
+                        <td style={{ ...tdNum, fontWeight: 500 }}>{h.percentage.toFixed(2)}%</td>
                         <td colSpan={2} style={td} />
                       </tr>
                     ))}
@@ -214,7 +212,7 @@ export default function PageRelDirEconomicos() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>
+      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>
         {filtered.length} atleta(s){stats.parcial > 0 ? ` · ${stats.parcial} parcial(is)` : ''}
       </div>
     </div>

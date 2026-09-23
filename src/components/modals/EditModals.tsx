@@ -22,6 +22,7 @@ import { Icon } from '../Icon'
 import NumberInput from '../NumberInput'
 import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { modalInput, modalLabel } from './styles'
+import { humanizeEnum } from '../../lib/tones'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -38,13 +39,12 @@ export function ModalShell({ title, subtitle, width = 560, onClose, children, fo
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
   return (
-    <div role="dialog" aria-modal="true" aria-label={title}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(16,13,10,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+    <div role="dialog" aria-modal="true" aria-label={title} className="modal-backdrop"
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 24, width, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="modal-panel" style={{ padding: 'var(--space-6)', width, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-primary)', fontFamily: font }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 3 }}>{subtitle}</div>}
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{title}</div>
+          {subtitle && <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>{subtitle}</div>}
         </div>
         {children}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>{footer}</div>
@@ -94,7 +94,7 @@ export function InstallmentEditModal({ inst, onClose, onSaved }: {
       footer={<>
         <button onClick={remove} className="btn btn-danger" style={{ marginRight: 'auto' }} disabled={saving}>Excluir parcela</button>
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </>}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
@@ -102,7 +102,7 @@ export function InstallmentEditModal({ inst, onClose, onSaved }: {
         <div><label style={modalLabel}>Moeda</label><select style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         <div><label style={modalLabel}>Status</label>
           <select style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
-            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
         <div><label style={modalLabel}>Data pagamento</label><input style={modalInput} type="date" value={f.payment_date} onChange={e => set('payment_date', e.target.value)} /></div>
@@ -167,7 +167,7 @@ export function ClauseEditModal({ clause, onClose, onSaved, allowDelete = true }
       footer={<>
         {allowDelete && <button onClick={remove} className="btn btn-danger" style={{ marginRight: 'auto' }} disabled={saving}>Excluir</button>}
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </>}>
       <div><label style={modalLabel}>Natureza</label>
         <select style={modalInput} value={f.clause_type} onChange={e => set('clause_type', e.target.value)}>
@@ -184,12 +184,12 @@ export function ClauseEditModal({ clause, onClose, onSaved, allowDelete = true }
         <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         <div><label style={modalLabel}>Status pagamento</label>
           <select style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
-            {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
         <div><label style={modalLabel}>Atingimento</label>
           <select style={modalInput} value={f.achievement_status} onChange={e => set('achievement_status', e.target.value)}>
-            {['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
       </div>
@@ -244,14 +244,14 @@ export function ClauseFlowModal({ clause, onClose, onSaved }: {
     <ModalShell title="Fluxo de parcelas" width={700} onClose={onClose}
       subtitle={`${CLAUSE_TYPE_LABELS[clause.clause_type]} · ${clause.description}`}
       footer={<>
-        <span style={{ marginRight: 'auto', fontSize: 11, color: 'var(--text-muted)', fontFamily: font }}>
+        <span style={{ marginRight: 'auto', fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>
           Salvar substitui as parcelas atuais. Total: <strong>{fmtCurrencyShort(total, currency)}</strong>.
         </span>
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
         <button onClick={save} className="btn btn-primary" disabled={saving || loading}>{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
       </>}>
       {loading
-        ? <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontFamily: mono, fontSize: 12 }}>Carregando parcelas…</div>
+        ? <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: mono, fontSize: 12 }}>Carregando parcelas…</div>
         : <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines}
             defaultFirst={clause.due_date ?? ''} seedRows={4} />}
     </ModalShell>
@@ -355,19 +355,19 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
         <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         <div><label style={modalLabel}>Status</label>
           <select style={modalInput} value={f.status} onChange={e => set('status', e.target.value)}>
-            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
       </div>
       <div><label style={modalLabel}>Condição</label><input style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
       <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 8, background: 'var(--info-tint)', border: '1px solid rgba(31,86,115,0.22)' }}>
-        <span style={{ fontSize: 11.5, color: 'var(--ink-secondary)', fontFamily: font, flex: 1, minWidth: 220 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--surface-info-soft)' }}>
+        <span style={{ fontSize: 12, color: 'var(--ink-secondary)', fontFamily: font, flex: 1, minWidth: 220 }}>
           Precisa de parcelas? {PROMOTE_HINT}
         </span>
         <button onClick={generateFlow} className="btn btn-outline" disabled={saving}
-          style={{ borderColor: 'rgba(31,86,115,0.35)', color: 'var(--info)', whiteSpace: 'nowrap' }}>
-          <Icon name="split" size={14} /> Gerar parcelas
+          style={{ color: 'var(--text-info)', whiteSpace: 'nowrap' }}>
+          <Icon name="split" size={16} /> Gerar parcelas
         </button>
       </div>
     </ModalShell>

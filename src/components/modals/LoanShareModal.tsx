@@ -88,9 +88,9 @@ export default function LoanShareModal({
   }
 
   const cell = (label: string, value: string, hi?: boolean) => (
-    <div style={{ padding: '10px 14px', borderRadius: 9, background: hi ? 'var(--pos-tint)' : 'var(--bg-subtle)', border: `1px solid ${hi ? 'rgba(47,107,58,0.25)' : 'var(--divider)'}` }}>
-      <div style={{ fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: hi ? 'var(--pos)' : 'var(--text-muted)', marginBottom: 5 }}>{label}</div>
-      <div style={{ fontSize: 17, fontWeight: 700, fontFamily: mono, color: hi ? 'var(--pos)' : 'var(--ink-primary)' }}>{value}</div>
+    <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-control)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line)' : 'transparent'}` }}>
+      <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, fontFamily: mono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
   )
 
@@ -131,7 +131,7 @@ export default function LoanShareModal({
           <label style={modalLabel}>Clube arca com (% do CLT)</label>
           <NumberInput style={modalInput} decimals={2} grouping={false} value={salaryPct}
             onChange={v => setSalaryPct(v)} placeholder="0" />
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>
             CLT integral {fmtCurrencyShort(fullSalary, currency)}/mês
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function LoanShareModal({
           <label style={modalLabel}>Clube arca com (% da imagem)</label>
           <NumberInput style={modalInput} decimals={2} grouping={false} value={imagePct}
             onChange={v => setImagePct(v)} placeholder="0" />
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: mono, marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>
             Imagem integral {fmtCurrencyShort(fullImage, currency)}/mês
           </div>
         </div>
@@ -153,9 +153,9 @@ export default function LoanShareModal({
         {cell(`${loanContract.counterpart_club || 'Clube'} — total/mês`, fmtCurrencyShort(clubTotal, currency))}
       </div>
 
-      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: loanContract.end_date ? 'pointer' : 'default', opacity: loanContract.end_date ? 1 : 0.6 }}>
+      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: loanContract.end_date ? 'pointer' : 'not-allowed', color: loanContract.end_date ? undefined : 'var(--text-disabled)' }}>
         <input type="checkbox" checked={restoreAtEnd && !!loanContract.end_date} disabled={!loanContract.end_date}
-          onChange={e => setRestoreAtEnd(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+          onChange={e => setRestoreAtEnd(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
         <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
           {loanContract.end_date
             ? <>Voltar à remuneração integral após <strong>{fmtDate(loanContract.end_date)}</strong> (fim do empréstimo).</>
@@ -164,7 +164,7 @@ export default function LoanShareModal({
       </label>
 
       {existing.length > 0 && (
-        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: font, padding: '9px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, padding: '9px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
           Rateio já aplicado: {existing.length} degrau(s) na linha do tempo de remuneração
           (aba <strong>Gatilhos</strong>). Atualizar recalcula o fluxo; remover devolve o valor integral.
         </div>

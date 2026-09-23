@@ -14,10 +14,6 @@ interface Props {
   onImport?: (sheets: Record<string, Record<string, string>[]>) => void
 }
 
-const fontMono = "var(--font-label)"
-const fontBody = "var(--font-body)"
-const fontDisplay = "var(--font-display)"
-
 export default function SheetIO({ exportSheets, exportFilename, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<{
@@ -60,12 +56,12 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
     <>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={handleExport} title="Exportar dados como XLSX" className="btn btn-dark">
-          <Icon name="download" size={13} /> Exportar
+          <Icon name="download" size={16} /> Exportar
         </button>
         {onImport && (
           <button onClick={() => fileRef.current?.click()} disabled={parsing}
             title="Importar dados de um arquivo XLSX" className="btn btn-outline">
-            <Icon name="upload" size={13} /> {parsing ? 'Lendo…' : 'Importar'}
+            <Icon name="upload" size={16} /> {parsing ? 'Lendo…' : 'Importar'}
           </button>
         )}
         <input
@@ -79,71 +75,44 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
 
       {/* ── Preview modal ── */}
       {preview && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(26,20,16,0.80)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: 24,
-        }}>
-          <div style={{
-            background: 'var(--cream-page, #f9f7f2)',
-            borderRadius: 14,
-            width: '100%', maxWidth: 960,
-            maxHeight: '88vh',
-            display: 'flex', flexDirection: 'column',
-            overflow: 'hidden',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.40)',
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Preview de importação">
+          <div className="modal-panel" style={{
+            width: '100%', maxWidth: 960, maxHeight: '88vh',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
 
             {/* Header */}
             <div style={{
-              background: '#1a1410',
-              padding: '18px 28px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: 'var(--space-5) var(--space-6) var(--space-4)',
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-4)',
               flexShrink: 0,
             }}>
               <div>
-                <div style={{ fontFamily: fontMono, fontSize: 9, color: 'rgba(243,238,226,0.45)', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 6 }}>
-                  Preview de Importação
-                </div>
-                <div style={{ fontFamily: fontDisplay, fontSize: '1.3rem', fontWeight: 700, color: '#f5f2ec', lineHeight: 1.1 }}>
+                <div className="eyebrow" style={{ marginBottom: 6 }}>Preview de importação</div>
+                <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 'var(--text-title-line)', letterSpacing: '-.01em', color: 'var(--text-primary)' }}>
                   {totalRows} {totalRows === 1 ? 'registro' : 'registros'} encontrados
                 </div>
               </div>
-              <button
-                onClick={() => setPreview(null)}
-                style={{ background: 'none', border: 'none', color: 'rgba(243,238,226,0.45)', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: 4 }}
-              >
-                ✕
+              <button type="button" className="icon-btn md" onClick={() => setPreview(null)} title="Fechar" aria-label="Fechar">
+                <Icon name="x" size={20} />
               </button>
             </div>
 
-            {/* Sheet tabs */}
+            {/* Sheet tabs — SegmentedTabs do DS */}
             {Object.keys(preview.sheets).length > 1 && (
-              <div style={{
-                display: 'flex', gap: 4,
-                padding: '10px 28px 0',
-                background: '#f0ede6',
-                borderBottom: '1px solid #e0dbd0',
-                flexShrink: 0, flexWrap: 'wrap',
+              <div className="seg-tabs" role="tablist" style={{
+                padding: '0 var(--space-6)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0,
               }}>
                 {Object.keys(preview.sheets).map(name => {
                   const active = preview.active === name
                   return (
                     <button
                       key={name}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      className="seg-tab"
                       onClick={() => setPreview(p => p ? { ...p, active: name } : p)}
-                      style={{
-                        padding: '6px 14px',
-                        border: 'none',
-                        borderRadius: '6px 6px 0 0',
-                        fontFamily: fontMono, fontSize: 9,
-                        letterSpacing: '0.12em', textTransform: 'uppercase',
-                        background: active ? 'var(--cream-page, #f9f7f2)' : 'transparent',
-                        color: active ? '#1a1410' : '#999',
-                        cursor: 'pointer',
-                        fontWeight: active ? 600 : 400,
-                      }}
                     >
                       {name} ({preview.sheets[name].length})
                     </button>
@@ -153,23 +122,14 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
             )}
 
             {/* Table */}
-            <div style={{ flex: 1, overflow: 'auto', padding: '0 28px' }}>
+            <div style={{ flex: 1, overflow: 'auto', padding: '0 var(--space-6)' }}>
               {activeRows.length > 0 ? (
                 <>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                       <tr>
                         {activeKeys.map(k => (
-                          <th key={k} style={{
-                            padding: '10px 8px 8px',
-                            textAlign: 'left',
-                            fontFamily: fontMono, fontSize: 9,
-                            letterSpacing: '0.14em', textTransform: 'uppercase',
-                            color: 'var(--ink-secondary, #6b6258)',
-                            background: 'var(--cream-page, #f9f7f2)',
-                            borderBottom: '1px solid #e0dbd0',
-                            whiteSpace: 'nowrap',
-                          }}>
+                          <th key={k} style={{ padding: '10px 8px 8px' }}>
                             {k}
                           </th>
                         ))}
@@ -180,10 +140,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                         <tr key={i}>
                           {activeKeys.map(k => (
                             <td key={k} style={{
-                              padding: '6px 8px',
-                              fontFamily: fontBody, fontSize: 11,
-                              color: 'var(--ink-primary, #1a1410)',
-                              borderBottom: '1px solid #ede9e1',
+                              padding: '8px',
                               whiteSpace: 'nowrap',
                               maxWidth: 220,
                               overflow: 'hidden', textOverflow: 'ellipsis',
@@ -196,13 +153,13 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                     </tbody>
                   </table>
                   {activeRows.length > 12 && (
-                    <div style={{ padding: '10px 8px', fontFamily: fontMono, fontSize: 9, color: '#aaa', letterSpacing: '0.10em' }}>
+                    <div style={{ padding: '10px 8px', fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)' }}>
                       + {activeRows.length - 12} linhas adicionais não exibidas
                     </div>
                   )}
                 </>
               ) : (
-                <div style={{ padding: '32px 0', textAlign: 'center', fontFamily: fontBody, fontSize: 13, color: '#aaa' }}>
+                <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 'var(--text-body-size)', color: 'var(--text-secondary)' }}>
                   Nenhum dado encontrado nesta aba
                 </div>
               )}
@@ -210,17 +167,16 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
 
             {/* Footer */}
             <div style={{
-              padding: '16px 28px',
-              borderTop: '1px solid #e0dbd0',
-              display: 'flex', gap: 10, justifyContent: 'flex-end',
+              padding: 'var(--space-4) var(--space-6)',
+              borderTop: '1px solid var(--border-subtle)',
+              display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end',
               flexShrink: 0,
-              background: '#f0ede6',
             }}>
-              <button onClick={() => setPreview(null)} className="btn btn-ghost">
+              <button type="button" onClick={() => setPreview(null)} className="btn btn-outline">
                 Cancelar
               </button>
-              <button onClick={handleConfirm} className="btn btn-primary">
-                Confirmar Importação
+              <button type="button" onClick={handleConfirm} className="btn btn-primary">
+                Confirmar importação
               </button>
             </div>
           </div>

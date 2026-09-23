@@ -89,34 +89,33 @@ const validLines = (lines: FlowLine[]) => lines
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--cream-card)',
-  border: '1px solid var(--input-border)', borderRadius: 7,
+  border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)',
   padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)',
   fontFamily: "var(--font-body)", boxSizing: 'border-box',
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-label)", fontSize: 9,
-  fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-  color: 'var(--text-muted)', display: 'block', marginBottom: 4,
+  fontFamily: "var(--font-label)", fontSize: 10,
+  fontWeight: 600, textTransform: 'uppercase' as const,
+  color: 'var(--text-secondary)', display: 'block', marginBottom: 4,
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'var(--cream-card)', border: '1px solid var(--divider)',
-  borderRadius: 12, padding: 20, boxShadow: 'var(--shadow-hair)',
+  background: 'var(--cream-card)', borderRadius: 'var(--radius-card)', padding: 20, boxShadow: 'var(--shadow-hair)',
 }
 
 const sectionTitle: React.CSSProperties = {
-  fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 800,
-  letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-primary)',
+  fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 400,
+  letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--ink-primary)',
 }
 
 const hintStyle: React.CSSProperties = {
-  fontFamily: "var(--font-body)", fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5,
+  fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5,
 }
 
 const noteBox: React.CSSProperties = {
-  padding: '9px 13px', borderRadius: 8, background: 'var(--bg-subtle)',
-  border: '1px solid var(--divider)', fontFamily: "var(--font-label)",
+  padding: '9px 13px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)',
+  fontFamily: "var(--font-label)",
   fontSize: 11, color: 'var(--ink-secondary)',
 }
 
@@ -457,15 +456,9 @@ export default function PageAthleteNewContract() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
-      <PageHero title="Novo Contrato" subtitle={athlete?.full_name ?? 'Novo contrato · Botafogo SAF'} />
-      {/* Breadcrumb */}
-      <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
-        <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
-        <span>/</span>
-        <Link to={`/atletas/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete?.short_name ?? '...'}</Link>
-        <span>/</span>
-        <span style={{ color: 'var(--ink-primary)' }}>Novo Contrato</span>
-      </div>
+      <PageHero title="Novo contrato"
+        crumbs={[{ label: 'Atletas', to: '/atletas', icon: 'athletes' }, { label: athlete?.short_name ?? '…', to: `/atletas/${id}` }]}
+        caption={athlete?.full_name} />
 
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 26, flexWrap: 'wrap' }}>
@@ -475,18 +468,18 @@ export default function PageAthleteNewContract() {
           const done = step > s
           return (
             <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-              {i > 0 && <div style={{ width: 34, height: 1, background: done ? 'var(--accent)' : 'var(--divider-strong)' }} />}
+              {i > 0 && <div style={{ width: 34, height: 1, background: done ? 'var(--action-inverse)' : 'var(--divider-strong)' }} />}
               <button onClick={() => done && setStep(s)} disabled={!done && !active}
                 style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', padding: '0 4px', cursor: done ? 'pointer' : 'default' }}>
                 <span style={{
-                  width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: active ? 'var(--accent)' : done ? 'var(--accent-tint2)' : 'var(--cream-inset)',
-                  fontSize: 11.5, fontWeight: 700, fontFamily: "var(--font-label)",
-                  color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
+                  width: 26, height: 26, borderRadius: 'var(--radius-circle)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'var(--cream-inset)',
+                  fontSize: 12, fontWeight: 600, fontFamily: "var(--font-label)",
+                  color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
-                  {done ? <Icon name="check" size={13} /> : s}
+                  {done ? <Icon name="check" size={16} /> : s}
                 </span>
-                <span style={{ fontFamily: "var(--font-body)", fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 600 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
                   {labels[i]}
                 </span>
               </button>
@@ -513,7 +506,7 @@ export default function PageAthleteNewContract() {
               </div>
               {relatedContract && (
                 <div style={{ ...noteBox, marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="link" size={13} /> vinculado a: {contractLabel(relatedContract)}
+                  <Icon name="link" size={16} /> vinculado a: {contractLabel(relatedContract)}
                 </div>
               )}
             </div>
@@ -616,7 +609,7 @@ export default function PageAthleteNewContract() {
               </div>
               <button type="button" onClick={generateTransferLines} className="btn btn-outline"
                 disabled={!transferTotalField} style={{ justifyContent: 'center', whiteSpace: 'nowrap' }}>
-                <Icon name="flow" size={14} /> Gerar parcelas
+                <Icon name="flow" size={16} /> Gerar parcelas
               </button>
             </div>
 
@@ -673,16 +666,16 @@ export default function PageAthleteNewContract() {
                   const base = total || (contract.base_salary ?? 0)
                   if (base > 0) { setContractField('base_salary', base / 2); setContractField('image_value', base / 2) }
                 }}
-                className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 11.5 }}>
+                className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 12 }}>
                 Dividir 50% CLT / 50% imagem
               </button>
-              <span style={{ fontFamily: "var(--font-label)", fontSize: 11.5, color: 'var(--ink-secondary)' }}>
+              <span style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--ink-secondary)' }}>
                 Total: {(((contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0))).toLocaleString('pt-BR')} {contract.salary_currency}/mês
               </span>
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
-                <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
                   <strong>Gerar o fluxo mensal automaticamente</strong> pela vigência do contrato — uma parcela por mês, sem lançar mês a mês.
                   Salário CLT vence <strong>dia {SALARY_DUE_DAY}</strong> e imagem vence <strong>dia {IMAGE_DUE_DAY}</strong> do mês subsequente.
@@ -716,7 +709,7 @@ export default function PageAthleteNewContract() {
               <div style={{ ...sectionTitle, marginBottom: 10 }}>PTAX do contrato</div>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                 <input type="checkbox" checked={fixPtax} onChange={e => setFixPtax(e.target.checked)}
-                  style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                  style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
                   <strong>PTAX fixada</strong> — trava a taxa de câmbio deste contrato para evitar distorções cambiais.
                   Quando marcada, todos os valores em moeda estrangeira geradas por este vínculo (transferência,
@@ -745,7 +738,7 @@ export default function PageAthleteNewContract() {
                 {isTransferContractType(contract.type) ? 'Agentes desta transação' : 'Agentes / intermediários'}
               </div>
               <button type="button" onClick={addAgent} className="btn btn-outline">
-                <Icon name="plus" size={14} /> Adicionar agente
+                <Icon name="plus" size={16} /> Adicionar agente
               </button>
             </div>
 
@@ -760,9 +753,9 @@ export default function PageAthleteNewContract() {
                 const agValid = validLines(ag.lines)
                 const agTotal = agValid.length ? agValid.reduce((s, l) => s + l.value, 0) : (ag.amount ? parseFloat(ag.amount) : 0)
                 return (
-                  <div key={i} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--divider)', background: 'var(--bg-subtle)' }}>
+                  <div key={i} style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontFamily: "var(--font-label)", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
+                      <span style={{ fontFamily: "var(--font-label)", fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
                       <IconButton icon="trash" label={`Remover agente ${i + 1}`} tone="danger" onClick={() => removeAgent(i)} />
                     </div>
                     <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
@@ -803,11 +796,11 @@ export default function PageAthleteNewContract() {
                       )}
                     </div>
 
-                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--accent-tint)', border: '1px solid var(--divider)' }}>
+                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--action-ghost-hover)', border: '1px solid var(--divider)' }}>
                       <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                         <input type="checkbox" checked={ag.futureSale}
                           onChange={e => setAgent(i, { futureSale: e.target.checked, amount: e.target.checked ? '' : ag.amount, lines: e.target.checked ? [] : ag.lines, flowOpen: e.target.checked ? false : ag.flowOpen })}
-                          style={{ marginTop: 2, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                          style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                         <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
                           <strong>Comissão sobre a venda futura deste atleta.</strong> Igual ao mecanismo de Sell-On do clube:
                           se este atleta for vendido, o agente recebe a % informada sobre o valor (ou mais-valia) da transferência.
@@ -820,7 +813,7 @@ export default function PageAthleteNewContract() {
                     {!ag.futureSale && <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--divider)' }}>
                       {!ag.flowOpen ? (
                         <button type="button" onClick={() => setAgent(i, { flowOpen: true })} className="btn btn-outline">
-                          <Icon name="flow" size={14} /> Parcelar esta comissão
+                          <Icon name="flow" size={16} /> Parcelar esta comissão
                         </button>
                       ) : (
                         <>
@@ -862,15 +855,15 @@ export default function PageAthleteNewContract() {
       {step === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {conflict && (
-            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
-              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
-                <strong>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
+            <div role="alert" style={{ background: 'var(--surface-warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-primary)' }}>
+                <strong style={{ color: 'var(--text-warning)' }}>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
               </div>
             </div>
           )}
 
           {clauses.length === 0 && (
-            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-muted)', fontFamily: "var(--font-body)", fontSize: 13 }}>
+            <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-secondary)', fontFamily: "var(--font-body)", fontSize: 13 }}>
               Nenhuma cláusula extra. Salário, imagem, transferência e agentes já foram tratados no passo anterior —
               use este passo para sell-on, bônus, solidariedade, rescisória e afins.
             </div>
@@ -946,7 +939,7 @@ export default function PageAthleteNewContract() {
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
                   {!cl.flowOpen ? (
                     <button type="button" onClick={() => setClauseRow(idx, { flowOpen: true })} className="btn btn-outline">
-                      <Icon name="flow" size={14} /> Parcelar esta cláusula
+                      <Icon name="flow" size={16} /> Parcelar esta cláusula
                     </button>
                   ) : (
                     <>
@@ -971,13 +964,13 @@ export default function PageAthleteNewContract() {
           <button onClick={addClause}
             style={{
               background: 'transparent', border: '1px dashed var(--divider-strong)',
-              borderRadius: 10, padding: '12px 0', width: '100%',
+              borderRadius: 'var(--radius-md)', padding: '12px 0', width: '100%',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600,
               color: 'var(--ink-primary)', cursor: 'pointer',
             }}
           >
-            <Icon name="plus" size={15} /> Adicionar cláusula
+            <Icon name="plus" size={16} /> Adicionar cláusula
           </button>
         </div>
       )}
@@ -986,9 +979,9 @@ export default function PageAthleteNewContract() {
       {step === 3 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {conflict && (
-            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
-              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
-                <strong>Conflito Sell-On detectado.</strong> Revise antes de salvar.
+            <div role="alert" style={{ background: 'var(--surface-warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-primary)' }}>
+                <strong style={{ color: 'var(--text-warning)' }}>Conflito Sell-On detectado.</strong> Revise antes de salvar.
               </div>
             </div>
           )}
@@ -1049,7 +1042,7 @@ export default function PageAthleteNewContract() {
           )}
 
           {error && (
-            <div style={{ background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--neg)' }}>
+            <div role="alert" style={{ background: 'var(--surface-negative-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--text-negative)' }}>
               {error}
             </div>
           )}
@@ -1060,7 +1053,7 @@ export default function PageAthleteNewContract() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 26, gap: 10, flexWrap: 'wrap' }}>
         <div>
           {step > 1 && (
-            <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline">← Voltar</button>
+            <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline"><Icon name="chevronLeft" size={16} /> Voltar</button>
           )}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -1071,7 +1064,7 @@ export default function PageAthleteNewContract() {
             </button>
           ) : (
             <button onClick={handleSave} disabled={saving} className="btn btn-primary">
-              {saving ? 'Salvando...' : 'Salvar vínculo'}
+              {saving ? 'Salvando…' : 'Salvar vínculo'}
             </button>
           )}
         </div>
@@ -1080,5 +1073,5 @@ export default function PageAthleteNewContract() {
   )
 }
 
-const dtStyle: React.CSSProperties = { color: 'var(--text-muted)', fontWeight: 500 }
+const dtStyle: React.CSSProperties = { color: 'var(--text-secondary)', fontWeight: 500 }
 const ddStyle: React.CSSProperties = { margin: 0, color: 'var(--ink-primary)' }

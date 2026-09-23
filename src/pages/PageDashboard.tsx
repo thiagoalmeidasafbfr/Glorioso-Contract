@@ -7,6 +7,8 @@ import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO } from '../lib/forma
 import { isOwnershipValid } from '../lib/ownership'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
+import Badge from '../components/Badge'
+import { Icon } from '../components/Icon'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -138,82 +140,90 @@ export default function PageDashboard() {
     return clause.athlete_id
   }
 
-  // ── Styles ────────────────────────────────────────────────────────────
+  // ── Styles (MetricCard do Glorioso Finance DS) ───────────────────────
 
-  const cardStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.55)', border: '1px solid var(--accent-tint2)',
-    borderRadius: 10, padding: 20,
-  }
-
-  const sectionTitle: React.CSSProperties = {
-    fontFamily: "var(--font-label)", fontSize: 11, fontWeight: 800,
-    letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-primary)', marginBottom: 14,
-  }
+  const cardStyle: React.CSSProperties = { padding: 'var(--gutter-card)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }
+  const eyebrowRow: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.40)', letterSpacing: '0.14em' }}>
-        CARREGANDO...
+      <div className="eyebrow" style={{ padding: 'var(--space-8) var(--gutter-screen)' }}>
+        Carregando…
       </div>
     )
   }
+
+  const kpis: { label: string; value: string; caption: string; color?: string; inverse?: boolean }[] = [
+    { label: 'A receber', value: fmtMiC(totalReceivable), caption: 'Botafogo como credor', color: 'var(--text-positive)' },
+    { label: 'A pagar', value: fmtMiC(totalPayable), caption: 'Botafogo como devedor' },
+    { label: 'Saldo líquido', value: fmtMiC(totalNet), caption: totalNet >= 0 ? 'A receber acima do a pagar' : 'A pagar acima do a receber', inverse: true },
+    { label: 'Alertas ativos', value: `${redAlerts.length} · ${yellowAlerts.length}`, caption: 'críticos · atenção', color: redAlerts.length > 0 ? 'var(--text-negative)' : undefined },
+    { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, caption: inconsistentOwnership > 0 ? 'atletas com soma inconsistente' : 'todas as somas conferem', color: inconsistentOwnership > 0 ? 'var(--text-negative)' : 'var(--text-positive)' },
+  ]
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Visão Geral" subtitle="Dashboard · Botafogo SAF" />
 
       {/* KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
-        {[
-          { label: 'A Receber', value: fmtMiC(totalReceivable), color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.20)' },
-          { label: 'A Pagar', value: fmtMiC(totalPayable), color: '#7a3f2c', bg: 'rgba(122,63,44,0.07)', border: 'rgba(122,63,44,0.20)' },
-          { label: 'Saldo Líquido', value: fmtMiC(totalNet), color: totalNet >= 0 ? '#059669' : '#7a3f2c', bg: 'var(--accent-tint)', border: 'var(--divider-strong)' },
-          { label: 'Alertas Ativos', value: `${redAlerts.length} críticos · ${yellowAlerts.length} atenção`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'var(--accent-tint2)' },
-          { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#7a3f2c' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.20)' : 'rgba(5,150,105,0.20)' },
-        ].map(kpi => (
-          <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
-            <div style={{ fontFamily: "var(--font-label)", fontSize: 9, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
-              {kpi.label}
-            </div>
-            <div style={{ fontFamily: "var(--font-label)", fontSize: 18, fontWeight: 700, color: kpi.color }}>
-              {kpi.value}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
+        {kpis.map(kpi => (
+          <div key={kpi.label} className={kpi.inverse ? 'card card-inverse' : 'card'} style={{ ...cardStyle, gap: 'var(--space-3)' }}>
+            <div className="eyebrow" style={kpi.inverse ? { color: 'var(--gray-500)' } : undefined}>{kpi.label}</div>
+            <div>
+              <div style={{
+                fontSize: 'var(--text-h2-size)', lineHeight: 'var(--text-h2-line)', fontWeight: 500,
+                letterSpacing: 'var(--text-h2-tracking)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+                color: kpi.inverse ? 'var(--text-inverse)' : (kpi.color ?? 'var(--text-primary)'),
+              }}>
+                {kpi.value}
+              </div>
+              <div style={{ marginTop: 2, fontSize: 'var(--text-body-sm-size)', color: kpi.inverse ? 'var(--gray-500)' : 'var(--text-secondary)' }}>{kpi.caption}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Main grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 'var(--space-5)', alignItems: 'start' }}>
 
         {/* Left column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
           {/* Monthly chart */}
-          <div style={cardStyle}>
-            <div style={sectionTitle}>Fluxo por Mês (próximos 6 meses) — R$</div>
+          <section className="card" style={cardStyle}>
+            <div style={eyebrowRow}>
+              <span className="eyebrow">Fluxo por mês · próximos 6 meses (R$)</span>
+              <Legend items={[{ label: 'A receber', color: 'var(--chart-1)' }, { label: 'A pagar', color: 'var(--chart-2)' }]} />
+            </div>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,20,16,0.08)" />
-                <XAxis dataKey="label" tick={{ fontFamily: "var(--font-label)", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontFamily: "var(--font-label)", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false}
-                  tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barGap={4}>
+                <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                <XAxis dataKey="label" tick={{ fontFamily: 'var(--font-core)', fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontFamily: 'var(--font-core)', fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={44}
+                  tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1).replace('.', ',')}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
                 <Tooltip
-                  contentStyle={{ fontFamily: "var(--font-label)", fontSize: 11, background: '#1a1410', border: 'none', borderRadius: 7, color: '#f3ede2' }}
-                  formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString('pt-BR')}`, name === 'receivable' ? 'A Receber' : 'A Pagar']}
+                  cursor={{ fill: 'var(--surface-sunken)' }}
+                  contentStyle={CHART_TOOLTIP}
+                  labelStyle={{ color: 'var(--text-secondary)', fontSize: 11, marginBottom: 4 }}
+                  formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString('pt-BR')}`, name === 'receivable' ? 'A receber' : 'A pagar']}
                 />
-                <Bar dataKey="receivable" fill="#059669" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="payable" fill="#7a3f2c" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="receivable" fill="var(--chart-1)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                <Bar dataKey="payable" fill="var(--chart-2)" radius={[6, 6, 0, 0]} maxBarSize={28} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </section>
 
           {/* Due in 60 days */}
-          <div style={cardStyle}>
-            <div style={sectionTitle}>Vencimentos — próximos 60 dias ({dueClauses.length})</div>
+          <section className="card" style={cardStyle}>
+            <div style={eyebrowRow}>
+              <span className="eyebrow">Vencimentos · próximos 60 dias</span>
+              <Badge tone="neutral">{dueClauses.length}</Badge>
+            </div>
             {overdueClauses.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(122,63,44,0.70)', marginBottom: 6 }}>
-                  EM ATRASO ({overdueClauses.length})
+              <div>
+                <div className="eyebrow" style={{ color: 'var(--text-negative)', marginBottom: 6 }}>
+                  Em atraso ({overdueClauses.length})
                 </div>
                 {overdueClauses.map(c => (
                   <DueRow key={c.id} clause={c} athleteName={athleteName(athleteIdForClause(c))} overdue />
@@ -221,30 +231,32 @@ export default function PageDashboard() {
               </div>
             )}
             {dueClauses.length === 0 && overdueClauses.length === 0 && (
-              <div style={{ fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center', padding: '16px 0' }}>
                 Nenhum vencimento nos próximos 60 dias
               </div>
             )}
-            {dueClauses.slice(0, 10).map(c => (
-              <DueRow key={c.id} clause={c} athleteName={athleteName(athleteIdForClause(c))} />
-            ))}
+            {dueClauses.length > 0 && (
+              <div>
+                {dueClauses.slice(0, 10).map(c => (
+                  <DueRow key={c.id} clause={c} athleteName={athleteName(athleteIdForClause(c))} />
+                ))}
+              </div>
+            )}
             {dueClauses.length > 10 && (
-              <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(26,20,16,0.35)', marginTop: 8, textAlign: 'center' }}>
+              <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center' }}>
                 +{dueClauses.length - 10} mais
               </div>
             )}
-          </div>
+          </section>
 
           {/* Currency exposure */}
-          <div style={cardStyle}>
-            <div style={sectionTitle}>Exposição Cambial</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: "var(--font-label)", fontSize: 12 }}>
+          <section className="card" style={cardStyle}>
+            <span className="eyebrow">Exposição cambial</span>
+            <table>
               <thead>
                 <tr>
-                  {['Moeda', 'A Receber', 'A Pagar', 'Líquido', 'Em R$'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '4px 8px', color: 'rgba(26,20,16,0.40)', fontSize: 10, fontWeight: 500, letterSpacing: '0.1em', borderBottom: '1px solid rgba(26,20,16,0.08)' }}>
-                      {h}
-                    </th>
+                  {['Moeda', 'A receber', 'A pagar', 'Líquido', 'Em R$'].map(h => (
+                    <th key={h} style={{ position: 'static', padding: '0 8px 10px', textAlign: h === 'Moeda' ? 'left' : 'right' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -254,100 +266,105 @@ export default function PageDashboard() {
                   const netBRL = toBRL(Math.abs(net), cur)
                   return (
                     <tr key={cur}>
-                      <td style={{ padding: '6px 8px', fontWeight: 700, color: 'var(--accent)' }}>{cur}</td>
-                      <td style={{ padding: '6px 8px', color: '#059669' }}>{v.receivable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: '6px 8px', color: '#7a3f2c' }}>{v.payable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: '6px 8px', color: net >= 0 ? '#059669' : '#7a3f2c', fontWeight: 600 }}>
+                      <td style={{ padding: '10px 8px', fontWeight: 500 }}>{cur}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-positive)' }}>{v.receivable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right' }}>{v.payable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: net >= 0 ? 'var(--text-positive)' : 'var(--text-negative)', fontWeight: 500 }}>
                         {net >= 0 ? '+' : ''}{net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
-                      <td style={{ padding: '6px 8px', color: 'rgba(26,20,16,0.55)' }}>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
                         R$ {netBRL.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
                       </td>
                     </tr>
                   )
                 })}
                 {Object.keys(exposures).length === 0 && (
-                  <tr><td colSpan={5} style={{ padding: '12px 8px', color: 'rgba(26,20,16,0.35)', textAlign: 'center' }}>Sem dados</td></tr>
+                  <tr><td colSpan={5} style={{ padding: '12px 8px', color: 'var(--text-secondary)', textAlign: 'center' }}>Sem dados</td></tr>
                 )}
               </tbody>
             </table>
-          </div>
+          </section>
         </div>
 
         {/* Right column — alerts */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div style={sectionTitle}>Alertas ({unreadAlerts.length} não lidos)</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+          <section className="card" style={cardStyle}>
+            <div style={eyebrowRow}>
+              <span className="eyebrow">Alertas não lidos</span>
+              <Badge tone={unreadAlerts.length > 0 ? 'negative' : 'neutral'}>{unreadAlerts.length}</Badge>
             </div>
 
             {unreadAlerts.length === 0 && (
-              <div style={{ fontFamily: "var(--font-label)", fontSize: 11, color: 'rgba(26,20,16,0.35)', textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center', padding: '8px 0' }}>
                 Nenhum alerta ativo
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {unreadAlerts.map(alert => {
-                const bg = alert.severity === 'RED' ? 'rgba(122,63,44,0.08)' : 'rgba(245,158,11,0.08)'
-                const border = alert.severity === 'RED' ? 'rgba(122,63,44,0.25)' : 'rgba(245,158,11,0.25)'
-                const dot = alert.severity === 'RED' ? '#7a3f2c' : '#f59e0b'
-                return (
-                  <div key={alert.id} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: '10px 12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0, marginTop: 4 }} />
-                        <div>
-                          <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', marginBottom: 2 }}>
-                            {alert.message}
-                          </div>
-                          <Link to={`/atletas/${alert.athlete_id}`} style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'var(--accent)', textDecoration: 'none' }}>
-                            {athleteName(alert.athlete_id)} →
-                          </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {unreadAlerts.map(alert => (
+                <div key={alert.id} style={{ background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minWidth: 0 }}>
+                      <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 'var(--radius-circle)', background: alert.severity === 'RED' ? 'var(--red-500)' : 'var(--amber-500)', flexShrink: 0, marginTop: 5 }} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-primary)', marginBottom: 4 }}>
+                          {alert.message}
                         </div>
+                        <Link to={`/atletas/${alert.athlete_id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>
+                          {athleteName(alert.athlete_id)} <Icon name="chevronRight" size={16} />
+                        </Link>
                       </div>
-                      <button
-                        onClick={() => handleMarkRead(alert.id)}
-                        style={{ background: 'none', border: 'none', color: 'rgba(26,20,16,0.35)', fontSize: 10, cursor: 'pointer', fontFamily: "var(--font-label)", whiteSpace: 'nowrap', flexShrink: 0 }}
-                      >
-                        lido
-                      </button>
                     </div>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleMarkRead(alert.id)} style={{ flexShrink: 0 }}>
+                      Marcar lido
+                    </button>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
-          </div>
+          </section>
 
           {/* Quick links */}
-          <div style={cardStyle}>
-            <div style={sectionTitle}>Acesso Rápido</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <section className="card" style={cardStyle}>
+            <span className="eyebrow">Acesso rápido</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
               {[
-                { to: '/atletas', label: 'Lista de Atletas' },
-                { to: '/album', label: 'Portfolio de Atletas' },
-                { to: '/relatorios/consolidado', label: 'Relatório Consolidado' },
-                { to: '/clubes', label: 'Obrigações — Clubes' },
-                { to: '/intermediarios', label: 'Obrigações — Agentes' },
+                { to: '/atletas', label: 'Lista de atletas' },
+                { to: '/album', label: 'Portfolio de atletas' },
+                { to: '/relatorios/consolidado', label: 'Relatório consolidado' },
+                { to: '/clubes', label: 'Obrigações — clubes' },
+                { to: '/intermediarios', label: 'Obrigações — agentes' },
               ].map(link => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 10px', borderRadius: 7, textDecoration: 'none',
-                    fontFamily: "var(--font-body)", fontSize: 13, color: '#1a1410',
-                    background: 'var(--accent-tint)', border: '1px solid var(--accent-tint2)',
-                  }}
-                >
+                <Link key={link.to} to={link.to} className="list-link">
                   {link.label}
-                  <span style={{ color: 'var(--accent)', fontSize: 14 }}>→</span>
+                  <Icon name="chevronRight" size={16} />
                 </Link>
               ))}
             </div>
-          </div>
+          </section>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Peças do DS usadas aqui ───────────────────────────────────────────────
+
+// Tooltip do Recharts no formato do InsightCallout do DS.
+const CHART_TOOLTIP: React.CSSProperties = {
+  fontFamily: 'var(--font-core)', fontSize: 12, background: 'var(--surface-card)', border: 'none',
+  borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-pop)', color: 'var(--text-primary)', padding: '8px 12px',
+}
+
+function Legend({ items }: { items: { label: string; color: string }[] }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+      {items.map(it => (
+        <span key={it.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)' }}>
+          <span style={{ width: 9, height: 9, borderRadius: 'var(--radius-circle)', background: it.color, flex: 'none' }} />
+          {it.label}
+        </span>
+      ))}
     </div>
   )
 }
@@ -357,25 +374,20 @@ export default function PageDashboard() {
 function DueRow({ clause, athleteName, overdue = false }: { clause: Clause; athleteName: string; overdue?: boolean }) {
   const sym: Record<string, string> = { BRL: 'R$', EUR: '€', USD: '$', GBP: '£' }
   const s = sym[clause.currency] ?? clause.currency
+  const soon = !overdue && isDueSoon(clause.due_date, clause.payment_status)
   return (
-    <Link
-      to={`/atletas/${clause.athlete_id}`}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '7px 10px', borderRadius: 7, textDecoration: 'none',
-        background: overdue ? 'rgba(122,63,44,0.06)' : isDueSoon(clause.due_date, clause.payment_status) ? 'rgba(245,158,11,0.06)' : 'transparent',
-        marginBottom: 2,
-      }}
-    >
-      <div>
-        <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', fontWeight: 500 }}>
+    <Link to={`/atletas/${clause.athlete_id}`} className="due-row">
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {athleteName} — {clause.description}
         </div>
-        <div style={{ fontFamily: "var(--font-label)", fontSize: 10, color: 'rgba(26,20,16,0.45)', marginTop: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)', marginTop: 3 }}>
           {clause.due_date ? fmtDate(clause.due_date) : '—'}
+          {overdue && <Badge tone="negative">Em atraso</Badge>}
+          {soon && <Badge tone="warning">Em breve</Badge>}
         </div>
       </div>
-      <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: overdue ? '#7a3f2c' : '#1a1410', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: 8 }}>
+      <div style={{ fontSize: 'var(--text-body-sm-size)', color: overdue ? 'var(--text-negative)' : 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap', marginLeft: 8, fontVariantNumeric: 'tabular-nums' }}>
         {clause.original_value != null ? `${s} ${clause.original_value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` : '—'}
       </div>
     </Link>

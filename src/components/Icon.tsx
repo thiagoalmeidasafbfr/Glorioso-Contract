@@ -1,187 +1,83 @@
 // src/components/Icon.tsx
-// Ícones minimalistas (traço preto, 1.6px) e botões de ação em ícone.
-// Substituem os antigos botões de texto ("Abrir", "Parcela", "Editar", ...):
-// a mesma ação em um alvo pequeno, discreto e consistente em todas as telas.
+// Ícones monolinha do Glorioso Finance DS — conjunto Lucide, traço 1.75,
+// currentColor, nunca preenchidos. TODO ícone da plataforma passa por aqui:
+// para trocar o conjunto (ex.: ícones próprios da marca) basta remapear ICONS.
+// Tamanhos do DS: 16px (inline, chips, botões) e 20px (controles e navegação).
 
 import { Link } from 'react-router-dom'
+import {
+  ArrowLeftRight, Banknote, Briefcase, Calculator, CalendarDays, ChartLine, ChartPie,
+  Check, ChevronDown, ChevronLeft, ChevronRight, CirclePlus, Clock, Download, Ellipsis,
+  ExternalLink, FileSpreadsheet, Folder, Handshake, Images, Layers, LayoutDashboard,
+  LayoutGrid, Link2, List, LogOut, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Scale,
+  Search, Shield, Split, Target, Trash2, TrendingUp, TriangleAlert, Undo2, Upload,
+  UserRound, Users, X, type LucideIcon,
+} from 'lucide-react'
 
-export type IconName =
-  | 'open'        // abrir página (link externo/quadrado com seta)
-  | 'edit'        // editar (lápis)
-  | 'trash'       // excluir
-  | 'plus'        // adicionar
-  | 'check'       // marcar como paga / atingida
-  | 'undo'        // reverter
-  | 'money'       // registrar pagamento
-  | 'flow'        // lista genérica
-  | 'schedule'    // cronograma de parcelas já existente (calendário)
-  | 'split'       // gerar parcelas a partir de um valor único
-  | 'x'           // fechar / remover linha
-  | 'chevronDown'
-  | 'chevronRight'
-  | 'link'        // vínculo
-  | 'download'
-  | 'upload'
-  | 'search'
-  | 'dots'        // mais ações
-  | 'alert'       // vencimento em atraso (vermelho)
-  | 'clock'       // vencimento próximo (amarelo)
-  | 'gavel'       // recuperação judicial (balança/martelo)
+const ICONS = {
+  // Ações
+  open: ExternalLink,         // abrir página
+  edit: Pencil,               // editar
+  trash: Trash2,              // excluir
+  plus: Plus,                 // adicionar
+  check: Check,               // marcar como paga / atingida
+  undo: Undo2,                // reverter
+  money: Banknote,            // registrar pagamento
+  flow: List,                 // lista genérica / fluxo
+  schedule: CalendarDays,     // cronograma de parcelas já existente
+  split: Split,               // gerar parcelas a partir de um valor único
+  x: X,                       // fechar / remover linha
+  chevronDown: ChevronDown,
+  chevronRight: ChevronRight,
+  chevronLeft: ChevronLeft,
+  link: Link2,                // vínculo
+  download: Download,
+  upload: Upload,
+  search: Search,
+  dots: Ellipsis,             // mais ações
+  alert: TriangleAlert,       // vencimento em atraso
+  clock: Clock,               // vencimento próximo
+  gavel: Scale,               // recuperação judicial
+  // Navegação / estrutura
+  create: CirclePlus,
+  dashboard: LayoutDashboard,
+  athletes: Users,
+  athlete: UserRound,
+  portfolio: Images,
+  clubs: Shield,
+  agents: Briefcase,
+  model: Calculator,
+  consolidated: Layers,
+  deals: Handshake,
+  sellOn: TrendingUp,
+  ownership: ChartPie,
+  target: Target,
+  amortization: ChartLine,
+  transfer: ArrowLeftRight,
+  spreadsheet: FileSpreadsheet,
+  folder: Folder,
+  grid: LayoutGrid,
+  logout: LogOut,
+  panelClose: PanelLeftClose,
+  panelOpen: PanelLeftOpen,
+} satisfies Record<string, LucideIcon>
 
-const PATHS: Record<IconName, React.ReactNode> = {
-  // Quadrado com seta saindo — "abrir página" (padrão external-link).
-  open: (
-    <>
-      <path d="M13.5 3.5H16.5V6.5" />
-      <path d="M16.5 3.5 L10.5 9.5" />
-      <path d="M15.5 12v3.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1H8" />
-    </>
-  ),
-  edit: (
-    <>
-      <path d="M4 16h3.2l8.1-8.1a1.6 1.6 0 0 0 0-2.3l-.9-.9a1.6 1.6 0 0 0-2.3 0L4 12.8V16Z" />
-      <path d="M11.4 6.2l2.4 2.4" />
-    </>
-  ),
-  trash: (
-    <>
-      <path d="M4.5 6.5h11" />
-      <path d="M8 6.5V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5" />
-      <path d="M6 6.5l.6 9a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9l.6-9" />
-    </>
-  ),
-  plus: (
-    <>
-      <path d="M10 4.5v11" />
-      <path d="M4.5 10h11" />
-    </>
-  ),
-  check: <path d="M4.5 10.5l3.6 3.5 7.4-8" />,
-  undo: (
-    <>
-      <path d="M4.5 9.5V5.5" />
-      <path d="M4.5 9.5h4" />
-      <path d="M5.4 9.2a6 6 0 1 1 1.2 5.6" />
-    </>
-  ),
-  money: (
-    <>
-      <rect x="3.5" y="6" width="13" height="8.5" rx="1.4" />
-      <circle cx="10" cy="10.25" r="1.9" />
-    </>
-  ),
-  flow: (
-    <>
-      <path d="M4.5 6h11" />
-      <path d="M4.5 10h11" />
-      <path d="M4.5 14h7" />
-    </>
-  ),
-  // Calendário com marcas de vencimento — "ver/editar o cronograma de parcelas".
-  schedule: (
-    <>
-      <rect x="3.5" y="5" width="13" height="11.5" rx="1.5" />
-      <path d="M3.5 8.5h13" />
-      <path d="M7 3.8v2.2" />
-      <path d="M13 3.8v2.2" />
-      <path d="M6.6 11.6h1.2" />
-      <path d="M11 11.6h2.4" />
-      <path d="M6.6 14h1.2" />
-      <path d="M11 14h2.4" />
-    </>
-  ),
-  // Um valor que se divide em vários — "gerar/parcelar".
-  split: (
-    <>
-      <path d="M3.5 10h4" />
-      <path d="M7.5 10L11 6.2h5" />
-      <path d="M7.5 10L11 13.8h5" />
-      <path d="M14 4.4l2 1.8-2 1.8" />
-      <path d="M14 12l2 1.8-2 1.8" />
-    </>
-  ),
-  x: (
-    <>
-      <path d="M5.5 5.5l9 9" />
-      <path d="M14.5 5.5l-9 9" />
-    </>
-  ),
-  chevronDown: <path d="M5.5 8l4.5 4.5L14.5 8" />,
-  chevronRight: <path d="M8 5.5L12.5 10 8 14.5" />,
-  link: (
-    <>
-      <path d="M8.5 11.5a3 3 0 0 1 0-4.2l1.4-1.4a3 3 0 0 1 4.2 4.2l-.7.7" />
-      <path d="M11.5 8.5a3 3 0 0 1 0 4.2l-1.4 1.4a3 3 0 0 1-4.2-4.2l.7-.7" />
-    </>
-  ),
-  download: (
-    <>
-      <path d="M10 4v8" />
-      <path d="M6.5 8.5L10 12l3.5-3.5" />
-      <path d="M4.5 15.5h11" />
-    </>
-  ),
-  upload: (
-    <>
-      <path d="M10 12V4" />
-      <path d="M6.5 7.5L10 4l3.5 3.5" />
-      <path d="M4.5 15.5h11" />
-    </>
-  ),
-  search: (
-    <>
-      <circle cx="9" cy="9" r="4.5" />
-      <path d="M12.4 12.4l3.1 3.1" />
-    </>
-  ),
-  dots: (
-    <>
-      <circle cx="5" cy="10" r="1.1" />
-      <circle cx="10" cy="10" r="1.1" />
-      <circle cx="15" cy="10" r="1.1" />
-    </>
-  ),
-  // Triângulo de atenção — parcelas vencidas.
-  alert: (
-    <>
-      <path d="M10 3.8L17 15.8H3L10 3.8Z" />
-      <path d="M10 8.2v3.4" />
-      <path d="M10 13.6h0.01" />
-    </>
-  ),
-  // Relógio — vencimentos próximos.
-  clock: (
-    <>
-      <circle cx="10" cy="10" r="6.5" />
-      <path d="M10 6.4V10l2.6 1.6" />
-    </>
-  ),
-  // Balança da Justiça — Recuperação Judicial.
-  gavel: (
-    <>
-      <path d="M10 4v12" />
-      <path d="M4 6h12" />
-      <path d="M4 6L2.4 10h3.2z" />
-      <path d="M16 6l-1.6 4h3.2z" />
-      <path d="M7 16h6" />
-    </>
-  ),
-}
+export type IconName = keyof typeof ICONS
 
-export function Icon({ name, size = 15, strokeWidth = 1.6, style }: {
+export function Icon({ name, size = 16, strokeWidth = 1.75, style }: {
   name: IconName; size?: number; strokeWidth?: number; style?: React.CSSProperties
 }) {
+  const Glyph = ICONS[name]
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"
-      stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style}>
-      {PATHS[name]}
-    </svg>
+    <Glyph size={size} strokeWidth={strokeWidth} aria-hidden="true" focusable="false"
+      style={{ display: 'block', flex: 'none', ...style }} />
   )
 }
 
-/** Tom = significado da ação (a cor é parte do vocabulário, não decoração):
- *   default → navegação/edição (preto)   info    → parcelas / cronograma (azul)
- *   success → pagamento (verde)          warn    → desfazer (âmbar)
+/** Tom = significado da ação (a cor é parte do vocabulário, não decoração),
+ *  nos tons de status do DS:
+ *   default → navegação/edição (preto)   info    → parcelas / cronograma (lilás)
+ *   success → pagamento (areia)          warn    → desfazer (âmbar)
  *   danger  → exclusão (vermelho)        muted   → auxiliar (cinza)          */
 export type Tone = 'default' | 'info' | 'success' | 'warn' | 'danger' | 'muted'
 
@@ -201,12 +97,13 @@ interface IconButtonProps {
   style?: React.CSSProperties
 }
 
-/** Botão de ação em ícone: tom = significado, cinza quando indisponível. */
+/** Botão de ação em ícone (IconButton do DS, variante ghost): tom = significado,
+ *  cinza quando indisponível. 28px (24px no modo `small` das tabelas densas). */
 export function IconButton({
   icon, label, title, onClick, to, tone = 'default', small = false, disabled, disabledReason, style,
 }: IconButtonProps) {
   const cls = `icon-btn ${tone}${small ? ' sm' : ''}`
-  const size = small ? 13 : 15
+  const size = 16
   const tip = disabled ? `${label}${disabledReason ? ` — ${disabledReason}` : ' (indisponível)'}` : (title ?? label)
   if (to && !disabled) {
     return (

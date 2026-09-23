@@ -8,6 +8,7 @@ import OwnershipBar from '../components/OwnershipBar'
 import PageHero from '../components/PageHero'
 import type { Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause } from '../types/athlete-system'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
+import { ATHLETE_STATUS_TONE, badgeStyle } from '../lib/tones'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -19,12 +20,7 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
   DESLIGADO:  'Desligado',
 }
 
-const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
-  ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a' },
-  EMPRESTADO: { bg: 'var(--divider-strong)', fg: '#7a6244' },
-  VENDIDO:    { bg: 'rgba(91,107,122,0.14)', fg: '#5b6b7a' },
-  DESLIGADO:  { bg: 'rgba(156,163,175,0.20)', fg: '#6b7280' },
-}
+
 
 function getInitials(name: string): string {
   return name.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('')
@@ -41,14 +37,16 @@ function calcAge(birthDate: string | null): number | null {
   return age >= 0 && age < 120 ? age : null
 }
 
-// Foto grande da figurinha, com fallback para iniciais.
+// Foto grande da figurinha, com fallback para iniciais. Retrato do DS: sobre
+// a placa creme com filete — o dispositivo mais reconhecível do sistema.
 function StickerPhoto({ athlete }: { athlete: Athlete }) {
   const [err, setErr] = useState(false)
   const hasPhoto = athlete.profile_photo_url && !err
   return (
     <div style={{
       position: 'relative', width: '100%', aspectRatio: '3 / 4',
-      background: 'linear-gradient(160deg, #2a2018 0%, #1a1410 100%)',
+      background: 'var(--surface-accent)', borderRadius: 'var(--radius-md)',
+      boxShadow: 'inset 0 0 0 1px var(--accent-line-soft)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
     }}>
       {hasPhoto ? (
@@ -56,21 +54,16 @@ function StickerPhoto({ athlete }: { athlete: Athlete }) {
           src={athlete.profile_photo_url!}
           alt={athlete.short_name}
           onError={() => setErr(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
         />
       ) : (
         <span style={{
-          fontFamily: fontMono, fontSize: 52, fontWeight: 700,
-          color: 'var(--accent-line)', letterSpacing: '0.04em',
+          fontSize: 'var(--text-metric-size)', fontWeight: 300, letterSpacing: '-.03em',
+          color: 'var(--ink-900)',
         }}>
           {getInitials(athlete.short_name)}
         </span>
       )}
-      {/* Faixa de brilho dourada no topo, remete a card colecionável */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
-      }} />
     </div>
   )
 }
@@ -84,7 +77,7 @@ interface CardProps {
 
 function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
   const [hover, setHover] = useState(false)
-  const st = STATUS_STYLE[athlete.current_status]
+  const tone = ATHLETE_STATUS_TONE[athlete.current_status]
   const age = calcAge(athlete.birth_date)
   const bfr = rights.length > 0 ? bfrShare(rights) : null
 
@@ -95,54 +88,41 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
       onMouseLeave={() => setHover(false)}
       style={{
         display: 'flex', flexDirection: 'column', textAlign: 'left',
-        background: 'var(--cream-card)', borderRadius: 14, overflow: 'hidden',
-        border: `1px solid ${hover ? 'var(--gold)' : 'var(--divider-strong)'}`,
-        boxShadow: hover
-          ? '0 14px 34px rgba(0,0,0,0.20), 0 0 0 1px var(--divider-strong)'
-          : '0 2px 10px rgba(0,0,0,0.07)',
-        transform: hover ? 'translateY(-5px)' : 'translateY(0)',
-        transition: 'transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease',
-        cursor: 'pointer', padding: 0, font: 'inherit', width: '100%',
+        background: 'var(--surface-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden',
+        border: 'none',
+        // DS: no hover a sombra sobe de --shadow-card para --shadow-raised, sem movimento
+        boxShadow: hover ? 'var(--shadow-raised)' : 'var(--shadow-card)',
+        transition: 'box-shadow var(--duration-base) var(--ease-out)',
+        cursor: 'pointer', padding: 8, font: 'inherit', width: '100%',
       }}
     >
       {/* Foto */}
       <div style={{ position: 'relative' }}>
         <StickerPhoto athlete={athlete} />
         {/* Badge de status sobreposto */}
-        <span style={{
-          position: 'absolute', top: 8, right: 8,
-          padding: '3px 9px', borderRadius: 6, background: st.bg, color: st.fg,
-          fontSize: 9, fontWeight: 700, fontFamily: fontMono, letterSpacing: '0.10em',
-          textTransform: 'uppercase', boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
-        }}>
+        <span style={{ ...badgeStyle(tone), position: 'absolute', top: 8, right: 8 }}>
           {STATUS_LABELS[athlete.current_status]}
         </span>
         {/* Posição sobreposta */}
         {athlete.position && (
-          <span style={{
-            position: 'absolute', bottom: 8, left: 8,
-            padding: '3px 9px', borderRadius: 6,
-            background: 'rgba(26,20,16,0.82)', color: 'var(--gold-soft, #d9b678)',
-            fontSize: 9, fontWeight: 600, fontFamily: fontMono, letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}>
+          <span style={{ ...badgeStyle('inverse'), position: 'absolute', bottom: 8, left: 8 }}>
             {athlete.position}
           </span>
         )}
       </div>
 
       {/* Informações */}
-      <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: '12px 6px 6px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div>
           <div style={{
-            fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)',
+            fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--ink-primary)',
             lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {athlete.short_name}
           </div>
           <div style={{
-            fontFamily: font, fontSize: 11, color: 'var(--text-muted)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minHeight: 14,
+            fontFamily: font, fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minHeight: 18, marginTop: 2,
           }}>
             {athlete.full_name !== athlete.short_name ? athlete.full_name : ' '}
           </div>
@@ -166,15 +146,15 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <OwnershipBar rights={rights} compact showLegend={false} />
             {bfr !== null && (
-              <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-                Botafogo detém <span style={{ color: 'var(--gold-deep, #8a6a2f)', fontWeight: 700 }}>
+              <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>
+                Botafogo detém <span style={{ color: 'var(--text-positive)', fontWeight: 600 }}>
                   {Number.isInteger(bfr) ? bfr : bfr.toFixed(1).replace('.', ',')}%
                 </span>
               </div>
             )}
           </div>
         ) : (
-          <div style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+          <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>
             Titularidade não cadastrada
           </div>
         )}
@@ -183,11 +163,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
   )
 }
 
-const pill: React.CSSProperties = {
-  padding: '2px 8px', borderRadius: 20, fontSize: 10, fontFamily: fontMono,
-  background: 'var(--cream-inset)', border: '1px solid var(--divider-soft)',
-  color: 'var(--text-secondary)', letterSpacing: '0.03em', whiteSpace: 'nowrap',
-}
+const pill: React.CSSProperties = badgeStyle('neutral')
 
 // Ordem de exibição das posições (agrupamento do álbum).
 const POSITION_ORDER = [
@@ -278,22 +254,20 @@ export default function PageAlbum() {
   }, [filtered])
 
   const selWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column' }
-  const selLabel: React.CSSProperties = { fontSize: 9, fontFamily: fontMono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
-  const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
+  const selLabel: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
+  const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Portfolio de Atletas" subtitle="Plantel · Botafogo SAF" />
-      <div style={{ marginTop: -4, marginBottom: 24, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, maxWidth: 620 }}>
-        Cada atleta traz foto e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.
-      </div>
+      <PageHero title="Portfolio de Atletas" subtitle="Plantel · Botafogo SAF"
+        caption="Cada atleta traz foto e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade." />
 
       {/* Toolbar de filtros */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={selLabel}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div style={selWrap}>
           <div style={selLabel}>Posição</div>
@@ -337,11 +311,11 @@ export default function PageAlbum() {
 
       {/* Figurinhas agrupadas por posição */}
       {loading ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12, padding: 60 }}>
-          Carregando...
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12, padding: 60 }}>
+          Carregando…
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: font, fontSize: 13, padding: 60 }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: font, fontSize: 13, padding: 60 }}>
           Nenhum atleta encontrado com os filtros atuais.
         </div>
       ) : (
@@ -350,14 +324,13 @@ export default function PageAlbum() {
             <section key={g.pos}>
               {/* Cabeçalho da posição */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--accent)', flexShrink: 0 }} />
-                <h2 style={{ fontFamily: font, fontSize: 15, fontWeight: 700, color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
-                <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.10em' }}>
+                <h2 style={{ fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
+                <span style={badgeStyle('neutral')}>
                   {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}
                 </span>
-                <div style={{ flex: 1, height: 1, background: 'var(--divider-soft)' }} />
+                <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 18 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--space-5)' }}>
                 {g.athletes.map(a => (
                   <AthleteSticker
                     key={a.id}
@@ -373,7 +346,7 @@ export default function PageAlbum() {
         </div>
       )}
 
-      <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-muted)', fontFamily: fontMono }}>
+      <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
         {filtered.length} {filtered.length !== 1 ? 'figurinhas' : 'figurinha'} · {groups.length} {groups.length === 1 ? 'posição' : 'posições'}
       </div>
     </div>

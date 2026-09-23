@@ -9,9 +9,10 @@ import {
   fetchClubs, createClub, fetchIntermediaries, createIntermediary,
 } from '../lib/athleteQueries'
 import type { Club, Intermediary } from '../types/athlete-system'
+import { Icon } from './Icon'
+import { modalInput, modalLabel } from './modals/styles'
 
 const fontBody = "var(--font-body)"
-const fontMono = "var(--font-label)"
 
 type Kind = 'clube' | 'intermediario'
 interface Entity { id: string; name: string; sub: string }
@@ -93,14 +94,8 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
     setCreating(false)
   }
 
-  const inp: React.CSSProperties = {
-    width: '100%', background: 'rgba(255,255,255,0.60)', border: '1px solid rgba(26,20,16,0.15)',
-    borderRadius: 7, padding: '8px 10px', fontSize: 13, color: '#1a1410', fontFamily: fontBody, boxSizing: 'border-box',
-  }
-  const lblStyle: React.CSSProperties = {
-    fontFamily: fontMono, fontSize: 10, fontWeight: 500, letterSpacing: '0.12em',
-    textTransform: 'uppercase', color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
-  }
+  const inp = modalInput
+  const lblStyle = modalLabel
 
   const placeholderText = placeholder ?? (isClube ? 'Buscar clube...' : 'Buscar agente...')
 
@@ -126,9 +121,9 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 20,
-          background: 'var(--cream-card)', border: '1px solid var(--divider-strong)',
-          borderRadius: 8, boxShadow: '0 8px 24px -8px rgba(0,0,0,0.20)',
-          maxHeight: 280, overflowY: 'auto',
+          background: 'var(--surface-card)',
+          borderRadius: 'var(--radius-control)', boxShadow: 'var(--shadow-pop)',
+          maxHeight: 280, overflowY: 'auto', padding: 4,
         }}>
           {filtered.length > 0 && (
             <div>
@@ -140,15 +135,15 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                   onClick={() => selectItem(x)}
                   style={{
                     display: 'block', width: '100%', textAlign: 'left', border: 'none',
-                    background: x.name === value ? 'var(--accent-tint2)' : 'transparent',
-                    padding: '8px 12px', cursor: 'pointer', fontFamily: fontBody, fontSize: 13,
-                    color: 'var(--ink-primary)', borderBottom: '1px solid var(--divider-soft)',
+                    background: x.name === value ? 'var(--gray-150)' : 'transparent',
+                    padding: '8px 10px', cursor: 'pointer', fontFamily: fontBody, fontSize: 13,
+                    color: 'var(--ink-primary)', borderRadius: 'var(--radius-sm)',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-tint)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--accent-tint2)' : 'transparent')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--action-ghost-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--gray-150)' : 'transparent')}
                 >
                   <div style={{ fontWeight: 500 }}>{x.name}</div>
-                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{x.sub}</div>}
+                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{x.sub}</div>}
                 </button>
               ))}
             </div>
@@ -161,23 +156,24 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
               onMouseDown={e => e.preventDefault()}
               onClick={() => setCreating(true)}
               style={{
-                display: 'block', width: '100%', textAlign: 'left', border: 'none',
-                background: 'var(--accent-tint)', padding: '10px 12px', cursor: 'pointer',
-                fontFamily: fontBody, fontSize: 13, color: 'var(--accent)', fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', border: 'none',
+                background: 'var(--surface-sunken)', padding: '10px', cursor: 'pointer', borderRadius: 'var(--radius-sm)',
+                fontFamily: fontBody, fontSize: 13, color: 'var(--text-primary)', fontWeight: 500,
               }}>
-              + Cadastrar {isClube ? 'novo clube' : 'novo agente'} "{query.trim()}"
+              <Icon name="plus" size={16} />
+              Cadastrar {isClube ? 'novo clube' : 'novo agente'} "{query.trim()}"
             </button>
           )}
 
           {filtered.length === 0 && !query.trim() && (
-            <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)', fontFamily: fontBody }}>
+            <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>
               Nenhum {isClube ? 'clube' : 'agente'} cadastrado ainda.
             </div>
           )}
 
           {creating && (
-            <div style={{ padding: 12, borderTop: '1px solid var(--divider-soft)', background: 'var(--accent-tint)' }}>
-              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
+            <div style={{ padding: 12, marginTop: 4, borderRadius: 'var(--radius-sm)', background: 'var(--surface-sunken)' }}>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>
                 Novo {isClube ? 'clube' : 'agente'}
               </div>
               <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--ink-primary)', marginBottom: 8 }}>
@@ -193,13 +189,13 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={() => { setCreating(false); setNewSub('') }}
-                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(26,20,16,0.15)', background: 'transparent', color: 'rgba(26,20,16,0.55)', fontSize: 12, fontFamily: fontBody, cursor: 'pointer' }}>
+                  className="btn btn-outline btn-sm">
                   Cancelar
                 </button>
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={createNow} disabled={!query.trim() || busy}
-                  style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: query.trim() ? 'var(--accent)' : '#ccc', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: fontBody, cursor: query.trim() ? 'pointer' : 'not-allowed' }}>
-                  {busy ? 'Criando...' : 'Criar e selecionar'}
+                  className="btn btn-primary btn-sm">
+                  {busy ? 'Criando…' : 'Criar e selecionar'}
                 </button>
               </div>
             </div>

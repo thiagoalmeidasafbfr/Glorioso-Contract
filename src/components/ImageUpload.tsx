@@ -5,8 +5,7 @@
 
 import { useRef, useState } from 'react'
 import { fileToResizedDataUrl } from '../lib/image'
-
-const fontMono = "var(--font-label)"
+import { Icon } from './Icon'
 
 interface Props {
   value: string | null
@@ -38,21 +37,23 @@ export default function ImageUpload({
     }
   }
 
-  const radius = rounded ? '50%' : Math.round(size * 0.14)
+  // Retrato do DS: quadrado, raio 8, sobre a placa creme com filete.
+  // Logos (rounded=false) ficam contidos sobre branco.
+  const radius = rounded ? 'var(--radius-sm)' : 'var(--radius-md)'
   const initials = fallbackText.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase()
 
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <div style={{
         width: size, height: size, borderRadius: radius, overflow: 'hidden',
-        background: value ? '#fff' : 'var(--cream-inset)',
-        border: '1px solid var(--divider-strong)',
+        background: rounded ? 'var(--surface-accent)' : 'var(--surface-card)',
+        boxShadow: rounded ? 'inset 0 0 0 1px var(--accent-line)' : 'inset 0 0 0 1px var(--border-subtle)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {value ? (
-          <img src={value} alt="" style={{ width: '100%', height: '100%', objectFit: rounded ? 'cover' : 'contain', objectPosition: 'center' }} />
+          <img src={value} alt="" style={{ width: '100%', height: '100%', objectFit: rounded ? 'cover' : 'contain', objectPosition: rounded ? 'center top' : 'center' }} />
         ) : (
-          <span style={{ fontFamily: fontMono, fontSize: size * 0.30, fontWeight: 600, color: 'var(--gold-deep)', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: size * 0.30, fontWeight: 500, color: 'var(--ink-900)' }}>
             {initials || '—'}
           </span>
         )}
@@ -61,32 +62,26 @@ export default function ImageUpload({
       {editable && (
         <>
           <button
+            type="button"
+            className="icon-btn solid"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
             title={value ? 'Trocar imagem' : 'Enviar imagem'}
-            style={{
-              position: 'absolute', right: -6, bottom: -6,
-              width: 28, height: 28, borderRadius: '50%',
-              background: 'var(--ink-primary)', color: 'var(--gold-soft)',
-              border: '2px solid var(--cream-card)', cursor: busy ? 'wait' : 'pointer',
-              fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
+            aria-label={value ? 'Trocar imagem' : 'Enviar imagem'}
+            style={{ position: 'absolute', right: -8, bottom: -8, boxShadow: '0 0 0 2px var(--surface-card)', cursor: busy ? 'wait' : undefined }}
           >
-            {busy ? '·' : '↑'}
+            <Icon name="upload" size={16} />
           </button>
           {value && (
             <button
+              type="button"
+              className="icon-btn outline danger"
               onClick={() => onChange(null)}
               title="Remover imagem"
-              style={{
-                position: 'absolute', left: -6, bottom: -6,
-                width: 24, height: 24, borderRadius: '50%',
-                background: 'var(--cream-card)', color: 'var(--neg)',
-                border: '1px solid var(--divider-strong)', cursor: 'pointer',
-                fontSize: 11, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
+              aria-label="Remover imagem"
+              style={{ position: 'absolute', left: -8, bottom: -8 }}
             >
-              ×
+              <Icon name="x" size={16} />
             </button>
           )}
           <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />

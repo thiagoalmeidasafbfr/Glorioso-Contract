@@ -87,34 +87,35 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title={title} subtitle="Cadastro · Botafogo SAF">
+      <PageHero title={title} section="Cadastros">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar"
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', fontSize: 13, fontFamily: fontBody, color: 'var(--on-dark)' }} />
+          style={{ minWidth: 220 }} />
         <button onClick={() => setShowNew(true)} className="btn btn-outline">
-          <Icon name="plus" size={13} /> {isClube ? 'Novo clube' : 'Novo agente'}
+          <Icon name="plus" size={16} /> {isClube ? 'Novo clube' : 'Novo agente'}
         </button>
       </PageHero>
 
       {/* Resumo + ordenação */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ fontFamily: fontMono, fontSize: 11.5, color: 'var(--text-muted)' }}>
+        <div style={{ fontFamily: fontMono, fontSize: 12, color: 'var(--text-secondary)' }}>
           {filtered.length} {isClube ? 'clube(s)' : 'agente(s)'} · em aberto (aprox.) <strong style={{ color: 'var(--ink-primary)' }}>{fmtCurrencyShort(totalOpen, 'BRL')}</strong>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ fontFamily: fontMono, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
-          {(['nome', 'valor'] as const).map(s => (
-            <button key={s} onClick={() => setSort(s)}
-              className={`btn btn-sm ${sort === s ? 'btn-primary' : 'btn-outline'}`}>
-              {s === 'nome' ? 'Nome' : 'Valor em aberto'}
-            </button>
-          ))}
+          <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
+          <div className="seg-control" role="group" aria-label="Ordenar">
+            {(['nome', 'valor'] as const).map(s => (
+              <button key={s} type="button" onClick={() => setSort(s)} aria-pressed={sort === s} className="seg-control__item">
+                {s === 'nome' ? 'Nome' : 'Valor em aberto'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontMono, fontSize: 12 }}>Carregando...</div>
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>Carregando…</div>
       ) : filtered.length === 0 ? (
-        <div className="card" style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: fontBody }}>
+        <div className="card" style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontBody }}>
           Nenhum {isClube ? 'clube' : 'agente'} cadastrado.
         </div>
       ) : (
@@ -124,24 +125,24 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
               style={{ padding: 16, cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center' }}
               onClick={() => navigate(`${basePath}/${e.id}`)}
               onKeyDown={ev => { if (ev.key === 'Enter') navigate(`${basePath}/${e.id}`) }}>
-              <div style={{ width: 52, height: 52, borderRadius: isClube ? 10 : '50%', overflow: 'hidden', background: 'var(--cream-inset)', border: '1px solid var(--divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 52, height: 52, borderRadius: isClube ? 'var(--radius-md)' : 'var(--radius-circle)', overflow: 'hidden', background: 'var(--cream-inset)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {e.logo
                   ? <img src={e.logo} alt="" style={{ width: '100%', height: '100%', objectFit: isClube ? 'contain' : 'cover' }} />
-                  : <span style={{ fontFamily: fontMono, fontSize: 15, fontWeight: 700, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
+                  : <span style={{ fontFamily: fontMono, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
-                {e.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
+                <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
+                {e.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 5 }}>
                   {e.count} obrigaç{e.count === 1 ? 'ão' : 'ões'}
                   {e.athletes > 0 && <> · {e.athletes} atleta{e.athletes === 1 ? '' : 's'}</>}
                 </div>
-                <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 700, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 600, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
                   {fmtCurrencyShort(e.openBRL, 'BRL')}
-                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-muted)' }}> em aberto</span>
+                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-secondary)' }}> em aberto</span>
                 </div>
               </div>
-              <Icon name="chevronRight" size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <Icon name="chevronRight" size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
             </div>
           ))}
         </div>
@@ -185,7 +186,7 @@ function NewModal({ kind, onClose, onSaved }: { kind: Kind; onClose: () => void;
     <ModalShell title={`Novo ${isClube ? 'clube' : 'agente'}`} width={470} onClose={onClose}
       footer={<>
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} className="btn btn-primary" disabled={!name.trim() || saving}>{saving ? 'Salvando...' : 'Criar'}</button>
+        <button onClick={save} className="btn btn-primary" disabled={!name.trim() || saving}>{saving ? 'Salvando…' : 'Criar'}</button>
       </>}>
       <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
         <ImageUpload value={logo} onChange={setLogo} fallbackText={name} size={88} rounded={!isClube} maxSize={512} />

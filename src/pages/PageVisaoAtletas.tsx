@@ -26,29 +26,25 @@ import RefLink from '../components/RefLink'
 import { Icon, IconButton } from '../components/Icon'
 import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
+import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
 
-const STATUS_STYLE: Record<NatureStatus, { label: string; bg: string; fg: string }> = {
-  EM_DIA:         { label: 'Em dia',        bg: 'var(--pos-tint)',    fg: 'var(--pos)' },
-  EM_ATRASO:      { label: 'Em atraso',     bg: 'var(--neg-tint)',    fg: 'var(--neg)' },
-  QUITADO:        { label: 'Quitado',       bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)' },
-  RENEGOCIADO:    { label: 'Renegociado',   bg: 'var(--info-tint)',   fg: 'var(--info)' },
-  SEM_LANCAMENTO: { label: 'Sem lançamento', bg: 'transparent',       fg: 'var(--text-muted)' },
+const STATUS_STYLE: Record<NatureStatus, ToneStyle & { label: string }> = {
+  EM_DIA:         { ...BADGE_TONES.accent,   label: 'Em dia' },
+  EM_ATRASO:      { ...BADGE_TONES.negative, label: 'Em atraso' },
+  QUITADO:        { ...BADGE_TONES.neutral,  label: 'Quitado' },
+  RENEGOCIADO:    { ...BADGE_TONES.info,     label: 'Renegociado' },
+  SEM_LANCAMENTO: { ...BADGE_TONES.outline,  label: 'Sem lançamento' },
 }
 
 function StatusPill({ status }: { status: NatureStatus }) {
   const s = STATUS_STYLE[status]
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 9px', borderRadius: 5,
-      fontSize: 9, fontWeight: 600, fontFamily: mono, letterSpacing: '0.08em', textTransform: 'uppercase',
-      background: s.bg, color: s.fg,
-      border: status === 'SEM_LANCAMENTO' ? '1px solid var(--divider)' : '1px solid transparent',
-    }}>
-      {status === 'EM_ATRASO' && <Icon name="alert" size={11} />}
-      {status === 'EM_DIA' && <Icon name="check" size={11} />}
+    <span style={badgeStyle(s)}>
+      {status === 'EM_ATRASO' && <Icon name="alert" size={12} />}
+      {status === 'EM_DIA' && <Icon name="check" size={12} />}
       {s.label}
     </span>
   )
@@ -57,7 +53,7 @@ function StatusPill({ status }: { status: NatureStatus }) {
 /** Subtotais por moeda ("€ 300,0K · $ 1,00M") — não esconde EUR/USD na conversão. */
 function ByCurrency({ totals }: { totals: Partial<Record<Currency, number>> }) {
   const entries = (Object.entries(totals) as [Currency, number][]).filter(([, v]) => v)
-  if (entries.length === 0) return <span style={{ color: 'var(--text-muted)' }}>—</span>
+  if (entries.length === 0) return <span style={{ color: 'var(--text-secondary)' }}>—</span>
   return <>{entries.map(([c, v]) => fmtCurrencyShort(v, c)).join(' · ')}</>
 }
 
@@ -145,25 +141,25 @@ export default function PageVisaoAtletas() {
     exportWorkbook([{ name: 'Visão por atleta', cols, rows: out }], 'visao-consolidada-atletas.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--ink-secondary)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: '0.14em', whiteSpace: 'nowrap', textAlign: 'left' }
+  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
   const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Visão por Atleta" subtitle="Consolidado por natureza · Botafogo SAF">
-        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={13} /> Exportar</button>
+      <PageHero title="Visão por Atleta" section="Relatórios" subtitle="Consolidado por natureza">
+        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
       {/* Filtros + totais */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 9, fontFamily: mono, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
+          <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div className="seg-control" role="group" aria-label="Filtrar atletas">
           {([['todos', 'Todos'], ['atraso', 'Com atraso'], ['aberto', 'Com saldo em aberto']] as [Filter, string][]).map(([k, l]) => (
-            <button key={k} onClick={() => setFilter(k)} className={`btn btn-sm ${filter === k ? 'btn-primary' : 'btn-outline'}`}>{l}</button>
+            <button key={k} type="button" onClick={() => setFilter(k)} aria-pressed={filter === k} className="seg-control__item">{l}</button>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -190,8 +186,8 @@ export default function PageVisaoAtletas() {
               <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Carregando...</td></tr>}
-              {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
+              {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
               {visible.map(r => {
                 const open = expanded.has(r.athlete.id)
                 const shown = r.natures.filter(n => n.totalCount > 0)
@@ -203,19 +199,19 @@ export default function PageVisaoAtletas() {
                         label={open ? `Recolher ${r.athlete.short_name}` : `Ver naturezas de ${r.athlete.short_name}`}
                         onClick={() => toggle(r.athlete.id)} />
                     </td>
-                    <td style={{ ...td, fontWeight: 700 }}>
+                    <td style={{ ...td, fontWeight: 600 }}>
                       <RefLink to={`/atletas/${r.athlete.id}`} title="Abrir a ficha do atleta">{r.athlete.short_name || r.athlete.full_name}</RefLink>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: font, fontWeight: 400 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, fontWeight: 400 }}>
                         {' '}· {shown.length} natureza{shown.length === 1 ? '' : 's'}
                       </span>
                     </td>
                     <td style={td}><StatusPill status={r.status} /></td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700 }}>{r.openBRL > 0 ? fmtCurrencyShort(r.openBRL, 'BRL') : '—'}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700, color: r.overdueBRL > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{r.openBRL > 0 ? fmtCurrencyShort(r.openBRL, 'BRL') : '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600, color: r.overdueBRL > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
                       {r.overdueBRL > 0 ? fmtCurrencyShort(r.overdueBRL, 'BRL') : '—'}
                       {r.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.overdueCount} parcela(s)</div>}
                     </td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 700, color: r.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600, color: r.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
                       {r.rjBRL > 0 ? fmtCurrencyShort(r.rjBRL, 'BRL') : '—'}
                       {r.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.rjCount} lançamento(s)</div>}
                     </td>
@@ -241,7 +237,7 @@ export default function PageVisaoAtletas() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: mono }}>
+      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono }}>
         {visible.length} atleta(s) · {totals.late} com atraso
       </div>
     </div>
@@ -257,10 +253,10 @@ function NatureRow({ n, td, onOpen }: {
       <td style={td} />
       <td style={{ ...td, paddingLeft: 6 }}>
         <button onClick={onOpen}
-          style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent-line)', textUnderlineOffset: 2 }}>
+          style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }}>
           {n.label}
         </button>
-        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: mono, marginTop: 2 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 2 }}>
           {n.openCount} em aberto · {n.paidCount} paga(s) de {n.totalCount}
         </div>
       </td>
@@ -268,11 +264,11 @@ function NatureRow({ n, td, onOpen }: {
       <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>
         <ByCurrency totals={n.openByCurrency} />
       </td>
-      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 700 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
+      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 600 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
         {n.overdueBRL > 0 ? fmtCurrencyShort(n.overdueBRL, 'BRL') : '—'}
         {n.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.overdueCount} parcela(s)</div>}
       </td>
-      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 700 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 600 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
         {n.rjBRL > 0 ? fmtCurrencyShort(n.rjBRL, 'BRL') : '—'}
         {n.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.rjCount} lançamento(s)</div>}
       </td>

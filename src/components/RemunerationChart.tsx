@@ -9,8 +9,9 @@ import type { Contract, SalaryTrigger } from '../types/athlete-system'
 import { salarySteps } from '../lib/salary'
 import { fmtCurrencyShort, fmtDate, todayISO } from '../lib/format'
 
-const fontMono = "var(--font-label)"
 const fontBody = "var(--font-body)"
+// Série única do DS: --chart-1 (tinta de dados do acento), grade --chart-grid.
+const SERIES = 'var(--chart-1)'
 
 function monthsBetween(a: string, b: string): number {
   const da = new Date(a + 'T00:00:00'), db = new Date(b + 'T00:00:00')
@@ -93,56 +94,56 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}
         onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         {[0, 0.5, 1].map(g => (
-          <line key={g} x1={padL} x2={W - padR} y1={padT + ih - g * ih} y2={padT + ih - g * ih} stroke="var(--divider)" strokeWidth="1" />
+          <line key={g} x1={padL} x2={W - padR} y1={padT + ih - g * ih} y2={padT + ih - g * ih} stroke="var(--chart-grid)" strokeWidth="1" />
         ))}
-        <text x={padL} y={padT - 8} textAnchor="start" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">
+        <text x={padL} y={padT - 8} textAnchor="start" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">
           {fmtCurrencyShort(maxTotal, contract.salary_currency)}
         </text>
 
-        <line x1={X(todayT)} x2={X(todayT)} y1={padT} y2={padT + ih} stroke="var(--divider-strong)" strokeWidth="1" strokeDasharray="2 3" />
-        {showTodayLabel && <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">hoje</text>}
+        <line x1={X(todayT)} x2={X(todayT)} y1={padT} y2={padT + ih} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="2 3" />
+        {showTodayLabel && <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">hoje</text>}
 
-        <text x={padL} y={H - 8} textAnchor="start" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">{fmtDate(start)}</text>
-        <text x={W - padR} y={H - 8} textAnchor="end" fontFamily={fontMono} fontSize="9" fill="var(--text-muted)">{fmtDate(end)}</text>
+        <text x={padL} y={H - 8} textAnchor="start" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">{fmtDate(start)}</text>
+        <text x={W - padR} y={H - 8} textAnchor="end" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">{fmtDate(end)}</text>
 
         {segs.map((s, i) => (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke="var(--ink-primary)" strokeWidth="2.5" strokeLinecap="round"
-            strokeDasharray={s.dashed ? '4 4' : undefined} opacity={s.dashed ? 0.6 : 1} />
+            stroke={SERIES} strokeWidth="2" strokeLinecap="round"
+            strokeDasharray={s.dashed ? '4 4' : undefined} />
         ))}
 
         {/* guia + ponto do hover */}
         {hv && (
           <>
-            <line x1={X(hv.t)} x2={X(hv.t)} y1={padT} y2={padT + ih} stroke="var(--ink-primary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
-            <circle cx={X(hv.t)} cy={Y(hv.total)} r="4.5" fill="var(--ink-primary)" stroke="#fff" strokeWidth="1.5" />
+            <line x1={X(hv.t)} x2={X(hv.t)} y1={padT} y2={padT + ih} stroke="var(--ink-900)" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx={X(hv.t)} cy={Y(hv.total)} r="4.5" fill="var(--ink-900)" stroke="var(--white)" strokeWidth="1.5" />
           </>
         )}
-        <circle cx={X(todayT)} cy={Y(currentTotal)} r="4" fill="var(--ink-primary)" opacity={hv ? 0.4 : 1} />
+        {!hv && <circle cx={X(todayT)} cy={Y(currentTotal)} r="4" fill={SERIES} stroke="var(--white)" strokeWidth="1.5" />}
       </svg>
 
-      {/* tooltip */}
+      {/* tooltip — no formato do InsightCallout do DS */}
       {hv && (
         <div style={{
           position: 'absolute', top: 2, left: `${(X(hv.t) / W) * 100}%`, transform: 'translateX(-50%)',
-          background: 'var(--ink-primary, #1a1410)', color: '#fff', padding: '5px 9px', borderRadius: 6,
-          fontFamily: fontMono, fontSize: 10, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          background: 'var(--surface-card)', color: 'var(--text-primary)', padding: '8px 12px', borderRadius: 'var(--radius-md)',
+          whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: 'var(--shadow-pop)',
         }}>
-          <div style={{ opacity: 0.7 }}>{fmtDate(hv.iso)}{hv.t > todayT ? ' · projeção' : ''}</div>
-          <div style={{ fontWeight: 700 }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
+          <div style={{ fontSize: 'var(--text-body-size)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
+          <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)', marginTop: 2 }}>{fmtDate(hv.iso)}{hv.t > todayT ? ' · projeção' : ''}</div>
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 11, color: 'var(--text-muted)' }}>
-        <span><span style={{ display: 'inline-block', width: 16, height: 2, background: 'var(--gold)', verticalAlign: 'middle', marginRight: 6 }} />Remuneração total/mês</span>
-        <span><span style={{ display: 'inline-block', width: 16, height: 0, borderTop: '2px dashed var(--gold)', verticalAlign: 'middle', marginRight: 6, opacity: 0.6 }} />Projeção</span>
-        <span style={{ fontFamily: fontMono, color: 'var(--ink-primary)' }}>Hoje: {fmtCurrencyShort(currentTotal, contract.salary_currency)}/mês</span>
+      <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 11, color: 'var(--text-secondary)' }}>
+        <span><span style={{ display: 'inline-block', width: 16, height: 2, background: SERIES, verticalAlign: 'middle', marginRight: 6 }} />Remuneração total/mês</span>
+        <span><span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `2px dashed ${SERIES}`, verticalAlign: 'middle', marginRight: 6 }} />Projeção</span>
+        <span style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>Hoje: {fmtCurrencyShort(currentTotal, contract.salary_currency)}/mês</span>
       </div>
-      <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-deep, var(--ink-secondary))' }}>
+      <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 'var(--radius-control)', background: 'var(--surface-sunken)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+        <span className="eyebrow">
           Total até o fim do contrato ({nMonths} {nMonths === 1 ? 'mês' : 'meses'})
         </span>
-        <span style={{ fontFamily: fontMono, fontSize: 18, fontWeight: 700, color: 'var(--ink-primary)' }}>
+        <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
           {fmtCurrencyShort(totalAteFim, contract.salary_currency)}
         </span>
       </div>

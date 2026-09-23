@@ -5,7 +5,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import PageHero from '../components/PageHero'
-import { IconButton } from '../components/Icon'
+import { Icon, IconButton } from '../components/Icon'
+import { BADGE_TONES, type ToneStyle } from '../lib/tones'
 import { fetchAthletes } from '../lib/athleteQueries'
 import {
   fetchPremissas, createPremissa, updatePremissa, deletePremissa,
@@ -28,12 +29,13 @@ const DECISAO_OPTIONS: PremissaDecisao[] = [
   'MANTER', 'RENOVAR', 'VENDER', 'RESCINDIR', 'NOVA_CONTRATACAO',
 ]
 
-const DECISAO_COLOR: Record<PremissaDecisao, { bg: string; fg: string }> = {
-  MANTER:            { bg: 'var(--pos-tint)',    fg: 'var(--pos)' },
-  RENOVAR:           { bg: 'var(--accent-tint2)', fg: '#7a6244' },
-  VENDER:            { bg: 'rgba(91,107,122,0.18)', fg: '#3c4a58' },
-  RESCINDIR:         { bg: 'var(--neg-tint)',    fg: 'var(--neg)' },
-  NOVA_CONTRATACAO:  { bg: 'rgba(190,140,74,0.20)', fg: '#8a5a1e' },
+// Decisão → tons de status do Glorioso Finance DS.
+const DECISAO_COLOR: Record<PremissaDecisao, ToneStyle> = {
+  MANTER:            BADGE_TONES.accent,
+  RENOVAR:           BADGE_TONES.info,
+  VENDER:            BADGE_TONES.neutral,
+  RESCINDIR:         BADGE_TONES.negative,
+  NOVA_CONTRATACAO:  BADGE_TONES.inverse,
 }
 
 // Wrap padrão de célula editável.
@@ -44,8 +46,8 @@ function Cell(props: {
     <td style={{
       padding: '6px 8px',
       textAlign: props.align ?? 'left',
-      borderBottom: '1px solid var(--rule)',
-      background: 'var(--surface)',
+      borderBottom: '1px solid var(--border-subtle)',
+      background: 'var(--surface-card)',
       minWidth: props.width,
       fontFamily: fontBody, fontSize: 13,
       color: 'var(--ink-primary)',
@@ -59,11 +61,11 @@ function Head(props: { children: React.ReactNode; width?: number | string; stick
     <th style={{
       padding: '10px 8px',
       textAlign: 'left',
-      fontFamily: fontMono, fontSize: 10, fontWeight: 600,
-      letterSpacing: '0.10em', textTransform: 'uppercase',
-      color: 'var(--ink-secondary)',
-      background: 'var(--cream-inset)',
-      borderBottom: '1px solid var(--rule)',
+      fontFamily: fontMono, fontSize: 10, fontWeight: 400,
+      letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
+      color: 'var(--text-muted)',
+      background: 'var(--surface-card)',
+      borderBottom: '1px solid var(--border-default)',
       position: props.sticky ? 'sticky' as const : undefined,
       left: props.sticky ? 0 : undefined,
       zIndex: props.sticky ? 3 : undefined,
@@ -102,16 +104,17 @@ function CellInput(props: {
       style={{
         width: props.width ?? '100%',
         minWidth: 80,
-        padding: '4px 6px',
+        minHeight: 'var(--control-h-sm)',
+        padding: '2px 6px',
         border: '1px solid transparent',
-        borderRadius: 4,
+        borderRadius: 'var(--radius-sm)',
         background: 'transparent',
         fontFamily: fontBody, fontSize: 13,
         textAlign: props.align ?? 'left',
         color: 'var(--ink-primary)',
         outline: 'none',
       }}
-      onFocus={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.border = '1px solid var(--rule-strong)' }}
+      onFocus={e => { e.currentTarget.style.background = 'var(--surface-card)'; e.currentTarget.style.border = '1px solid var(--border-focus)' }}
       onBlurCapture={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent' }}
     />
   )
@@ -243,57 +246,50 @@ export default function PagePremissas() {
     <div style={{ padding: 'clamp(16px, 3vw, 32px)', maxWidth: '100%' }}>
       <PageHero
         title="Premissas por atleta"
-        subtitle="Modelo financeiro — Fase 1"
+        section="Modelo financeiro" subtitle="Fase 1"
       >
         {canEdit && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => void addNew('ATLETA_EXISTENTE')} style={btn()}>
-              + Atleta existente
+            <button onClick={() => void addNew('ATLETA_EXISTENTE')} className="btn btn-outline">
+              <Icon name="plus" size={16} /> Atleta existente
             </button>
-            <button onClick={() => void addNew('NOVA_CONTRATACAO')} style={btn('accent')}>
-              + Nova contratação
+            <button onClick={() => void addNew('NOVA_CONTRATACAO')} className="btn btn-primary">
+              <Icon name="plus" size={16} /> Nova contratação
             </button>
           </div>
         )}
       </PageHero>
 
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-5)', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
         <input
+          type="search"
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por atleta ou posição"
-          style={{
-            padding: '8px 10px', border: '1px solid var(--rule)', borderRadius: 6,
-            background: 'var(--surface)', fontFamily: fontBody, fontSize: 13, minWidth: 240,
-          }}
+          aria-label="Buscar por atleta ou posição"
+          style={{ minWidth: 260 }}
         />
-        <div style={{ display: 'flex', gap: 4 }}>
+        {/* Filtro por decisão — SegmentedTabs do DS */}
+        <div className="seg-tabs" role="tablist" aria-label="Filtrar por decisão">
           {(['TODOS', ...DECISAO_OPTIONS] as const).map(d => (
-            <button key={d} onClick={() => setFilter(d)} style={{
-              padding: '6px 10px', border: '1px solid var(--rule)',
-              borderRadius: 6, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.10em',
-              background: filter === d ? 'var(--ink-primary)' : 'var(--surface)',
-              color: filter === d ? '#fff' : 'var(--ink-secondary)',
-              cursor: 'pointer', textTransform: 'uppercase',
-            }}>{d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d as PremissaDecisao]}</button>
+            <button key={d} type="button" role="tab" aria-selected={filter === d} className="seg-tab" onClick={() => setFilter(d)}>
+              {d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d as PremissaDecisao]}
+            </button>
           ))}
         </div>
-        <span style={{ marginLeft: 'auto', fontFamily: fontMono, fontSize: 10, color: 'var(--ink-secondary)' }}>
+        <span style={{ marginLeft: 'auto', fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)' }}>
           {filtered.length} {filtered.length === 1 ? 'linha' : 'linhas'}
         </span>
       </div>
 
       {err && (
-        <div style={{
-          padding: '10px 14px', border: '1px solid var(--neg)', background: 'var(--neg-tint)',
-          borderRadius: 6, color: 'var(--neg)', fontFamily: fontBody, fontSize: 13, marginBottom: 12,
+        <div role="alert" style={{
+          padding: '10px 14px', background: 'var(--surface-negative-soft)',
+          borderRadius: 'var(--radius-control)', color: 'var(--text-negative)', fontFamily: fontBody, fontSize: 13, marginBottom: 12,
         }}>{err}</div>
       )}
 
-      <div style={{
-        overflowX: 'auto', border: '1px solid var(--rule)', borderRadius: 8,
-        background: 'var(--surface)',
-      }}>
+      <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 2400 }}>
           <thead>
             <tr>
@@ -332,7 +328,7 @@ export default function PagePremissas() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>Carregando...</td></tr>
+              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>Carregando…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr><td colSpan={31} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13 }}>
@@ -345,9 +341,9 @@ export default function PagePremissas() {
                 <tr key={r.id}>
                   {/* Atleta — sticky */}
                   <td style={{
-                    padding: '6px 8px', borderBottom: '1px solid var(--rule)',
-                    background: 'var(--surface)', position: 'sticky', left: 0, zIndex: 2,
-                    borderRight: '1px solid var(--rule)', minWidth: 220,
+                    padding: '6px 8px', borderBottom: '1px solid var(--border-subtle)',
+                    background: 'var(--surface-card)', position: 'sticky', left: 0, zIndex: 2,
+                    borderRight: '1px solid var(--border-subtle)', minWidth: 220,
                   }}>
                     {r.atleta_id ? (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -427,9 +423,11 @@ export default function PagePremissas() {
                       onChange={e => void patch(r.id, { decisao: e.target.value as PremissaDecisao })}
                       style={{
                         ...selectStyle(),
-                        background: DECISAO_COLOR[r.decisao].bg,
+                        backgroundColor: DECISAO_COLOR[r.decisao].bg,
                         color: DECISAO_COLOR[r.decisao].fg,
-                        fontWeight: 600,
+                        borderColor: DECISAO_COLOR[r.decisao].bd === 'transparent' ? DECISAO_COLOR[r.decisao].bg : DECISAO_COLOR[r.decisao].bd,
+                        borderRadius: 'var(--radius-pill)',
+                        fontWeight: 500,
                       }}
                     >
                       {DECISAO_OPTIONS.map(d => (
@@ -504,29 +502,19 @@ export default function PagePremissas() {
         </table>
       </div>
 
-      <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink-secondary)' }}>
+      <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, color: 'var(--ink-secondary)' }}>
         Encargos padrão: INSS {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}% · FGTS {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}% · férias {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}%. Antecipação padrão: CDI {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}% a.a.
       </p>
     </div>
   )
 }
 
-function btn(variant?: 'accent'): React.CSSProperties {
-  return {
-    padding: '8px 14px',
-    border: variant === 'accent' ? '1px solid #be8c4a' : '1px solid rgba(255,255,255,0.20)',
-    background: variant === 'accent' ? '#be8c4a' : 'transparent',
-    color: variant === 'accent' ? '#1a1410' : '#f3eee2',
-    fontFamily: fontMono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
-    borderRadius: 6, cursor: 'pointer', fontWeight: 600,
-  }
-}
-
 function selectStyle(): React.CSSProperties {
   return {
-    width: '100%', padding: '4px 6px',
-    border: '1px solid var(--rule)', borderRadius: 4,
-    background: 'var(--surface)', fontFamily: fontBody, fontSize: 12,
+    // Célula densa: 28px (--control-h-sm), mesmo filete/raio dos campos do DS.
+    width: '100%', minHeight: 'var(--control-h-sm)', padding: '2px 28px 2px 8px',
+    border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'var(--surface-card)', backgroundPosition: 'right 6px center', fontFamily: fontBody, fontSize: 12,
     color: 'var(--ink-primary)', cursor: 'pointer',
   }
 }

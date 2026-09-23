@@ -68,22 +68,21 @@ const NATURES: Nature[] = [
 const STEPS = ['O que registrar', 'Quem está envolvido', 'Fluxo de parcelas', 'Revisão']
 
 const card: React.CSSProperties = {
-  background: 'var(--cream-card)', border: '1px solid var(--divider)',
-  borderRadius: 12, padding: 20, boxShadow: 'var(--shadow-hair)',
+  background: 'var(--cream-card)', borderRadius: 'var(--radius-card)', padding: 20, boxShadow: 'var(--shadow-hair)',
 }
 const lbl: React.CSSProperties = {
-  fontFamily: mono, fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
+  fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
   color: 'var(--text-muted)', display: 'block', marginBottom: 5,
 }
 const input: React.CSSProperties = {
   width: '100%', background: 'var(--cream-card)', border: '1px solid var(--input-border)',
-  borderRadius: 7, padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
+  borderRadius: 'var(--radius-md)', padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
 }
 const sectionTitle: React.CSSProperties = {
-  fontFamily: mono, fontSize: 11, fontWeight: 800, letterSpacing: '0.16em',
+  fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)',
   textTransform: 'uppercase', color: 'var(--ink-primary)',
 }
-const hint: React.CSSProperties = { fontFamily: font, fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }
+const hint: React.CSSProperties = { fontFamily: font, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }
 
 export default function PageWizard() {
   const navigate = useNavigate()
@@ -244,15 +243,15 @@ export default function PageWizard() {
           return (
             <button key={s} onClick={() => done && setStep(i)} disabled={!done && !active}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 20,
-                background: active ? 'var(--accent)' : done ? 'var(--accent-tint2)' : 'transparent',
+                display: 'flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 'var(--radius-tile)',
+                background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'transparent',
                 border: `1px solid ${active || done ? 'var(--divider-strong)' : 'var(--divider)'}`,
                 cursor: done ? 'pointer' : 'default',
               }}>
-              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 600, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                 {done ? <Icon name="check" size={12} /> : i + 1}
               </span>
-              <span style={{ fontFamily: font, fontSize: 11.5, fontWeight: active ? 700 : 500, color: active ? 'var(--accent-on)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
+              <span style={{ fontFamily: font, fontSize: 12, fontWeight: active ? 600 : 500, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
             </button>
           )
         })}
@@ -279,13 +278,13 @@ export default function PageWizard() {
                 {NATURES.filter(n => n.group === g).map(n => (
                   <button key={n.key} onClick={() => pickNature(n)}
                     style={{
-                      textAlign: 'left', padding: '12px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: font,
-                      background: natureKey === n.key ? 'var(--accent-tint2)' : 'transparent',
-                      border: `1px solid ${natureKey === n.key ? 'var(--accent)' : 'var(--divider-strong)'}`,
+                      textAlign: 'left', padding: '12px 14px', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: font,
+                      background: natureKey === n.key ? 'var(--gray-150)' : 'transparent',
+                      border: `1px solid ${natureKey === n.key ? 'var(--action-inverse)' : 'var(--divider-strong)'}`,
                     }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-primary)' }}>{n.label}</div>
-                    <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
-                    <div style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: 6 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)' }}>{n.label}</div>
+                    <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
+                    <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: 6 }}>
                       {n.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}{n.isMovement ? ' · cria vínculo' : ''}
                     </div>
                   </button>
@@ -304,12 +303,12 @@ export default function PageWizard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
               <div style={sectionTitle}>Atleta {athlete ? '' : '*'}</div>
               <button onClick={() => setCreatingAth(v => !v)} className="btn btn-outline">
-                <Icon name={creatingAth ? 'x' : 'plus'} size={14} /> {creatingAth ? 'Cancelar' : 'Novo atleta'}
+                <Icon name={creatingAth ? 'x' : 'plus'} size={16} /> {creatingAth ? 'Cancelar' : 'Novo atleta'}
               </button>
             </div>
 
             {creatingAth && (
-              <div style={{ padding: 14, borderRadius: 9, border: '1px solid var(--divider)', background: 'var(--bg-subtle)', marginBottom: 12 }}>
+              <div style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', marginBottom: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
                   <div>
                     <label style={lbl}>Nome completo *</label>
@@ -322,7 +321,7 @@ export default function PageWizard() {
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button onClick={createNewAthlete} disabled={!newAth.full_name.trim() || savingAth} className="btn btn-primary">
-                    {savingAth ? 'Criando...' : 'Criar e selecionar'}
+                    {savingAth ? 'Criando…' : 'Criar e selecionar'}
                   </button>
                   <span style={hint}>Os demais dados você completa depois na ficha do atleta.</span>
                 </div>
@@ -330,10 +329,10 @@ export default function PageWizard() {
             )}
 
             {athlete && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--accent-tint)', border: '1px solid var(--divider-strong)' }}>
-                <Icon name="check" size={14} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)' }}>
+                <Icon name="check" size={16} />
                 <span style={{ fontFamily: font, fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)' }}>{athlete.full_name}</span>
-                <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>· {athlete.position || 'posição não informada'}</span>
+                <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>· {athlete.position || 'posição não informada'}</span>
                 <button onClick={() => { setAthleteId(''); setContracts([]); setLinkContractId('') }} className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }}>Trocar</button>
               </div>
             )}
@@ -344,10 +343,10 @@ export default function PageWizard() {
                 {filteredAthletes.map(a => (
                   <button key={a.id} onClick={() => pickAthlete(a)}
                     style={{
-                      textAlign: 'left', padding: '9px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: font, fontSize: 13,
+                      textAlign: 'left', padding: '9px 12px', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: font, fontSize: 13,
                       background: 'transparent', border: '1px solid var(--divider)', color: 'var(--ink-primary)',
                     }}>
-                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)' }}>· {a.position || '—'}</span>
+                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)' }}>· {a.position || '—'}</span>
                   </button>
                 ))}
                 {filteredAthletes.length === 0 && <div style={hint}>Nenhum atleta encontrado. Use “Novo atleta” acima.</div>}
@@ -449,8 +448,8 @@ export default function PageWizard() {
             <div style={{ ...sectionTitle, marginBottom: 10 }}>Parcelas</div>
             <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {[...valid].sort((a, b) => a.due_date.localeCompare(b.due_date)).map((l, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr', gap: 10, padding: '6px 10px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-muted)' }}>{i + 1}</span>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr', gap: 10, padding: '6px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)' }}>
+                  <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{i + 1}</span>
                   <span style={{ fontFamily: mono, fontSize: 12 }}>{fmtDate(l.due_date)}</span>
                   <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 600, textAlign: 'right' }}>{fmtCurrencyShort(l.value, currency)}</span>
                 </div>
@@ -463,15 +462,15 @@ export default function PageWizard() {
       {/* Navegação */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 22, gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => step === 0 ? navigate(-1) : setStep(s => s - 1)} className="btn btn-outline">
-          {step === 0 ? 'Cancelar' : '← Voltar'}
+          {step === 0 ? 'Cancelar' : <><Icon name="chevronLeft" size={16} /> Voltar</>}
         </button>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           {blocked && <span style={hint}>{blocked}</span>}
           {step < 3 ? (
-            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo →</button>
+            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo <Icon name="chevronRight" size={16} /></button>
           ) : (
             <button onClick={handleSave} disabled={saving || valid.length === 0} className="btn btn-primary">
-              {saving ? 'Criando...' : 'Criar e abrir obrigação'}
+              {saving ? 'Criando…' : 'Criar e abrir obrigação'}
             </button>
           )}
         </div>
@@ -483,7 +482,7 @@ export default function PageWizard() {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12 }}>
-      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k}</span>
+      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: 'var(--text-overline-tracking)' }}>{k}</span>
       <span>{v}</span>
     </div>
   )
@@ -492,10 +491,10 @@ function Row({ k, v }: { k: string; v: string }) {
 function Pill({ label, value }: { label: string; value: string }) {
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 7,
-      background: 'var(--bg-subtle)', border: '1px solid var(--divider)', maxWidth: 320,
+      display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 'var(--radius-md)',
+      background: 'var(--bg-subtle)', maxWidth: 320,
     }}>
-      <span style={{ fontFamily: mono, fontSize: 8.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
       <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
     </span>
   )

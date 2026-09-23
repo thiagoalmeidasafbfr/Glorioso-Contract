@@ -4,6 +4,7 @@ import { AppProvider } from './context/AppContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { USE_SUPABASE } from './lib/supabase'
 import Layout from './components/Layout'
+import Wordmark from './components/Wordmark'
 import PageLogin from './pages/PageLogin'
 
 // Sistema de atletas
@@ -38,13 +39,12 @@ function AppRoutes() {
 
   if (USE_SUPABASE && loading) {
     return (
-      <div style={{
-        minHeight: '100vh', background: '#1a1410',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: "var(--font-label)", fontSize: 11,
-        color: 'rgba(243,238,226,0.40)', letterSpacing: '0.14em',
+      <div role="status" style={{
+        minHeight: '100vh', background: 'var(--surface-page)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)',
       }}>
-        CARREGANDO...
+        <Wordmark compact size={18} />
+        <span className="eyebrow">Carregando…</span>
       </div>
     )
   }

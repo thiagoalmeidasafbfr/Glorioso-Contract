@@ -1,3 +1,7 @@
+// MetricCard do Glorioso Finance DS em versão compacta: eyebrow de 10px em
+// caixa-alta, valor em 500 e legenda cinza. `accent` usa a variante "inverse"
+// (preta) — a forma do DS de fazer um card de um conjunto carregar peso.
+
 interface Props {
   label: string
   value: string
@@ -7,14 +11,10 @@ interface Props {
 
 export default function KpiCard({ label, value, sub, accent }: Props) {
   return (
-    <div className="card" style={{
-      padding: '14px 16px',
-      borderLeft: accent ? `3px solid var(--gold)` : `1px solid var(--divider)`,
-      minWidth: 0,
-    }}>
-      <div className="kpi-label">{label}</div>
-      <div className="kpi-value" style={{ fontSize: 18, marginTop: 4 }}>{value}</div>
-      {sub && <div className="kpi-sub">{sub}</div>}
+    <div className={accent ? 'card card-inverse' : 'card'} style={{ padding: 'var(--gutter-card)', minWidth: 0 }}>
+      <div className="kpi-label" style={accent ? { color: 'var(--gray-500)' } : undefined}>{label}</div>
+      <div className="kpi-value" style={{ marginTop: 'var(--space-3)', color: accent ? 'var(--text-inverse)' : undefined }}>{value}</div>
+      {sub && <div className="kpi-sub" style={accent ? { color: 'var(--gray-500)' } : undefined}>{sub}</div>}
     </div>
   )
 }

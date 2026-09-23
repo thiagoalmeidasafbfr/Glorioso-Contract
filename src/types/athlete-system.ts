@@ -336,12 +336,21 @@ export const HOLDER_TYPE_LABELS: Record<HolderType, string> = {
 }
 
 // Cores da barra de titularidade — rampa preto→cinza (tema Botafogo).
+// Séries de dados do Glorioso Finance DS, na ordem fixa (--chart-1 … --chart-5).
 export const HOLDER_TYPE_COLORS: Record<HolderType, string> = {
-  BFR:      '#14110d',
-  CLUBE:    '#4c4640',
-  AGENTE:   '#7d746a',
-  ATLETA:   '#a8a099',
-  TERCEIRO: '#cdc7bf',
+  BFR:      'var(--chart-1)',
+  CLUBE:    'var(--chart-2)',
+  AGENTE:   'var(--chart-3)',
+  ATLETA:   'var(--chart-4)',
+  TERCEIRO: 'var(--chart-5)',
+}
+// Cor do texto sobre cada série (as claras levam tinta preta).
+export const HOLDER_TYPE_INK: Record<HolderType, string> = {
+  BFR:      'var(--white)',
+  CLUBE:    'var(--white)',
+  AGENTE:   'var(--ink-900)',
+  ATLETA:   'var(--ink-900)',
+  TERCEIRO: 'var(--ink-900)',
 }
 
 // ── Gatilhos de mudança salarial por meta ──────────────────────────────────
