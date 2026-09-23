@@ -251,7 +251,7 @@ export default function PageWizard() {
               <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 600, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                 {done ? <Icon name="check" size={12} /> : i + 1}
               </span>
-              <span style={{ fontFamily: font, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
+              <span style={{ fontFamily: font, fontSize: 12, fontWeight: active ? 600 : 500, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
             </button>
           )
         })}

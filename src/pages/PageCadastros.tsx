@@ -87,7 +87,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title={title} subtitle="Cadastro · Botafogo SAF">
+      <PageHero title={title} section="Cadastros">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar"
           style={{ minWidth: 220 }} />
         <button onClick={() => setShowNew(true)} className="btn btn-outline">
@@ -102,12 +102,13 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
-          {(['nome', 'valor'] as const).map(s => (
-            <button key={s} onClick={() => setSort(s)}
-              className={`btn btn-sm ${sort === s ? 'btn-primary' : 'btn-outline'}`}>
-              {s === 'nome' ? 'Nome' : 'Valor em aberto'}
-            </button>
-          ))}
+          <div className="seg-control" role="group" aria-label="Ordenar">
+            {(['nome', 'valor'] as const).map(s => (
+              <button key={s} type="button" onClick={() => setSort(s)} aria-pressed={sort === s} className="seg-control__item">
+                {s === 'nome' ? 'Nome' : 'Valor em aberto'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -28,6 +28,7 @@ import KpiPill from '../components/KpiPill'
 import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
+import { badgeStyle, PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, humanizeEnum } from '../lib/tones'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -266,7 +267,7 @@ export default function PageRecuperacaoJudicial() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Recuperação Judicial" subtitle="Passivos incluídos no processo — credores, valores e atraso">
+      <PageHero title="Recuperação Judicial" section="Relatórios" subtitle="Passivos incluídos no processo — credores, valores e atraso">
         <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
@@ -364,7 +365,7 @@ export default function PageRecuperacaoJudicial() {
                 const isLate = d !== null && d < 0 && OPEN.has(r.status)
                 return (
                   <tr key={`${r.kind}-${r.id}`}>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 700 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 600 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title="Abrir atleta">{r.atleta}</RefLink></td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.credor}</td>
                     <td style={td}>{r.natureza}</td>
@@ -374,11 +375,7 @@ export default function PageRecuperacaoJudicial() {
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: isLate ? 'var(--neg)' : 'var(--text-muted)', fontWeight: isLate ? 600 : 400 }}>{isLate ? `${-d!} dias` : '—'}</td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
                     <td style={td}>
-                      <span style={{
-                        display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500,
-                        fontFamily: mono, background: r.status === 'PAGA' ? 'var(--pos-tint)' : r.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
-                        color: r.status === 'PAGA' ? 'var(--pos)' : r.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
-                      }}>{r.status.replace(/_/g, ' ')}</span>
+                      <span style={badgeStyle(PAYMENT_STATUS_TONE[r.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{PAYMENT_STATUS_LABEL[r.status] ?? humanizeEnum(r.status)}</span>
                     </td>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>

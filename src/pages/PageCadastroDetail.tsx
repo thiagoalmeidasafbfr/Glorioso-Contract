@@ -8,7 +8,7 @@
 //   • criação de nova obrigação JÁ COM O FLUXO e de novo contrato.
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   fetchClub, updateClub, fetchIntermediary, updateIntermediary, deleteClub, deleteIntermediary,
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities, fetchAthletes,
@@ -205,12 +205,8 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title={name} subtitle={isClube ? 'Clube · Botafogo SAF' : 'Agente · Botafogo SAF'} />
-      <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>
-        <Link to={basePath} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{isClube ? 'Clubes' : 'Agentes'}</Link>
-        <span style={{ margin: '0 6px' }}>/</span>
-        <span style={{ color: 'var(--ink-primary)' }}>{name}</span>
-      </div>
+      <PageHero title={name}
+        crumbs={[{ label: 'Botafogo SAF', icon: 'folder' }, { label: isClube ? 'Clubes' : 'Agentes', to: basePath, icon: isClube ? 'clubs' : 'agents' }]} />
 
       {/* Cabeçalho com logo */}
       <div className="card" style={{ padding: '20px 24px', marginBottom: 16, display: 'flex', gap: 22, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -371,7 +367,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                       {l.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(l.amount, l.currency)}</td>
-                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-secondary)', fontWeight: late ? 700 : 400 }}>{l.due_date ? fmtDate(l.due_date) : '—'}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-secondary)', fontWeight: late ? 600 : 400 }}>{l.due_date ? fmtDate(l.due_date) : '—'}</td>
                     <td style={td}><Badge label={STATUS_TONE[l.status]?.l ?? l.status} tone={tone} /></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions
@@ -448,11 +444,7 @@ function Kpi({ label, value }: { label: string; value: string }) {
 
 function Badge({ label, tone }: { label: string; tone: 'pos' | 'neg' | 'neutral' }) {
   return (
-    <span style={{
-      display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500,
-      fontFamily: fontMono, background: tone === 'pos' ? 'var(--pos-tint)' : tone === 'neg' ? 'var(--neg-tint)' : 'var(--cream-inset)',
-      color: tone === 'pos' ? 'var(--pos)' : tone === 'neg' ? 'var(--neg)' : 'var(--ink-secondary)',
-    }}>{label}</span>
+    <span style={badgeStyle(tone === 'pos' ? 'accent' : tone === 'neg' ? 'negative' : 'neutral')}>{label}</span>
   )
 }
 

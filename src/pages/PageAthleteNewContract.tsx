@@ -456,15 +456,9 @@ export default function PageAthleteNewContract() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
-      <PageHero title="Novo Contrato" subtitle={athlete?.full_name ?? 'Novo contrato · Botafogo SAF'} />
-      {/* Breadcrumb */}
-      <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
-        <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
-        <span>/</span>
-        <Link to={`/atletas/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete?.short_name ?? '...'}</Link>
-        <span>/</span>
-        <span style={{ color: 'var(--ink-primary)' }}>Novo Contrato</span>
-      </div>
+      <PageHero title="Novo contrato"
+        crumbs={[{ label: 'Atletas', to: '/atletas', icon: 'athletes' }, { label: athlete?.short_name ?? '…', to: `/atletas/${id}` }]}
+        caption={athlete?.full_name} />
 
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 26, flexWrap: 'wrap' }}>
@@ -485,7 +479,7 @@ export default function PageAthleteNewContract() {
                 }}>
                   {done ? <Icon name="check" size={16} /> : s}
                 </span>
-                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 600 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
                   {labels[i]}
                 </span>
               </button>

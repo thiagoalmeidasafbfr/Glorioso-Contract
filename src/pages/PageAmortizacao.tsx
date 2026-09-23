@@ -278,7 +278,7 @@ export default function PageAmortizacao() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Calculadora — Amortização & Baixa de Intangível" subtitle="Por atleta cadastrado · Botafogo SAF" />
+      <PageHero title="Calculadora — Amortização & Baixa de Intangível" section="Relatórios" subtitle="Por atleta cadastrado" />
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
@@ -590,10 +590,10 @@ function SaleLine({ label, v, bold, highlight }: { label: string; v: number; bol
   const neg = v < 0
   return (
     <tr>
-      <td style={{ padding: '6px 4px', fontFamily: font, fontSize: 12, fontWeight: bold ? 700 : 400, color: 'var(--ink-primary)' }}>{label}</td>
+      <td style={{ padding: '6px 4px', fontFamily: font, fontSize: 12, fontWeight: bold ? 600 : 400, color: 'var(--ink-primary)' }}>{label}</td>
       <td style={{
         padding: '6px 4px', textAlign: 'right', fontFamily: mono,
-        fontSize: highlight ? 15 : 13, fontWeight: bold ? 700 : 500,
+        fontSize: highlight ? 15 : 13, fontWeight: bold ? 600 : 500,
         color: highlight ? (v >= 0 ? 'var(--pos)' : 'var(--neg)') : (neg ? 'var(--neg)' : 'var(--ink-primary)'),
       }}>
         {fmtCurrencyFull(v, 'BRL')}

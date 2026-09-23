@@ -146,7 +146,7 @@ export default function PageVisaoAtletas() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Visão por Atleta" subtitle="Consolidado por natureza · Botafogo SAF">
+      <PageHero title="Visão por Atleta" section="Relatórios" subtitle="Consolidado por natureza">
         <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
@@ -157,9 +157,9 @@ export default function PageVisaoAtletas() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
             style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div className="seg-control" role="group" aria-label="Filtrar atletas">
           {([['todos', 'Todos'], ['atraso', 'Com atraso'], ['aberto', 'Com saldo em aberto']] as [Filter, string][]).map(([k, l]) => (
-            <button key={k} onClick={() => setFilter(k)} className={`btn btn-sm ${filter === k ? 'btn-primary' : 'btn-outline'}`}>{l}</button>
+            <button key={k} type="button" onClick={() => setFilter(k)} aria-pressed={filter === k} className="seg-control__item">{l}</button>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -264,11 +264,11 @@ function NatureRow({ n, td, onOpen }: {
       <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>
         <ByCurrency totals={n.openByCurrency} />
       </td>
-      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 700 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
+      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 600 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
         {n.overdueBRL > 0 ? fmtCurrencyShort(n.overdueBRL, 'BRL') : '—'}
         {n.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.overdueCount} parcela(s)</div>}
       </td>
-      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 700 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 600 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
         {n.rjBRL > 0 ? fmtCurrencyShort(n.rjBRL, 'BRL') : '—'}
         {n.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.rjCount} lançamento(s)</div>}
       </td>

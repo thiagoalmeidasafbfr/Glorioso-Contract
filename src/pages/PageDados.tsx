@@ -319,7 +319,7 @@ export default function PageDados() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Dados & Modelos" subtitle="Importar / Exportar · Botafogo SAF">
+      <PageHero title="Dados & Modelos" section="Dados">
         <button onClick={exportAll} disabled={exportingAll} className="btn btn-accent">
           <Icon name="download" size={16} /> {exportingAll ? 'Exportando…' : 'Exportar toda a base'}
         </button>

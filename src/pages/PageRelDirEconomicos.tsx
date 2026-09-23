@@ -120,7 +120,7 @@ export default function PageRelDirEconomicos() {
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Direitos Econômicos" subtitle="Consolidado de titularidade por atleta · Botafogo, parceiros, agentes e terceiros">
+      <PageHero title="Direitos Econômicos" section="Relatórios" subtitle="Consolidado de titularidade por atleta · Botafogo, parceiros, agentes e terceiros">
         <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 

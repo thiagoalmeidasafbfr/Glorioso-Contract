@@ -31,7 +31,7 @@ import {
 import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
-import { badgeStyle } from '../lib/tones'
+import { badgeStyle, PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, humanizeEnum } from '../lib/tones'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -295,7 +295,7 @@ export default function PageConsolidado() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Consolidado" subtitle="Todas as movimentações financeiras · Botafogo SAF">
+      <PageHero title="Consolidado" section="Relatórios" subtitle="Todas as movimentações financeiras">
         <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
@@ -325,7 +325,7 @@ export default function PageConsolidado() {
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
           <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
-            {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
+            {STATUS_OPTS.map(s => <option key={s} value={s}>{s === 'Todos' ? s : (PAYMENT_STATUS_LABEL[s] ?? humanizeEnum(s))}</option>)}
           </select>
         </div>
         <div>
@@ -398,7 +398,7 @@ export default function PageConsolidado() {
                         ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                       </td>
                     )}
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
@@ -418,11 +418,7 @@ export default function PageConsolidado() {
                       {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--warn)', fontWeight: 600 }}>fx</span>}
                     </td>
                     <td style={td}>
-                      <span style={{
-                        display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500,
-                        fontFamily: mono, background: m.status === 'PAGA' ? 'var(--pos-tint)' : m.status === 'EM_ATRASO' ? 'var(--neg-tint)' : 'var(--cream-inset)',
-                        color: m.status === 'PAGA' ? 'var(--pos)' : m.status === 'EM_ATRASO' ? 'var(--neg)' : 'var(--ink-secondary)',
-                      }}>{m.status.replace(/_/g, ' ')}</span>
+                      <span style={badgeStyle(PAYMENT_STATUS_TONE[m.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{PAYMENT_STATUS_LABEL[m.status] ?? humanizeEnum(m.status)}</span>
                     </td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions

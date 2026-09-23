@@ -501,3 +501,19 @@ a.breadcrumb__item:hover { color: var(--text-primary); }
 }
 .due-row:last-child { border-bottom: none; }
 .due-row:hover { background: var(--surface-sunken); color: var(--text-primary); }
+
+/* ── Controle segmentado (trilho do IconNavRail do DS: sunken + ativo preto) ── */
+.seg-control {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 4px; border-radius: var(--radius-lg); background: var(--surface-sunken);
+}
+.seg-control__item {
+  height: var(--control-h-sm); padding: 0 var(--space-3);
+  border: none; border-radius: var(--radius-control); background: transparent;
+  font-family: var(--font-core); font-size: var(--text-body-sm-size); color: var(--text-primary);
+  white-space: nowrap; cursor: pointer; transition: var(--transition-control);
+}
+.seg-control__item:hover { background: var(--gray-150); }
+.seg-control__item[aria-pressed="true"], .seg-control__item[aria-pressed="true"]:hover {
+  background: var(--action-inverse); color: var(--text-inverse);
+}

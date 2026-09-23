@@ -132,7 +132,7 @@ export default function PageRelSellOn() {
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Vendas Futuras (Sell-on)" subtitle="Consolidado de % de vendas futuras · a pagar e a receber" />
+      <PageHero title="Vendas Futuras (Sell-on)" section="Relatórios" subtitle="Consolidado de % de vendas futuras · a pagar e a receber" />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </div>

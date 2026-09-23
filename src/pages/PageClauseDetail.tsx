@@ -6,7 +6,7 @@
 // pagamentos parcela a parcela.
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   fetchClause, fetchAthlete, fetchAthleteContracts, fetchClauseInstallments,
   updateClause, deleteClause, deleteClauseInstallments, createClauseInstallments,
@@ -175,14 +175,12 @@ export default function PageClauseDetail() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 920, margin: '0 auto' }}>
-      <PageHero title={clause.description || CLAUSE_TYPE_LABELS[clause.clause_type]} subtitle={`${CLAUSE_TYPE_LABELS[clause.clause_type]} · ${athlete?.short_name ?? athlete?.full_name ?? 'Atleta'}`} />
-
-      <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)', marginBottom: 18, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Link to="/atletas" style={{ color: 'inherit', textDecoration: 'none' }}>Atletas</Link>
-        <span>/</span>
-        {athlete && <><Link to={`/atletas/${athlete.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{athlete.short_name ?? athlete.full_name}</Link><span>/</span></>}
-        <span style={{ color: 'var(--ink-primary)' }}>Obrigação</span>
-      </div>
+      <PageHero title={clause.description || CLAUSE_TYPE_LABELS[clause.clause_type]}
+        crumbs={[
+          { label: 'Atletas', to: '/atletas', icon: 'athletes' },
+          ...(athlete ? [{ label: athlete.short_name ?? athlete.full_name, to: `/atletas/${athlete.id}` }] : []),
+          { label: CLAUSE_TYPE_LABELS[clause.clause_type] },
+        ]} />
 
       {/* Dados da obrigação */}
       <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
@@ -309,7 +307,7 @@ export default function PageClauseDetail() {
                     </span>
                   )}
                   <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)', textAlign: 'right' }}>{p.installment_number}</span>
-                  <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{fmtDate(p.due_date)}</span>
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>
                     {fmtCurrencyShort(p.original_value, p.currency)}
                     {rj && <span style={{ ...badgeStyle('warning'), marginLeft: 8 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
@@ -397,7 +395,7 @@ function ClauseFields({ clause, onSaved, onCancel }: { clause: Clause; onSaved: 
       <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
       <div><label style={lbl}>Status</label>
         <select style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
-          {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+          {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
         </select>
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>

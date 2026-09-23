@@ -347,7 +347,7 @@ export default function PageAthletesList() {
       </div>
 
       {importMsg && (
-        <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--gold-deep)', marginBottom: 14 }}>
+        <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)', marginBottom: 14 }}>
           {importMsg}
         </div>
       )}

@@ -7,6 +7,7 @@ import { useRef, useState } from 'react'
 import { parseWorkbookFile } from '../lib/xlsx-utils'
 import { importWorkbook, type ImportReport } from '../lib/importSheets'
 import PageHero from '../components/PageHero'
+import { Icon } from '../components/Icon'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -47,13 +48,13 @@ export default function PageImportarPlanilhas() {
   const known = sheets ? Object.keys(sheets).filter(s => KNOWN.includes(s)) : []
   const other = sheets ? Object.keys(sheets).filter(s => !KNOWN.includes(s)) : []
 
-  const card: React.CSSProperties = { padding: '14px 18px' }
+  const card: React.CSSProperties = { padding: 'var(--gutter-card)' }
   const num: React.CSSProperties = { fontFamily: fontMono, fontWeight: 600 }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Importar planilhas (Ativos / Passivos)" subtitle="Importar / Exportar · Botafogo SAF" />
-      <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: -4, marginBottom: 22, maxWidth: 760 }}>
+      <PageHero title="Importar planilhas (Ativos / Passivos)" section="Dados" />
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: 'calc(-1 * var(--space-3))', marginBottom: 'var(--space-6)', maxWidth: 760 }}>
         Importa os workbooks brutos que alimentavam o Power BI. Os atletas são reconhecidos pela chave natural (CPF/passaporte),
         clubes e agentes viram cadastros, e cada parcela recebe um <span style={{ fontFamily: fontMono }}>source_key</span> —
         reimportar o mesmo arquivo <strong>não duplica</strong>, apenas complementa.
@@ -62,9 +63,8 @@ export default function PageImportarPlanilhas() {
       {!sheets && (
         <div className="card" style={{ padding: 40, textAlign: 'center' }}>
           <input ref={ref} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
-          <button onClick={() => ref.current?.click()} disabled={busy}
-            style={{ padding: '11px 26px', background: 'var(--ink-primary)', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            {busy ? 'Lendo...' : 'Selecionar arquivo .xlsx'}
+          <button onClick={() => ref.current?.click()} disabled={busy} className="btn btn-primary btn-lg">
+            <Icon name="upload" size={16} /> {busy ? 'Lendo…' : 'Selecionar arquivo .xlsx'}
           </button>
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>Envie um arquivo por vez (Ativos ou Passivos).</div>
         </div>
@@ -83,9 +83,8 @@ export default function PageImportarPlanilhas() {
           </div>
           {other.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 6 }}>Ignoradas: {other.join(', ')}</div>}
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-            <button onClick={confirm} disabled={busy || known.length === 0}
-              style={{ padding: '10px 22px', background: 'var(--ink-primary)', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              {busy ? 'Importando...' : 'Confirmar importação'}
+            <button onClick={confirm} disabled={busy || known.length === 0} className="btn btn-primary">
+              {busy ? 'Importando…' : 'Confirmar importação'}
             </button>
             <button onClick={reset} className="btn btn-outline">Cancelar</button>
           </div>
@@ -95,13 +94,13 @@ export default function PageImportarPlanilhas() {
       {report && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
-            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 22 }}>{report.athletes.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 22 }}>{report.clubs.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 22 }}>{report.agents.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 500, marginTop: 8 }}>{report.athletes.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 500, marginTop: 8 }}>{report.clubs.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 500, marginTop: 8 }}>{report.agents.created}</div></div>
           </div>
 
           <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-soft)', fontWeight: 600, fontSize: 14, fontFamily: fontBody, color: 'var(--ink-primary)' }}>Obrigações importadas</div>
+            <div className="eyebrow" style={{ padding: '16px 16px 12px' }}>Obrigações importadas</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr>
                 {['Natureza', 'Criadas', 'Já existiam', 'Sem atleta', 'Erros'].map((h, i) => (
@@ -135,7 +134,7 @@ export default function PageImportarPlanilhas() {
         </div>
       )}
 
-      {error && <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--neg-tint)', color: 'var(--neg)', fontFamily: fontBody, fontSize: 13 }}>{error}</div>}
+      {error && <div role="alert" style={{ marginTop: 14, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--surface-negative-soft)', color: 'var(--text-negative)', fontFamily: fontBody, fontSize: 13 }}>{error}</div>}
     </div>
   )
 }

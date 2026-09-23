@@ -22,6 +22,7 @@ import { Icon } from '../Icon'
 import NumberInput from '../NumberInput'
 import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { modalInput, modalLabel } from './styles'
+import { humanizeEnum } from '../../lib/tones'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -101,7 +102,7 @@ export function InstallmentEditModal({ inst, onClose, onSaved }: {
         <div><label style={modalLabel}>Moeda</label><select style={modalInput} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         <div><label style={modalLabel}>Status</label>
           <select style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
-            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
         <div><label style={modalLabel}>Data pagamento</label><input style={modalInput} type="date" value={f.payment_date} onChange={e => set('payment_date', e.target.value)} /></div>
@@ -183,12 +184,12 @@ export function ClauseEditModal({ clause, onClose, onSaved, allowDelete = true }
         <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         <div><label style={modalLabel}>Status pagamento</label>
           <select style={modalInput} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
-            {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
         <div><label style={modalLabel}>Atingimento</label>
           <select style={modalInput} value={f.achievement_status} onChange={e => set('achievement_status', e.target.value)}>
-            {['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
       </div>
@@ -354,7 +355,7 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
         <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         <div><label style={modalLabel}>Status</label>
           <select style={modalInput} value={f.status} onChange={e => set('status', e.target.value)}>
-            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+            {['PENDENTE', 'PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
           </select>
         </div>
       </div>

@@ -169,7 +169,7 @@ export default function PageRelGatilhos() {
   const tdMono: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Gatilhos e Metas" subtitle="Consolidado de metas esportivas, bônus de performance e cláusulas rescisórias">
+      <PageHero title="Gatilhos e Metas" section="Relatórios" subtitle="Consolidado de metas esportivas, bônus de performance e cláusulas rescisórias">
         <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
@@ -228,7 +228,7 @@ export default function PageRelGatilhos() {
                 return (
                   <tr key={r.id}>
                     <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
-                    <td style={{ ...td, fontSize: 10, fontFamily: 'var(--font-label)', color: r.origin === 'BONUS' ? 'var(--warn)' : r.origin === 'RESCISORIA' ? 'var(--neg)' : 'var(--info)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase' }}>{ORIGIN_LABEL[r.origin]}</td>
+                    <td style={td}><span style={badgeStyle(r.origin === 'BONUS' ? 'warning' : r.origin === 'RESCISORIA' ? 'negative' : 'info')}>{ORIGIN_LABEL[r.origin]}</span></td>
                     <td style={{ ...td, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.description}>{r.description}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.metric}</td>
                     <td style={{ ...tdMono, color: 'var(--text-secondary)', maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.threshold}>{r.threshold}</td>

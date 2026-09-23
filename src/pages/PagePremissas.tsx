@@ -246,7 +246,7 @@ export default function PagePremissas() {
     <div style={{ padding: 'clamp(16px, 3vw, 32px)', maxWidth: '100%' }}>
       <PageHero
         title="Premissas por atleta"
-        subtitle="Modelo financeiro — Fase 1"
+        section="Modelo financeiro" subtitle="Fase 1"
       >
         {canEdit && (
           <div style={{ display: 'flex', gap: 8 }}>
