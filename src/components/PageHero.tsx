@@ -15,6 +15,8 @@ interface Props {
   subtitle?: string
   /** Breadcrumb explícito (sobrepõe o derivado do subtitle). */
   crumbs?: Crumb[]
+  /** Legenda explícita sob o título (além do breadcrumb). */
+  caption?: string
   children?: React.ReactNode
 }
 
@@ -43,12 +45,12 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
   )
 }
 
-export default function PageHero({ title, subtitle, crumbs, children }: Props) {
+export default function PageHero({ title, subtitle, crumbs, caption: captionProp, children }: Props) {
   const m = subtitle?.match(/^(.+?) · Botafogo SAF$/)
   const trail: Crumb[] | null = crumbs ?? (m
     ? [{ label: ORG, icon: 'folder' }, { label: m[1], icon: 'grid' }]
     : null)
-  const caption = !crumbs && !m ? subtitle : undefined
+  const caption = captionProp ?? (!crumbs && !m ? subtitle : undefined)
 
   return (
     <div className="page-header">

@@ -14,6 +14,8 @@ import { sortRights, sumOwnership } from '../lib/ownership'
 import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import { Icon, IconButton } from '../components/Icon'
+import { modalInput, modalLabel } from '../components/modals/styles'
+import { ATHLETE_STATUS_TONE, badgeStyle } from '../lib/tones'
 import SheetIO from '../components/SheetIO'
 import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
@@ -37,12 +39,7 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
   DESLIGADO:  'Desligado',
 }
 
-const STATUS_STYLE: Record<AthleteStatus, { bg: string; fg: string }> = {
-  ATIVO:      { bg: '#e6ece2', fg: '#3a6f3a' },
-  EMPRESTADO: { bg: 'var(--gray-150)', fg: '#7a6244' },
-  VENDIDO:    { bg: 'rgba(91,107,122,0.12)', fg: '#5b6b7a' },
-  DESLIGADO:  { bg: 'rgba(156,163,175,0.18)', fg: '#6b7280' },
-}
+const STATUS_TONE = ATHLETE_STATUS_TONE
 
 // Ordem de exibição por posição (de cima pra baixo):
 // Goleiro → Lateral → Zagueiro → Volante → Meio Campo → Atacante.
@@ -68,15 +65,18 @@ function AthleteAvatar({ athlete, size = 38 }: { athlete: Athlete; size?: number
     return (
       <img src={athlete.profile_photo_url} alt={athlete.short_name}
         onError={() => setErr(true)}
-        style={{ width: size, height: size, borderRadius: 'var(--radius-circle)', objectFit: 'cover', border: '2px solid var(--divider-strong)', flexShrink: 0 }} />
+        style={{
+          width: size, height: size, borderRadius: 'var(--radius-sm)', objectFit: 'cover', objectPosition: 'center top', flexShrink: 0,
+          background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line)',
+        }} />
     )
   }
   return (
     <div style={{
-      width: size, height: size, borderRadius: 'var(--radius-circle)', flexShrink: 0,
-      background: 'var(--cream-inset)',
+      width: size, height: size, borderRadius: 'var(--radius-sm)', flexShrink: 0,
+      background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: fontMono, fontSize: size * 0.32, fontWeight: 600, color: 'var(--gold-deep)',
+      fontSize: size * 0.34, fontWeight: 500, color: 'var(--ink-900)',
     }}>
       {getInitials(athlete.short_name)}
     </div>
@@ -97,15 +97,8 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   })
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
-  const inp: React.CSSProperties = {
-    width: '100%', padding: '8px 10px', borderRadius: 'var(--radius-xs)', fontSize: 13,
-    background: 'var(--cream-canvas)', border: '1px solid var(--input-border)',
-    color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
-  }
-  const lbl: React.CSSProperties = {
-    fontSize: 10, fontWeight: 400, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)',
-    textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block',
-  }
+  const inp = modalInput
+  const lbl = modalLabel
   const field = (label: string, key: string, type = 'text', opts?: string[]) => (
     <div>
       <label style={lbl}>{label}</label>
@@ -141,20 +134,20 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Novo atleta"
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 'var(--radius-card)', padding: 28, width: 600, maxWidth: '96vw', boxShadow: 'var(--shadow-pop)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font, marginBottom: 4 }}>Novo Atleta</div>
+      <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 600, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Novo atleta</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {field('Nome Completo *', 'full_name')}
-          {field('Nome Curto / Alcunha', 'short_name')}
-          {field('Data de Nascimento', 'birth_date', 'date')}
+          {field('Nome completo *', 'full_name')}
+          {field('Nome curto / alcunha', 'short_name')}
+          {field('Data de nascimento', 'birth_date', 'date')}
           {field('Nacionalidade', 'nationality')}
           {field('CPF', 'cpf')}
           {field('Passaporte', 'passport_number')}
           {field('Posição', 'position', 'text', ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante'])}
-          {field('Status Atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
+          {field('Status atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
           <div>
             <label style={lbl}>Categoria</label>
             <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
@@ -173,11 +166,10 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           <textarea style={{ ...inp, minHeight: 60, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} />
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={handleSave} disabled={!f.full_name.trim()}
-            style={{ padding: '8px 22px', borderRadius: 'var(--radius-md)', border: 'none', background: f.full_name.trim() ? 'var(--action-inverse)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
-            Criar Atleta
+          <button onClick={handleSave} disabled={!f.full_name.trim()} className="btn btn-primary">
+            Criar atleta
           </button>
         </div>
       </div>
@@ -193,7 +185,7 @@ function AlertCount({ kind, count }: { kind: 'atraso' | 'breve'; count: number }
     <span title={atraso ? `${count} parcela(s) em atraso` : `${count} parcela(s) vencendo em breve`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: atraso ? 'var(--neg)' : 'var(--warn)' }}>
       <Icon name={atraso ? 'alert' : 'clock'} size={16} />
-      <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{count}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
     </span>
   )
 }
@@ -397,7 +389,7 @@ export default function PageAthletesList() {
               )}
               {filtered.map(a => {
                 const stats = getAthleteStats(a.id)
-                const st = STATUS_STYLE[a.current_status]
+                const tone = STATUS_TONE[a.current_status]
                 return (
                   <tr key={a.id} style={{ cursor: 'pointer' }}
                     onClick={() => navigate(`/atletas/${a.id}`)}
@@ -413,7 +405,7 @@ export default function PageAthletesList() {
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
                     </td>
                     <td style={{ ...td, width: 110 }}>
-                      <span style={{ padding: '3px 8px', borderRadius: 'var(--radius-xs)', background: st.bg, color: st.fg, fontSize: 10, fontWeight: 500, fontFamily: fontMono }}>
+                      <span style={badgeStyle(tone)}>
                         {STATUS_LABELS[a.current_status]}
                       </span>
                     </td>

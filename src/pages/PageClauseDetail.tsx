@@ -27,6 +27,7 @@ import RowActions, { ActionLegend } from '../components/RowActions'
 import { InstallmentEditModal } from '../components/modals/EditModals'
 import { parseRJ, toggleItemRJ, markManyRJ, unmarkItemRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
+import { modalInput, modalLabel } from '../components/modals/styles'
 
 const font = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -46,8 +47,8 @@ function Badge({ status }: { status: string }) {
   return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: fontMono, background: s.bg, color: s.fg }}>{status.replace(/_/g, ' ')}</span>
 }
 
-const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 'var(--radius-md)', fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
-const lbl: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
+const inp = modalInput
+const lbl = modalLabel
 
 export default function PageClauseDetail() {
   const { clauseId } = useParams<{ clauseId: string }>()

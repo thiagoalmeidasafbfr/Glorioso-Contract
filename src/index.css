@@ -480,3 +480,21 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--ink-900); }
 .breadcrumb__sep { color: var(--gray-400); }
 .breadcrumb__item { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); }
 a.breadcrumb__item:hover { color: var(--text-primary); }
+
+/* ── Listas navegáveis dentro de cards ───────────────────────────────────── */
+.list-link {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  min-height: var(--control-h-md); padding: 0 10px 0 12px;
+  border-radius: var(--radius-control);
+  font-size: var(--text-body-size); color: var(--text-primary);
+  background: var(--surface-sunken);
+  transition: var(--transition-control);
+}
+.list-link:hover { background: var(--gray-150); color: var(--text-primary); }
+.due-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: 10px 4px; border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary); transition: background-color var(--duration-fast) var(--ease-out);
+}
+.due-row:last-child { border-bottom: none; }
+.due-row:hover { background: var(--surface-sunken); color: var(--text-primary); }

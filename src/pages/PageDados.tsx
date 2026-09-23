@@ -331,7 +331,7 @@ export default function PageDados() {
 
       {confirmWipe && (
         <div style={{ border: '1px solid rgba(122,63,44,0.35)', background: 'rgba(122,63,44,0.06)', borderRadius: 'var(--radius-md)', padding: 18, marginBottom: 22 }}>
-          <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: '#7a3f2c', marginBottom: 6 }}>Apagar toda a base?</div>
+          <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: '#7a3f2c', marginBottom: 6 }}>Apagar toda a base?</div>
           <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
             Isto remove <strong>permanentemente</strong> todos os atletas, vínculos, cláusulas, parcelas, titularidade,
             metas de salário, passivos, direito de imagem, PJs, clubes e agentes. Esta ação <strong>não pode ser desfeita</strong>.
@@ -367,7 +367,7 @@ export default function PageDados() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
         {DESCRIPTORS.map(d => (
           <div key={d.key} className="card" style={{ padding: 18 }}>
-            <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', marginBottom: 2 }}>{d.label}</div>
+            <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', marginBottom: 2 }}>{d.label}</div>
             <div style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-secondary)', marginBottom: 14 }}>
               {d.cols.length} colunas{d.parent ? ` · requer ${d.parent}` : ''}
             </div>

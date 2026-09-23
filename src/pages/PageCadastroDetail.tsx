@@ -217,7 +217,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
           {editing ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 460 }}>
               <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" aria-label="Nome"
-                style={{ ...modalInput, fontSize: 16, fontWeight: 600 }} />
+                style={{ ...modalInput, fontSize: 'var(--text-subtitle-size)', fontWeight: 500 }} />
               <input value={sub ?? ''} onChange={e => setSub(e.target.value)} placeholder={isClube ? 'País' : 'Contato'} aria-label={isClube ? 'País' : 'Contato'}
                 style={modalInput} />
               <textarea value={notes ?? ''} onChange={e => setNotes(e.target.value)} placeholder="Observações" aria-label="Observações"
@@ -230,7 +230,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h1 style={{ fontFamily: fontBody, fontSize: 23, fontWeight: 600, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
+                <h1 style={{ fontFamily: fontBody, fontSize: 'var(--text-title-size)', fontWeight: 500, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
                 {canEdit && <IconButton icon="edit" label="Editar cadastro" onClick={() => setEditing(true)} />}
                 {canEdit && <IconButton icon="trash" label={`Excluir ${isClube ? 'clube' : 'agente'}`} tone="danger" onClick={handleDeleteEntity} />}
               </div>
@@ -271,7 +271,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                 <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: pay ? 'var(--neg)' : 'var(--pos)', marginBottom: 4 }}>
                   {pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)
                 </div>
-                <div style={{ fontSize: 17, fontWeight: 600, fontFamily: fontMono, color: pay ? 'var(--neg)' : 'var(--pos)' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
+                <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, fontFamily: fontMono, color: pay ? 'var(--neg)' : 'var(--pos)' }}>{fmtCurrencyShort(v, moeda as Currency)}</div>
               </div>
             )
           })}
@@ -444,7 +444,7 @@ function Kpi({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ textAlign: 'right' }}>
       <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 19, fontWeight: 600, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{value}</div>
+      <div style={{ fontSize: 'var(--text-title-size)', fontWeight: 500, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{value}</div>
     </div>
   )
 }

@@ -127,10 +127,10 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
               <div style={{ width: 52, height: 52, borderRadius: isClube ? 'var(--radius-md)' : 'var(--radius-circle)', overflow: 'hidden', background: 'var(--cream-inset)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {e.logo
                   ? <img src={e.logo} alt="" style={{ width: '100%', height: '100%', objectFit: isClube ? 'contain' : 'cover' }} />
-                  : <span style={{ fontFamily: fontMono, fontSize: 15, fontWeight: 600, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
+                  : <span style={{ fontFamily: fontMono, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontFamily: fontBody, fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
+                <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
                 {e.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 5 }}>
                   {e.count} obrigaç{e.count === 1 ? 'ão' : 'ões'}
