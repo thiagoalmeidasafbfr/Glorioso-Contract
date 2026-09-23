@@ -328,7 +328,7 @@ export default function PagePremissas() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>Carregando...</td></tr>
+              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>Carregando…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr><td colSpan={31} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13 }}>

@@ -321,7 +321,7 @@ export default function PageWizard() {
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button onClick={createNewAthlete} disabled={!newAth.full_name.trim() || savingAth} className="btn btn-primary">
-                    {savingAth ? 'Criando...' : 'Criar e selecionar'}
+                    {savingAth ? 'Criando…' : 'Criar e selecionar'}
                   </button>
                   <span style={hint}>Os demais dados você completa depois na ficha do atleta.</span>
                 </div>
@@ -470,7 +470,7 @@ export default function PageWizard() {
             <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo <Icon name="chevronRight" size={16} /></button>
           ) : (
             <button onClick={handleSave} disabled={saving || valid.length === 0} className="btn btn-primary">
-              {saving ? 'Criando...' : 'Criar e abrir obrigação'}
+              {saving ? 'Criando…' : 'Criar e abrir obrigação'}
             </button>
           )}
         </div>

@@ -113,7 +113,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
       </div>
 
       {loading ? (
-        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>Carregando...</div>
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>Carregando…</div>
       ) : filtered.length === 0 ? (
         <div className="card" style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontBody }}>
           Nenhum {isClube ? 'clube' : 'agente'} cadastrado.
@@ -186,7 +186,7 @@ function NewModal({ kind, onClose, onSaved }: { kind: Kind; onClose: () => void;
     <ModalShell title={`Novo ${isClube ? 'clube' : 'agente'}`} width={470} onClose={onClose}
       footer={<>
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} className="btn btn-primary" disabled={!name.trim() || saving}>{saving ? 'Salvando...' : 'Criar'}</button>
+        <button onClick={save} className="btn btn-primary" disabled={!name.trim() || saving}>{saving ? 'Salvando…' : 'Criar'}</button>
       </>}>
       <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
         <ImageUpload value={logo} onChange={setLogo} fallbackText={name} size={88} rounded={!isClube} maxSize={512} />

@@ -159,7 +159,7 @@ export default function PageRelDirEconomicos() {
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>}
+              {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta.</td></tr>}
               {filtered.map(r => {
                 const isOpen = expanded.has(r.athlete.id)

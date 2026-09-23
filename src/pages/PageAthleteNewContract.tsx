@@ -1064,7 +1064,7 @@ export default function PageAthleteNewContract() {
             </button>
           ) : (
             <button onClick={handleSave} disabled={saving} className="btn btn-primary">
-              {saving ? 'Salvando...' : 'Salvar vínculo'}
+              {saving ? 'Salvando…' : 'Salvar vínculo'}
             </button>
           )}
         </div>

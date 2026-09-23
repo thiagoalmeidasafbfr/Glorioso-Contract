@@ -341,7 +341,7 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving || !f.full_name.trim()} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
+          <button onClick={save} disabled={saving || !f.full_name.trim()} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
         </div>
       </div>
     </div>
@@ -1268,7 +1268,7 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
+            <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
             <button onClick={() => setEditing(false)} className="btn btn-outline">Cancelar</button>
           </div>
         </div>
@@ -1836,7 +1836,7 @@ function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClos
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={!canSave} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar fluxo'}</button>
+          <button onClick={save} disabled={!canSave} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
         </div>
       </div>
     </div>
@@ -2045,7 +2045,7 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
+          <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
         </div>
       </div>
     </div>
@@ -2189,7 +2189,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
           <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
           <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
           <div><label style={lbl}>Percentual (%){isFuture ? ' *' : ''}</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} placeholder="Ex: 15" /></div>
-          <div><label style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><NumberInput style={{ ...inp, opacity: isFuture ? 0.55 : 1 }} value={f.original_value} onChange={v => set('original_value', v)} placeholder={isFuture ? 'a definir na venda' : '0,00'} /></div>
+          <div><label style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><NumberInput style={{ ...inp, ...(isFuture ? { background: 'var(--gray-100)', color: 'var(--text-disabled)' } : null) }} value={f.original_value} onChange={v => set('original_value', v)} placeholder={isFuture ? 'a definir na venda' : '0,00'} /></div>
           <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
           <div><label style={lbl}>{isFuture ? 'Vencimento (opcional)' : 'Vencimento / 1ª parcela'}</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         </div>
@@ -2229,7 +2229,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving || !canSave} style={{ padding: '8px 22px', borderRadius: 'var(--radius-md)', border: 'none', background: canSave ? 'var(--ink-primary)' : 'var(--divider-strong)', color: 'var(--text-inverse)', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: canSave ? 'pointer' : 'not-allowed', opacity: saving ? 0.6 : 1 }}>{saving ? 'Salvando...' : 'Adicionar cláusula'}</button>
+          <button onClick={save} disabled={saving || !canSave} className="btn btn-primary">{saving ? 'Salvando…' : 'Adicionar cláusula'}</button>
         </div>
       </div>
     </div>
@@ -2593,7 +2593,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Gere as parcelas pelo nº/data acima e edite cada vencimento e valor.</span>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', background: 'var(--action-ghost-hover)', color: 'var(--action-inverse)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Gerar fluxo</button>
-                  <button onClick={addSchedRow} className="btn btn-outline">+ Linha</button>
+                  <button onClick={addSchedRow} className="btn btn-outline"><Icon name="plus" size={16} /> Linha</button>
                 </div>
               </div>
               {schedule.length === 0 ? (

@@ -318,7 +318,7 @@ export default function PageRecuperacaoJudicial() {
               <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Total (BRL PTAX)</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>}
+              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
               {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum lançamento marcado como Recuperação Judicial.</td></tr>}
               {byCreditor.map(g => (
                 <tr key={g.credor}>
@@ -358,7 +358,7 @@ export default function PageRecuperacaoJudicial() {
               {canEdit && <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>}
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>}
+              {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum lançamento em RJ.</td></tr>}
               {filtered.map(r => {
                 const d = r.dueDate ? daysFromToday(r.dueDate) : null

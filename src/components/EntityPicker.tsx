@@ -195,7 +195,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={createNow} disabled={!query.trim() || busy}
                   className="btn btn-primary btn-sm">
-                  {busy ? 'Criando...' : 'Criar e selecionar'}
+                  {busy ? 'Criando…' : 'Criar e selecionar'}
                 </button>
               </div>
             </div>

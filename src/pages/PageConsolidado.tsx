@@ -381,7 +381,7 @@ export default function PageConsolidado() {
               <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>Ações</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>}
+              {loading && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
               {filtered.map(m => {
                 const late = isOverdue(m.date, m.status)

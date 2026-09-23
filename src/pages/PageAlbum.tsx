@@ -312,7 +312,7 @@ export default function PageAlbum() {
       {/* Figurinhas agrupadas por posição */}
       {loading ? (
         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12, padding: 60 }}>
-          Carregando...
+          Carregando…
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: font, fontSize: 13, padding: 60 }}>

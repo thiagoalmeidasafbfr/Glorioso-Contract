@@ -221,7 +221,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
               <textarea value={notes ?? ''} onChange={e => setNotes(e.target.value)} placeholder="Observações" aria-label="Observações"
                 style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={saveMeta} disabled={saving || !name.trim()} className="btn btn-primary">{saving ? 'Salvando...' : 'Salvar'}</button>
+                <button onClick={saveMeta} disabled={saving || !name.trim()} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
                 <button onClick={() => { setEditing(false); load() }} className="btn btn-outline">Cancelar</button>
               </div>
             </div>

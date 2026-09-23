@@ -153,7 +153,7 @@ export default function LoanShareModal({
         {cell(`${loanContract.counterpart_club || 'Clube'} — total/mês`, fmtCurrencyShort(clubTotal, currency))}
       </div>
 
-      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: loanContract.end_date ? 'pointer' : 'default', opacity: loanContract.end_date ? 1 : 0.6 }}>
+      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: loanContract.end_date ? 'pointer' : 'not-allowed', color: loanContract.end_date ? undefined : 'var(--text-disabled)' }}>
         <input type="checkbox" checked={restoreAtEnd && !!loanContract.end_date} disabled={!loanContract.end_date}
           onChange={e => setRestoreAtEnd(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
         <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>

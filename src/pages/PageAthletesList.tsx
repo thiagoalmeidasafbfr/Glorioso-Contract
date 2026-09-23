@@ -371,7 +371,7 @@ export default function PageAthletesList() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>

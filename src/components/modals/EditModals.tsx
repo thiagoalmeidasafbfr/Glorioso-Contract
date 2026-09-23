@@ -94,7 +94,7 @@ export function InstallmentEditModal({ inst, onClose, onSaved }: {
       footer={<>
         <button onClick={remove} className="btn btn-danger" style={{ marginRight: 'auto' }} disabled={saving}>Excluir parcela</button>
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </>}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div><label style={modalLabel}>Vencimento</label><input style={modalInput} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
@@ -167,7 +167,7 @@ export function ClauseEditModal({ clause, onClose, onSaved, allowDelete = true }
       footer={<>
         {allowDelete && <button onClick={remove} className="btn btn-danger" style={{ marginRight: 'auto' }} disabled={saving}>Excluir</button>}
         <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+        <button onClick={save} className="btn btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
       </>}>
       <div><label style={modalLabel}>Natureza</label>
         <select style={modalInput} value={f.clause_type} onChange={e => set('clause_type', e.target.value)}>

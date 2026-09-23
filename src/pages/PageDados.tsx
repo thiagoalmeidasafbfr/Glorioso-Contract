@@ -401,7 +401,7 @@ function ImportButton({ d, onDone }: { d: Descriptor; onDone: (text: string, ok:
   }
   return (
     <>
-      <button onClick={() => ref.current?.click()} disabled={busy} className="btn btn-primary">{busy ? 'Importando...' : 'Importar'}</button>
+      <button onClick={() => ref.current?.click()} disabled={busy} className="btn btn-primary">{busy ? 'Importando…' : 'Importar'}</button>
       <input ref={ref} type="file" accept=".xlsx,.xls" onChange={handle} style={{ display: 'none' }} />
     </>
   )

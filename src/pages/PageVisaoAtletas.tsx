@@ -186,7 +186,7 @@ export default function PageVisaoAtletas() {
               <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando...</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
               {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
               {visible.map(r => {
                 const open = expanded.has(r.athlete.id)
