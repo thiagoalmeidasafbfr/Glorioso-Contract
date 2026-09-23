@@ -295,7 +295,7 @@ export default function PageConsolidado() {
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Consolidado" subtitle="Todas as movimentações financeiras · Botafogo SAF">
-        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={13} /> Exportar</button>
+        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>

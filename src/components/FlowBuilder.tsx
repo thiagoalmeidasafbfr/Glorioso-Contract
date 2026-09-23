@@ -140,7 +140,7 @@ export default function FlowBuilder({
               border: '1px solid var(--divider-strong)', background: genOpen ? 'var(--action-ghost-hover)' : 'transparent',
               color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}>
-            <Icon name={genOpen ? 'chevronDown' : 'chevronRight'} size={13} />
+            <Icon name={genOpen ? 'chevronDown' : 'chevronRight'} size={16} />
             Gerar automaticamente
           </button>}
         </div>
@@ -228,7 +228,7 @@ export default function FlowBuilder({
             padding: '9px 0', borderRadius: 8, border: '1px dashed var(--divider-strong)', background: 'transparent',
             color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}>
-          <Icon name="plus" size={14} /> Adicionar parcela
+          <Icon name="plus" size={16} /> Adicionar parcela
         </button>
 
         <div style={{ marginTop: 8, textAlign: 'right', fontFamily: mono, fontSize: 12, color: 'var(--ink-primary)' }}>

@@ -267,7 +267,7 @@ export default function PageRecuperacaoJudicial() {
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title="Recuperação Judicial" subtitle="Passivos incluídos no processo — credores, valores e atraso">
-        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={13} /> Exportar</button>
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>

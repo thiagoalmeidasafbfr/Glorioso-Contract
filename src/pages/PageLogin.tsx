@@ -1,9 +1,21 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import Wordmark from '../components/Wordmark'
 
-const fontLabel = "var(--font-label)"
-const fontBody = "var(--font-body)"
-const fontDisplay = "var(--font-display)"
+// Login no padrão do Glorioso Finance DS: capa com o gradiente creme
+// (--gradient-mint), headline em duas partes (400 / 600), campos de 44px com
+// filete claro e foco preto, e a ação principal em preto.
+
+const field: React.CSSProperties = {
+  width: '100%', height: 'var(--control-h-lg)', padding: '0 14px',
+  background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+  borderRadius: 'var(--radius-control)', fontSize: 'var(--text-body-size)',
+  color: 'var(--text-primary)', boxSizing: 'border-box',
+}
+
+const label: React.CSSProperties = {
+  display: 'block', fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', marginBottom: 6,
+}
 
 export default function PageLogin() {
   const { signIn } = useAuth()
@@ -24,161 +36,55 @@ export default function PageLogin() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#1a1410',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
+      background: 'var(--gradient-mint)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 'var(--space-6) var(--gutter-screen-mobile)',
     }}>
-      <div style={{ width: '100%', maxWidth: 380 }}>
-
-        {/* Logo + Title */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <img
-            src="/logo-saf.png"
-            alt="SAF Botafogo"
-            style={{ height: 48, objectFit: 'contain', marginBottom: 20 }}
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-          />
+      <div style={{ width: '100%', maxWidth: 400 }}>
+        <div style={{ marginBottom: 'var(--space-8)' }}>
+          <Wordmark plate size={16} />
           <h1 style={{
-            fontFamily: fontDisplay,
-            fontSize: '2rem',
-            fontWeight: 600,
-            color: '#f5f2ec',
-            letterSpacing: '-0.025em',
-            lineHeight: 1.08,
-            marginBottom: 8,
+            marginTop: 'var(--space-7)',
+            fontSize: 'var(--text-h1-size)', lineHeight: 'var(--text-h1-line)',
+            letterSpacing: 'var(--text-h1-tracking)', color: 'var(--text-primary)',
           }}>
-            Gestão de Contratos
+            <span style={{ display: 'block', fontWeight: 400 }}>Gestão de</span>
+            <span style={{ display: 'block', fontWeight: 600 }}>Contratos</span>
           </h1>
-          <div style={{
-            fontFamily: fontLabel,
-            fontSize: 10,
-            color: 'rgba(243,238,226,0.38)',
-            letterSpacing: 'var(--text-overline-tracking)',
-            textTransform: 'uppercase',
-          }}>
-            SAF BOTAFOGO
-          </div>
+          <div className="eyebrow" style={{ marginTop: 'var(--space-3)' }}>SAF Botafogo</div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{
-              display: 'block',
-              fontFamily: fontLabel,
-              fontSize: 10,
-              fontWeight: 400,
-              color: 'rgba(243,238,226,0.45)',
-              letterSpacing: 'var(--text-overline-tracking)',
-              textTransform: 'uppercase',
-              marginBottom: 6,
-            }}>
-              E-mail
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              style={{
-                width: '100%',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 8,
-                padding: '10px 12px',
-                fontFamily: fontBody,
-                fontSize: 14,
-                color: '#f3eee2',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-              onFocus={e => (e.target.style.borderColor = '#f3eee2')}
-              onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
-            />
+        <form onSubmit={handleSubmit} className="card" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div>
+            <label htmlFor="login-email" style={label}>E-mail</label>
+            <input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+              required autoComplete="email" style={field} />
           </div>
 
-          <div style={{ marginBottom: 24 }}>
-            <label style={{
-              display: 'block',
-              fontFamily: fontLabel,
-              fontSize: 10,
-              fontWeight: 400,
-              color: 'rgba(243,238,226,0.45)',
-              letterSpacing: 'var(--text-overline-tracking)',
-              textTransform: 'uppercase',
-              marginBottom: 6,
-            }}>
-              Senha
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              style={{
-                width: '100%',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 8,
-                padding: '10px 12px',
-                fontFamily: fontBody,
-                fontSize: 14,
-                color: '#f3eee2',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-              onFocus={e => (e.target.style.borderColor = '#f3eee2')}
-              onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
-            />
+          <div>
+            <label htmlFor="login-password" style={label}>Senha</label>
+            <input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)}
+              required autoComplete="current-password" style={field} />
           </div>
 
           {error && (
-            <div style={{
-              background: 'rgba(185,28,28,0.15)',
-              border: '1px solid rgba(185,28,28,0.35)',
-              borderRadius: 8,
-              padding: '10px 12px',
-              marginBottom: 16,
-              fontFamily: fontBody,
-              fontSize: 13,
-              color: '#f87171',
+            <div role="alert" style={{
+              background: 'var(--surface-negative-soft)',
+              borderRadius: 'var(--radius-control)',
+              padding: '10px 14px',
+              fontSize: 'var(--text-body-sm-size)',
+              color: 'var(--text-negative)',
             }}>
               {error}
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              background: loading ? 'rgba(220,200,154,0.4)' : '#dcc89a',
-              color: '#3a2e1c',
-              border: 'none',
-              borderRadius: 999,
-              padding: '12px 20px',
-              fontFamily: fontLabel,
-              fontSize: 10,
-              fontWeight: 500,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'background 0.15s',
-            }}
-          >
-            {loading ? 'Entrando...' : 'Entrar'}
+          <button type="submit" disabled={loading} className="btn btn-primary btn-lg btn-block" style={{ marginTop: 'var(--space-2)' }}>
+            {loading ? 'Entrando…' : 'Entrar'}
           </button>
         </form>
 
-        <div style={{
-          marginTop: 32,
-          fontFamily: fontLabel,
-          fontSize: 10,
-          color: 'rgba(243,238,226,0.20)',
-          textAlign: 'center',
-        }}>
+        <div style={{ marginTop: 'var(--space-6)', fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center' }}>
           Acesso restrito — SAF Botafogo
         </div>
       </div>

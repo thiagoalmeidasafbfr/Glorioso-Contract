@@ -484,7 +484,7 @@ export default function PageAthleteNewContract() {
                   fontSize: 12, fontWeight: 600, fontFamily: "var(--font-label)",
                   color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
-                  {done ? <Icon name="check" size={13} /> : s}
+                  {done ? <Icon name="check" size={16} /> : s}
                 </span>
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
                   {labels[i]}
@@ -513,7 +513,7 @@ export default function PageAthleteNewContract() {
               </div>
               {relatedContract && (
                 <div style={{ ...noteBox, marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="link" size={13} /> vinculado a: {contractLabel(relatedContract)}
+                  <Icon name="link" size={16} /> vinculado a: {contractLabel(relatedContract)}
                 </div>
               )}
             </div>
@@ -616,7 +616,7 @@ export default function PageAthleteNewContract() {
               </div>
               <button type="button" onClick={generateTransferLines} className="btn btn-outline"
                 disabled={!transferTotalField} style={{ justifyContent: 'center', whiteSpace: 'nowrap' }}>
-                <Icon name="flow" size={14} /> Gerar parcelas
+                <Icon name="flow" size={16} /> Gerar parcelas
               </button>
             </div>
 
@@ -745,7 +745,7 @@ export default function PageAthleteNewContract() {
                 {isTransferContractType(contract.type) ? 'Agentes desta transação' : 'Agentes / intermediários'}
               </div>
               <button type="button" onClick={addAgent} className="btn btn-outline">
-                <Icon name="plus" size={14} /> Adicionar agente
+                <Icon name="plus" size={16} /> Adicionar agente
               </button>
             </div>
 
@@ -820,7 +820,7 @@ export default function PageAthleteNewContract() {
                     {!ag.futureSale && <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--divider)' }}>
                       {!ag.flowOpen ? (
                         <button type="button" onClick={() => setAgent(i, { flowOpen: true })} className="btn btn-outline">
-                          <Icon name="flow" size={14} /> Parcelar esta comissão
+                          <Icon name="flow" size={16} /> Parcelar esta comissão
                         </button>
                       ) : (
                         <>
@@ -946,7 +946,7 @@ export default function PageAthleteNewContract() {
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
                   {!cl.flowOpen ? (
                     <button type="button" onClick={() => setClauseRow(idx, { flowOpen: true })} className="btn btn-outline">
-                      <Icon name="flow" size={14} /> Parcelar esta cláusula
+                      <Icon name="flow" size={16} /> Parcelar esta cláusula
                     </button>
                   ) : (
                     <>
@@ -977,7 +977,7 @@ export default function PageAthleteNewContract() {
               color: 'var(--ink-primary)', cursor: 'pointer',
             }}
           >
-            <Icon name="plus" size={15} /> Adicionar cláusula
+            <Icon name="plus" size={16} /> Adicionar cláusula
           </button>
         </div>
       )}

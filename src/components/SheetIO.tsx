@@ -60,12 +60,12 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
     <>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={handleExport} title="Exportar dados como XLSX" className="btn btn-dark">
-          <Icon name="download" size={13} /> Exportar
+          <Icon name="download" size={16} /> Exportar
         </button>
         {onImport && (
           <button onClick={() => fileRef.current?.click()} disabled={parsing}
             title="Importar dados de um arquivo XLSX" className="btn btn-outline">
-            <Icon name="upload" size={13} /> {parsing ? 'Lendo…' : 'Importar'}
+            <Icon name="upload" size={16} /> {parsing ? 'Lendo…' : 'Importar'}
           </button>
         )}
         <input

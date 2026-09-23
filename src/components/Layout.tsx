@@ -3,86 +3,79 @@ import { NavLink } from 'react-router-dom'
 import { useApp, CURRENCY_OPTIONS, type AppCurrency } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { USE_SUPABASE } from '../lib/supabase'
+import { Icon, type IconName } from './Icon'
+import Wordmark from './Wordmark'
 
-const fontBody  = "var(--font-body)"
-const fontMono  = "var(--font-label)"
+// Shell do Glorioso Finance DS:
+//  • navegação lateral sobre o fundo da página — itens "ghost" com ícone
+//    monolinha; o ativo é o quadrado PRETO sólido do IconNavRail do DS;
+//    recolhida, vira o próprio trilho de ícones 36×36;
+//  • TopBar de 56px (--layout-topbar) com o cluster de moeda, idioma e perfil
+//    à direita, fixa no topo da área de conteúdo.
 
-const SIDEBAR_W_OPEN = 220
-const SIDEBAR_W_COLLAPSED = 60
+const SIDEBAR_W_OPEN = 240
+const SIDEBAR_W_COLLAPSED = 64
 const COLLAPSE_KEY = 'sidebar-collapsed'
 
-const NAV_SECTIONS: { label: string | null; items: { to: string; label: string; short: string }[] }[] = [
+type NavItemDef = { to: string; label: string; icon: IconName }
+
+const NAV_SECTIONS: { label: string | null; items: NavItemDef[] }[] = [
   {
     label: null,
     items: [
-      { to: '/criar',          label: '+ Criar (Assistente)', short: '+' },
-      { to: '/dashboards',     label: 'Dashboards',           short: 'DB' },
-      { to: '/atletas',        label: 'Atletas',              short: 'AT' },
-      { to: '/album',          label: 'Portfolio de Atletas', short: 'PA' },
-      { to: '/clubes',         label: 'Clubes',               short: 'CL' },
-      { to: '/intermediarios', label: 'Agentes',              short: 'AG' },
+      { to: '/criar',          label: 'Criar (assistente)',    icon: 'create' },
+      { to: '/dashboards',     label: 'Dashboards',            icon: 'dashboard' },
+      { to: '/atletas',        label: 'Atletas',               icon: 'athletes' },
+      { to: '/album',          label: 'Portfolio de atletas',  icon: 'portfolio' },
+      { to: '/clubes',         label: 'Clubes',                icon: 'clubs' },
+      { to: '/intermediarios', label: 'Agentes',               icon: 'agents' },
     ],
   },
   {
     label: 'Modelo financeiro',
     items: [
-      { to: '/modelo/premissas', label: 'Premissas por atleta', short: 'PR' },
+      { to: '/modelo/premissas', label: 'Premissas por atleta', icon: 'model' },
     ],
   },
   {
     label: 'Relatórios',
     items: [
-      { to: '/relatorios/visao-atletas',        label: 'Visão por Atleta',       short: 'VA' },
-      { to: '/relatorios/consolidado',          label: 'Consolidado',            short: 'CO' },
-      { to: '/relatorios/acordos',              label: 'Acordos e Renegociações',short: 'AC' },
-      { to: '/relatorios/sell-on',              label: 'Vendas Futuras',         short: 'VF' },
-      { to: '/relatorios/direitos-economicos',  label: 'Direitos Econômicos',    short: 'DE' },
-      { to: '/relatorios/gatilhos',             label: 'Gatilhos e Metas',       short: 'GT' },
-      { to: '/relatorios/recuperacao-judicial', label: 'Recuperação Judicial',   short: 'RJ' },
-      { to: '/relatorios/amortizacao',          label: 'Amortização & Venda',    short: 'AM' },
+      { to: '/relatorios/visao-atletas',        label: 'Visão por atleta',        icon: 'athlete' },
+      { to: '/relatorios/consolidado',          label: 'Consolidado',             icon: 'consolidated' },
+      { to: '/relatorios/acordos',              label: 'Acordos e renegociações', icon: 'deals' },
+      { to: '/relatorios/sell-on',              label: 'Vendas futuras',          icon: 'sellOn' },
+      { to: '/relatorios/direitos-economicos',  label: 'Direitos econômicos',     icon: 'ownership' },
+      { to: '/relatorios/gatilhos',             label: 'Gatilhos e metas',        icon: 'target' },
+      { to: '/relatorios/recuperacao-judicial', label: 'Recuperação judicial',    icon: 'gavel' },
+      { to: '/relatorios/amortizacao',          label: 'Amortização & venda',     icon: 'amortization' },
     ],
   },
   {
-    label: null,
+    label: 'Dados',
     items: [
-      { to: '/dados',           label: 'Importar / Exportar',      short: 'IE' },
-      { to: '/dados/planilhas', label: 'Importar Ativos/Passivos', short: 'IA' },
+      { to: '/dados',           label: 'Importar / exportar',      icon: 'transfer' },
+      { to: '/dados/planilhas', label: 'Importar ativos/passivos', icon: 'spreadsheet' },
     ],
   },
 ]
 
-const LANGS = ['PT', 'EN', 'ES'] as const
+const LANGS = ['pt', 'en', 'es'] as const
 
 interface Props { children: React.ReactNode }
 
-function NavItem({ to, label, short, collapsed }: { to: string; label: string; short: string; collapsed: boolean }) {
+function NavItem({ to, label, icon, collapsed }: NavItemDef & { collapsed: boolean }) {
   return (
-    <NavLink
-      to={to}
-      end
-      title={collapsed ? label : undefined}
-      style={({ isActive }) => ({
-        display: 'block', textDecoration: 'none',
-        padding: collapsed ? '10px 0' : '8px 22px 8px 21px',
-        borderLeft: `2px solid ${isActive ? '#f3eee2' : 'transparent'}`,
-        background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
-        fontFamily: collapsed ? fontMono : fontBody,
-        fontSize: collapsed ? 10 : 13,
-        letterSpacing: collapsed ? '0.10em' : undefined,
-        fontWeight: isActive ? 600 : 400,
-        color: isActive ? '#ffffff' : 'rgba(243,238,226,0.62)',
-        textAlign: collapsed ? 'center' as const : 'left' as const,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        transition: 'background 0.12s, color 0.12s',
-      })}
-      onMouseEnter={e => { const el = e.currentTarget; if (!el.getAttribute('aria-current')) el.style.color = 'rgba(243,238,226,0.92)' }}
-      onMouseLeave={e => { const el = e.currentTarget; if (!el.getAttribute('aria-current')) el.style.color = 'rgba(243,238,226,0.62)' }}
-    >
-      {collapsed ? short : label}
+    <NavLink to={to} end title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined}
+      className={({ isActive }) => `nav-item${isActive ? ' active' : ''}${collapsed ? ' collapsed' : ''}`}>
+      <Icon name={icon} size={20} />
+      {!collapsed && <span className="nav-item__label">{label}</span>}
     </NavLink>
   )
+}
+
+function initials(s: string): string {
+  const base = s.includes('@') ? s.split('@')[0].replace(/[._-]+/g, ' ') : s
+  return base.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'
 }
 
 export default function Layout({ children }: Props) {
@@ -99,111 +92,83 @@ export default function Layout({ children }: Props) {
   }, [collapsed])
 
   const toggle = () => setCollapsed(c => !c)
+  const userName = profile?.nome || profile?.email || ''
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* ── Sidebar ── */}
-      <aside style={{
-        position: 'fixed', top: 0, left: 0, bottom: 0,
-        width: 'var(--sidebar-w)',
-        background: 'linear-gradient(180deg, #17150f 0%, #0b0a07 100%)',
-        display: 'flex', flexDirection: 'column', zIndex: 100, overflowY: 'auto', overflowX: 'hidden',
-        borderRight: '1px solid rgba(255,255,255,0.07)',
-        transition: 'width 0.18s ease',
-      }}>
-        {/* Marca */}
-        <div style={{
-          padding: collapsed ? '18px 8px 14px' : '22px 22px 18px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-        }}>
-          {!collapsed && (
-            <div style={{ minWidth: 0 }}>
-              <img src="/logo-saf.png" alt="Botafogo SAF" style={{ height: 30, objectFit: 'contain' }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              <div style={{ fontFamily: fontMono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.38)', marginTop: 10 }}>
-                Gestão Contratual
+    <div className="app-shell">
+      {/* ── Navegação ── */}
+      <aside className={`app-sidebar${collapsed ? ' collapsed' : ''}`}>
+        <div className="app-sidebar__brand">
+          {collapsed
+            ? <Wordmark compact size={15} />
+            : (
+              <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <Wordmark size={16} />
+                <span className="eyebrow">Gestão contratual</span>
               </div>
-            </div>
+            )}
+          {!collapsed && (
+            <button type="button" className="icon-btn" onClick={toggle} title="Recolher navegação" aria-label="Recolher navegação">
+              <Icon name="panelClose" size={16} />
+            </button>
           )}
-          <button onClick={toggle} title={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'} aria-label={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              color: 'rgba(243,238,226,0.72)',
-              width: 28, height: 28, borderRadius: 6, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, fontSize: 14, lineHeight: 1, padding: 0,
-            }}>
-            {collapsed ? '»' : '«'}
-          </button>
         </div>
 
-        {/* Navegação */}
-        <nav style={{ flex: 1, padding: '14px 0' }}>
+        <nav className="app-nav" aria-label="Navegação principal">
+          {collapsed && (
+            <button type="button" className="icon-btn md" onClick={toggle} title="Expandir navegação" aria-label="Expandir navegação"
+              style={{ margin: '0 auto 8px' }}>
+              <Icon name="panelOpen" size={20} />
+            </button>
+          )}
           {NAV_SECTIONS.map((section, i) => (
-            <div key={i} style={{ marginBottom: 14 }}>
-              {section.label && !collapsed && (
-                <div style={{ fontFamily: fontMono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.34)', padding: '4px 22px 8px' }}>
-                  {section.label}
-                </div>
-              )}
-              {section.label && collapsed && (
-                <div style={{ height: 1, margin: '4px 12px 8px', background: 'rgba(255,255,255,0.06)' }} />
-              )}
+            <div key={i} className="nav-section">
+              {section.label && !collapsed && <div className="eyebrow nav-section__label">{section.label}</div>}
+              {section.label && collapsed && <div className="nav-section__rule" />}
               {section.items.map(item => <NavItem key={item.to} {...item} collapsed={collapsed} />)}
             </div>
           ))}
         </nav>
-
-        {/* Rodapé: moeda, idioma, usuário */}
-        {!collapsed && (
-          <div style={{ padding: '14px 22px 18px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.32)', marginBottom: 6 }}>Moeda</div>
-              <select value={currency} onChange={e => setCurrency(e.target.value as AppCurrency)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: 'rgba(243,238,226,0.82)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 7, padding: '6px 10px', fontSize: 12, fontFamily: fontMono, cursor: 'pointer' }}>
-                {CURRENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value} style={{ background: '#1a1410' }}>{opt.label}</option>)}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', gap: 4 }}>
-              {LANGS.map(l => {
-                const active = language === l.toLowerCase()
-                return (
-                  <button key={l} onClick={() => setLanguage(l.toLowerCase() as 'pt' | 'en' | 'es')}
-                    style={{
-                      flex: 1, background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
-                      border: `1px solid ${active ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.08)'}`,
-                      color: active ? '#ffffff' : 'rgba(243,238,226,0.40)',
-                      borderRadius: 6, padding: '4px 0', fontFamily: fontMono, fontSize: 10, cursor: 'pointer',
-                    }}>{l}</button>
-                )
-              })}
-            </div>
-
-            {USE_SUPABASE && profile && (
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
-                <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(243,238,226,0.42)', marginBottom: 3 }}>
-                  {profile.role === 'master' ? 'Master' : 'Jurídico'}
-                </div>
-                <div style={{ fontFamily: fontBody, fontSize: 11, color: 'rgba(243,238,226,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 8 }}>
-                  {profile.email}
-                </div>
-                <button onClick={() => signOut()}
-                  style={{ width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '6px 8px', fontFamily: fontMono, fontSize: 10, color: 'rgba(243,238,226,0.52)', cursor: 'pointer' }}>
-                  Sair
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </aside>
 
       {/* ── Conteúdo ── */}
-      <main style={{ marginLeft: 'var(--sidebar-w)', flex: 1, minHeight: '100vh', background: 'var(--cream-page)', transition: 'margin-left 0.18s ease' }}>
-        {children}
-      </main>
+      <div className="app-main">
+        <header className="app-topbar">
+          <select aria-label="Moeda de exibição" value={currency} onChange={e => setCurrency(e.target.value as AppCurrency)}
+            className="app-topbar__select">
+            {CURRENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+
+          <div className="seg-tabs" role="tablist" aria-label="Idioma" style={{ gap: 'var(--space-3)', margin: '0 var(--space-2)' }}>
+            {LANGS.map(l => (
+              <button key={l} type="button" role="tab" aria-selected={language === l} className="seg-tab"
+                onClick={() => setLanguage(l)} style={{ fontSize: 'var(--text-body-sm-size)' }}>
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {USE_SUPABASE && profile && (
+            <>
+              <span className="app-topbar__user">
+                <span className="app-topbar__avatar" aria-hidden="true">{initials(userName)}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25, minWidth: 0 }}>
+                  <span className="app-topbar__user-name">{userName}</span>
+                  <span style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-muted)' }}>
+                    {profile.role === 'master' ? 'Master' : 'Jurídico'}
+                  </span>
+                </span>
+              </span>
+              <button type="button" className="icon-btn md outline" onClick={() => signOut()} title="Sair" aria-label="Sair">
+                <Icon name="logout" size={20} />
+              </button>
+            </>
+          )}
+        </header>
+        <main className="app-content">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

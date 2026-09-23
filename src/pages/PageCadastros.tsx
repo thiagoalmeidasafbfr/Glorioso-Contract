@@ -91,7 +91,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar"
           style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', fontSize: 13, fontFamily: fontBody, color: 'var(--on-dark)' }} />
         <button onClick={() => setShowNew(true)} className="btn btn-outline">
-          <Icon name="plus" size={13} /> {isClube ? 'Novo clube' : 'Novo agente'}
+          <Icon name="plus" size={16} /> {isClube ? 'Novo clube' : 'Novo agente'}
         </button>
       </PageHero>
 

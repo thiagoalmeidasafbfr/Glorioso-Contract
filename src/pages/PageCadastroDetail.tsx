@@ -250,10 +250,10 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
           {canEdit && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <button onClick={() => setShowNewObl(true)} className="btn btn-primary">
-                <Icon name="plus" size={14} /> Nova obrigação
+                <Icon name="plus" size={16} /> Nova obrigação
               </button>
               <button onClick={() => setShowNewContract(true)} className="btn btn-outline">
-                <Icon name="plus" size={14} /> Novo contrato
+                <Icon name="plus" size={16} /> Novo contrato
               </button>
             </div>
           )}

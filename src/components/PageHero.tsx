@@ -1,59 +1,63 @@
+// Cabeçalho de página — PageHeader do Glorioso Finance DS: breadcrumb (12px,
+// cinza, separador "/"), título em 24px regular e as ações alinhadas à direita.
+// Mantém a API antiga (title/subtitle/children):
+//   • subtitle no padrão "Seção · Botafogo SAF" vira o breadcrumb
+//     "Botafogo SAF / Seção";
+//   • qualquer outro subtitle é uma descrição e vai como legenda sob o título.
+
+import { Link } from 'react-router-dom'
+import { Icon, type IconName } from './Icon'
+
+export interface Crumb { label: string; to?: string; icon?: IconName }
+
 interface Props {
   title: string
-  subtitle: string
+  subtitle?: string
+  /** Breadcrumb explícito (sobrepõe o derivado do subtitle). */
+  crumbs?: Crumb[]
   children?: React.ReactNode
 }
 
-export default function PageHero({ title, subtitle, children }: Props) {
+const ORG = 'Botafogo SAF'
+
+export function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
-    <div style={{
-      // Preto Botafogo. O dourado aparece só como um brilho discreto no canto e
-      // no filete acima do título — o resto é preto e branco.
-      background: 'radial-gradient(130% 150% at 100% 0%, rgba(190,140,74,0.08), transparent 55%), linear-gradient(135deg, #17150f 0%, #0b0a07 100%)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 16,
-      padding: 'clamp(20px, 3vw, 30px) clamp(22px, 3vw, 34px)',
-      marginBottom: 18,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 16,
-      boxShadow: '0 14px 34px -20px rgba(0,0,0,0.7)',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <div style={{ minWidth: 0 }}>
-        <div style={{
-          fontFamily: "var(--font-label)",
-          fontSize: 10,
-          fontWeight: 400,
-          letterSpacing: 'var(--text-overline-tracking)',
-          textTransform: 'uppercase',
-          color: 'rgba(243,240,232,0.66)',
-          marginBottom: 8,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <span style={{ display: 'inline-block', width: 16, height: 1.5, background: '#be8c4a', borderRadius: 1 }} />
-          {subtitle}
-        </div>
-        <h1 style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 'clamp(1.6rem, 3.2vw, 2.35rem)',
-          fontWeight: 600,
-          lineHeight: 1.06,
-          letterSpacing: '-0.028em',
-          color: '#f7f3ea',
-        }}>
-          {title}
-        </h1>
+    <nav aria-label="Breadcrumb" className="breadcrumb">
+      {items.map((it, i) => {
+        const body = (
+          <>
+            {it.icon && <Icon name={it.icon} size={13} style={{ opacity: 0.45 }} />}
+            {it.label}
+          </>
+        )
+        return (
+          <span key={i} style={{ display: 'contents' }}>
+            {i > 0 && <span aria-hidden="true" className="breadcrumb__sep">/</span>}
+            {it.to
+              ? <Link to={it.to} className="breadcrumb__item">{body}</Link>
+              : <span className="breadcrumb__item">{body}</span>}
+          </span>
+        )
+      })}
+    </nav>
+  )
+}
+
+export default function PageHero({ title, subtitle, crumbs, children }: Props) {
+  const m = subtitle?.match(/^(.+?) · Botafogo SAF$/)
+  const trail: Crumb[] | null = crumbs ?? (m
+    ? [{ label: ORG, icon: 'folder' }, { label: m[1], icon: 'grid' }]
+    : null)
+  const caption = !crumbs && !m ? subtitle : undefined
+
+  return (
+    <div className="page-header">
+      <div className="page-header__text">
+        {trail && <Breadcrumb items={trail} />}
+        <h1 className="page-title">{title}</h1>
+        {caption && <p className="page-caption">{caption}</p>}
       </div>
-      {children && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {children}
-        </div>
-      )}
+      {children && <div className="page-actions">{children}</div>}
     </div>
   )
 }

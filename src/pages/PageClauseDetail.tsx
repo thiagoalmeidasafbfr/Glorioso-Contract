@@ -247,7 +247,7 @@ export default function PageClauseDetail() {
           </div>
           {canEdit && (
             <button onClick={() => setShowFlow(s => !s)} className="btn btn-outline">
-              <Icon name={showFlow ? 'x' : 'flow'} size={14} />
+              <Icon name={showFlow ? 'x' : 'flow'} size={16} />
               {showFlow ? 'Fechar' : (installments.length ? 'Editar fluxo' : 'Gerar fluxo')}
             </button>
           )}

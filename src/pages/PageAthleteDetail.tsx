@@ -167,7 +167,7 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
   const set = <K extends keyof NewSalaryTriggerInput>(k: K, v: NewSalaryTriggerInput[K]) => setF(prev => ({ ...prev, [k]: v }))
   const inp: React.CSSProperties = { padding: '7px 9px', borderRadius: 6, fontSize: 12, width: '100%', boxSizing: 'border-box', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-color)', fontFamily: font }
   const lbl: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
-  if (!open) return <button onClick={() => setOpen(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={14} /> Nova meta de salário</button>
+  if (!open) return <button onClick={() => setOpen(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={16} /> Nova meta de salário</button>
   async function submit() {
     if (!f.description.trim() || !f.new_salary) return
     await onAdd({ ...f, contract_id: contract.id })
@@ -326,7 +326,7 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
               </div>
             ))}
           </div>
-          <button onClick={addRow} className="btn btn-outline" style={{ marginTop: 10, borderStyle: 'dashed', padding: '6px 14px' }}><Icon name="plus" size={13} /> Detentor</button>
+          <button onClick={addRow} className="btn btn-outline" style={{ marginTop: 10, borderStyle: 'dashed', padding: '6px 14px' }}><Icon name="plus" size={16} /> Detentor</button>
         </div>
 
         {/* PJ do atleta — parte do cadastro */}
@@ -761,7 +761,7 @@ export default function PageAthleteDetail() {
               <IconButton icon="download" label="Exportar dados deste atleta (XLSX)" onClick={exportAthlete} />
               {canEdit && <IconButton icon="edit" label="Editar atleta" onClick={() => setShowEdit(true)} />}
               <Link to={`/atletas/${athlete.id}/contratos/novo`} className="btn btn-primary">
-                <Icon name="plus" size={14} /> Novo contrato
+                <Icon name="plus" size={16} /> Novo contrato
               </Link>
               {canEdit && <IconButton icon="trash" label="Excluir atleta e todos os vínculos" tone="danger" onClick={handleDeleteAthlete} />}
             </div>
@@ -856,7 +856,7 @@ export default function PageAthleteDetail() {
               </div>
               {canEdit && athlete && (
                 <button className="btn btn-primary" onClick={() => navigate(`/atletas/${athlete.id}/contratos/novo`)}>
-                  <Icon name="plus" size={13} /> Cadastrar vínculo de trabalho
+                  <Icon name="plus" size={16} /> Cadastrar vínculo de trabalho
                 </button>
               )}
             </div>
@@ -1138,7 +1138,7 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>PJs do atleta</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 2 }}>Pessoas jurídicas que recebem o direito de imagem. O atleta pode ter mais de uma.</div>
         </div>
-        {canEdit && !adding && <button onClick={() => setAdding(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={14} /> Nova PJ</button>}
+        {canEdit && !adding && <button onClick={() => setAdding(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={16} /> Nova PJ</button>}
       </div>
 
       {adding && (
@@ -1687,7 +1687,7 @@ function AccessoryFlowTab({
         </div>
         {canEdit && (
           <button onClick={() => setShowNew(true)} className="btn btn-primary">
-            <Icon name="plus" size={14} /> Novo fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}
+            <Icon name="plus" size={16} /> Novo fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}
           </button>
         )}
       </div>
@@ -1711,7 +1711,7 @@ function AccessoryFlowTab({
                   <div style={{ marginBottom: 10 }}>Nenhum fluxo de {title.toLowerCase()} cadastrado.</div>
                   {canEdit && (
                     <button className="btn btn-primary" onClick={() => setShowNew(true)}>
-                      <Icon name="plus" size={13} /> Criar fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}
+                      <Icon name="plus" size={16} /> Criar fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}
                     </button>
                   )}
                 </td></tr>
@@ -1898,7 +1898,7 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--divider-soft)' }}>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Cláusulas diversas e de performance</div>
-          {canEdit && umbrella && <button onClick={() => onNewClause(umbrella.id)} className="btn btn-outline" style={{ padding: '6px 12px' }}><Icon name="plus" size={13} /> Nova cláusula</button>}
+          {canEdit && umbrella && <button onClick={() => onNewClause(umbrella.id)} className="btn btn-outline" style={{ padding: '6px 12px' }}><Icon name="plus" size={16} /> Nova cláusula</button>}
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1916,7 +1916,7 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
                   <div style={{ marginBottom: 10 }}>Nenhuma cláusula de performance. Ex.: 10k por gol, 10k por clean sheet, bônus de convocação.</div>
                   {canEdit && umbrella && (
                     <button className="btn btn-primary" onClick={() => onNewClause(umbrella.id)}>
-                      <Icon name="plus" size={13} /> Criar cláusula de performance
+                      <Icon name="plus" size={16} /> Criar cláusula de performance
                     </button>
                   )}
                 </td></tr>
@@ -2296,7 +2296,7 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
             Selecione parcelas/cláusulas em aberto e reabra o saldo em um novo fluxo (com desconto, se houver). As parcelas originais são preservadas como canceladas, mantendo o rastreio.
           </div>
         </div>
-        {canEdit && <button onClick={onNew} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}><Icon name="plus" size={14} /> Nova renegociação</button>}
+        {canEdit && <button onClick={onNew} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}><Icon name="plus" size={16} /> Nova renegociação</button>}
       </div>
 
       {acordos.length === 0 && (
@@ -2306,7 +2306,7 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
           </div>
           {canEdit && (
             <button className="btn btn-primary" onClick={onNew}>
-              <Icon name="plus" size={13} /> Registrar renegociação
+              <Icon name="plus" size={16} /> Registrar renegociação
             </button>
           )}
         </div>

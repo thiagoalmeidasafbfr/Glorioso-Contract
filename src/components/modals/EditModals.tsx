@@ -367,7 +367,7 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
         </span>
         <button onClick={generateFlow} className="btn btn-outline" disabled={saving}
           style={{ borderColor: 'rgba(31,86,115,0.35)', color: 'var(--info)', whiteSpace: 'nowrap' }}>
-          <Icon name="split" size={14} /> Gerar parcelas
+          <Icon name="split" size={16} /> Gerar parcelas
         </button>
       </div>
     </ModalShell>

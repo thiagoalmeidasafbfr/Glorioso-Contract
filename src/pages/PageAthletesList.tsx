@@ -193,7 +193,7 @@ function AlertCount({ kind, count }: { kind: 'atraso' | 'breve'; count: number }
   return (
     <span title={atraso ? `${count} parcela(s) em atraso` : `${count} parcela(s) vencendo em breve`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: atraso ? 'var(--neg)' : 'var(--warn)' }}>
-      <Icon name={atraso ? 'alert' : 'clock'} size={14} />
+      <Icon name={atraso ? 'alert' : 'clock'} size={16} />
       <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{count}</span>
     </span>
   )
@@ -309,7 +309,7 @@ export default function PageAthletesList() {
           </select>
         </div>
         <button onClick={() => setShowNew(true)} className="btn btn-primary">
-          <Icon name="plus" size={13} /> Novo atleta
+          <Icon name="plus" size={16} /> Novo atleta
         </button>
         <SheetIO
           exportFilename="atletas.xlsx"
@@ -391,7 +391,7 @@ export default function PageAthletesList() {
                   </div>
                   {athletes.length === 0 && (
                     <button className="btn btn-primary" onClick={() => setShowNew(true)}>
-                      <Icon name="plus" size={13} /> Cadastrar o primeiro atleta
+                      <Icon name="plus" size={16} /> Cadastrar o primeiro atleta
                     </button>
                   )}
                 </td></tr>

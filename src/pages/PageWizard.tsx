@@ -304,7 +304,7 @@ export default function PageWizard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
               <div style={sectionTitle}>Atleta {athlete ? '' : '*'}</div>
               <button onClick={() => setCreatingAth(v => !v)} className="btn btn-outline">
-                <Icon name={creatingAth ? 'x' : 'plus'} size={14} /> {creatingAth ? 'Cancelar' : 'Novo atleta'}
+                <Icon name={creatingAth ? 'x' : 'plus'} size={16} /> {creatingAth ? 'Cancelar' : 'Novo atleta'}
               </button>
             </div>
 
@@ -331,7 +331,7 @@ export default function PageWizard() {
 
             {athlete && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)' }}>
-                <Icon name="check" size={14} />
+                <Icon name="check" size={16} />
                 <span style={{ fontFamily: font, fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)' }}>{athlete.full_name}</span>
                 <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>· {athlete.position || 'posição não informada'}</span>
                 <button onClick={() => { setAthleteId(''); setContracts([]); setLinkContractId('') }} className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }}>Trocar</button>
