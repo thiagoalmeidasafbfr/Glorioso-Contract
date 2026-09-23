@@ -104,7 +104,7 @@ function CellInput(props: {
         minWidth: 80,
         padding: '4px 6px',
         border: '1px solid transparent',
-        borderRadius: 4,
+        borderRadius: 'var(--radius-xs)',
         background: 'transparent',
         fontFamily: fontBody, fontSize: 13,
         textAlign: props.align ?? 'left',
@@ -263,7 +263,7 @@ export default function PagePremissas() {
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por atleta ou posição"
           style={{
-            padding: '8px 10px', border: '1px solid var(--rule)', borderRadius: 6,
+            padding: '8px 10px', border: '1px solid var(--rule)', borderRadius: 'var(--radius-xs)',
             background: 'var(--surface)', fontFamily: fontBody, fontSize: 13, minWidth: 240,
           }}
         />
@@ -271,7 +271,7 @@ export default function PagePremissas() {
           {(['TODOS', ...DECISAO_OPTIONS] as const).map(d => (
             <button key={d} onClick={() => setFilter(d)} style={{
               padding: '6px 10px', border: '1px solid var(--rule)',
-              borderRadius: 6, fontFamily: fontMono, fontSize: 10, background: filter === d ? 'var(--ink-primary)' : 'var(--surface)',
+              borderRadius: 'var(--radius-xs)', fontFamily: fontMono, fontSize: 10, background: filter === d ? 'var(--ink-primary)' : 'var(--surface)',
               color: filter === d ? '#fff' : 'var(--ink-secondary)',
               cursor: 'pointer',
             }}>{d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d as PremissaDecisao]}</button>
@@ -285,12 +285,12 @@ export default function PagePremissas() {
       {err && (
         <div style={{
           padding: '10px 14px', border: '1px solid var(--neg)', background: 'var(--neg-tint)',
-          borderRadius: 6, color: 'var(--neg)', fontFamily: fontBody, fontSize: 13, marginBottom: 12,
+          borderRadius: 'var(--radius-xs)', color: 'var(--neg)', fontFamily: fontBody, fontSize: 13, marginBottom: 12,
         }}>{err}</div>
       )}
 
       <div style={{
-        overflowX: 'auto', border: '1px solid var(--rule)', borderRadius: 8,
+        overflowX: 'auto', border: '1px solid var(--rule)', borderRadius: 'var(--radius-md)',
         background: 'var(--surface)',
       }}>
         <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 2400 }}>
@@ -516,14 +516,14 @@ function btn(variant?: 'accent'): React.CSSProperties {
     border: variant === 'accent' ? '1px solid #be8c4a' : '1px solid rgba(255,255,255,0.20)',
     background: variant === 'accent' ? '#be8c4a' : 'transparent',
     color: variant === 'accent' ? '#1a1410' : '#f3eee2',
-    fontFamily: fontMono, fontSize: 10, borderRadius: 6, cursor: 'pointer', fontWeight: 500,
+    fontFamily: fontMono, fontSize: 10, borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontWeight: 500,
   }
 }
 
 function selectStyle(): React.CSSProperties {
   return {
     width: '100%', padding: '4px 6px',
-    border: '1px solid var(--rule)', borderRadius: 4,
+    border: '1px solid var(--rule)', borderRadius: 'var(--radius-xs)',
     background: 'var(--surface)', fontFamily: fontBody, fontSize: 12,
     color: 'var(--ink-primary)', cursor: 'pointer',
   }

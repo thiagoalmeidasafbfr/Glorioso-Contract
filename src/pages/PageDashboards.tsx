@@ -245,7 +245,7 @@ export default function PageDashboards() {
               return (
                 <div key={t.label} className="stat-tile" style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 0, minHeight: 132 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: t.dot, flexShrink: 0, boxShadow: `0 0 0 3px ${hexA(t.dot, 0.12)}` }} />
+                    <span style={{ width: 7, height: 7, borderRadius: 'var(--radius-circle)', background: t.dot, flexShrink: 0, boxShadow: `0 0 0 3px ${hexA(t.dot, 0.12)}` }} />
                     <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{t.label}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, lineHeight: 1 }}>
@@ -553,7 +553,7 @@ function BreakdownTip({ active, payload, label }: any) {
     )
   }
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 240, maxWidth: 320 }}>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 'var(--radius-md)', padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: 'var(--shadow-pop)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 240, maxWidth: 320 }}>
       <div style={{ opacity: 0.55, marginBottom: 6, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', fontSize: 10 }}>{label}</div>
       {raw && section('A pagar', raw.pagar, raw.pagarBy, seriesColor('pagar'))}
       {raw && <div style={{ height: 1, background: 'rgba(255,255,255,0.10)', margin: '8px 0 0' }} />}
@@ -571,7 +571,7 @@ function MoneyTip({ active, payload, label, leadKey }: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = payload.filter((p: any) => !leadKey || p.dataKey !== leadKey)
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 158 }}>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 'var(--radius-md)', padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: 'var(--shadow-pop)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 158 }}>
       <div style={{ opacity: 0.55, marginBottom: 7, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', fontSize: 10 }}>{label}</div>
       {lead && (
         <div style={{ marginBottom: rows.length ? 8 : 0, paddingBottom: rows.length ? 8 : 0, borderBottom: rows.length ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
@@ -602,7 +602,7 @@ function PieTip({ active, payload }: any) {
   const byNat: Record<string, number> | undefined = p.payload?.byNat
   const rows = byNat ? Object.entries(byNat).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0) : []
   return (
-    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 10, padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: '0 8px 24px rgba(0,0,0,0.32)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 220, maxWidth: 300 }}>
+    <div style={{ background: '#1a1410', color: '#f3eee2', borderRadius: 'var(--radius-md)', padding: '10px 13px', fontFamily: mono, fontSize: 11, boxShadow: 'var(--shadow-pop)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 220, maxWidth: 300 }}>
       <div style={{ opacity: 0.7, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', marginBottom: 4 }}>{p.name}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
         <div style={{ fontFamily: display, fontSize: 18, fontWeight: 600 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>

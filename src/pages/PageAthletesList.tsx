@@ -68,14 +68,13 @@ function AthleteAvatar({ athlete, size = 38 }: { athlete: Athlete; size?: number
     return (
       <img src={athlete.profile_photo_url} alt={athlete.short_name}
         onError={() => setErr(true)}
-        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--divider-strong)', flexShrink: 0 }} />
+        style={{ width: size, height: size, borderRadius: 'var(--radius-circle)', objectFit: 'cover', border: '2px solid var(--divider-strong)', flexShrink: 0 }} />
     )
   }
   return (
     <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      width: size, height: size, borderRadius: 'var(--radius-circle)', flexShrink: 0,
       background: 'var(--cream-inset)',
-      border: '1px solid var(--divider-strong)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontFamily: fontMono, fontSize: size * 0.32, fontWeight: 600, color: 'var(--gold-deep)',
     }}>
@@ -99,7 +98,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
   const inp: React.CSSProperties = {
-    width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13,
+    width: '100%', padding: '8px 10px', borderRadius: 'var(--radius-xs)', fontSize: 13,
     background: 'var(--cream-canvas)', border: '1px solid var(--input-border)',
     color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
   }
@@ -144,7 +143,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 28, width: 600, maxWidth: '96vw', border: '1px solid var(--divider)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: 'var(--cream-card)', borderRadius: 'var(--radius-card)', padding: 28, width: 600, maxWidth: '96vw', boxShadow: 'var(--shadow-pop)', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font, marginBottom: 4 }}>Novo Atleta</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -177,7 +176,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="btn btn-outline">Cancelar</button>
           <button onClick={handleSave} disabled={!f.full_name.trim()}
-            style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: f.full_name.trim() ? 'var(--action-inverse)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
+            style={{ padding: '8px 22px', borderRadius: 'var(--radius-md)', border: 'none', background: f.full_name.trim() ? 'var(--action-inverse)' : '#ccc', color: '#fff', fontSize: 12, fontFamily: font, fontWeight: 600, cursor: f.full_name.trim() ? 'pointer' : 'not-allowed' }}>
             Criar Atleta
           </button>
         </div>
@@ -296,12 +295,12 @@ export default function PageAthletesList() {
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
-            style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }}>
+            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -414,7 +413,7 @@ export default function PageAthletesList() {
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
                     </td>
                     <td style={{ ...td, width: 110 }}>
-                      <span style={{ padding: '3px 8px', borderRadius: 5, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 500, fontFamily: fontMono }}>
+                      <span style={{ padding: '3px 8px', borderRadius: 'var(--radius-xs)', background: st.bg, color: st.fg, fontSize: 10, fontWeight: 500, fontFamily: fontMono }}>
                         {STATUS_LABELS[a.current_status]}
                       </span>
                     </td>

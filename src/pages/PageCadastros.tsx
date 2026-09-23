@@ -89,7 +89,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
       <PageHero title={title} subtitle="Cadastro · Botafogo SAF">
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar"
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', fontSize: 13, fontFamily: fontBody, color: 'var(--on-dark)' }} />
+          style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', fontSize: 13, fontFamily: fontBody, color: 'var(--on-dark)' }} />
         <button onClick={() => setShowNew(true)} className="btn btn-outline">
           <Icon name="plus" size={16} /> {isClube ? 'Novo clube' : 'Novo agente'}
         </button>
@@ -124,7 +124,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
               style={{ padding: 16, cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center' }}
               onClick={() => navigate(`${basePath}/${e.id}`)}
               onKeyDown={ev => { if (ev.key === 'Enter') navigate(`${basePath}/${e.id}`) }}>
-              <div style={{ width: 52, height: 52, borderRadius: isClube ? 10 : '50%', overflow: 'hidden', background: 'var(--cream-inset)', border: '1px solid var(--divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 52, height: 52, borderRadius: isClube ? 'var(--radius-md)' : 'var(--radius-circle)', overflow: 'hidden', background: 'var(--cream-inset)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {e.logo
                   ? <img src={e.logo} alt="" style={{ width: '100%', height: '100%', objectFit: isClube ? 'contain' : 'cover' }} />
                   : <span style={{ fontFamily: fontMono, fontSize: 15, fontWeight: 600, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}

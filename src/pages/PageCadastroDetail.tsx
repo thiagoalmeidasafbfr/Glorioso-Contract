@@ -235,7 +235,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                 {canEdit && <IconButton icon="trash" label={`Excluir ${isClube ? 'clube' : 'agente'}`} tone="danger" onClick={handleDeleteEntity} />}
               </div>
               {sub && <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: 2 }}>{isClube ? sub : `Contato: ${sub}`}</div>}
-              {notes && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, background: 'var(--bg-subtle)', borderRadius: 6, padding: '6px 10px' }}>{notes}</div>}
+              {notes && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', padding: '6px 10px' }}>{notes}</div>}
             </>
           )}
         </div>
@@ -267,7 +267,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
             const [dir, moeda] = k.split('|')
             const pay = dir === 'A_PAGAR'
             return (
-              <div key={k} style={{ padding: '10px 14px', borderRadius: 9, background: pay ? 'var(--neg-tint)' : 'var(--pos-tint)', border: `1px solid ${pay ? 'rgba(138,53,36,0.22)' : 'rgba(47,107,58,0.22)'}` }}>
+              <div key={k} style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', background: pay ? 'var(--neg-tint)' : 'var(--pos-tint)', border: `1px solid ${pay ? 'rgba(138,53,36,0.22)' : 'rgba(47,107,58,0.22)'}` }}>
                 <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: pay ? 'var(--neg)' : 'var(--pos)', marginBottom: 4 }}>
                   {pay ? 'A pagar' : 'A receber'} · {moeda} (em aberto)
                 </div>
@@ -363,7 +363,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                     </td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>
                       {l.natureza}
-                      {parseRJ(l.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(parseRJ(l.notes)!.filedAt)}`}>RJ</span>}
+                      {parseRJ(l.notes) && <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 'var(--radius-xs)', background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(parseRJ(l.notes)!.filedAt)}`}>RJ</span>}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 330 }}>
                       {l.clauseId
@@ -452,7 +452,7 @@ function Kpi({ label, value }: { label: string; value: string }) {
 function Badge({ label, tone }: { label: string; tone: 'pos' | 'neg' | 'neutral' }) {
   return (
     <span style={{
-      display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 500,
+      display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500,
       fontFamily: fontMono, background: tone === 'pos' ? 'var(--pos-tint)' : tone === 'neg' ? 'var(--neg-tint)' : 'var(--cream-inset)',
       color: tone === 'pos' ? 'var(--pos)' : tone === 'neg' ? 'var(--neg)' : 'var(--ink-secondary)',
     }}>{label}</span>

@@ -284,7 +284,7 @@ export default function PageAmortizacao() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <KpiPill label="Intangível (BRL)" value={fmtCurrencyShort(totals.intangible, 'BRL')} tone="neutral" />
         <KpiPill label="Amortizado (BRL)" value={fmtCurrencyShort(totals.accum, 'BRL')} tone="neutral" />
@@ -385,7 +385,7 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
   const kvRow: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }
   const label: React.CSSProperties = { fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }
   const val: React.CSSProperties = { fontFamily: mono, fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)' }
-  const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: mono, color: 'var(--ink-primary)' }
+  const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: mono, color: 'var(--ink-primary)' }
 
   return (
     <div>
@@ -557,7 +557,7 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
           </div>
         </div>
 
-        <div style={{ background: 'var(--cream-card)', border: '1px solid var(--divider-soft)', borderRadius: 10, padding: 14 }}>
+        <div style={{ background: 'var(--cream-card)', border: '1px solid var(--divider-soft)', borderRadius: 'var(--radius-md)', padding: 14 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <SaleLine label="(+) Valor de venda (BRL)" v={result.saleBRL} />

@@ -42,7 +42,7 @@ function StatusPill({ status }: { status: NatureStatus }) {
   const s = STATUS_STYLE[status]
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 9px', borderRadius: 5,
+      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 9px', borderRadius: 'var(--radius-xs)',
       fontSize: 10, fontWeight: 500, fontFamily: mono, background: s.bg, color: s.fg,
       border: status === 'SEM_LANCAMENTO' ? '1px solid var(--divider)' : '1px solid transparent',
     }}>
@@ -158,7 +158,7 @@ export default function PageVisaoAtletas() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {([['todos', 'Todos'], ['atraso', 'Com atraso'], ['aberto', 'Com saldo em aberto']] as [Filter, string][]).map(([k, l]) => (

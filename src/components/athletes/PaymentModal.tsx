@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Currency } from '../../types/athlete-system'
 import NumberInput from '../NumberInput'
+import { modalInput, modalLabel } from '../modals/styles'
 
 interface PaymentModalProps {
   label: string
@@ -40,44 +41,18 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
     onSave({ date, valueCurrency, valueBRL, rate, notes })
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7,
-    padding: '8px 10px', fontSize: 13, color: 'var(--ink)',
-    fontFamily: "var(--font-body)", boxSizing: 'border-box',
-  }
-
-  const labelStyle: React.CSSProperties = {
-    fontFamily: "var(--font-label)", fontSize: 10,
-    fontWeight: 500, textTransform: 'uppercase' as const,
-    color: 'rgba(26,20,16,0.50)', display: 'block', marginBottom: 4,
-  }
+  const inputStyle = modalInput
+  const labelStyle = modalLabel
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div style={{
-        background: 'var(--cream-card, #faf6ed)', border: '1px solid var(--gold-line, var(--divider-strong))',
-        borderRadius: 12, padding: 28, width: 420, maxWidth: '95vw',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-      }}>
-        <div style={{ marginBottom: 20 }}>
-          <div style={{
-            fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 400,
-            letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
-            color: 'var(--action-inverse)', marginBottom: 4,
-          }}>
-            Registrar Pagamento
-          </div>
-          <div style={{ fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: 'var(--ink, #1a1410)' }}>
+    <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 420 }}>
+        <div style={{ marginBottom: 'var(--space-5)' }}>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>Registrar pagamento</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)' }}>
             {label}
           </div>
-          <div style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'rgba(26,20,16,0.55)', marginTop: 2 }}>
+          <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', marginTop: 4 }}>
             Valor previsto: {sym} {value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
         </div>
@@ -101,7 +76,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
             <div>
               <label style={labelStyle}>
                 Taxa de câmbio (1 {currency} = R$)
-                <span style={{ fontWeight: 400, color: 'rgba(26,20,16,0.40)', marginLeft: 6 }}>
+                <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>
                   PTAX estimado: {defaultRate.toFixed(2)}
                 </span>
               </label>
@@ -116,9 +91,8 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
 
           {currency !== 'BRL' && (
             <div style={{
-              background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)',
-              borderRadius: 7, padding: '8px 12px',
-              fontFamily: "var(--font-label)", fontSize: 11, color: 'var(--action-inverse)',
+              background: 'var(--surface-sunken)', borderRadius: 'var(--radius-control)', padding: '8px 12px',
+              fontSize: 'var(--text-body-sm-size)', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums',
             }}>
               R$ {valueBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
@@ -136,28 +110,9 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 22, justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent', border: '1px solid rgba(26,20,16,0.15)',
-              borderRadius: 7, padding: '8px 18px', fontSize: 12,
-              fontFamily: "var(--font-body)", cursor: 'pointer',
-              color: 'rgba(26,20,16,0.55)',
-            }}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!date || valueCurrency <= 0}
-            style={{
-              background: 'var(--action-inverse)', border: 'none', borderRadius: 7,
-              padding: '8px 22px', fontSize: 12, fontWeight: 600,
-              fontFamily: "var(--font-body)", cursor: 'pointer',
-              color: '#fff', opacity: (!date || valueCurrency <= 0) ? 0.5 : 1,
-            }}
-          >
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-6)', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={onClose} className="btn btn-outline">Cancelar</button>
+          <button type="button" onClick={handleSave} disabled={!date || valueCurrency <= 0} className="btn btn-primary">
             Confirmar
           </button>
         </div>

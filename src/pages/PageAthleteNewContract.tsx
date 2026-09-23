@@ -89,7 +89,7 @@ const validLines = (lines: FlowLine[]) => lines
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--cream-card)',
-  border: '1px solid var(--input-border)', borderRadius: 7,
+  border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)',
   padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)',
   fontFamily: "var(--font-body)", boxSizing: 'border-box',
 }
@@ -101,8 +101,7 @@ const labelStyle: React.CSSProperties = {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'var(--cream-card)', border: '1px solid var(--divider)',
-  borderRadius: 12, padding: 20, boxShadow: 'var(--shadow-hair)',
+  background: 'var(--cream-card)', borderRadius: 'var(--radius-card)', padding: 20, boxShadow: 'var(--shadow-hair)',
 }
 
 const sectionTitle: React.CSSProperties = {
@@ -115,8 +114,8 @@ const hintStyle: React.CSSProperties = {
 }
 
 const noteBox: React.CSSProperties = {
-  padding: '9px 13px', borderRadius: 8, background: 'var(--bg-subtle)',
-  border: '1px solid var(--divider)', fontFamily: "var(--font-label)",
+  padding: '9px 13px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)',
+  fontFamily: "var(--font-label)",
   fontSize: 11, color: 'var(--ink-secondary)',
 }
 
@@ -479,7 +478,7 @@ export default function PageAthleteNewContract() {
               <button onClick={() => done && setStep(s)} disabled={!done && !active}
                 style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', padding: '0 4px', cursor: done ? 'pointer' : 'default' }}>
                 <span style={{
-                  width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 26, height: 26, borderRadius: 'var(--radius-circle)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'var(--cream-inset)',
                   fontSize: 12, fontWeight: 600, fontFamily: "var(--font-label)",
                   color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
@@ -760,7 +759,7 @@ export default function PageAthleteNewContract() {
                 const agValid = validLines(ag.lines)
                 const agTotal = agValid.length ? agValid.reduce((s, l) => s + l.value, 0) : (ag.amount ? parseFloat(ag.amount) : 0)
                 return (
-                  <div key={i} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--divider)', background: 'var(--bg-subtle)' }}>
+                  <div key={i} style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                       <span style={{ fontFamily: "var(--font-label)", fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
                       <IconButton icon="trash" label={`Remover agente ${i + 1}`} tone="danger" onClick={() => removeAgent(i)} />
@@ -803,7 +802,7 @@ export default function PageAthleteNewContract() {
                       )}
                     </div>
 
-                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--action-ghost-hover)', border: '1px solid var(--divider)' }}>
+                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--action-ghost-hover)', border: '1px solid var(--divider)' }}>
                       <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                         <input type="checkbox" checked={ag.futureSale}
                           onChange={e => setAgent(i, { futureSale: e.target.checked, amount: e.target.checked ? '' : ag.amount, lines: e.target.checked ? [] : ag.lines, flowOpen: e.target.checked ? false : ag.flowOpen })}
@@ -862,7 +861,7 @@ export default function PageAthleteNewContract() {
       {step === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {conflict && (
-            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
+            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
               <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
                 <strong>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
               </div>
@@ -971,7 +970,7 @@ export default function PageAthleteNewContract() {
           <button onClick={addClause}
             style={{
               background: 'transparent', border: '1px dashed var(--divider-strong)',
-              borderRadius: 10, padding: '12px 0', width: '100%',
+              borderRadius: 'var(--radius-md)', padding: '12px 0', width: '100%',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600,
               color: 'var(--ink-primary)', cursor: 'pointer',
@@ -986,7 +985,7 @@ export default function PageAthleteNewContract() {
       {step === 3 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {conflict && (
-            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 8, padding: '10px 14px' }}>
+            <div style={{ background: 'var(--warn-tint)', border: '1px solid rgba(138,101,22,0.32)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
               <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--warn)' }}>
                 <strong>Conflito Sell-On detectado.</strong> Revise antes de salvar.
               </div>
@@ -1049,7 +1048,7 @@ export default function PageAthleteNewContract() {
           )}
 
           {error && (
-            <div style={{ background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.30)', borderRadius: 8, padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--neg)' }}>
+            <div style={{ background: 'var(--neg-tint)', border: '1px solid rgba(138,53,36,0.30)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--neg)' }}>
               {error}
             </div>
           )}

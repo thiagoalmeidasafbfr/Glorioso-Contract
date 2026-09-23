@@ -63,7 +63,7 @@ export default function PageImportarPlanilhas() {
         <div className="card" style={{ padding: 40, textAlign: 'center' }}>
           <input ref={ref} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
           <button onClick={() => ref.current?.click()} disabled={busy}
-            style={{ padding: '11px 26px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            style={{ padding: '11px 26px', background: 'var(--ink-primary)', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {busy ? 'Lendo...' : 'Selecionar arquivo .xlsx'}
           </button>
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>Envie um arquivo por vez (Ativos ou Passivos).</div>
@@ -76,7 +76,7 @@ export default function PageImportarPlanilhas() {
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 14 }}>Abas reconhecidas para importação:</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 8, marginBottom: 8 }}>
             {known.map(s => (
-              <div key={s} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)', fontFamily: fontBody, fontSize: 12 }}>
+              <div key={s} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', fontFamily: fontBody, fontSize: 12 }}>
                 <span>{s}</span><span style={num}>{sheets[s].length}</span>
               </div>
             ))}
@@ -84,7 +84,7 @@ export default function PageImportarPlanilhas() {
           {other.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 6 }}>Ignoradas: {other.join(', ')}</div>}
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
             <button onClick={confirm} disabled={busy || known.length === 0}
-              style={{ padding: '10px 22px', background: 'var(--ink-primary)', border: 'none', borderRadius: 8, color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              style={{ padding: '10px 22px', background: 'var(--ink-primary)', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--gold-soft)', fontFamily: fontBody, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               {busy ? 'Importando...' : 'Confirmar importação'}
             </button>
             <button onClick={reset} className="btn btn-outline">Cancelar</button>
@@ -135,7 +135,7 @@ export default function PageImportarPlanilhas() {
         </div>
       )}
 
-      {error && <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 8, background: 'var(--neg-tint)', color: 'var(--neg)', fontFamily: fontBody, fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ marginTop: 14, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--neg-tint)', color: 'var(--neg)', fontFamily: fontBody, fontSize: 13 }}>{error}</div>}
     </div>
   )
 }

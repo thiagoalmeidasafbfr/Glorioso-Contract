@@ -98,7 +98,7 @@ export default function RenegotiationEditModal({ acordo, onClose, onSaved, onDel
               meta.discount ? fmtCurrencyShort(Math.abs(meta.discount), meta.currency) : '—'],
             ['Pagas no acordo', check ? `${check.paidInNewFlow}/${check.totalInNewFlow}` : '…'],
           ].map(([l, v]) => (
-            <div key={l} style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider)' }}>
+            <div key={l} style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
               <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{l}</div>
               <div style={{ fontSize: 14, fontWeight: 600, fontFamily: mono, color: 'var(--ink-primary)' }}>{v}</div>
             </div>
@@ -124,7 +124,7 @@ export default function RenegotiationEditModal({ acordo, onClose, onSaved, onDel
         <label style={modalLabel}>Itens renegociados ({meta?.sources.length ?? 0})</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
           {(meta?.sources ?? []).map((s, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 7, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--surface-sunken)' }}>
               <span style={{ flex: 1, fontSize: 12, fontFamily: font, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
               <span style={{ fontSize: 12, fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(s.value, meta?.currency ?? 'BRL')}</span>
               <IconButton icon="undo" label={`Soltar "${s.label}" do acordo`} tone="warn" small
@@ -142,7 +142,7 @@ export default function RenegotiationEditModal({ acordo, onClose, onSaved, onDel
       </div>
 
       {meta && meta.discount < 0 && (
-        <div style={{ fontSize: 12, fontFamily: font, color: 'var(--warn)', padding: '9px 12px', borderRadius: 8, background: 'var(--warn-tint)', border: '1px solid rgba(160,110,20,0.22)' }}>
+        <div style={{ fontSize: 12, fontFamily: font, color: 'var(--warn)', padding: '10px 12px', borderRadius: 'var(--radius-control)', background: 'var(--surface-warning-soft)' }}>
           O novo fluxo ({fmtCurrencyShort(meta.newTotal, meta.currency)}) está <strong>maior</strong> que a dívida de
           origem que restou no acordo ({fmtCurrencyShort(meta.originalTotal, meta.currency)}) — normalmente porque um
           item foi solto do acordo. Ajuste as parcelas do novo fluxo pelo ícone de <strong>parcelas</strong>.

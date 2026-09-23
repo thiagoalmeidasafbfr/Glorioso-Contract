@@ -38,13 +38,12 @@ export function ModalShell({ title, subtitle, width = 560, onClose, children, fo
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
   return (
-    <div role="dialog" aria-modal="true" aria-label={title}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(16,13,10,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+    <div role="dialog" aria-modal="true" aria-label={title} className="modal-backdrop"
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: 'var(--cream-card)', borderRadius: 12, padding: 24, width, maxWidth: '96vw', maxHeight: '92vh', overflowY: 'auto', border: '1px solid var(--divider)', boxShadow: 'var(--shadow-panel)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="modal-panel" style={{ padding: 'var(--space-6)', width, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 3 }}>{subtitle}</div>}
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{title}</div>
+          {subtitle && <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>{subtitle}</div>}
         </div>
         {children}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>{footer}</div>
@@ -361,12 +360,12 @@ export function LiabilityEditModal({ kind, liab, onClose, onSaved, onPromoted }:
       </div>
       <div><label style={modalLabel}>Condição</label><input style={modalInput} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
       <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 8, background: 'var(--info-tint)', border: '1px solid rgba(31,86,115,0.22)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--surface-info-soft)' }}>
         <span style={{ fontSize: 12, color: 'var(--ink-secondary)', fontFamily: font, flex: 1, minWidth: 220 }}>
           Precisa de parcelas? {PROMOTE_HINT}
         </span>
         <button onClick={generateFlow} className="btn btn-outline" disabled={saving}
-          style={{ borderColor: 'rgba(31,86,115,0.35)', color: 'var(--info)', whiteSpace: 'nowrap' }}>
+          style={{ color: 'var(--text-info)', whiteSpace: 'nowrap' }}>
           <Icon name="split" size={16} /> Gerar parcelas
         </button>
       </div>

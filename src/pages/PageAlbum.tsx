@@ -95,7 +95,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
       onMouseLeave={() => setHover(false)}
       style={{
         display: 'flex', flexDirection: 'column', textAlign: 'left',
-        background: 'var(--cream-card)', borderRadius: 14, overflow: 'hidden',
+        background: 'var(--cream-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden',
         border: `1px solid ${hover ? 'var(--gold)' : 'var(--divider-strong)'}`,
         boxShadow: hover
           ? '0 14px 34px rgba(0,0,0,0.20), 0 0 0 1px var(--divider-strong)'
@@ -111,8 +111,8 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
         {/* Badge de status sobreposto */}
         <span style={{
           position: 'absolute', top: 8, right: 8,
-          padding: '3px 9px', borderRadius: 6, background: st.bg, color: st.fg,
-          fontSize: 10, fontWeight: 500, fontFamily: fontMono, boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+          padding: '3px 9px', borderRadius: 'var(--radius-xs)', background: st.bg, color: st.fg,
+          fontSize: 10, fontWeight: 500, fontFamily: fontMono, boxShadow: 'var(--shadow-card)',
         }}>
           {STATUS_LABELS[athlete.current_status]}
         </span>
@@ -120,7 +120,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
         {athlete.position && (
           <span style={{
             position: 'absolute', bottom: 8, left: 8,
-            padding: '3px 9px', borderRadius: 6,
+            padding: '3px 9px', borderRadius: 'var(--radius-xs)',
             background: 'rgba(26,20,16,0.82)', color: 'var(--gold-soft, #d9b678)',
             fontSize: 10, fontWeight: 500, fontFamily: fontMono,
           }}>
@@ -182,9 +182,8 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
 }
 
 const pill: React.CSSProperties = {
-  padding: '2px 8px', borderRadius: 20, fontSize: 10, fontFamily: fontMono,
-  background: 'var(--cream-inset)', border: '1px solid var(--divider-soft)',
-  color: 'var(--text-secondary)', whiteSpace: 'nowrap',
+  padding: '2px 8px', borderRadius: 'var(--radius-tile)', fontSize: 10, fontFamily: fontMono,
+  background: 'var(--cream-inset)', color: 'var(--text-secondary)', whiteSpace: 'nowrap',
 }
 
 // Ordem de exibição das posições (agrupamento do álbum).
@@ -277,7 +276,7 @@ export default function PageAlbum() {
 
   const selWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column' }
   const selLabel: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
-  const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
+  const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -291,7 +290,7 @@ export default function PageAlbum() {
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={selLabel}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div style={selWrap}>
           <div style={selLabel}>Posição</div>

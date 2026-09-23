@@ -142,7 +142,7 @@ export default function PageDashboard() {
 
   const cardStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.55)', border: '1px solid var(--gray-150)',
-    borderRadius: 10, padding: 20,
+    borderRadius: 'var(--radius-md)', padding: 20,
   }
 
   const sectionTitle: React.CSSProperties = {
@@ -171,7 +171,7 @@ export default function PageDashboard() {
           { label: 'Alertas Ativos', value: `${redAlerts.length} críticos · ${yellowAlerts.length} atenção`, color: '#1a1410', bg: 'rgba(255,255,255,0.55)', border: 'var(--gray-150)' },
           { label: 'Titularidade ≠ 100%', value: `${inconsistentOwnership}`, color: inconsistentOwnership > 0 ? '#7a3f2c' : '#059669', bg: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.07)' : 'rgba(5,150,105,0.07)', border: inconsistentOwnership > 0 ? 'rgba(122,63,44,0.20)' : 'rgba(5,150,105,0.20)' },
         ].map(kpi => (
-          <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 10, padding: '16px 18px' }}>
+          <div key={kpi.label} style={{ background: kpi.bg, border: `1px solid ${kpi.border}`, borderRadius: 'var(--radius-md)', padding: '16px 18px' }}>
             <div style={{ fontFamily: "var(--font-label)", fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'rgba(26,20,16,0.45)', marginBottom: 6 }}>
               {kpi.label}
             </div>
@@ -198,7 +198,7 @@ export default function PageDashboard() {
                 <YAxis tick={{ fontFamily: "var(--font-label)", fontSize: 10, fill: 'rgba(26,20,16,0.45)' }} axisLine={false} tickLine={false}
                   tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
                 <Tooltip
-                  contentStyle={{ fontFamily: "var(--font-label)", fontSize: 11, background: '#1a1410', border: 'none', borderRadius: 7, color: '#f3ede2' }}
+                  contentStyle={{ fontFamily: "var(--font-label)", fontSize: 11, background: '#1a1410', border: 'none', borderRadius: 'var(--radius-md)', color: '#f3ede2' }}
                   formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString('pt-BR')}`, name === 'receivable' ? 'A Receber' : 'A Pagar']}
                 />
                 <Bar dataKey="receivable" fill="#059669" opacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={40} />
@@ -293,10 +293,10 @@ export default function PageDashboard() {
                 const border = alert.severity === 'RED' ? 'rgba(122,63,44,0.25)' : 'rgba(245,158,11,0.25)'
                 const dot = alert.severity === 'RED' ? '#7a3f2c' : '#f59e0b'
                 return (
-                  <div key={alert.id} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: '10px 12px' }}>
+                  <div key={alert.id} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0, marginTop: 4 }} />
+                        <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-circle)', background: dot, flexShrink: 0, marginTop: 4 }} />
                         <div>
                           <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: '#1a1410', marginBottom: 2 }}>
                             {alert.message}
@@ -335,7 +335,7 @@ export default function PageDashboard() {
                   to={link.to}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 10px', borderRadius: 7, textDecoration: 'none',
+                    padding: '8px 10px', borderRadius: 'var(--radius-md)', textDecoration: 'none',
                     fontFamily: "var(--font-body)", fontSize: 13, color: '#1a1410',
                     background: 'var(--action-ghost-hover)', border: '1px solid var(--gray-150)',
                   }}
@@ -362,7 +362,7 @@ function DueRow({ clause, athleteName, overdue = false }: { clause: Clause; athl
       to={`/atletas/${clause.athlete_id}`}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '7px 10px', borderRadius: 7, textDecoration: 'none',
+        padding: '7px 10px', borderRadius: 'var(--radius-md)', textDecoration: 'none',
         background: overdue ? 'rgba(122,63,44,0.06)' : isDueSoon(clause.due_date, clause.payment_status) ? 'rgba(245,158,11,0.06)' : 'transparent',
         marginBottom: 2,
       }}

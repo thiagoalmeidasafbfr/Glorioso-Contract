@@ -88,9 +88,9 @@ export default function LoanShareModal({
   }
 
   const cell = (label: string, value: string, hi?: boolean) => (
-    <div style={{ padding: '10px 14px', borderRadius: 9, background: hi ? 'var(--pos-tint)' : 'var(--bg-subtle)', border: `1px solid ${hi ? 'rgba(47,107,58,0.25)' : 'var(--divider)'}` }}>
-      <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: hi ? 'var(--pos)' : 'var(--text-muted)', marginBottom: 5 }}>{label}</div>
-      <div style={{ fontSize: 17, fontWeight: 600, fontFamily: mono, color: hi ? 'var(--pos)' : 'var(--ink-primary)' }}>{value}</div>
+    <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-control)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line)' : 'transparent'}` }}>
+      <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, fontFamily: mono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
   )
 
@@ -164,7 +164,7 @@ export default function LoanShareModal({
       </label>
 
       {existing.length > 0 && (
-        <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, padding: '9px 12px', borderRadius: 8, background: 'var(--bg-subtle)', border: '1px solid var(--divider)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, padding: '9px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
           Rateio já aplicado: {existing.length} degrau(s) na linha do tempo de remuneração
           (aba <strong>Gatilhos</strong>). Atualizar recalcula o fluxo; remover devolve o valor integral.
         </div>

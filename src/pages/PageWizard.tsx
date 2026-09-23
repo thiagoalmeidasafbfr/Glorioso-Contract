@@ -68,8 +68,7 @@ const NATURES: Nature[] = [
 const STEPS = ['O que registrar', 'Quem está envolvido', 'Fluxo de parcelas', 'Revisão']
 
 const card: React.CSSProperties = {
-  background: 'var(--cream-card)', border: '1px solid var(--divider)',
-  borderRadius: 12, padding: 20, boxShadow: 'var(--shadow-hair)',
+  background: 'var(--cream-card)', borderRadius: 'var(--radius-card)', padding: 20, boxShadow: 'var(--shadow-hair)',
 }
 const lbl: React.CSSProperties = {
   fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
@@ -77,7 +76,7 @@ const lbl: React.CSSProperties = {
 }
 const input: React.CSSProperties = {
   width: '100%', background: 'var(--cream-card)', border: '1px solid var(--input-border)',
-  borderRadius: 7, padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
+  borderRadius: 'var(--radius-md)', padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
 }
 const sectionTitle: React.CSSProperties = {
   fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)',
@@ -244,7 +243,7 @@ export default function PageWizard() {
           return (
             <button key={s} onClick={() => done && setStep(i)} disabled={!done && !active}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 20,
+                display: 'flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 'var(--radius-tile)',
                 background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'transparent',
                 border: `1px solid ${active || done ? 'var(--divider-strong)' : 'var(--divider)'}`,
                 cursor: done ? 'pointer' : 'default',
@@ -279,7 +278,7 @@ export default function PageWizard() {
                 {NATURES.filter(n => n.group === g).map(n => (
                   <button key={n.key} onClick={() => pickNature(n)}
                     style={{
-                      textAlign: 'left', padding: '12px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: font,
+                      textAlign: 'left', padding: '12px 14px', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: font,
                       background: natureKey === n.key ? 'var(--gray-150)' : 'transparent',
                       border: `1px solid ${natureKey === n.key ? 'var(--action-inverse)' : 'var(--divider-strong)'}`,
                     }}>
@@ -309,7 +308,7 @@ export default function PageWizard() {
             </div>
 
             {creatingAth && (
-              <div style={{ padding: 14, borderRadius: 9, border: '1px solid var(--divider)', background: 'var(--bg-subtle)', marginBottom: 12 }}>
+              <div style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', marginBottom: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
                   <div>
                     <label style={lbl}>Nome completo *</label>
@@ -330,7 +329,7 @@ export default function PageWizard() {
             )}
 
             {athlete && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)' }}>
                 <Icon name="check" size={16} />
                 <span style={{ fontFamily: font, fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)' }}>{athlete.full_name}</span>
                 <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>· {athlete.position || 'posição não informada'}</span>
@@ -344,7 +343,7 @@ export default function PageWizard() {
                 {filteredAthletes.map(a => (
                   <button key={a.id} onClick={() => pickAthlete(a)}
                     style={{
-                      textAlign: 'left', padding: '9px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: font, fontSize: 13,
+                      textAlign: 'left', padding: '9px 12px', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: font, fontSize: 13,
                       background: 'transparent', border: '1px solid var(--divider)', color: 'var(--ink-primary)',
                     }}>
                     {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)' }}>· {a.position || '—'}</span>
@@ -449,7 +448,7 @@ export default function PageWizard() {
             <div style={{ ...sectionTitle, marginBottom: 10 }}>Parcelas</div>
             <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {[...valid].sort((a, b) => a.due_date.localeCompare(b.due_date)).map((l, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr', gap: 10, padding: '6px 10px', borderRadius: 6, background: 'var(--bg-subtle)', border: '1px solid var(--divider-soft)' }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr', gap: 10, padding: '6px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)' }}>
                   <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{i + 1}</span>
                   <span style={{ fontFamily: mono, fontSize: 12 }}>{fmtDate(l.due_date)}</span>
                   <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 600, textAlign: 'right' }}>{fmtCurrencyShort(l.value, currency)}</span>
@@ -492,8 +491,8 @@ function Row({ k, v }: { k: string; v: string }) {
 function Pill({ label, value }: { label: string; value: string }) {
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 7,
-      background: 'var(--bg-subtle)', border: '1px solid var(--divider)', maxWidth: 320,
+      display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 'var(--radius-md)',
+      background: 'var(--bg-subtle)', maxWidth: 320,
     }}>
       <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
       <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>

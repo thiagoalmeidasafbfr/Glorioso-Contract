@@ -3,10 +3,9 @@
 // Modo compacto (lista) e completo (detalhe, com legenda + badge de total).
 
 import type { EconomicRight } from '../types/athlete-system'
-import { HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS } from '../types/athlete-system'
+import { HOLDER_TYPE_LABELS, HOLDER_TYPE_COLORS, HOLDER_TYPE_INK } from '../types/athlete-system'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
-
-const fontMono = "var(--font-label)"
+import { badgeStyle } from '../lib/tones'
 
 function fmtPct(v: number): string {
   return `${Number.isInteger(v) ? v : v.toFixed(1).replace('.', ',')}%`
@@ -30,8 +29,8 @@ export default function OwnershipBar({ rights, compact = false, showLegend = tru
   return (
     <div style={{ width: '100%' }}>
       <div style={{
-        display: 'flex', height, borderRadius: height / 2, overflow: 'hidden',
-        background: 'var(--cream-inset)', border: '1px solid var(--input-border)',
+        display: 'flex', gap: 2, height, borderRadius: 'var(--radius-pill)', overflow: 'hidden',
+        background: 'var(--chart-track)',
       }}>
         {sorted.map(r => r.percentage > 0 && (
           <div key={r.id}
@@ -41,7 +40,7 @@ export default function OwnershipBar({ rights, compact = false, showLegend = tru
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
             {!compact && r.percentage >= 12 && (
-              <span style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: '#fff' }}>
+              <span style={{ fontSize: 10, fontWeight: 500, color: HOLDER_TYPE_INK[r.holder_type] }}>
                 {fmtPct(r.percentage)}
               </span>
             )}
@@ -60,17 +59,12 @@ export default function OwnershipBar({ rights, compact = false, showLegend = tru
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: compact ? 8 : 14, marginTop: compact ? 5 : 8, alignItems: 'center' }}>
           {sorted.map(r => r.percentage > 0 && (
             <span key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: compact ? 10 : 11, color: 'var(--text-secondary)' }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: HOLDER_TYPE_COLORS[r.holder_type], display: 'inline-block', flexShrink: 0 }} />
+              <span style={{ width: 9, height: 9, borderRadius: 'var(--radius-circle)', background: HOLDER_TYPE_COLORS[r.holder_type], display: 'inline-block', flexShrink: 0 }} />
               {HOLDER_TYPE_LABELS[r.holder_type]}{r.holder_name && r.holder_type !== 'BFR' ? ` (${r.holder_name})` : ''} {fmtPct(r.percentage)}
             </span>
           ))}
-          <span style={{
-            marginLeft: 'auto', fontSize: compact ? 10 : 11, fontFamily: fontMono, fontWeight: 600,
-            color: valid ? 'var(--pos)' : 'var(--neg)',
-            background: valid ? 'var(--pos-tint)' : 'var(--neg-tint)',
-            padding: '1px 8px', borderRadius: 5, whiteSpace: 'nowrap',
-          }}>
-            {valid ? `Total ${fmtPct(total)}` : `⚠ ${fmtPct(total)} ≠ 100%`}
+          <span style={{ ...badgeStyle(valid ? 'accent' : 'negative'), marginLeft: 'auto' }}>
+            {valid ? `Total ${fmtPct(total)}` : `${fmtPct(total)} ≠ 100%`}
           </span>
         </div>
       )}
@@ -84,11 +78,8 @@ export function OwnershipBadge({ rights }: { rights: EconomicRight[] }) {
   if (isOwnershipValid(rights)) return null
   return (
     <span title={`Soma dos direitos = ${fmtPct(sumOwnership(rights))} (deveria ser 100%)`}
-      style={{
-        fontSize: 10, fontFamily: fontMono, fontWeight: 600, color: 'var(--neg)',
-        background: 'var(--neg-tint)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap',
-      }}>
-      ⚠ {fmtPct(sumOwnership(rights))}
+      style={badgeStyle('negative')}>
+      {fmtPct(sumOwnership(rights))} ≠ 100%
     </span>
   )
 }

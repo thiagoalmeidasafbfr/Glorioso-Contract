@@ -176,12 +176,12 @@ export default function PageRelGatilhos() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, descrição, métrica..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Origem</div>
           <select value={originFilter} onChange={e => setOriginFilter(e.target.value as typeof originFilter)}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
+            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todas</option>
             {(['REMUNERACAO', 'BONUS', 'RESCISORIA'] as const).map(o => <option key={o} value={o}>{ORIGIN_LABEL[o]}</option>)}
           </select>
@@ -189,7 +189,7 @@ export default function PageRelGatilhos() {
         <div>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
+            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA'] as const).map(s => (
               <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
@@ -232,7 +232,7 @@ export default function PageRelGatilhos() {
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.metric}</td>
                     <td style={{ ...tdMono, color: 'var(--text-secondary)', maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.threshold}>{r.threshold}</td>
                     <td style={td}>
-                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-label)', background: st.bg, color: st.fg }}>{st.label}</span>
+                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-label)', background: st.bg, color: st.fg }}>{st.label}</span>
                     </td>
                     <td style={{ ...tdMono, color: 'var(--text-secondary)' }}>{r.achievedDate ? fmtDate(r.achievedDate) : '—'}</td>
                     <td style={{ ...tdMono, fontWeight: 600, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.impact}>{r.impact}</td>

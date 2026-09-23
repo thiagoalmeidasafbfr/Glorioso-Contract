@@ -130,12 +130,12 @@ export default function PageRelDirEconomicos() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta ou detentor..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
+            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['PARCIAL', 'SEM_LANCAMENTO'] as const).map(s => (
               <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
@@ -182,7 +182,7 @@ export default function PageRelDirEconomicos() {
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {r.holders.slice(0, 3).map((h, i) => (
-                            <span key={i} style={{ fontSize: 11, fontFamily: 'var(--font-label)', padding: '2px 8px', borderRadius: 5, background: 'var(--cream-inset)', color: HOLDER_COLOR[h.holderType], border: '1px solid var(--divider-soft)' }}>
+                            <span key={i} style={{ fontSize: 11, fontFamily: 'var(--font-label)', padding: '2px 8px', borderRadius: 'var(--radius-xs)', background: 'var(--cream-inset)', color: HOLDER_COLOR[h.holderType] }}>
                               {h.holderName} · {h.percentage.toFixed(0)}%
                             </span>
                           ))}

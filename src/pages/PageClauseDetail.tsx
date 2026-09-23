@@ -43,10 +43,10 @@ const PAYMENT_STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
 
 function Badge({ status }: { status: string }) {
   const s = PAYMENT_STATUS_STYLE[status] ?? { bg: 'var(--cream-inset)', fg: 'var(--ink-secondary)' }
-  return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 500, fontFamily: fontMono, background: s.bg, color: s.fg }}>{status.replace(/_/g, ' ')}</span>
+  return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: fontMono, background: s.bg, color: s.fg }}>{status.replace(/_/g, ' ')}</span>
 }
 
-const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 7, fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 'var(--radius-md)', fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
 const lbl: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
 
 export default function PageClauseDetail() {
@@ -207,7 +207,7 @@ export default function PageClauseDetail() {
         </div>
 
         {parseRJ(clause.notes) && (
-          <div style={{ marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)', fontFamily: fontMono, fontSize: 11, color: 'var(--ink-primary)' }}>
+          <div style={{ marginBottom: 14, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn, #c98a1a)', fontFamily: fontMono, fontSize: 11, color: 'var(--ink-primary)' }}>
             <strong style={{ letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--warn)' }}>Recuperação Judicial</strong>
             {' — '}obrigação inteira incluída no processo em {fmtDate(parseRJ(clause.notes)!.filedAt)}.
           </div>
@@ -267,10 +267,10 @@ export default function PageClauseDetail() {
                 Selecionar todas
               </label>
               {selectedRJ.size > 0 && (
-                <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 6, background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn)' }}>
+                <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--warn-tint, #fff4e0)', border: '1px solid var(--warn)' }}>
                   <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{selectedRJ.size} parcela(s)</span>
                   <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Protocolo:</span>
-                  <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ padding: '3px 6px', border: '1px solid var(--divider-strong)', borderRadius: 4, fontFamily: fontMono, fontSize: 11 }} />
+                  <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ padding: '3px 6px', border: '1px solid var(--divider-strong)', borderRadius: 'var(--radius-xs)', fontFamily: fontMono, fontSize: 11 }} />
                   <button onClick={bulkMarkParcRJ} className="btn btn-outline" style={{ padding: '3px 10px', borderColor: 'var(--warn)', color: 'var(--warn)', fontSize: 11 }}>
                     Incluir na RJ
                   </button>
@@ -302,7 +302,7 @@ export default function PageClauseDetail() {
                 <div key={p.id} style={{
                   display: 'grid',
                   gridTemplateColumns: canEdit ? '28px 36px 120px 1fr 100px auto' : '36px 120px 1fr 100px auto',
-                  gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 8,
+                  gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 'var(--radius-md)',
                   background: rj ? 'var(--warn-tint, #fff4e0)' : 'var(--bg-subtle)',
                   border: `1px solid ${rj ? 'var(--warn)' : 'var(--divider-soft)'}`,
                 }}>
@@ -317,7 +317,7 @@ export default function PageClauseDetail() {
                   <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 700 : 400 }}>{fmtDate(p.due_date)}</span>
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>
                     {fmtCurrencyShort(p.original_value, p.currency)}
-                    {rj && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 4, background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
+                    {rj && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 'var(--radius-xs)', background: 'var(--warn)', color: '#fff', fontFamily: fontMono, fontSize: 10, fontWeight: 600 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
                   </span>
                   <Badge status={p.payment_status} />
                   {canEdit && (
