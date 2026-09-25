@@ -29,6 +29,7 @@ import type {
 } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import KpiPill from '../components/KpiPill'
+import { Icon } from '../components/Icon'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -275,7 +276,9 @@ export default function PageAmortizacao() {
                   <>
                     <tr key={r.athlete.id} style={{ background: 'var(--cream-card)', cursor: 'pointer' }}
                       onClick={() => setExpandedId(isOpen ? null : r.athlete.id)}>
-                      <td style={{ ...td, textAlign: 'center', fontFamily: mono, color: 'var(--text-secondary)' }}>{isOpen ? '▾' : '▸'}</td>
+                      <td style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        <Icon name={isOpen ? 'chevronDown' : 'chevronRight'} size={16} style={{ margin: '0 auto' }} />
+                      </td>
                       <td style={{ ...td, fontWeight: 600 }}>
                         {r.athlete.short_name || r.athlete.full_name}
                         <div style={{ fontSize: 11, fontFamily: mono, color: 'var(--text-secondary)', fontWeight: 400 }}>
