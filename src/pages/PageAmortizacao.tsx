@@ -228,8 +228,8 @@ export default function PageAmortizacao() {
     monthly: visible.reduce((s, r) => s + r.monthlyAmortBRL, 0),
   }), [visible])
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -239,12 +239,14 @@ export default function PageAmortizacao() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
-        <KpiPill label="Intangível (BRL)" value={fmtCurrencyShort(totals.intangible, 'BRL')} tone="neutral" />
-        <KpiPill label="Amortizado (BRL)" value={fmtCurrencyShort(totals.accum, 'BRL')} tone="neutral" />
-        <KpiPill label="Residual (BRL)" value={fmtCurrencyShort(totals.residual, 'BRL')} tone="warn" />
-        <KpiPill label="Amortiz. / mês" value={fmtCurrencyShort(totals.monthly, 'BRL')} tone="neutral" />
+        <div className="kpi-group">
+          <KpiPill label="Intangível (BRL)" value={fmtCurrencyShort(totals.intangible, 'BRL')} tone="neutral" />
+          <KpiPill label="Amortizado (BRL)" value={fmtCurrencyShort(totals.accum, 'BRL')} tone="neutral" />
+          <KpiPill label="Residual (BRL)" value={fmtCurrencyShort(totals.residual, 'BRL')} tone="warn" />
+          <KpiPill label="Amortiz. / mês" value={fmtCurrencyShort(totals.monthly, 'BRL')} tone="neutral" />
+        </div>
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -279,7 +281,7 @@ export default function PageAmortizacao() {
                       <td style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>
                         <Icon name={isOpen ? 'chevronDown' : 'chevronRight'} size={16} style={{ margin: '0 auto' }} />
                       </td>
-                      <td style={{ ...td, fontWeight: 600 }}>
+                      <td style={{ ...td, fontWeight: 500 }}>
                         {r.athlete.short_name || r.athlete.full_name}
                         <div style={{ fontSize: 11, fontFamily: mono, color: 'var(--text-secondary)', fontWeight: 400 }}>
                           {r.athlete.position ?? '—'} · {r.athlete.current_status}
@@ -293,7 +295,7 @@ export default function PageAmortizacao() {
                           {r.contractMonths ? `${r.contractMonths} m · restam ${r.monthsRemaining}` : 'sem contrato de entrada'}
                         </div>
                       </td>
-                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>
+                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>
                         {r.intangibleBRL > 0 ? fmtCurrencyShort(r.intangibleBRL, 'BRL') : '—'}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>
@@ -302,7 +304,7 @@ export default function PageAmortizacao() {
                       <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>
                         {r.accumAmortBRL > 0 ? fmtCurrencyShort(r.accumAmortBRL, 'BRL') : '—'}
                       </td>
-                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600, color: r.residualBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+                      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500, color: r.residualBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
                         {r.residualBRL > 0 ? fmtCurrencyShort(r.residualBRL, 'BRL') : '—'}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontSize: 11 }}>{fmtPercent(pct)}</td>
@@ -341,8 +343,8 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
   const secTitle: React.CSSProperties = { fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }
   const kvRow: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }
   const label: React.CSSProperties = { fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }
-  const val: React.CSSProperties = { fontFamily: mono, fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)' }
-  const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: mono, color: 'var(--ink-primary)' }
+  const val: React.CSSProperties = { fontFamily: mono, fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--ink-primary)' }
+  const inp: React.CSSProperties = { width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: mono, color: 'var(--ink-primary)' }
 
   return (
     <div>
@@ -369,9 +371,9 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
                 </tr>
               ))}
               <tr>
-                <td style={{ ...detTd, fontWeight: 600 }}>Total do intangível</td>
+                <td style={{ ...detTd, fontWeight: 500 }}>Total do intangível</td>
                 <td style={detTd} />
-                <td style={{ ...detTd, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(c.intangibleBRL, 'BRL')}</td>
+                <td style={{ ...detTd, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(c.intangibleBRL, 'BRL')}</td>
               </tr>
             </tbody>
           </table>
@@ -547,10 +549,10 @@ function SaleLine({ label, v, bold, highlight }: { label: string; v: number; bol
   const neg = v < 0
   return (
     <tr>
-      <td style={{ padding: '6px 4px', fontFamily: font, fontSize: 12, fontWeight: bold ? 600 : 400, color: 'var(--ink-primary)' }}>{label}</td>
+      <td style={{ padding: '6px 4px', fontFamily: font, fontSize: 12, fontWeight: bold ? 500 : 400, color: 'var(--ink-primary)' }}>{label}</td>
       <td style={{
         padding: '6px 4px', textAlign: 'right', fontFamily: mono,
-        fontSize: highlight ? 15 : 13, fontWeight: bold ? 600 : 500,
+        fontSize: highlight ? 14 : 13, fontWeight: bold ? 500 : 400,
         color: highlight ? (v >= 0 ? 'var(--pos)' : 'var(--neg)') : (neg ? 'var(--neg)' : 'var(--ink-primary)'),
       }}>
         {fmtCurrencyFull(v, 'BRL')}

@@ -18,7 +18,7 @@ export default function Wordmark({ size = 16, tone = 'ink', plate = false, compa
   const label = (
     <span style={{
       fontFamily: 'var(--font-core)', fontSize: size, lineHeight: 1,
-      fontWeight: 600,
+      fontWeight: 500,
       letterSpacing: '-.02em', color, whiteSpace: 'nowrap',
     }}>{name}</span>
   )
@@ -29,9 +29,9 @@ export default function Wordmark({ size = 16, tone = 'ink', plate = false, compa
       borderRadius: 'var(--radius-md)',
       background: 'var(--surface-accent)',
       // o creme some sobre superfícies claras: carrega o filete preto do DS
-      boxShadow: 'inset 0 0 0 1px var(--accent-line)',
+      boxShadow: 'inset 0 0 0 1px var(--accent-line-soft)',
       fontSize: size * 0.9, lineHeight: 1,
-      fontWeight: 600,
+      fontWeight: 500,
       color: 'var(--ink-900)', letterSpacing: '-.03em',
     }}>{name.trim().charAt(0)}</span>
   )

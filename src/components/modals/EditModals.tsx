@@ -43,7 +43,7 @@ export function ModalShell({ title, subtitle, width = 560, onClose, children, fo
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{title}</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{title}</div>
           {subtitle && <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>{subtitle}</div>}
         </div>
         {children}

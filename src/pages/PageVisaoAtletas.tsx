@@ -141,8 +141,8 @@ export default function PageVisaoAtletas() {
     exportWorkbook([{ name: 'Visão por atleta', cols, rows: out }], 'visao-consolidada-atletas.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -155,7 +155,7 @@ export default function PageVisaoAtletas() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div className="seg-control" role="group" aria-label="Filtrar atletas">
           {([['todos', 'Todos'], ['atraso', 'Com atraso'], ['aberto', 'Com saldo em aberto']] as [Filter, string][]).map(([k, l]) => (
@@ -166,9 +166,11 @@ export default function PageVisaoAtletas() {
           <button onClick={expandAll} className="btn btn-sm btn-ghost">Expandir tudo</button>
           <button onClick={collapseAll} className="btn btn-sm btn-ghost">Recolher</button>
         </div>
-        <KpiPill label="Em atraso (aprox. BRL)" value={fmtCurrencyShort(totals.overdue, 'BRL')} tone="neg" />
-        <KpiPill label="Em aberto (aprox. BRL)" value={fmtCurrencyShort(totals.open, 'BRL')} tone="neutral" />
-        <KpiPill label="Em Rec. Judicial (aprox. BRL)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
+        <div className="kpi-group">
+          <KpiPill label="Em atraso (aprox. BRL)" value={fmtCurrencyShort(totals.overdue, 'BRL')} tone="neg" />
+          <KpiPill label="Em aberto (aprox. BRL)" value={fmtCurrencyShort(totals.open, 'BRL')} tone="neutral" />
+          <KpiPill label="Em Rec. Judicial (aprox. BRL)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
+        </div>
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -199,19 +201,19 @@ export default function PageVisaoAtletas() {
                         label={open ? `Recolher ${r.athlete.short_name}` : `Ver naturezas de ${r.athlete.short_name}`}
                         onClick={() => toggle(r.athlete.id)} />
                     </td>
-                    <td style={{ ...td, fontWeight: 600 }}>
+                    <td style={{ ...td, fontWeight: 500 }}>
                       <RefLink to={`/atletas/${r.athlete.id}`} title="Abrir a ficha do atleta">{r.athlete.short_name || r.athlete.full_name}</RefLink>
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, fontWeight: 400 }}>
                         {' '}· {shown.length} natureza{shown.length === 1 ? '' : 's'}
                       </span>
                     </td>
                     <td style={td}><StatusPill status={r.status} /></td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{r.openBRL > 0 ? fmtCurrencyShort(r.openBRL, 'BRL') : '—'}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600, color: r.overdueBRL > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{r.openBRL > 0 ? fmtCurrencyShort(r.openBRL, 'BRL') : '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500, color: r.overdueBRL > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
                       {r.overdueBRL > 0 ? fmtCurrencyShort(r.overdueBRL, 'BRL') : '—'}
                       {r.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.overdueCount} parcela(s)</div>}
                     </td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600, color: r.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500, color: r.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
                       {r.rjBRL > 0 ? fmtCurrencyShort(r.rjBRL, 'BRL') : '—'}
                       {r.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.rjCount} lançamento(s)</div>}
                     </td>
@@ -264,11 +266,11 @@ function NatureRow({ n, td, onOpen }: {
       <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>
         <ByCurrency totals={n.openByCurrency} />
       </td>
-      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 600 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
+      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 500 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
         {n.overdueBRL > 0 ? fmtCurrencyShort(n.overdueBRL, 'BRL') : '—'}
         {n.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.overdueCount} parcela(s)</div>}
       </td>
-      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 600 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
+      <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 500 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
         {n.rjBRL > 0 ? fmtCurrencyShort(n.rjBRL, 'BRL') : '—'}
         {n.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.rjCount} lançamento(s)</div>}
       </td>

@@ -29,8 +29,8 @@ const font = "var(--font-body)"
 const mono = "var(--font-label)"
 
 const input: React.CSSProperties = {
-  width: '100%', background: 'var(--cream-card)', border: '1px solid var(--input-border)',
-  borderRadius: 'var(--radius-md)', padding: '7px 9px', fontSize: 13, color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
+  width: '100%', backgroundColor: 'var(--cream-card)', border: '1px solid var(--border-subtle)',
+  borderRadius: 'var(--ui-control-radius)', padding: '4px 10px', fontSize: 'var(--ui-text-size)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box',
 }
 const lbl: React.CSSProperties = {
   fontFamily: mono, fontSize: 10, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase',
@@ -138,7 +138,7 @@ export default function FlowBuilder({
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--radius-md)',
               border: '1px solid var(--divider-strong)', background: genOpen ? 'var(--action-ghost-hover)' : 'transparent',
-              color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer',
             }}>
             <Icon name={genOpen ? 'chevronDown' : 'chevronRight'} size={16} />
             Gerar automaticamente
@@ -226,7 +226,7 @@ export default function FlowBuilder({
           style={{
             marginTop: 8, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             padding: '9px 0', borderRadius: 'var(--radius-md)', border: '1px dashed var(--divider-strong)', background: 'transparent',
-            color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer',
           }}>
           <Icon name="plus" size={16} /> Adicionar parcela
         </button>

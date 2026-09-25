@@ -21,14 +21,14 @@ export default function AthleteAvatar({ athlete, size = 38 }: {
         onError={() => setErr(true)}
         style={{
           width: size, height: size, maxWidth: 'none', borderRadius: 'var(--radius-sm)', objectFit: 'cover', objectPosition: 'center top', flexShrink: 0,
-          background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line)',
+          background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line-soft)',
         }} />
     )
   }
   return (
     <div style={{
       width: size, height: size, borderRadius: 'var(--radius-sm)', flexShrink: 0,
-      background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line)',
+      background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line-soft)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontSize: size * 0.34, fontWeight: 500, color: 'var(--ink-900)',
     }}>

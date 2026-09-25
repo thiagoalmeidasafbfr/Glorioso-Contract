@@ -164,8 +164,8 @@ export default function PageRelGatilhos() {
     }], 'relatorio-gatilhos.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: 'var(--font-body)', borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdMono: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -177,12 +177,12 @@ export default function PageRelGatilhos() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, descrição, métrica..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Origem</div>
           <select value={originFilter} onChange={e => setOriginFilter(e.target.value as typeof originFilter)}
-            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
+            style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todas</option>
             {(['REMUNERACAO', 'BONUS', 'RESCISORIA'] as const).map(o => <option key={o} value={o}>{ORIGIN_LABEL[o]}</option>)}
           </select>
@@ -190,14 +190,14 @@ export default function PageRelGatilhos() {
         <div>
           <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
-            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
+            style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA'] as const).map(s => (
               <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
             ))}
           </select>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'flex-end' }}>
+        <div className="kpi-group">
           <KpiPill label="Pendentes" value={String(stats.pendente)} tone={stats.pendente > 0 ? 'warn' : 'neutral'} />
           <KpiPill label="Atingidas" value={String(stats.atingida)} tone="pos" />
           <KpiPill label="Não atingidas" value={String(stats.naoAtingida)} tone={stats.naoAtingida > 0 ? 'neg' : 'neutral'} />
@@ -227,7 +227,7 @@ export default function PageRelGatilhos() {
                 const st = STATUS_STYLE[r.status]
                 return (
                   <tr key={r.id}>
-                    <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
                     <td style={td}><span style={badgeStyle(r.origin === 'BONUS' ? 'warning' : r.origin === 'RESCISORIA' ? 'negative' : 'info')}>{ORIGIN_LABEL[r.origin]}</span></td>
                     <td style={{ ...td, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.description}>{r.description}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.metric}</td>
@@ -236,7 +236,7 @@ export default function PageRelGatilhos() {
                       <span style={badgeStyle(st)}>{st.label}</span>
                     </td>
                     <td style={{ ...tdMono, color: 'var(--text-secondary)' }}>{r.achievedDate ? fmtDate(r.achievedDate) : '—'}</td>
-                    <td style={{ ...tdMono, fontWeight: 600, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.impact}>{r.impact}</td>
+                    <td style={{ ...tdMono, fontWeight: 500, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.impact}>{r.impact}</td>
                     <td style={{ ...td, textAlign: 'right' }}>
                       <RowActions open={r.clauseId ? { to: `/obrigacoes/${r.clauseId}`, label: 'Abrir a cláusula' } : { to: `/atletas/${r.athleteId}?tab=gatilhos`, label: 'Abrir a aba de gatilhos do atleta' }} />
                     </td>

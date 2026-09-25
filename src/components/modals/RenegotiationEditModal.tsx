@@ -100,7 +100,7 @@ export default function RenegotiationEditModal({ acordo, onClose, onSaved, onDel
           ].map(([l, v]) => (
             <div key={l} style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
               <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{l}</div>
-              <div style={{ fontSize: 14, fontWeight: 600, fontFamily: mono, color: 'var(--ink-primary)' }}>{v}</div>
+              <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, fontFamily: mono, color: 'var(--ink-primary)' }}>{v}</div>
             </div>
           ))}
         </div>
@@ -126,7 +126,7 @@ export default function RenegotiationEditModal({ acordo, onClose, onSaved, onDel
           {(meta?.sources ?? []).map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--surface-sunken)' }}>
               <span style={{ flex: 1, fontSize: 12, fontFamily: font, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
-              <span style={{ fontSize: 12, fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(s.value, meta?.currency ?? 'BRL')}</span>
+              <span style={{ fontSize: 12, fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(s.value, meta?.currency ?? 'BRL')}</span>
               <IconButton icon="undo" label={`Soltar "${s.label}" do acordo`} tone="warn" small
                 onClick={() => releaseSource(i, s.label)} />
             </div>

@@ -122,22 +122,22 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
           {filtered.map(e => (
             <div key={e.id} className="card" role="button" tabIndex={0}
-              style={{ padding: 16, cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center' }}
+              style={{ padding: 'var(--gutter-card-sm)', cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'center' }}
               onClick={() => navigate(`${basePath}/${e.id}`)}
               onKeyDown={ev => { if (ev.key === 'Enter') navigate(`${basePath}/${e.id}`) }}>
               <div style={{ width: 52, height: 52, borderRadius: isClube ? 'var(--radius-md)' : 'var(--radius-circle)', overflow: 'hidden', background: 'var(--cream-inset)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {e.logo
                   ? <img src={e.logo} alt="" style={{ width: '100%', height: '100%', objectFit: isClube ? 'contain' : 'cover' }} />
-                  : <span style={{ fontFamily: fontMono, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
+                  : <span style={{ fontFamily: fontMono, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-secondary)' }}>{e.name.slice(0, 2).toUpperCase()}</span>}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
+                <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
                 {e.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 5 }}>
                   {e.count} obrigaç{e.count === 1 ? 'ão' : 'ões'}
                   {e.athletes > 0 && <> · {e.athletes} atleta{e.athletes === 1 ? '' : 's'}</>}
                 </div>
-                <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 600, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 500, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
                   {fmtCurrencyShort(e.openBRL, 'BRL')}
                   <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-secondary)' }}> em aberto</span>
                 </div>

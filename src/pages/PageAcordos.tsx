@@ -125,8 +125,8 @@ export default function PageAcordos() {
     exportWorkbook([{ name: 'Acordos', cols: exportCols, rows: filtered.map(r => ({ ...r, andamento: AND_STYLE[r.andamento].label })) as unknown as Record<string, unknown>[] }], 'acordos-renegociacoes.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '10px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: fontBody, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: fontBody, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
   const tdNum: React.CSSProperties = { ...td, fontFamily: fontMono, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
 
   return (
@@ -140,23 +140,23 @@ export default function PageAcordos() {
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, credor, observações..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: fontBody, color: 'var(--ink-primary)' }} />
         </div>
         <div>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Atleta</div>
           <select value={atletaFilter} onChange={e => setAtletaFilter(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)', maxWidth: 200 }}>
+            style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: fontBody, color: 'var(--ink-primary)', maxWidth: 200 }}>
             {atletas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Andamento</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: fontBody, color: 'var(--ink-primary)' }}>
+            style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: fontBody, color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div style={{ marginLeft: 'auto' }}>
+        <div className="kpi-group">
           <KpiPill
             label={totalDiscountBRL < 0 ? 'Acréscimo total (aprox. BRL)' : 'Desconto total (aprox. BRL)'}
             value={fmtCurrencyShort(Math.abs(totalDiscountBRL), 'BRL')}
@@ -188,7 +188,7 @@ export default function PageAcordos() {
                 const st = AND_STYLE[r.andamento]
                 return (
                   <tr key={r.id}>
-                    <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.credor}</td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: 'var(--text-secondary)' }}>{r.data ? fmtDate(r.data) : '—'}</td>
                     <td style={tdNum}>{fmtCurrencyShort(r.originalTotal, r.currency)}</td>

@@ -107,9 +107,9 @@ function CellInput(props: {
         minHeight: 'var(--control-h-sm)',
         padding: '2px 6px',
         border: '1px solid transparent',
-        borderRadius: 'var(--radius-sm)',
-        background: 'transparent',
-        fontFamily: fontBody, fontSize: 13,
+        borderRadius: 'var(--ui-control-radius)',
+        backgroundColor: 'transparent',
+        fontFamily: fontBody, fontSize: 'var(--ui-text-size)',
         textAlign: props.align ?? 'left',
         color: 'var(--ink-primary)',
         outline: 'none',
@@ -513,7 +513,7 @@ function selectStyle(): React.CSSProperties {
   return {
     // Célula densa: 28px (--control-h-sm), mesmo filete/raio dos campos do DS.
     width: '100%', minHeight: 'var(--control-h-sm)', padding: '2px 28px 2px 8px',
-    border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--border-subtle)', borderRadius: 'var(--ui-control-radius)',
     backgroundColor: 'var(--surface-card)', backgroundPosition: 'right 6px center', fontFamily: fontBody, fontSize: 12,
     color: 'var(--ink-primary)', cursor: 'pointer',
   }

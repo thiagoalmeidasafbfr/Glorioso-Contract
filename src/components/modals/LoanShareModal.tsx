@@ -88,9 +88,9 @@ export default function LoanShareModal({
   }
 
   const cell = (label: string, value: string, hi?: boolean) => (
-    <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-control)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line)' : 'transparent'}` }}>
+    <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-control)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line-soft)' : 'transparent'}` }}>
       <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, fontFamily: mono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, fontFamily: mono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
   )
 

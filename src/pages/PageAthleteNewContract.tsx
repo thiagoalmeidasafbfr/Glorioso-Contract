@@ -88,15 +88,15 @@ const validLines = (lines: FlowLine[]) => lines
   .sort((a, b) => a.due_date.localeCompare(b.due_date))
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', background: 'var(--cream-card)',
-  border: '1px solid var(--input-border)', borderRadius: 'var(--radius-md)',
-  padding: '8px 10px', fontSize: 13, color: 'var(--ink-primary)',
+  width: '100%', backgroundColor: 'var(--cream-card)',
+  border: '1px solid var(--border-subtle)', borderRadius: 'var(--ui-control-radius)',
+  padding: '4px 10px', fontSize: 'var(--ui-text-size)', color: 'var(--ink-primary)',
   fontFamily: "var(--font-body)", boxSizing: 'border-box',
 }
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--font-label)", fontSize: 10,
-  fontWeight: 600, textTransform: 'uppercase' as const,
+  fontWeight: 500, textTransform: 'uppercase' as const,
   color: 'var(--text-secondary)', display: 'block', marginBottom: 4,
 }
 
@@ -474,12 +474,12 @@ export default function PageAthleteNewContract() {
                 <span style={{
                   width: 26, height: 26, borderRadius: 'var(--radius-circle)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: active ? 'var(--action-inverse)' : done ? 'var(--gray-150)' : 'var(--cream-inset)',
-                  fontSize: 12, fontWeight: 600, fontFamily: "var(--font-label)",
+                  fontSize: 12, fontWeight: 500, fontFamily: "var(--font-label)",
                   color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)',
                 }}>
                   {done ? <Icon name="check" size={16} /> : s}
                 </span>
-                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 600 : 500, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 500 : 400, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
                   {labels[i]}
                 </span>
               </button>
@@ -966,7 +966,7 @@ export default function PageAthleteNewContract() {
               background: 'transparent', border: '1px dashed var(--divider-strong)',
               borderRadius: 'var(--radius-md)', padding: '12px 0', width: '100%',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600,
+              fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500,
               color: 'var(--ink-primary)', cursor: 'pointer',
             }}
           >

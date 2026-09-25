@@ -49,7 +49,7 @@ export default function PageImportarPlanilhas() {
   const other = sheets ? Object.keys(sheets).filter(s => !KNOWN.includes(s)) : []
 
   const card: React.CSSProperties = { padding: 'var(--gutter-card)' }
-  const num: React.CSSProperties = { fontFamily: fontMono, fontWeight: 600 }
+  const num: React.CSSProperties = { fontFamily: fontMono, fontWeight: 500 }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -71,8 +71,8 @@ export default function PageImportarPlanilhas() {
       )}
 
       {sheets && !report && (
-        <div className="card" style={{ padding: 22 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: fontBody, marginBottom: 4 }}>{fileName}</div>
+        <div className="card" style={{ padding: 'var(--gutter-card)' }}>
+          <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--ink-primary)', fontFamily: fontBody, marginBottom: 4 }}>{fileName}</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 14 }}>Abas reconhecidas para importação:</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 8, marginBottom: 8 }}>
             {known.map(s => (
@@ -94,9 +94,9 @@ export default function PageImportarPlanilhas() {
       {report && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
-            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 500, marginTop: 8 }}>{report.athletes.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 500, marginTop: 8 }}>{report.clubs.created}</div></div>
-            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 500, marginTop: 8 }}>{report.agents.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Atletas novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 400, marginTop: 8 }}>{report.athletes.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Clubes novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 400, marginTop: 8 }}>{report.clubs.created}</div></div>
+            <div className="card" style={card}><div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agentes novos</div><div style={{ ...num, fontSize: 'var(--text-title-size)', fontWeight: 400, marginTop: 8 }}>{report.agents.created}</div></div>
           </div>
 
           <div className="card" style={{ overflow: 'hidden' }}>
@@ -122,7 +122,7 @@ export default function PageImportarPlanilhas() {
           </div>
 
           {Object.keys(report.pending).length > 0 && (
-            <div className="card" style={{ padding: '14px 18px' }}>
+            <div className="card" style={{ padding: 'var(--gutter-card-sm)' }}>
               <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--warn)', marginBottom: 8 }}>Reconhecido — mapeamento em etapa futura</div>
               {Object.entries(report.pending).map(([k, n]) => (
                 <div key={k} style={{ fontSize: 12, fontFamily: fontBody, color: 'var(--text-secondary)' }}>{k}: <span style={num}>{n}</span> linhas</div>

@@ -248,7 +248,7 @@ function contractLeft(endISO: string): { label: string; color: string } {
 function ClubCrest({ club }: { club: ClubRef }) {
   return (
     <span aria-hidden="true" style={{
-      width: 22, height: 22, flex: 'none', borderRadius: 'var(--radius-xs)', overflow: 'hidden',
+      width: 20, height: 20, flex: 'none', borderRadius: 'var(--radius-xs)', overflow: 'hidden',
       background: 'var(--surface-sunken)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       fontSize: 9, fontWeight: 500, color: 'var(--gray-700)',
     }}>
@@ -377,7 +377,7 @@ export default function PageRankingSalarios() {
             {(Object.keys(SITUACAO_LABEL) as Situacao[]).map(s => <option key={s} value={s}>{SITUACAO_LABEL[s]}</option>)}
           </select>
         </label>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', marginLeft: 'auto', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div className="kpi-group">
           <KpiPill label="Folha semanal" value={money(totals.weekly)} />
           <KpiPill label="Custo anual do clube" value={money(totals.cost)} />
           <KpiPill label="Valor contábil" value={money(totals.book)} />
@@ -429,12 +429,12 @@ export default function PageRankingSalarios() {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                         <span style={{ position: 'relative', flex: 'none', display: 'block' }}>
-                          <AthleteAvatar athlete={r.athlete} size={36} />
-                          <Flag nationality={r.athlete.nationality} size={14} round
+                          <AthleteAvatar athlete={r.athlete} size={32} />
+                          <Flag nationality={r.athlete.nationality} size={12} round
                             style={{ position: 'absolute', right: -4, bottom: -4, boxShadow: '0 0 0 2px var(--surface-card)' }} />
                         </span>
                         <Link to={`/atletas/${r.athlete.id}`} title={`Abrir ${r.athlete.full_name}`}
-                          style={{ fontSize: 'var(--text-body-size)', fontWeight: 600, lineHeight: 1.25 }}>
+                          style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, lineHeight: 1.25 }}>
                           {first}{rest && <><br />{rest}</>}
                         </Link>
                       </div>
@@ -445,8 +445,8 @@ export default function PageRankingSalarios() {
                           <ClubCrest club={r.club} />
                           <div style={{ minWidth: 0, lineHeight: 1.25 }}>
                             {r.club.id
-                              ? <Link to={`/clubes/${r.club.id}`} style={{ fontSize: 'var(--text-body-size)' }}>{r.club.name}</Link>
-                              : <span style={{ fontSize: 'var(--text-body-size)' }}>{r.club.name}</span>}
+                              ? <Link to={`/clubes/${r.club.id}`}>{r.club.name}</Link>
+                              : <span>{r.club.name}</span>}
                             {r.loan && <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>empréstimo</div>}
                           </div>
                         </div>
@@ -466,7 +466,7 @@ export default function PageRankingSalarios() {
                     <td style={{ textAlign: 'center' }}>
                       {r.weeklyBRL == null ? <span style={{ color: 'var(--text-secondary)' }}>—</span> : (
                         <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: 'var(--text-body-size)', fontWeight: 600, whiteSpace: 'nowrap' }}>{money(r.weeklyBRL)}</span>
+                          <span style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, whiteSpace: 'nowrap' }}>{money(r.weeklyBRL)}</span>
                           <span aria-hidden="true" style={{
                             width: maxWeekly > 0 ? Math.max(4, Math.round(56 * r.weeklyBRL / maxWeekly)) : 4, height: 3,
                             borderRadius: 'var(--radius-pill)', background: 'var(--chart-1)',
@@ -474,14 +474,14 @@ export default function PageRankingSalarios() {
                         </div>
                       )}
                     </td>
-                    <td style={{ textAlign: 'right', fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' }}>{money(r.annualBRL)}</td>
-                    <td style={{ textAlign: 'right', fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' }}>{money(r.clubCostBRL)}</td>
-                    <td style={{ textAlign: 'right', fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' }}>{money(r.amortBRL)}</td>
-                    <td style={{ textAlign: 'right', fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' }}>{money(r.bookBRL)}</td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{money(r.annualBRL)}</td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{money(r.clubCostBRL)}</td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{money(r.amortBRL)}</td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{money(r.bookBRL)}</td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {r.contractEnd && left ? (
                         <>
-                          <div style={{ fontSize: 'var(--text-body-size)' }}>{r.contractEnd.slice(0, 4)}</div>
+                          <div>{r.contractEnd.slice(0, 4)}</div>
                           <div style={{ fontSize: 'var(--text-caption-size)', color: left.color }}>{left.label}</div>
                         </>
                       ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}

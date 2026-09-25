@@ -30,7 +30,7 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
       {items.map((it, i) => {
         const body = (
           <>
-            {it.icon && <Icon name={it.icon} size={13} style={{ opacity: 0.45 }} />}
+            {it.icon && <Icon name={it.icon} size={12} style={{ opacity: 0.45 }} />}
             {it.label}
           </>
         )

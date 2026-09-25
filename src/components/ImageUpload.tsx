@@ -47,7 +47,7 @@ export default function ImageUpload({
       <div style={{
         width: size, height: size, borderRadius: radius, overflow: 'hidden',
         background: rounded ? 'var(--surface-accent)' : 'var(--surface-card)',
-        boxShadow: rounded ? 'inset 0 0 0 1px var(--accent-line)' : 'inset 0 0 0 1px var(--border-subtle)',
+        boxShadow: rounded ? 'inset 0 0 0 1px var(--accent-line-soft)' : 'inset 0 0 0 1px var(--border-subtle)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {value ? (
