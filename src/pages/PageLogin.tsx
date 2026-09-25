@@ -8,8 +8,8 @@ import Wordmark from '../components/Wordmark'
 
 const field: React.CSSProperties = {
   width: '100%', height: 'var(--control-h-lg)', padding: '0 14px',
-  background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-  borderRadius: 'var(--radius-control)', fontSize: 'var(--text-body-size)',
+  backgroundColor: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+  borderRadius: 'var(--ui-control-radius)', fontSize: 'var(--ui-text-size)',
   color: 'var(--text-primary)', boxSizing: 'border-box',
 }
 
@@ -49,12 +49,12 @@ export default function PageLogin() {
             letterSpacing: 'var(--text-h1-tracking)', color: 'var(--text-primary)',
           }}>
             <span style={{ display: 'block', fontWeight: 400 }}>Gestão de</span>
-            <span style={{ display: 'block', fontWeight: 600 }}>Contratos</span>
+            <span style={{ display: 'block', fontWeight: 500 }}>Contratos</span>
           </h1>
           <div className="eyebrow" style={{ marginTop: 'var(--space-3)' }}>SAF Botafogo</div>
         </div>
 
-        <form onSubmit={handleSubmit} className="card" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <form onSubmit={handleSubmit} className="card" style={{ padding: 'var(--gutter-card)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div>
             <label htmlFor="login-email" style={label}>E-mail</label>
             <input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)}

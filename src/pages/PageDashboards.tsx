@@ -262,10 +262,10 @@ export default function PageDashboards() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, lineHeight: 'var(--text-metric-line)', whiteSpace: 'nowrap' }}>
                       <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--text-muted)' }}>{p.sym}</span>
-                      <span style={{ fontSize: 'var(--text-metric-size)', fontWeight: 500, letterSpacing: 'var(--text-metric-tracking)', fontVariantNumeric: 'tabular-nums', color: alarm ? 'var(--text-negative)' : 'var(--text-primary)' }}>{p.num}</span>
+                      <span style={{ fontSize: 'var(--text-metric-size)', fontWeight: 400, letterSpacing: 'var(--text-metric-tracking)', fontVariantNumeric: 'tabular-nums', color: alarm ? 'var(--text-negative)' : 'var(--text-primary)' }}>{p.num}</span>
                       {p.suffix && <span style={{ fontSize: 'var(--text-title-size)', fontWeight: 400, color: 'var(--text-muted)' }}>{p.suffix}</span>}
                     </div>
-                    <div style={{ marginTop: 2, fontSize: 'var(--text-body-size)', color: 'var(--text-secondary)' }}>{t.sub}</div>
+                    <div style={{ marginTop: 2, fontSize: 'var(--ui-text-size)', color: 'var(--text-secondary)' }}>{t.sub}</div>
                   </div>
                 </div>
               )
@@ -283,10 +283,10 @@ export default function PageDashboards() {
                     <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={AXIS_TICK} minTickGap={18} tickMargin={10} />
                     <YAxis tickLine={false} axisLine={false} width={72} tick={AXIS_TICK} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
                     <Tooltip content={<BreakdownTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
-                    <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
+                    <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={1.5} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
                       <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={allDir.length} />} />
                     </Line>
-                    <Line type="monotone" dataKey="receber" name="A receber" stroke={C.recv} strokeWidth={2} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.recv, stroke: C.surface, strokeWidth: 2 }}>
+                    <Line type="monotone" dataKey="receber" name="A receber" stroke={C.recv} strokeWidth={1.5} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 5, fill: C.recv, stroke: C.surface, strokeWidth: 2 }}>
                       <LabelList dataKey="receber" content={<EndValueTag color={C.recv} total={allDir.length} />} />
                     </Line>
                   </LineChart>
@@ -309,10 +309,10 @@ export default function PageDashboards() {
                       <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={AXIS_TICK} minTickGap={14} tickMargin={10} />
                       <YAxis tickLine={false} axisLine={false} width={72} tick={AXIS_TICK} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
                       <Tooltip content={<BreakdownTip />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
-                      <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={2} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
+                      <Line type="monotone" dataKey="pagar" name="A pagar" stroke={C.pay} strokeWidth={1.5} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.pay, stroke: C.surface, strokeWidth: 2 }}>
                         <LabelList dataKey="pagar" content={<EndValueTag color={C.pay} total={clube.length} />} />
                       </Line>
-                      <Line type="monotone" dataKey="receber" name="A receber" stroke={C.recv} strokeWidth={2} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.recv, stroke: C.surface, strokeWidth: 2 }}>
+                      <Line type="monotone" dataKey="receber" name="A receber" stroke={C.recv} strokeWidth={1.5} strokeLinecap="round" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.recv, stroke: C.surface, strokeWidth: 2 }}>
                         <LabelList dataKey="receber" content={<EndValueTag color={C.recv} total={clube.length} />} />
                       </Line>
                     </LineChart>
@@ -336,7 +336,7 @@ export default function PageDashboards() {
                     <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={AXIS_TICK} minTickGap={14} tickMargin={10} />
                     <YAxis tickLine={false} axisLine={false} width={72} tick={AXIS_TICK} tickFormatter={(v) => fmtCurrencyShort(v, 'BRL')} />
                     <Tooltip content={<MoneyTip leadKey="total" />} cursor={{ stroke: C.crosshair, strokeWidth: 1 }} />
-                    <Area type="monotone" dataKey="total" name="Custo mensal" stroke={C.goldLine} strokeWidth={2} strokeLinecap="round" fill="url(#gSal)" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }} />
+                    <Area type="monotone" dataKey="total" name="Custo mensal" stroke={C.goldLine} strokeWidth={1.5} strokeLinecap="round" fill="url(#gSal)" dot={false} isAnimationActive={false} activeDot={{ r: 4.5, fill: C.goldLine, stroke: C.surface, strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
@@ -463,7 +463,7 @@ function Panel({ eyebrow, title, subtitle, tall, children }: { eyebrow?: string;
     <div className="panel-card" style={{ padding: tall ? 'var(--space-6)' : 'var(--gutter-card)' }}>
       <div style={{ marginBottom: 'var(--space-4)' }}>
         {eyebrow && <div className="eyebrow" style={{ marginBottom: 'var(--space-3)' }}>{eyebrow}</div>}
-        <div style={{ fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', letterSpacing: '-0.01em' }}>{title}</div>
+        <div style={{ fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', letterSpacing: '-0.01em' }}>{title}</div>
         {subtitle && <div style={{ fontFamily: font, fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', marginTop: 4 }}>{subtitle}</div>}
       </div>
       {children}
@@ -539,7 +539,7 @@ function BreakdownTip({ active, payload, label }: any) {
             <span style={{ width: 8, height: 8, borderRadius: 'var(--radius-circle)', background: color, flex: 'none' }} />
             {title}
           </span>
-          <strong style={{ fontFamily: display, fontSize: 'var(--text-body-size)', fontWeight: 500, color: 'var(--text-primary)' }}>{fmtCurrencyShort(total, 'BRL')}</strong>
+          <strong style={{ fontFamily: display, fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--text-primary)' }}>{fmtCurrencyShort(total, 'BRL')}</strong>
         </div>
         {rows.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</div>
@@ -580,7 +580,7 @@ function MoneyTip({ active, payload, label, leadKey }: any) {
       {lead && (
         <div style={{ marginBottom: rows.length ? 8 : 0, paddingBottom: rows.length ? 8 : 0, borderBottom: rows.length ? '1px solid var(--border-subtle)' : 'none' }}>
           <div className="eyebrow" style={{ marginBottom: 4 }}>{lead.name}</div>
-          <div style={{ fontFamily: display, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{fmtCurrencyShort(Number(lead.value), 'BRL')}</div>
+          <div style={{ fontFamily: display, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{fmtCurrencyShort(Number(lead.value), 'BRL')}</div>
         </div>
       )}
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -609,7 +609,7 @@ function PieTip({ active, payload }: any) {
     <div style={{ ...TIP, minWidth: 220, maxWidth: 300 }}>
       <div className="eyebrow" style={{ marginBottom: 4 }}>{p.name}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-        <div style={{ fontFamily: display, fontSize: 'var(--text-subtitle-size)', fontWeight: 500 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
+        <div style={{ fontFamily: display, fontSize: 'var(--text-subtitle-size)', fontWeight: 400 }}>{fmtCurrencyShort(Number(p.value), 'BRL')}</div>
         {pct > 0 && <div style={{ color: 'var(--text-secondary)' }}>{pct.toFixed(1)}%</div>}
       </div>
       {rows.length > 0 && (

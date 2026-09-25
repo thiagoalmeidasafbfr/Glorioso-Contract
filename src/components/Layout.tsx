@@ -68,7 +68,7 @@ function NavItem({ to, label, icon, collapsed }: NavItemDef & { collapsed: boole
   return (
     <NavLink to={to} end title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined}
       className={({ isActive }) => `nav-item${isActive ? ' active' : ''}${collapsed ? ' collapsed' : ''}`}>
-      <Icon name={icon} size={20} />
+      <Icon name={icon} size={16} />
       {!collapsed && <span className="nav-item__label">{label}</span>}
     </NavLink>
   )
@@ -101,10 +101,10 @@ export default function Layout({ children }: Props) {
       <aside className={`app-sidebar${collapsed ? ' collapsed' : ''}`}>
         <div className="app-sidebar__brand">
           {collapsed
-            ? <Wordmark compact size={15} />
+            ? <Wordmark compact size={14} />
             : (
               <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <Wordmark size={16} />
+                <Wordmark size={15} />
                 <span className="eyebrow">Gestão contratual</span>
               </div>
             )}
@@ -117,9 +117,9 @@ export default function Layout({ children }: Props) {
 
         <nav className="app-nav" aria-label="Navegação principal">
           {collapsed && (
-            <button type="button" className="icon-btn md" onClick={toggle} title="Expandir navegação" aria-label="Expandir navegação"
+            <button type="button" className="icon-btn" onClick={toggle} title="Expandir navegação" aria-label="Expandir navegação"
               style={{ margin: '0 auto 8px' }}>
-              <Icon name="panelOpen" size={20} />
+              <Icon name="panelOpen" size={16} />
             </button>
           )}
           {NAV_SECTIONS.map((section, i) => (
@@ -155,13 +155,13 @@ export default function Layout({ children }: Props) {
                 <span className="app-topbar__avatar" aria-hidden="true">{initials(userName)}</span>
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25, minWidth: 0 }}>
                   <span className="app-topbar__user-name">{userName}</span>
-                  <span style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-muted)' }}>
                     {profile.role === 'master' ? 'Master' : 'Jurídico'}
                   </span>
                 </span>
               </span>
-              <button type="button" className="icon-btn md outline" onClick={() => signOut()} title="Sair" aria-label="Sair">
-                <Icon name="logout" size={20} />
+              <button type="button" className="icon-btn outline" onClick={() => signOut()} title="Sair" aria-label="Sair">
+                <Icon name="logout" size={16} />
               </button>
             </>
           )}

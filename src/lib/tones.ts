@@ -6,7 +6,7 @@ export type BadgeTone = 'accent' | 'neutral' | 'inverse' | 'negative' | 'outline
 export interface ToneStyle { bg: string; fg: string; bd: string }
 
 export const BADGE_TONES: Record<BadgeTone, ToneStyle> = {
-  accent:   { bg: 'var(--surface-accent)',  fg: 'var(--ink-900)',        bd: 'var(--accent-line)' },
+  accent:   { bg: 'var(--surface-accent)',  fg: 'var(--ink-900)',        bd: 'var(--accent-line-soft)' },
   neutral:  { bg: 'var(--gray-150)',        fg: 'var(--text-secondary)', bd: 'transparent' },
   inverse:  { bg: 'var(--surface-inverse)', fg: 'var(--text-inverse)',   bd: 'transparent' },
   negative: { bg: 'var(--red-500)',         fg: 'var(--white)',          bd: 'transparent' },

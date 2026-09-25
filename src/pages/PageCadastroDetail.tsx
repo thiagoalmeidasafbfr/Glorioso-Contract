@@ -159,8 +159,8 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
     </div>
   )
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textAlign: 'left', whiteSpace: 'nowrap' }
-  const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: fontBody, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textAlign: 'left', whiteSpace: 'nowrap' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: fontBody, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   const editInst = editInstId ? installments.find(i => i.id === editInstId) ?? null : null
   const editClause = editClauseId ? clauses.find(c => c.id === editClauseId) ?? null : null
@@ -209,13 +209,13 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
         crumbs={[{ label: 'Botafogo SAF', icon: 'folder' }, { label: isClube ? 'Clubes' : 'Agentes', to: basePath, icon: isClube ? 'clubs' : 'agents' }]} />
 
       {/* Cabeçalho com logo */}
-      <div className="card" style={{ padding: '20px 24px', marginBottom: 16, display: 'flex', gap: 22, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="card" style={{ padding: 'var(--gutter-card)', marginBottom: 16, display: 'flex', gap: 22, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <ImageUpload value={logo} onChange={saveLogo} fallbackText={name} size={92} rounded={!isClube} editable={canEdit} />
         <div style={{ flex: 1, minWidth: 240 }}>
           {editing ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 460 }}>
               <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" aria-label="Nome"
-                style={{ ...modalInput, fontSize: 'var(--text-subtitle-size)', fontWeight: 500 }} />
+                style={{ ...modalInput, fontSize: 'var(--text-subtitle-size)', fontWeight: 400 }} />
               <input value={sub ?? ''} onChange={e => setSub(e.target.value)} placeholder={isClube ? 'País' : 'Contato'} aria-label={isClube ? 'País' : 'Contato'}
                 style={modalInput} />
               <textarea value={notes ?? ''} onChange={e => setNotes(e.target.value)} placeholder="Observações" aria-label="Observações"
@@ -228,7 +228,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h1 style={{ fontFamily: fontBody, fontSize: 'var(--text-title-size)', fontWeight: 500, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
+                <h1 style={{ fontFamily: fontBody, fontSize: 'var(--text-title-size)', fontWeight: 400, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
                 {canEdit && <IconButton icon="edit" label="Editar cadastro" onClick={() => setEditing(true)} />}
                 {canEdit && <IconButton icon="trash" label={`Excluir ${isClube ? 'clube' : 'agente'}`} tone="danger" onClick={handleDeleteEntity} />}
               </div>
@@ -275,7 +275,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
       {entityContracts.length > 0 && (
         <div className="card" style={{ marginBottom: 16, overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-primary)', fontFamily: fontBody }}>Vínculos com {isClube ? 'este clube' : 'este agente'}</span>
+            <span style={{ fontWeight: 500, fontSize: 'var(--ui-text-size)', color: 'var(--ink-primary)', fontFamily: fontBody }}>Vínculos com {isClube ? 'este clube' : 'este agente'}</span>
             <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>{entityContracts.length} contrato(s)</span>
           </div>
           <div style={{ overflowX: 'auto' }}>
@@ -288,7 +288,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
               <tbody>
                 {entityContracts.map(ct => (
                   <tr key={ct.id}>
-                    <td style={{ ...td, fontWeight: 600 }}>
+                    <td style={{ ...td, fontWeight: 500 }}>
                       <RefLink to={`/atletas/${ct.athlete_id}`} title="Abrir atleta">{nameOf.get(ct.athlete_id) ?? '—'}</RefLink>
                     </td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>{CONTRACT_TYPE_LABELS[ct.type]}</td>
@@ -310,7 +310,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
       {/* Obrigações vinculadas */}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink-primary)', fontFamily: fontBody }}>Obrigações vinculadas</span>
+          <span style={{ fontWeight: 500, fontSize: 'var(--ui-text-size)', color: 'var(--ink-primary)', fontFamily: fontBody }}>Obrigações vinculadas</span>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, fontFamily: fontBody, color: 'var(--text-secondary)', cursor: 'pointer' }}>
               <input type="checkbox" checked={onlyOpen} onChange={e => setOnlyOpen(e.target.checked)} />
@@ -351,7 +351,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                 const inst = l.kind === 'inst' ? installments.find(i => i.id === l.id) : null
                 return (
                   <tr key={`${l.kind}:${l.id}`} style={{ background: parseRJ(l.notes) ? 'var(--surface-warning-soft)' : late ? 'var(--row-late-bg)' : undefined }}>
-                    <td style={{ ...td, fontWeight: 600 }}>
+                    <td style={{ ...td, fontWeight: 500 }}>
                       <RefLink to={`/atletas/${l.athlete_id}`} title="Abrir atleta">{nameOf.get(l.athlete_id) ?? '—'}</RefLink>
                     </td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11 }}>
@@ -366,8 +366,8 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: l.direction === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>
                       {l.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}
                     </td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(l.amount, l.currency)}</td>
-                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-secondary)', fontWeight: late ? 600 : 400 }}>{l.due_date ? fmtDate(l.due_date) : '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{fmtCurrencyShort(l.amount, l.currency)}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-secondary)', fontWeight: late ? 500 : 400 }}>{l.due_date ? fmtDate(l.due_date) : '—'}</td>
                     <td style={td}><Badge label={STATUS_TONE[l.status]?.l ?? l.status} tone={tone} /></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions
@@ -437,7 +437,7 @@ function Kpi({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ textAlign: 'right' }}>
       <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-title-size)', fontWeight: 500, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{value}</div>
+      <div style={{ fontSize: 'var(--text-title-size)', fontWeight: 400, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{value}</div>
     </div>
   )
 }

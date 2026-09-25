@@ -290,8 +290,8 @@ export default function PageConsolidado() {
     exportWorkbook([{ name: 'Consolidado', cols, rows }], 'consolidado-movimentacoes.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -302,41 +302,43 @@ export default function PageConsolidado() {
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
-          <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {atletas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
-          <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
+          <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {posicoes.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
-          <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
+          <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
             {naturezas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
+          <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {STATUS_OPTS.map(s => <option key={s} value={s}>{s === 'Todos' ? s : (PAYMENT_STATUS_LABEL[s] ?? humanizeEnum(s))}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
-          <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
+          <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {['Todos', 'Em RJ', 'Fora da RJ'].map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <KpiPill label="A pagar (BRL PTAX)" value={fmtCurrencyShort(totals.pay, 'BRL')} tone="neg" />
-        <KpiPill label="A receber (BRL PTAX)" value={fmtCurrencyShort(totals.rec, 'BRL')} tone="pos" />
-        <KpiPill label="Em Rec. Judicial (BRL PTAX)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
+        <div className="kpi-group">
+          <KpiPill label="A pagar (BRL PTAX)" value={fmtCurrencyShort(totals.pay, 'BRL')} tone="neg" />
+          <KpiPill label="A receber (BRL PTAX)" value={fmtCurrencyShort(totals.rec, 'BRL')} tone="pos" />
+          <KpiPill label="Em Rec. Judicial (BRL PTAX)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
+        </div>
       </div>
 
       {someSelected && canEdit && (
@@ -345,7 +347,7 @@ export default function PageConsolidado() {
           padding: '10px 14px', marginBottom: 10, borderRadius: 'var(--radius-md)',
           background: 'var(--surface-warning-soft)',
         }}>
-          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--ink-primary)', fontWeight: 600 }}>
+          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--ink-primary)', fontWeight: 500 }}>
             {selected.size} lançamento(s) selecionado(s)
           </span>
           <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase' }}>Data protocolo RJ:</span>
@@ -394,12 +396,12 @@ export default function PageConsolidado() {
                         ) : m.rjFiledAt ? (
                           <button title={`Em RJ desde ${fmtDate(m.rjFiledAt)} — clique para remover`}
                             onClick={() => unmarkRJ(m)}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--warn)', fontFamily: mono, fontSize: 10, fontWeight: 600 }}>RJ</button>
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--warn)', fontFamily: mono, fontSize: 10, fontWeight: 500 }}>RJ</button>
                         ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                       </td>
                     )}
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
-                    <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
                       {m.rjFiledAt && <span style={{ ...badgeStyle('warning'), marginLeft: 6 }} title={`Em RJ desde ${fmtDate(m.rjFiledAt)}`}>RJ</span>}
@@ -408,14 +410,14 @@ export default function PageConsolidado() {
                       {(() => { const to = entityLink(m.contraparte); return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{m.contraparte}</RefLink> : m.contraparte })()}
                     </td>
                     <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--text-negative)' : 'var(--text-positive)' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}
                       title={m.moeda === 'BRL' ? 'BRL'
                         : m.fixedRate != null
                           ? `PTAX FIXADA ${m.moeda}/BRL: ${m.fixedRate.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`
                           : `PTAX ${m.moeda}/BRL: ${ptaxRateFor(m.moeda, ptax).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}>
                       {fmtCurrencyShort(effectiveBRL(m), 'BRL')}
-                      {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--warn)', fontWeight: 600 }}>fx</span>}
+                      {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--warn)', fontWeight: 500 }}>fx</span>}
                     </td>
                     <td style={td}>
                       <span style={badgeStyle(PAYMENT_STATUS_TONE[m.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{PAYMENT_STATUS_LABEL[m.status] ?? humanizeEnum(m.status)}</span>

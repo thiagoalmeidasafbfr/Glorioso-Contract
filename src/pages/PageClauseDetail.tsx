@@ -183,7 +183,7 @@ export default function PageClauseDetail() {
         ]} />
 
       {/* Dados da obrigação */}
-      <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
+      <div className="card" style={{ padding: 'var(--gutter-card)', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>Dados da obrigação</div>
           {canEdit && (
@@ -202,7 +202,7 @@ export default function PageClauseDetail() {
 
         {parseRJ(clause.notes) && (
           <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-warning-soft)', fontSize: 12, color: 'var(--text-primary)' }}>
-            <strong style={{ fontWeight: 600, color: 'var(--text-warning)' }}>Recuperação judicial</strong>
+            <strong style={{ fontWeight: 500, color: 'var(--text-warning)' }}>Recuperação judicial</strong>
             {' — '}obrigação inteira incluída no processo em {fmtDate(parseRJ(clause.notes)!.filedAt)}.
           </div>
         )}
@@ -231,7 +231,7 @@ export default function PageClauseDetail() {
       </div>
 
       {/* Fluxo de pagamento */}
-      <div className="card" style={{ padding: '20px 24px' }}>
+      <div className="card" style={{ padding: 'var(--gutter-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div>
             <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>Fluxo de pagamento</div>
@@ -262,7 +262,7 @@ export default function PageClauseDetail() {
               </label>
               {selectedRJ.size > 0 && (
                 <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 'var(--radius-md)', background: 'var(--surface-warning-soft)' }}>
-                  <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 600 }}>{selectedRJ.size} parcela(s)</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 500 }}>{selectedRJ.size} parcela(s)</span>
                   <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Protocolo:</span>
                   <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ minHeight: 'var(--control-h-sm)', padding: '0 8px', fontSize: 12 }} />
                   <button onClick={bulkMarkParcRJ} className="btn btn-outline btn-sm" style={{ color: 'var(--text-warning)' }}>
@@ -307,8 +307,8 @@ export default function PageClauseDetail() {
                     </span>
                   )}
                   <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)', textAlign: 'right' }}>{p.installment_number}</span>
-                  <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{fmtDate(p.due_date)}</span>
-                  <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 600 }}>
+                  <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{fmtDate(p.due_date)}</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 500 }}>
                     {fmtCurrencyShort(p.original_value, p.currency)}
                     {rj && <span style={{ ...badgeStyle('warning'), marginLeft: 8 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
                   </span>

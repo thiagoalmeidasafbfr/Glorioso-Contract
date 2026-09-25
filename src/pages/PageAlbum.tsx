@@ -105,7 +105,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
       <div style={{ padding: '12px 6px 6px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div>
           <div style={{
-            fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--ink-primary)',
+            fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)',
             lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {athlete.short_name}
@@ -137,7 +137,7 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
             <OwnershipBar rights={rights} compact showLegend={false} />
             {bfr !== null && (
               <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>
-                Botafogo detém <span style={{ color: 'var(--text-positive)', fontWeight: 600 }}>
+                Botafogo detém <span style={{ color: 'var(--text-positive)', fontWeight: 500 }}>
                   {Number.isInteger(bfr) ? bfr : bfr.toFixed(1).replace('.', ',')}%
                 </span>
               </div>
@@ -245,7 +245,7 @@ export default function PageAlbum() {
 
   const selWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column' }
   const selLabel: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }
-  const selStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }
+  const selStyle: React.CSSProperties = { padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -257,7 +257,7 @@ export default function PageAlbum() {
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={selLabel}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div style={selWrap}>
           <div style={selLabel}>Posição</div>
@@ -314,7 +314,7 @@ export default function PageAlbum() {
             <section key={g.pos}>
               {/* Cabeçalho da posição */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <h2 style={{ fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
+                <h2 style={{ fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
                 <span style={badgeStyle('neutral')}>
                   {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}
                 </span>

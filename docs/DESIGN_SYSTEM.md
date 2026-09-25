@@ -24,12 +24,14 @@ sistema.
 
 ## Regras do DS que valem para qualquer tela
 
-- **Urbanist** em tudo. Pesos 300 / 400 / 500 / 600 (500 = números e métricas). Nada de 700/800.
+- **Urbanist** em tudo. Texto de interface em **400**; **500** só para ênfase (nome na linha, total, valor em destaque); **300** no título de página. Subtítulos (18px) e títulos (24px) em 400, como no DS. Nada de 600/700 na interface.
 - **Letter-spacing só no eyebrow**: 10px, CAIXA-ALTA, `+.09em`, cinza `--text-muted` (classe `.eyebrow`). Botões, badges, menus e rótulos de formulário em **caixa de frase**.
-- **Um acento só**: o creme `--accent` (#F2F0EB), sempre com o filete preto `--accent-line` sobre superfícies claras. A ação principal é **preta** (`.btn-primary`).
+- **Um acento só**: o creme `--accent` (#F2F0EB), sempre com filete sobre superfícies claras — em badges, retratos, placas e no botão creme o filete é o areia `--accent-line-soft` (o preto `--accent-line` pesava demais em elementos pequenos). A ação principal é **preta** (`.btn-primary`).
 - **Cards**: branco, sem borda, raio 14, `--shadow-card`; no hover a sombra sobe (`--shadow-raised`), **sem movimento**. Variantes `.card-sunken`, `.card-inverse`, `.card-outline`.
 - **Sombra OU borda**, nunca as duas. Tiles internos são *sunken* (#F7F7F8) sem filete.
-- **Controles**: 36px (`--control-h-md`), raio 10 (`--radius-control`), filete `--border-subtle`, foco = borda/anel preto de 2px.
+- **Densidade de ferramenta de dados** (o DS indica 12px para o "chrome de dashboard"): texto de interface `--ui-text-size` (13px), tabelas 12px, legendas 11px, eyebrow 10px. **Controles** (botões, campos, selects, ícones) com `--ui-control-h` (30px), raio `--ui-control-radius` (8px), filete `--border-subtle`, foco = borda preta. Título de página `--page-title-size` (28px, peso 300).
+- **Tabelas**: células `8px 12px` (linha de ~34px), cabeçalho em eyebrow, filete de 1px entre linhas.
+- **Barra de filtros**: rótulo em eyebrow sobre o campo; KPIs (`<KpiPill>`) com a mesma anatomia (eyebrow + linha de 30px, filete à esquerda, sem caixa), agrupados em `.kpi-group` à direita.
 - **Estados nunca por opacidade**: hover escurece o preenchimento, press = `scale(.97)`, desabilitado = `--gray-100` + `--text-disabled`.
 - **Status = preenchimento + rótulo** (nunca só ícone). Use `badgeStyle(tom)`/`<Badge tone>` de `lib/tones`.
 - **Um único vermelho** para problemas (`--red-500` / `--text-negative`).
@@ -44,8 +46,10 @@ sistema.
 | Tons `warning` e `info` em `lib/tones` | Status "atenção" (vencimento próximo, RJ, em andamento) e "informativo" (empréstimo, renegociação, parcelas). |
 | `.btn-negative` | Confirmação destrutiva (ex.: "Apagar definitivamente"), com o mesmo preenchimento do Badge `negative`. |
 | `.seg-control` | Seletor de opções no trilho do IconNavRail (sunken + ativo preto). |
+| Densidade (`--ui-text-size`, `--ui-control-h`, `--ui-control-radius`, `--page-title-size`) | Refino pedido para aproximar a plataforma da ferramenta de controladoria que usa o mesmo DS: interface em 13px, controles de 30px, título leve. Os tokens do DS continuam intactos em `tokens.css`. |
+| `.kpi-group` | Mantém os KPIs juntos e à direita na barra de filtros (quebram de linha como bloco). |
 | `.th-sort` e `table.table-dense` | Cabeçalho ordenável (o eyebrow vira botão; a coluna ativa fica preta, com `aria-sort`) e tabela larga com filete lateral de 8px — usados no ranking de salários. |
-| Navegação **lateral** | O DS desenha um trilho de ícones no TopBar para ~7 destinos; a plataforma tem 17, em seções. A navegação lateral usa a mesma linguagem (ghost + ativo preto) e, recolhida, vira o próprio trilho de ícones 36×36. |
+| Navegação **lateral** | O DS desenha um trilho de ícones no TopBar para ~7 destinos; a plataforma tem 17, em seções. A navegação lateral usa a mesma linguagem (ghost + ativo preto) e, recolhida, vira o próprio trilho de ícones 32×32 (itens de 32px, texto de 13px, ícones de 16px). |
 | Vocabulário de cor dos ícones de ação (`RowActions`) | Mantido, agora nos tons de status do DS: preto abrir/editar · lilás parcelas · areia pagamento · âmbar desfazer · vermelho excluir · cinza indisponível. |
 
 ## Nomes antigos → tokens do DS
@@ -73,11 +77,12 @@ Atenção a dois nomes que **mudaram de significado**: no DS `--accent` é o
 ## Checklist para uma tela nova
 
 1. Cabeçalho com `<PageHero title section|crumbs caption>` e ações como filhos.
-2. Blocos em `.card` (padding `--gutter-card`, gap `--space-5` entre cards).
-3. Título de card = `.eyebrow`; métrica em `--text-metric-size` (44px) ou `--text-title-size` (24px) em grades densas; legenda em `--text-secondary`.
-4. Botões `.btn .btn-primary | .btn-accent | .btn-outline | .btn-ghost | .btn-danger`, com `<Icon size={16}>`.
+2. Blocos em `.card` (padding `--gutter-card`, ou `--gutter-card-sm` em cards compactos; gap `--space-5` entre cards).
+3. Título de card = `.eyebrow`; métrica em `--text-metric-size` (44px) ou `--text-title-size` (24px) em grades densas, peso 400; legenda em `--text-secondary`.
+4. Botões `.btn .btn-primary | .btn-accent | .btn-outline | .btn-ghost | .btn-danger` (o ícone é reduzido para 14px pelo CSS).
 5. Status com `badgeStyle(TOM)` a partir de `lib/tones`.
-6. Nenhuma cor em hex/rgba no componente — só `var(--token)`.
+6. Campos sem estilo inline de tamanho/borda — o CSS global já aplica 30px, raio 8 e 13px. Se precisar de cor de fundo num `select`, use `backgroundColor` (o atalho `background` apaga a seta).
+7. Nenhuma cor em hex/rgba no componente — só `var(--token)`.
 
 ## Observação de acessibilidade
 

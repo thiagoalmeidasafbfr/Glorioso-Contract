@@ -330,12 +330,12 @@ export default function PageDados() {
 
       {confirmWipe && (
         <div role="alertdialog" aria-label="Apagar toda a base" style={{ background: 'var(--surface-negative-soft)', borderRadius: 'var(--radius-card)', padding: 'var(--gutter-card)', marginBottom: 'var(--space-6)' }}>
-          <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--text-negative)', marginBottom: 6 }}>Apagar toda a base?</div>
+          <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--text-negative)', marginBottom: 6 }}>Apagar toda a base?</div>
           <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
             Isto remove <strong>permanentemente</strong> todos os atletas, vínculos, cláusulas, parcelas, titularidade,
             metas de salário, passivos, direito de imagem, PJs, clubes e agentes. Esta ação <strong>não pode ser desfeita</strong>.
             Recomendamos <strong>Exportar toda a base</strong> antes de continuar.
-            Para confirmar, digite <span style={{ fontFamily: fontMono, fontWeight: 600 }}>APAGAR</span> abaixo.
+            Para confirmar, digite <span style={{ fontFamily: fontMono, fontWeight: 500 }}>APAGAR</span> abaixo.
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input
@@ -353,7 +353,7 @@ export default function PageDados() {
       )}
 
       {msg?.key === '__wipe__' && (
-        <div style={{ marginBottom: 22, fontSize: 13, fontFamily: fontBody, fontWeight: 600, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</div>
+        <div style={{ marginBottom: 22, fontSize: 13, fontFamily: fontBody, fontWeight: 500, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</div>
       )}
 
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 18, maxWidth: 760 }}>
@@ -363,8 +363,8 @@ export default function PageDados() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
         {DESCRIPTORS.map(d => (
-          <div key={d.key} className="card" style={{ padding: 18 }}>
-            <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', marginBottom: 2 }}>{d.label}</div>
+          <div key={d.key} className="card" style={{ padding: 'var(--gutter-card)' }}>
+            <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', marginBottom: 2 }}>{d.label}</div>
             <div style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-secondary)', marginBottom: 14 }}>
               {d.cols.length} colunas{d.parent ? ` · requer ${d.parent}` : ''}
             </div>

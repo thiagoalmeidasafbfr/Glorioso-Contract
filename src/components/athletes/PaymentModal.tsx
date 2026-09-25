@@ -49,7 +49,7 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 420 }}>
         <div style={{ marginBottom: 'var(--space-5)' }}>
           <div className="eyebrow" style={{ marginBottom: 6 }}>Registrar pagamento</div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)' }}>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)' }}>
             {label}
           </div>
           <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', marginTop: 4 }}>

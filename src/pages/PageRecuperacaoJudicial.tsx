@@ -262,8 +262,8 @@ export default function PageRecuperacaoJudicial() {
     exportWorkbook([{ name: 'Recuperação Judicial', cols, rows: data }], 'recuperacao-judicial.xlsx')
   }
 
-  const th: React.CSSProperties = { padding: '9px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -284,17 +284,17 @@ export default function PageRecuperacaoJudicial() {
         <div style={{ flex: 1, minWidth: 240 }}>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
-            style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
-          <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 240 }}>
+          <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 240 }}>
             {credores.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 13, background: 'var(--surface)', color: 'var(--ink-primary)' }}>
+          <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
@@ -322,14 +322,14 @@ export default function PageRecuperacaoJudicial() {
               {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum lançamento marcado como Recuperação Judicial.</td></tr>}
               {byCreditor.map(g => (
                 <tr key={g.credor}>
-                  <td style={{ ...td, fontWeight: 600 }}>{g.credor}</td>
+                  <td style={{ ...td, fontWeight: 500 }}>{g.credor}</td>
                   <td style={{ ...td, color: 'var(--text-secondary)' }}>{g.topNatureza}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>{g.count}</td>
-                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.overdueCount > 0 ? 'var(--neg)' : 'var(--text-muted)', fontWeight: g.overdueCount > 0 ? 600 : 400 }}>{g.overdueCount}</td>
+                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.overdueCount > 0 ? 'var(--neg)' : 'var(--text-muted)', fontWeight: g.overdueCount > 0 ? 500 : 400 }}>{g.overdueCount}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.maxDelayDays > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{g.maxDelayDays > 0 ? `${g.maxDelayDays} dias` : '—'}</td>
                   <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{g.nextDue ? fmtDate(g.nextDue) : '—'}</td>
                   <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(g.earliestFiledAt)}</td>
-                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(g.total, 'BRL')}</td>
+                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(g.total, 'BRL')}</td>
                 </tr>
               ))}
             </tbody>
@@ -365,14 +365,14 @@ export default function PageRecuperacaoJudicial() {
                 const isLate = d !== null && d < 0 && OPEN.has(r.status)
                 return (
                   <tr key={`${r.kind}-${r.id}`}>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 600 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
-                    <td style={{ ...td, fontWeight: 600 }}><RefLink to={`/atletas/${r.athleteId}`} title="Abrir atleta">{r.atleta}</RefLink></td>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 11, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 500 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title="Abrir atleta">{r.atleta}</RefLink></td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.credor}</td>
                     <td style={td}>{r.natureza}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.descricao}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 600 }}>{fmtCurrencyShort(r.valor, r.moeda)}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(r.valor, r.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}>{fmtCurrencyShort(brlOf(r), 'BRL')}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: isLate ? 'var(--neg)' : 'var(--text-muted)', fontWeight: isLate ? 600 : 400 }}>{isLate ? `${-d!} dias` : '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: isLate ? 'var(--neg)' : 'var(--text-muted)', fontWeight: isLate ? 500 : 400 }}>{isLate ? `${-d!} dias` : '—'}</td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
                     <td style={td}>
                       <span style={badgeStyle(PAYMENT_STATUS_TONE[r.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{PAYMENT_STATUS_LABEL[r.status] ?? humanizeEnum(r.status)}</span>

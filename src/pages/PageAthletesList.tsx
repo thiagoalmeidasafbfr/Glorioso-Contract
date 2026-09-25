@@ -110,7 +110,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Novo atleta"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 600, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Novo atleta</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Novo atleta</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {field('Nome completo *', 'full_name')}
@@ -260,12 +260,12 @@ export default function PageAthletesList() {
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }} />
+            style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div>
           <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
-            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--input-border)', background: 'var(--cream-card)', fontSize: 13, fontFamily: font, color: 'var(--ink-primary)' }}>
+            style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }}>
             <option value="Todos">Todos</option>
             {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -374,7 +374,7 @@ export default function PageAthletesList() {
                       </div>
                     </td>
                     <td style={{ ...td, width: 200, textAlign: 'left' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.short_name}</div>
+                      <div style={{ fontWeight: 500, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.short_name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.full_name !== a.short_name ? a.full_name : ''}</div>
                     </td>
                     <td style={{ ...td, width: 110 }}>

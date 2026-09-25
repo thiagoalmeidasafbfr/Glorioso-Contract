@@ -129,7 +129,7 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
           background: 'var(--surface-card)', color: 'var(--text-primary)', padding: '8px 12px', borderRadius: 'var(--radius-md)',
           whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: 'var(--shadow-pop)',
         }}>
-          <div style={{ fontSize: 'var(--text-body-size)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
+          <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
           <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)', marginTop: 2 }}>{fmtDate(hv.iso)}{hv.t > todayT ? ' · projeção' : ''}</div>
         </div>
       )}
@@ -143,7 +143,7 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
         <span className="eyebrow">
           Total até o fim do contrato ({nMonths} {nMonths === 1 ? 'mês' : 'meses'})
         </span>
-        <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
           {fmtCurrencyShort(totalAteFim, contract.salary_currency)}
         </span>
       </div>

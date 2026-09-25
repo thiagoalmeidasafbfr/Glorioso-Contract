@@ -159,7 +159,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                   )}
                 </>
               ) : (
-                <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 'var(--text-body-size)', color: 'var(--text-secondary)' }}>
+                <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 'var(--ui-text-size)', color: 'var(--text-secondary)' }}>
                   Nenhum dado encontrado nesta aba
                 </div>
               )}

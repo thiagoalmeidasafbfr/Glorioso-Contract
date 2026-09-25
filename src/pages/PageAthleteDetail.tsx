@@ -101,7 +101,7 @@ function FinancialCard({ label, value, sub, color }: { label: string; value: str
   return (
     <div className="card" style={{ padding: 'var(--gutter-card)', minWidth: 160 }}>
       <div className="eyebrow" style={{ marginBottom: 'var(--space-3)' }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 1.15, fontWeight: 500, letterSpacing: '-.01em', fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 1.15, fontWeight: 400, letterSpacing: '-.01em', fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       {sub && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{sub}</div>}
     </div>
   )
@@ -121,7 +121,7 @@ function BigNumberCard({ label, totals, sub, color }: {
   return (
     <div className="card" style={{ padding: 'var(--gutter-card)', minWidth: 160 }}>
       <div className="eyebrow" style={{ marginBottom: 'var(--space-3)' }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 1.15, fontWeight: 500, letterSpacing: '-.01em', fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>
+      <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 1.15, fontWeight: 400, letterSpacing: '-.01em', fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>
         {primary ? fmtCurrencyShort(primary[1], primary[0]) : '—'}
       </div>
       {rest.length > 0 && (
@@ -203,9 +203,9 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: { t: SalaryTrigge
   const [date, setDate] = useState(todayISO())
   const achieved = t.status === 'ATINGIDA'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 'var(--radius-md)', background: achieved ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${achieved ? 'var(--accent-line)' : 'transparent'}` }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 'var(--radius-md)', background: achieved ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${achieved ? 'var(--accent-line-soft)' : 'transparent'}` }}>
       <div style={{ flex: 1, minWidth: 200 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{t.description}</div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>{t.description}</div>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 2 }}>{TRIGGER_METRIC_LABELS[t.metric]}{t.threshold != null ? ` ≥ ${t.threshold}` : ''} → CLT {fmtCurrencyShort(t.new_salary, t.currency)}{t.new_image_value != null ? ` + Imagem ${fmtCurrencyShort(t.new_image_value, t.currency)}` : ''}{t.notes ? ` · ${t.notes}` : ''}</div>
       </div>
       <span style={badgeStyle(TRIGGER_STATUS_STYLE[t.status] ?? BADGE_TONES.neutral)}>{TRIGGER_STATUS_LABELS[t.status]}</span>
@@ -286,7 +286,7 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 660, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Editar atleta</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Editar atleta</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {field('Nome completo *', 'full_name')}
           {field('Nome curto', 'short_name')}
@@ -318,15 +318,15 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map((r, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 76px 1fr 30px', gap: 8, alignItems: 'center' }}>
-                <select value={r.holder_type} onChange={e => setRow(i, { holder_type: e.target.value as HolderType })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }}>
+                <select value={r.holder_type} onChange={e => setRow(i, { holder_type: e.target.value as HolderType })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }}>
                   {(Object.keys(HOLDER_TYPE_LABELS) as HolderType[]).map(k => <option key={k} value={k}>{HOLDER_TYPE_LABELS[k]}</option>)}
                 </select>
-                <input placeholder="Nome do detentor" value={r.holder_name} onChange={e => setRow(i, { holder_name: e.target.value })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }} />
+                <input placeholder="Nome do detentor" value={r.holder_name} onChange={e => setRow(i, { holder_name: e.target.value })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <input inputMode="decimal" value={r.percentage} onChange={e => setRow(i, { percentage: e.target.value.replace(',', '.').replace(/[^\d.]/g, '') })} placeholder="0" style={{ ...inp, padding: '6px 8px', fontSize: 12, textAlign: 'right', fontFamily: fontMono }} />
+                  <input inputMode="decimal" value={r.percentage} onChange={e => setRow(i, { percentage: e.target.value.replace(',', '.').replace(/[^\d.]/g, '') })} placeholder="0" style={{ ...inp, padding: '4px 10px', fontSize: 12, textAlign: 'right', fontFamily: fontMono }} />
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontMono }}>%</span>
                 </div>
-                <input placeholder="Obs." value={r.notes} onChange={e => setRow(i, { notes: e.target.value })} style={{ ...inp, padding: '6px 8px', fontSize: 12 }} />
+                <input placeholder="Obs." value={r.notes} onChange={e => setRow(i, { notes: e.target.value })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }} />
                 <IconButton icon="x" label="Remover detentor" tone="danger" onClick={() => removeRow(i)} />
               </div>
             ))}
@@ -649,7 +649,7 @@ export default function PageAthleteDetail() {
   if (loading) return <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>Carregando…</div>
   if (!athlete) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
-      <div style={{ fontSize: 16, color: 'var(--text-secondary)' }}>Atleta não encontrado.</div>
+      <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--text-secondary)' }}>Atleta não encontrado.</div>
       <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 'var(--space-4)' }}><Icon name="chevronLeft" size={16} /> Voltar</button>
     </div>
   )
@@ -702,12 +702,12 @@ export default function PageAthleteDetail() {
         crumbs={[{ label: 'Botafogo SAF', icon: 'folder' }, { label: 'Atletas', to: '/atletas', icon: 'athletes' }]} />
 
       {/* Header com foto, dados e titularidade compacta */}
-      <div className="card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)' }}>
+      <div className="card" style={{ padding: 'var(--gutter-card)', marginBottom: 'var(--space-5)' }}>
         <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <ImageUpload value={athlete.profile_photo_url} onChange={handlePhoto} fallbackText={athlete.short_name} size={80} editable={canEdit} />
           <div style={{ flex: 1, minWidth: 260 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-              <h2 style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font, margin: 0 }}>{athlete.full_name}</h2>
+              <h2 style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font, margin: 0 }}>{athlete.full_name}</h2>
               <span style={badgeStyle(st)}>{st.label}</span>
               {unreadCrit > 0 && <span title={`${unreadCrit} alerta(s) crítico(s)`} style={badgeStyle('negative')}>{unreadCrit} {unreadCrit === 1 ? 'crítico' : 'críticos'}</span>}
               {warnCount > 0 && <span title={`${warnCount} vencimento(s) próximo(s)`} style={badgeStyle('warning')}>{warnCount} atenção</span>}
@@ -765,7 +765,7 @@ export default function PageAthleteDetail() {
                   : Object.entries(exposure).map(([c, v]) => (
                     <div key={c} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontFamily: fontMono, fontSize: 11 }}>
                       <span style={{ color: 'var(--text-secondary)' }}>{c}</span>
-                      <span style={{ fontWeight: 600, color: 'var(--ink-primary)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
+                      <span style={{ fontWeight: 500, color: 'var(--ink-primary)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
                     </div>
                   ))}
                 {Object.entries(rjExposure).length > 0 && (
@@ -774,7 +774,7 @@ export default function PageAthleteDetail() {
                     {Object.entries(rjExposure).map(([c, v]) => (
                       <div key={`rj-${c}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontFamily: fontMono, fontSize: 11 }}>
                         <span style={{ color: 'var(--warn)' }}>{c}</span>
-                        <span style={{ fontWeight: 600, color: 'var(--warn)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
+                        <span style={{ fontWeight: 500, color: 'var(--warn)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
                       </div>
                     ))}
                   </>
@@ -840,7 +840,7 @@ export default function PageAthleteDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!emp ? (
             <div className="card" style={{ padding: 32, textAlign: 'center', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontSize: 14, color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
                 Nenhum vínculo de trabalho com remuneração cadastrado. Cadastre um contrato de entrada com salário base — o fluxo mensal é gerado automaticamente.
               </div>
               {canEdit && athlete && (
@@ -939,7 +939,7 @@ export default function PageAthleteDetail() {
             const parent = ct.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null
             const children = contracts.filter(c => c.related_contract_id === ct.id)
             return (
-              <div key={ct.id} className="card" style={{ padding: '18px 22px' }}>
+              <div key={ct.id} className="card" style={{ padding: 'var(--gutter-card)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
                   {ctClauses.length > 0 && (
                     <IconButton
@@ -952,7 +952,7 @@ export default function PageAthleteDetail() {
                     />
                   )}
                   <span style={badgeStyle(ts)}>{CONTRACT_TYPE_LABELS[ct.type]}</span>
-                  <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font }}>
+                  <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font }}>
                     {(() => { const cid = clubIdx.get(norm(ct.counterpart_club)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${ct.counterpart_club}`}>{ct.counterpart_club}</RefLink> : ct.counterpart_club })()}
                   </span>
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{ct.counterpart_country}</span>}
@@ -987,12 +987,12 @@ export default function PageAthleteDetail() {
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span>Início: {fmtDate(ct.start_date)}</span>
                   {ct.end_date && <span>Fim: {fmtDate(ct.end_date)}</span>}
-                  {ct.transfer_fee_gross && <span style={{ fontWeight: 600, color: 'var(--ink-primary)' }}>{CURRENCY_SYMBOLS[ct.transfer_currency]} {ct.transfer_fee_gross.toLocaleString('pt-BR')}</span>}
+                  {ct.transfer_fee_gross && <span style={{ fontWeight: 500, color: 'var(--ink-primary)' }}>{CURRENCY_SYMBOLS[ct.transfer_currency]} {ct.transfer_fee_gross.toLocaleString('pt-BR')}</span>}
                   {ctClauses.length > 0 && (
                     <span style={{ color: 'var(--text-secondary)' }}>{ctClauses.length} cláusula{ctClauses.length !== 1 ? 's' : ''} — {expandedContracts.has(ct.id) ? 'ocultar' : 'ver'} vencimentos</span>
                   )}
                   {ctClauses.length === 0 && <span style={{ color: 'var(--text-secondary)' }}>0 cláusulas</span>}
-                  {children.length > 0 && <span style={{ color: 'var(--ink-secondary)', fontWeight: 600 }}>· {children.length} contrato{children.length !== 1 ? 's' : ''} vinculado{children.length !== 1 ? 's' : ''}</span>}
+                  {children.length > 0 && <span style={{ color: 'var(--ink-secondary)', fontWeight: 500 }}>· {children.length} contrato{children.length !== 1 ? 's' : ''} vinculado{children.length !== 1 ? 's' : ''}</span>}
                 </div>
                 {ct.description && <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>{ct.description}</div>}
 
@@ -1004,11 +1004,11 @@ export default function PageAthleteDetail() {
                       return (
                         <div key={cl.id} style={{ border: '1px solid var(--divider-soft)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-subtle)' }}>
-                            <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)' }}>
+                            <span style={{ fontFamily: font, fontSize: 12, fontWeight: 500, color: 'var(--ink-primary)' }}>
                               {CLAUSE_TYPE_LABELS[cl.clause_type]} <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>· {cl.description}</span>
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(totalCl, cl.currency)}{parc.length ? ` · ${parc.length}x` : ''}</span>
+                              <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 500 }}>{fmtCurrencyShort(totalCl, cl.currency)}{parc.length ? ` · ${parc.length}x` : ''}</span>
                               <RowActions
                                 open={{ to: `/obrigacoes/${cl.id}` }}
                                 edit={{ onClick: canEdit ? () => setEditClauseId(cl.id) : undefined, reason: 'sem permissão de edição' }}
@@ -1023,8 +1023,8 @@ export default function PageAthleteDetail() {
                                 return (
                                   <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '40px 110px 1fr 90px 110px', gap: 8, alignItems: 'center', padding: '5px 12px', borderTop: '1px solid var(--divider-soft)' }}>
                                     <span style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-secondary)', textAlign: 'right' }}>{p.installment_number}</span>
-                                    <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{fmtDate(p.due_date)}</span>
-                                    <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
+                                    <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{fmtDate(p.due_date)}</span>
+                                    <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 500 }}>{fmtCurrencyShort(p.original_value, p.currency)}</span>
                                     <span style={{ textAlign: 'right' }}><StatusBadge status={p.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
                                     <span style={{ textAlign: 'right' }}>
                                       <InstallmentActions inst={p} canEdit={canEdit} onEdit={() => setEditInstId(p.id)}
@@ -1092,7 +1092,7 @@ export default function PageAthleteDetail() {
 
 // ── PJs do atleta ───────────────────────────────────────────────────────────
 
-const pjInp: React.CSSProperties = { padding: '7px 9px', borderRadius: 'var(--radius-xs)', fontSize: 13, background: 'var(--cream-canvas)', border: '1px solid var(--input-border)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
+const pjInp: React.CSSProperties = { padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--cream-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--ink-primary)', fontFamily: font, boxSizing: 'border-box' }
 const pjLbl: React.CSSProperties = { fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 3, display: 'block' }
 
 function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: {
@@ -1120,10 +1120,10 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
   }
 
   return (
-    <div className="card" style={{ padding: '16px 20px' }}>
+    <div className="card" style={{ padding: 'var(--gutter-card)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>PJs do atleta</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', fontFamily: font }}>PJs do atleta</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 2 }}>Pessoas jurídicas que recebem o direito de imagem. O atleta pode ter mais de uma.</div>
         </div>
         {canEdit && !adding && <button onClick={() => setAdding(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={16} /> Nova PJ</button>}
@@ -1158,7 +1158,7 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
           ) : (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontWeight: 600, fontFamily: font, fontSize: 14, color: 'var(--ink-primary)' }}>{p.legal_name}</div>
+                <div style={{ fontWeight: 500, fontFamily: font, fontSize: 'var(--ui-text-size)', color: 'var(--ink-primary)' }}>{p.legal_name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 2 }}>
                   {p.cnpj ? `CNPJ ${p.cnpj}` : 'CNPJ não informado'}{p.notes ? ` · ${p.notes}` : ''}
                 </div>
@@ -1225,16 +1225,16 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
   const lbl2 = modalLabel
   // Tile sunken do DS; o destaque (hi) é o creme com filete — um acento por card.
   const kcard = (label: string, val: string, hi?: boolean) => (
-    <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line)' : 'transparent'}` }}>
+    <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line-soft)' : 'transparent'}` }}>
       <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, fontFamily: fontMono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{val}</div>
+      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, fontFamily: fontMono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{val}</div>
     </div>
   )
 
   return (
     <div className="card" style={{ padding: 'var(--gutter-card)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font }}>Remuneração — paga pelo Botafogo</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font }}>Remuneração — paga pelo Botafogo</div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
             Vínculo {fmtDate(contract.start_date)}{contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ''} · origem: {contract.counterpart_club}
@@ -1296,7 +1296,7 @@ function LoanShareSection({ workContract, contracts, triggers, canEdit, onConfig
   const currency = workContract.salary_currency ?? 'BRL'
 
   return (
-    <div className="card" style={{ padding: '16px 20px' }}>
+    <div className="card" style={{ padding: 'var(--gutter-card)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
@@ -1324,7 +1324,7 @@ function LoanShareSection({ workContract, contracts, triggers, canEdit, onConfig
             return (
               <div key={loan.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
                 <div style={{ minWidth: 200, flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{loan.counterpart_club || '—'}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>{loan.counterpart_club || '—'}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 2 }}>
                     {fmtDate(loan.start_date)}{loan.end_date ? ` → ${fmtDate(loan.end_date)}` : ''}
                   </div>
@@ -1337,7 +1337,7 @@ function LoanShareSection({ workContract, contracts, triggers, canEdit, onConfig
                     <span style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--text-secondary)' }}>
                       clube arca {share.clubSalaryPct}% CLT · {share.clubImagePct}% imagem
                     </span>
-                    <span style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 600, color: 'var(--ink-primary)' }}>
+                    <span style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 500, color: 'var(--ink-primary)' }}>
                       Botafogo {fmtCurrencyShort(botafogo, currency)}/mês
                     </span>
                   </>
@@ -1381,7 +1381,7 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
   // Cláusulas que geram este fluxo — permitem editar o cronograma inteiro.
   const flowClauses = clauses.filter(c => types.includes(c.clause_type))
   return (
-    <div className="card" style={{ padding: '16px 20px' }}>
+    <div className="card" style={{ padding: 'var(--gutter-card)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{title}</div>
         <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{rows.length} parcela(s) · {fmtCurrencyShort(total, cur)}</div>
@@ -1393,7 +1393,7 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           {flowClauses.map(c => (
             <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 6px 4px 12px', borderRadius: 'var(--radius-tile)', background: 'var(--bg-subtle)' }}>
-              <span style={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: 'var(--ink-primary)' }}>
+              <span style={{ fontFamily: font, fontSize: 12, fontWeight: 500, color: 'var(--ink-primary)' }}>
                 {c.clause_type === 'SALARIO_CETD' ? 'Salário CLT' : c.clause_type === 'DIREITO_IMAGEM' ? 'Direito de imagem' : CLAUSE_TYPE_LABELS[c.clause_type]}
               </span>
               <RowActions align="left"
@@ -1418,9 +1418,9 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
             const tipo = typeById.get(r.clause_id)
             return (
               <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 120px 90px 120px', gap: 10, alignItems: 'center', padding: '6px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)' }}>
-                <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{fmtDate(r.due_date)}</span>
+                <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{fmtDate(r.due_date)}</span>
                 <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{tipo === 'SALARIO_CETD' ? 'Salário CLT' : tipo === 'DIREITO_IMAGEM' ? 'Imagem' : (tipo ? CLAUSE_TYPE_LABELS[tipo as keyof typeof CLAUSE_TYPE_LABELS] : '')}</span>
-                <span style={{ fontFamily: fontMono, fontWeight: 600, fontSize: 13, textAlign: 'right' }}>{fmtCurrencyShort(r.original_value, r.currency)}</span>
+                <span style={{ fontFamily: fontMono, fontWeight: 500, fontSize: 13, textAlign: 'right' }}>{fmtCurrencyShort(r.original_value, r.currency)}</span>
                 <span style={{ textAlign: 'right' }}><StatusBadge status={r.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
                 <span style={{ textAlign: 'right' }}>
                   <InstallmentActions inst={r} canEdit={canEdit} onEdit={() => onEditInst(r.id)} onPay={() => onPayInst(r.id)}
@@ -1546,7 +1546,7 @@ function ConsolidadoTab({
                 const link = entityLink(it.parte)
                 return (
                   <tr key={i} style={{ background: parseRJ(it.notes) ? 'var(--surface-warning-soft)' : late ? 'var(--row-late-bg)' : 'transparent' }}>
-                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {it.clauseRef
                         ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir a obrigação">{it.nat}</button>
@@ -1557,7 +1557,7 @@ function ConsolidadoTab({
                       {link ? <RefLink to={link} title="Abrir cadastro da contraparte">{it.parte}</RefLink> : it.parte}
                     </td>
                     <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: fontMono, color: it.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{it.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(it.valor, it.moeda)}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{fmtCurrencyShort(it.valor, it.moeda)}</td>
                     <td style={td}><StatusBadge status={it.status} map={PAYMENT_STATUS_STYLE} /></td>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -1660,7 +1660,7 @@ function AccessoryFlowTab({
   const total = rows.reduce((s, r) => s + (r.valor ?? 0) * (RATE_BRL[r.moeda] ?? 1), 0)
 
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1705,7 +1705,7 @@ function AccessoryFlowTab({
                 const link = entityLink(r.parte)
                 return (
                   <tr key={`${r.kind}:${r.id}`} style={{ background: late ? 'var(--row-late-bg)' : undefined }}>
-                    <td style={{ ...td, fontWeight: 600 }}>
+                    <td style={{ ...td, fontWeight: 500 }}>
                       {link ? <RefLink to={link} title="Abrir cadastro da contraparte">{r.parte}</RefLink> : r.parte}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>
@@ -1714,7 +1714,7 @@ function AccessoryFlowTab({
                         : r.natureza}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{r.descricao || '—'}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{r.valor != null ? fmtCurrencyShort(r.valor, r.moeda) : '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{r.valor != null ? fmtCurrencyShort(r.valor, r.moeda) : '—'}</td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-secondary)' }}>{r.venc ? fmtDate(r.venc) : '—'}</td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: r.pag ? 'var(--pos)' : 'var(--text-muted)' }}>{r.pag ? fmtDate(r.pag) : '—'}</td>
                     <td style={td}><StatusBadge status={r.status} map={PAYMENT_STATUS_STYLE} /></td>
@@ -1802,7 +1802,7 @@ function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClos
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 680, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Novo fluxo — {title}</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Novo fluxo — {title}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             {clauseType === 'INTERMEDIACAO'
@@ -1855,12 +1855,12 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
 }) {
   const diverse = clauses.filter(c => isDiverseClause(c.clause_type))
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
-  const td: React.CSSProperties = { padding: '9px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
+  const td: React.CSSProperties = { padding: '8px 12px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)', verticalAlign: 'middle' }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Metas salariais (gatilhos que mudam salário/imagem) */}
-      <div className="card" style={{ padding: '18px 20px' }}>
+      <div className="card" style={{ padding: 'var(--gutter-card)' }}>
         <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Gatilhos de salário / imagem</div>
         {!emp ? (
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}>
@@ -1909,12 +1909,12 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
                 const tot = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
                 return (
                   <tr key={c.id}>
-                    <td style={{ ...td, fontFamily: fontMono, fontSize: 10, fontWeight: 600, color: 'var(--text-secondary)' }}>{CLAUSE_TYPE_LABELS[c.clause_type]}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 10, fontWeight: 500, color: 'var(--text-secondary)' }}>{CLAUSE_TYPE_LABELS[c.clause_type]}</td>
                     <td style={td}>
                       <div style={{ fontWeight: 500 }}>{c.description}</div>
                       {c.condition_description && <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>{c.condition_description}</div>}
                     </td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{tot ? fmtCurrencyShort(tot, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{tot ? fmtCurrencyShort(tot, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}</td>
                     <td style={td}><StatusBadge status={c.achievement_status} map={{ PENDENTE: TRIGGER_STATUS_STYLE.PENDENTE, ATINGIDA: TRIGGER_STATUS_STYLE.ATINGIDA, NAO_ATINGIDA: TRIGGER_STATUS_STYLE.NAO_ATINGIDA, NAO_APLICAVEL: TRIGGER_STATUS_STYLE.NAO_ATINGIDA }} /></td>
                     <td style={td}><StatusBadge status={c.payment_status} map={PAYMENT_STATUS_STYLE} /></td>
                     <td style={{ ...td, textAlign: 'center' }}>
@@ -1989,7 +1989,7 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 660, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Editar vínculo</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Editar vínculo</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div><label style={lbl}>Tipo</label>
             <select style={inp} value={f.type} onChange={e => set('type', e.target.value)}>
@@ -2157,7 +2157,7 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 660, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Nova cláusula</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Nova cláusula</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 3 }}>atrelada a {CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}</div>
         </div>
 
@@ -2272,9 +2272,9 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
   const td: React.CSSProperties = { padding: '7px 10px', fontSize: 12, color: 'var(--ink-primary)', fontFamily: font, borderBottom: '1px solid var(--divider-soft)' }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+      <div className="card" style={{ padding: 'var(--gutter-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>Acordos e Renegociações</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', fontFamily: font }}>Acordos e Renegociações</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, marginTop: 3, maxWidth: 620 }}>
             Selecione parcelas/cláusulas em aberto e reabra o saldo em um novo fluxo (com desconto, se houver). As parcelas originais são preservadas como canceladas, mantendo o rastreio.
           </div>
@@ -2284,7 +2284,7 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
 
       {acordos.length === 0 && (
         <div className="card" style={{ padding: 32, textAlign: 'center', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <div style={{ fontSize: 14, color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
             Nenhuma renegociação registrada para este atleta. Uma renegociação reabre parcelas ou obrigações vencidas em um novo fluxo, mantendo o rastreio das originais.
           </div>
           {canEdit && (
@@ -2301,9 +2301,9 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
         const paidCount = parc.filter(p => p.payment_status === 'PAGA').length
         const isHi = highlight === ac.id
         return (
-          <div key={ac.id} id={`acordo-${ac.id}`} className="card" style={{ padding: '18px 20px', border: isHi ? '1px solid var(--gold-ring)' : undefined, boxShadow: isHi ? '0 0 0 3px var(--divider-strong)' : undefined, transition: 'box-shadow 0.4s, border-color 0.4s' }}>
+          <div key={ac.id} id={`acordo-${ac.id}`} className="card" style={{ padding: 'var(--gutter-card)', border: isHi ? '1px solid var(--gold-ring)' : undefined, boxShadow: isHi ? '0 0 0 3px var(--divider-strong)' : undefined, transition: 'box-shadow 0.4s, border-color 0.4s' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-primary)', fontFamily: font }}>{meta?.creditor ?? ac.creditor_party}</div>
+              <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>{meta?.creditor ?? ac.creditor_party}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>{meta ? `acordado em ${fmtDate(meta.createdAt)}` : ''}</span>
                 <RowActions small={false}
@@ -2325,7 +2325,7 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
                 ].map(([l, v], i) => (
                   <div key={i} style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
                     <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{l}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, fontFamily: fontMono, color: l === 'Desconto' && meta.discount > 0 ? 'var(--pos)' : 'var(--ink-primary)' }}>{v}</div>
+                    <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, fontFamily: fontMono, color: l === 'Desconto' && meta.discount > 0 ? 'var(--pos)' : 'var(--ink-primary)' }}>{v}</div>
                   </div>
                 ))}
               </div>
@@ -2345,8 +2345,8 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
                         return (
                           <tr key={p.id}>
                             <td style={{ ...td, fontFamily: fontMono, fontSize: 10, color: 'var(--text-secondary)' }}>{p.installment_number}</td>
-                            <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 600 : 400 }}>{fmtDate(p.due_date)}</td>
-                            <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 600 }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
+                            <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{fmtDate(p.due_date)}</td>
+                            <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{fmtCurrencyShort(p.original_value, p.currency)}</td>
                             <td style={{ ...td, textAlign: 'center' }}><InstallmentActions inst={p} canEdit={canEdit} onEdit={() => onEditInst(p.id)} onPay={() => onPayInst(p.id)} onQuickPay={() => onQuickPayInst(p.id)} onRevert={() => onRevertInst(p.id)} /></td>
                           </tr>
                         )
@@ -2362,7 +2362,7 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
                   {(meta?.sources ?? []).map((s, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '6px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)' }}>
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
-                      <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtCurrencyShort(s.value, meta?.currency ?? 'BRL')}</span>
+                      <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 500, whiteSpace: 'nowrap' }}>{fmtCurrencyShort(s.value, meta?.currency ?? 'BRL')}</span>
                     </div>
                   ))}
                   {(!meta || meta.sources.length === 0) && <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>—</div>}
@@ -2521,7 +2521,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 760, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Nova renegociação</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Nova renegociação</div>
 
         {/* Seleção de itens */}
         <div>
@@ -2535,7 +2535,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
                 return (
                   <div key={parte} style={{ border: '1px solid var(--divider-soft)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--bg-subtle)' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: font, color: 'var(--ink-primary)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: font, color: 'var(--ink-primary)' }}>
                         <input type="checkbox" checked={allOn} onChange={e => toggleGroup(parte, e.target.checked)} />
                         {parte}
                       </label>
@@ -2546,7 +2546,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
                         <input type="checkbox" checked={selected.has(it.key)} onChange={() => toggle(it.key)} />
                         <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.source.label}</span>
                         <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{it.dueDate ? fmtDate(it.dueDate) : '—'}</span>
-                        <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 600, textAlign: 'right' }}>{fmtCurrencyShort(it.source.value, it.currency)}</span>
+                        <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 500, textAlign: 'right' }}>{fmtCurrencyShort(it.source.value, it.currency)}</span>
                       </label>
                     ))}
                   </div>
@@ -2582,7 +2582,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Gere as parcelas pelo nº/data acima e edite cada vencimento e valor.</span>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', background: 'var(--action-ghost-hover)', color: 'var(--action-inverse)', fontSize: 11, fontFamily: font, fontWeight: 600, cursor: 'pointer' }}>Gerar fluxo</button>
+                  <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', background: 'var(--action-ghost-hover)', color: 'var(--action-inverse)', fontSize: 11, fontFamily: font, fontWeight: 500, cursor: 'pointer' }}>Gerar fluxo</button>
                   <button onClick={addSchedRow} className="btn btn-outline"><Icon name="plus" size={16} /> Linha</button>
                 </div>
               </div>
@@ -2593,7 +2593,7 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
                   {schedule.map((r, i) => (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr 30px', gap: 8, alignItems: 'center' }}>
                       <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)', textAlign: 'right' }}>{i + 1}</span>
-                      <input style={{ ...inp, padding: '6px 8px', fontSize: 12 }} type="date" value={r.due_date} onChange={e => setSchedRow(i, { due_date: e.target.value })} />
+                      <input style={{ ...inp, padding: '4px 10px', fontSize: 12 }} type="date" value={r.due_date} onChange={e => setSchedRow(i, { due_date: e.target.value })} />
                       <NumberInput style={{ ...inp, padding: '6px 8px', fontSize: 12, fontFamily: fontMono }} value={r.value} onChange={v => setSchedRow(i, { value: v })} placeholder="Valor" />
                       <IconButton icon="x" label="Remover parcela" tone="danger" small onClick={() => removeSchedRow(i)} />
                     </div>
