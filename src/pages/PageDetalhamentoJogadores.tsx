@@ -1,11 +1,12 @@
-// src/pages/PageRankingSalarios.tsx
-// RANKING DE SALÁRIOS — o elenco ordenado pela remuneração, com o custo anual
-// que cada jogador representa para o clube e o valor que ainda está no balanço.
+// src/pages/PageDetalhamentoJogadores.tsx
+// DETALHAMENTO DE JOGADORES — o elenco jogador a jogador: remuneração, custo
+// anual que cada um representa para o clube e o valor que ainda está no
+// balanço. Por padrão, ordenado pelo salário mensal.
 //
 // Uma linha por jogador (a comissão técnica fica de fora):
-//   • Salário semanal / anual: remuneração vigente do vínculo de trabalho
-//     (CLT + imagem, com gatilhos e rateio de empréstimo já aplicados),
-//     mensal × 12 ÷ 52 e mensal × 12;
+//   • Salário mensal / anual: remuneração vigente do vínculo de trabalho
+//     (CLT + imagem, com gatilhos e rateio de empréstimo já aplicados) e
+//     mensal × 12;
 //   • Custo anual do clube: CLT × 12 × (1 + encargos) + (imagem + outros) × 12
 //     + amortização dos próximos 12 meses. Encargos das premissas do atleta ou,
 //     sem premissa, o padrão (INSS, FGTS, 13º e férias);
@@ -78,7 +79,7 @@ interface Row {
   loan: { dir: 'OUT' | 'IN'; other: string | null } | null
   pos: PosGroup | null
   age: number | null
-  weeklyBRL: number | null
+  monthlyBRL: number | null
   annualBRL: number | null
   clubCostBRL: number | null
   amortBRL: number
@@ -138,7 +139,7 @@ function buildRows(
       }
 
       // Remuneração vigente (só com vínculo de trabalho ativo)
-      let weeklyBRL: number | null = null
+      let monthlyBRL: number | null = null
       let annualBRL: number | null = null
       let clubCostBRL: number | null = null
       const intangible = computeIntangible(a.id, cs, clauses, ptax, today)
@@ -149,10 +150,10 @@ function buildRows(
         const cltBRL = rem.salary * rate
         const imageBRL = rem.image * rate
         const otherBRL = (emp.other_value ?? 0) * ptaxRateFor(emp.salary_currency, ptax)
-        const monthlyBRL = cltBRL + imageBRL
-        if (monthlyBRL > 0) {
-          weeklyBRL = monthlyBRL * 12 / 52
-          annualBRL = monthlyBRL * 12
+        const monthly = cltBRL + imageBRL
+        if (monthly > 0) {
+          monthlyBRL = monthly
+          annualBRL = monthly * 12
           const encargos = encargosOf(premissaOf.get(a.id))
           clubCostBRL = cltBRL * 12 * (1 + encargos) + (imageBRL + otherBRL) * 12 + amortBRL
         }
@@ -165,7 +166,7 @@ function buildRows(
         club, loan,
         pos: positionGroup(a.position),
         age: calcAge(a.birth_date),
-        weeklyBRL, annualBRL, clubCostBRL,
+        monthlyBRL, annualBRL, clubCostBRL,
         amortBRL, bookBRL: intangible.residualBRL,
         contractEnd: emp?.end_date ?? null,
       }
@@ -173,7 +174,7 @@ function buildRows(
 }
 
 // ── Ordenação ──────────────────────────────────────────────────────────────
-type SortKey = 'name' | 'club' | 'pos' | 'age' | 'status' | 'weekly' | 'annual' | 'cost' | 'amort' | 'book' | 'end'
+type SortKey = 'name' | 'club' | 'pos' | 'age' | 'status' | 'monthly' | 'annual' | 'cost' | 'amort' | 'book' | 'end'
 type SortDir = 'asc' | 'desc'
 interface Sort { key: SortKey; dir: SortDir }
 
@@ -183,7 +184,7 @@ const SORT_VALUE: Record<SortKey, (r: Row) => number | string | null> = {
   pos: r => r.pos ? POS_GROUPS.indexOf(r.pos) : null,
   age: r => r.age,
   status: r => r.foreign == null ? null : Number(r.foreign),
-  weekly: r => r.weeklyBRL,
+  monthly: r => r.monthlyBRL,
   annual: r => r.annualBRL,
   cost: r => r.clubCostBRL,
   amort: r => r.amortBRL,
@@ -193,7 +194,7 @@ const SORT_VALUE: Record<SortKey, (r: Row) => number | string | null> = {
 // Primeiro clique: texto, idade e fim do contrato em ordem crescente; valores do maior para o menor.
 const FIRST_DIR: Record<SortKey, SortDir> = {
   name: 'asc', club: 'asc', pos: 'asc', age: 'asc', status: 'asc', end: 'asc',
-  weekly: 'desc', annual: 'desc', cost: 'desc', amort: 'desc', book: 'desc',
+  monthly: 'desc', annual: 'desc', cost: 'desc', amort: 'desc', book: 'desc',
 }
 
 function compareRows(a: Row, b: Row, { key, dir }: Sort): number {
@@ -206,8 +207,8 @@ function compareRows(a: Row, b: Row, { key, dir }: Sort): number {
     const c = typeof va === 'string' ? va.localeCompare(vb as string, 'pt-BR') : va - (vb as number)
     if (c !== 0) return dir === 'asc' ? c : -c
   }
-  // Desempate: salário semanal (maior primeiro), depois o nome.
-  return (b.weeklyBRL ?? -1) - (a.weeklyBRL ?? -1) || a.name.localeCompare(b.name, 'pt-BR')
+  // Desempate: salário mensal (maior primeiro), depois o nome.
+  return (b.monthlyBRL ?? -1) - (a.monthlyBRL ?? -1) || a.name.localeCompare(b.name, 'pt-BR')
 }
 
 // ── Filtros ────────────────────────────────────────────────────────────────
@@ -279,14 +280,14 @@ function SortTh({ k, label, sort, onSort, align = 'left', info, title, minWidth 
 const fieldLabel: React.CSSProperties = { display: 'block', marginBottom: 'var(--space-1)' }
 
 // ── Página ─────────────────────────────────────────────────────────────────
-export default function PageRankingSalarios() {
+export default function PageDetalhamentoJogadores() {
   const { fromBRL, symbol } = useApp()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [pos, setPos] = useState<PosGroup | ''>('')
   const [situacao, setSituacao] = useState<Situacao>('ELENCO')
-  const [sort, setSort] = useState<Sort>({ key: 'weekly', dir: 'desc' })
+  const [sort, setSort] = useState<Sort>({ key: 'monthly', dir: 'desc' })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -313,11 +314,11 @@ export default function PageRankingSalarios() {
   }, [rows, situacao, pos, search, sort])
 
   const totals = useMemo(() => visible.reduce((t, r) => ({
-    weekly: t.weekly + (r.weeklyBRL ?? 0),
+    monthly: t.monthly + (r.monthlyBRL ?? 0),
     cost: t.cost + (r.clubCostBRL ?? 0),
     book: t.book + r.bookBRL,
-  }), { weekly: 0, cost: 0, book: 0 }), [visible])
-  const maxWeekly = useMemo(() => Math.max(0, ...visible.map(r => r.weeklyBRL ?? 0)), [visible])
+  }), { monthly: 0, cost: 0, book: 0 }), [visible])
+  const maxMonthly = useMemo(() => Math.max(0, ...visible.map(r => r.monthlyBRL ?? 0)), [visible])
 
   const money = (brl: number | null) => brl == null ? '—' : compactMoney(fromBRL(brl), symbol)
   const onSort = (k: SortKey) => setSort(s => s.key === k
@@ -329,21 +330,21 @@ export default function PageRankingSalarios() {
       { key: 'rank', header: '#' }, { key: 'jogador', header: 'Jogador' }, { key: 'nome', header: 'Nome completo' },
       { key: 'nacionalidade', header: 'Nacionalidade' }, { key: 'clube', header: 'Clube' },
       { key: 'posicao', header: 'Posição' }, { key: 'idade', header: 'Idade' }, { key: 'status', header: 'Status CBF' },
-      { key: 'semanal', header: 'Salário semanal (BRL)' }, { key: 'anual', header: 'Salário anual (BRL)' },
+      { key: 'mensal', header: 'Salário mensal (BRL)' }, { key: 'anual', header: 'Salário anual (BRL)' },
       { key: 'custo', header: 'Custo anual do clube (BRL)' }, { key: 'amort', header: 'Amortização 12 meses (BRL)' },
       { key: 'contabil', header: 'Valor contábil (BRL)' }, { key: 'fim', header: 'Fim do contrato' },
     ]
     const r2 = (v: number | null) => v == null ? '' : Math.round(v * 100) / 100
     exportWorkbook([{
-      name: 'Ranking de salários', cols,
+      name: 'Detalhamento de jogadores', cols,
       rows: visible.map((r, i) => ({
         rank: i + 1, jogador: r.name, nome: r.athlete.full_name, nacionalidade: r.athlete.nationality ?? '',
         clube: r.club?.name ?? '', posicao: r.athlete.position ?? '', idade: r.age ?? '',
         status: r.foreign == null ? '' : r.foreign ? 'Estrangeiro' : 'Nacional',
-        semanal: r2(r.weeklyBRL), anual: r2(r.annualBRL), custo: r2(r.clubCostBRL),
+        mensal: r2(r.monthlyBRL), anual: r2(r.annualBRL), custo: r2(r.clubCostBRL),
         amort: r2(r.amortBRL), contabil: r2(r.bookBRL), fim: r.contractEnd ?? '',
       })),
-    }], 'ranking-salarios.xlsx')
+    }], 'detalhamento-jogadores.xlsx')
   }
 
   const pct = (v: number) => `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
@@ -351,7 +352,7 @@ export default function PageRankingSalarios() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Ranking de salários" section="Relatórios"
+      <PageHero title="Detalhamento de jogadores" section="Relatórios"
         caption="Remuneração do elenco, custo anual para o clube e valor contábil de cada jogador">
         <button type="button" onClick={exportXlsx} className="btn btn-outline" disabled={loading || !visible.length}>
           <Icon name="download" size={16} /> Exportar
@@ -378,7 +379,7 @@ export default function PageRankingSalarios() {
           </select>
         </label>
         <div className="kpi-group">
-          <KpiPill label="Folha semanal" value={money(totals.weekly)} />
+          <KpiPill label="Folha mensal" value={money(totals.monthly)} />
           <KpiPill label="Custo anual do clube" value={money(totals.cost)} />
           <KpiPill label="Valor contábil" value={money(totals.book)} />
         </div>
@@ -396,8 +397,8 @@ export default function PageRankingSalarios() {
                 <SortTh k="age" label="Idade" sort={sort} onSort={onSort} align="center" />
                 <SortTh k="status" label="Status CBF" sort={sort} onSort={onSort}
                   title="Estrangeiros ocupam vaga no limite de estrangeiros da CBF" />
-                <SortTh k="weekly" label="Salário semanal" sort={sort} onSort={onSort} align="center" info
-                  title="Remuneração mensal vigente (CLT + imagem) × 12 ÷ 52" />
+                <SortTh k="monthly" label="Salário mensal" sort={sort} onSort={onSort} align="center" info
+                  title="Remuneração mensal vigente (CLT + imagem)" />
                 <SortTh k="annual" label="Salário anual" sort={sort} onSort={onSort} align="right" info
                   title="Remuneração mensal vigente (CLT + imagem) × 12" />
                 <SortTh k="cost" label="Custo anual do clube" sort={sort} onSort={onSort} align="right"
@@ -464,11 +465,11 @@ export default function PageRankingSalarios() {
                         : <span style={badgeStyle(r.foreign ? 'outline' : 'accent')}>{r.foreign ? 'Estrangeiro' : 'Nacional'}</span>}
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      {r.weeklyBRL == null ? <span style={{ color: 'var(--text-secondary)' }}>—</span> : (
+                      {r.monthlyBRL == null ? <span style={{ color: 'var(--text-secondary)' }}>—</span> : (
                         <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, whiteSpace: 'nowrap' }}>{money(r.weeklyBRL)}</span>
+                          <span style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, whiteSpace: 'nowrap' }}>{money(r.monthlyBRL)}</span>
                           <span aria-hidden="true" style={{
-                            width: maxWeekly > 0 ? Math.max(4, Math.round(56 * r.weeklyBRL / maxWeekly)) : 4, height: 3,
+                            width: maxMonthly > 0 ? Math.max(4, Math.round(56 * r.monthlyBRL / maxMonthly)) : 4, height: 3,
                             borderRadius: 'var(--radius-pill)', background: 'var(--chart-1)',
                           }} />
                         </div>
@@ -496,7 +497,7 @@ export default function PageRankingSalarios() {
 
       <p style={{ margin: 'var(--space-3) 0 0', fontSize: 'var(--text-caption-size)', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: 980 }}>
         {visible.length} jogador{visible.length === 1 ? '' : 'es'} · Salário = remuneração mensal vigente do vínculo de
-        trabalho (CLT + imagem, com gatilhos e rateio de empréstimo aplicados); semanal = mensal × 12 ÷ 52, anual = mensal × 12.
+        trabalho (CLT + imagem, com gatilhos e rateio de empréstimo aplicados); anual = mensal × 12.
         Custo anual do clube = CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses;
         encargos das premissas do atleta ou, sem premissa, {pct(DEFAULT_ENCARGOS)} (INSS, FGTS, 13º e férias).
         Amortização linear do intangível (transfer fee, intermediação e luvas do contrato de entrada) pelo prazo do contrato;

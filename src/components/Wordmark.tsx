@@ -1,7 +1,8 @@
-// Wordmark do Glorioso Finance DS. Não há logotipo nas fontes do design system:
-// onde entraria uma marca, o nome é composto em Urbanist — nunca desenhe,
-// gere ou aproxime um símbolo. A variante `plate` (placa creme com a inicial)
-// é a forma compacta, usada com a navegação recolhida.
+// Wordmark do Glorioso Finance DS com o nome do produto (Glorioso Contract).
+// Não há logotipo nas fontes do design system: onde entraria uma marca, o nome
+// é composto em Urbanist — nunca desenhe, gere ou aproxime um símbolo. A
+// variante `plate` (placa creme com a inicial) é a forma compacta, usada com a
+// navegação recolhida.
 
 interface Props {
   size?: number
@@ -13,7 +14,7 @@ interface Props {
   style?: React.CSSProperties
 }
 
-export default function Wordmark({ size = 16, tone = 'ink', plate = false, compact = false, name = 'Glorioso Finance', style }: Props) {
+export default function Wordmark({ size = 16, tone = 'ink', plate = false, compact = false, name = 'Glorioso Contract', style }: Props) {
   const color = tone === 'inverse' ? 'var(--text-inverse)' : 'var(--text-primary)'
   const label = (
     <span style={{

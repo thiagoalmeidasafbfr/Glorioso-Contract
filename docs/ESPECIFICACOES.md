@@ -315,7 +315,7 @@ base `MAIS_VALIA` ou `VALOR_TOTAL`. Relatório específico em
 | `/relatorios/direitos-economicos` | `PageRelDirEconomicos` | ownership |
 | `/relatorios/gatilhos` | `PageRelGatilhos` | gatilhos ativos |
 | `/relatorios/recuperacao-judicial` | `PageRecuperacaoJudicial` | firme × contingente |
-| `/relatorios/salarios` | `PageRankingSalarios` | ranking de salários: folha, custo anual, amortização e valor contábil por jogador |
+| `/relatorios/jogadores` | `PageDetalhamentoJogadores` | detalhamento de jogadores: salário mensal, custo anual, amortização e valor contábil por jogador |
 | `/dados` · `/dados/planilhas` | `PageDados` · `PageImportarPlanilhas` | import/export |
 | `/login` | `PageLogin` | autenticação Supabase |
 

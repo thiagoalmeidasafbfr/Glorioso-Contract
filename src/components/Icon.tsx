@@ -6,11 +6,11 @@
 
 import { Link } from 'react-router-dom'
 import {
-  ArrowLeftRight, Banknote, Briefcase, Calculator, CalendarDays, ChartBarDecreasing, ChartLine,
+  ArrowLeftRight, Banknote, Briefcase, Calculator, CalendarDays, ChartLine,
   ChartPie, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CirclePlus, Clock,
   Download, Ellipsis, ExternalLink, FileSpreadsheet, Folder, Handshake, Images, Info, Layers,
   LayoutDashboard, LayoutGrid, Link2, List, LogOut, PanelLeftClose, PanelLeftOpen, Pencil,
-  Plus, Scale, Search, Shield, Split, Target, Trash2, TrendingUp, TriangleAlert, Undo2,
+  Plus, Scale, Search, Shield, Split, TableProperties, Target, Trash2, TrendingUp, TriangleAlert, Undo2,
   Upload, UserRound, Users, X, type LucideIcon,
 } from 'lucide-react'
 
@@ -55,7 +55,7 @@ const ICONS = {
   ownership: ChartPie,
   target: Target,
   amortization: ChartLine,
-  ranking: ChartBarDecreasing,
+  playerTable: TableProperties,
   transfer: ArrowLeftRight,
   spreadsheet: FileSpreadsheet,
   folder: Folder,

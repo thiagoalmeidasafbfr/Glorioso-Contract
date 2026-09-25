@@ -1,6 +1,6 @@
 # Design system — Glorioso Finance
 
-A interface da plataforma segue o **Glorioso Finance Design System** (pacote
+A interface do **Glorioso Contract** segue o **Glorioso Finance Design System** (pacote
 `Glorioso_Finance_Design_System.zip`). Este documento explica onde cada peça do
 DS vive no código, o que foi estendido e como construir telas novas sem sair do
 sistema.
@@ -15,7 +15,7 @@ sistema.
 | `src/lib/tones.ts` | Tons de status do DS (`accent`, `neutral`, `inverse`, `negative`, `outline`, `warning`, `info`) e o mapa status de domínio → tom. |
 | `src/components/Icon.tsx` | Todos os ícones passam por aqui — conjunto **Lucide**, traço 1.75, `currentColor`. Trocar o conjunto = remapear `ICONS`. |
 | `src/components/Badge.tsx` | Badge do DS (pílula 18/24px, peso 500). |
-| `src/components/Wordmark.tsx` | O nome "Glorioso Finance" composto em Urbanist. O DS **não tem logotipo**: nunca desenhar/aproximar um símbolo. `public/favicon.svg` é a forma compacta (placa creme + inicial). |
+| `src/components/Wordmark.tsx` | O nome do produto ("Glorioso Contract") composto em Urbanist. O DS **não tem logotipo**: nunca desenhar/aproximar um símbolo. `public/favicon.svg` é a forma compacta (placa creme + inicial). |
 | `src/components/PageHero.tsx` | PageHeader do DS: breadcrumb, título 24px regular, legenda e ações. Props `section`, `crumbs`, `caption`. |
 | `src/components/Layout.tsx` | Shell: navegação lateral + TopBar de 56px. |
 | `src/components/KpiPill.tsx`, `KpiCard.tsx` | MetricCard compacto (eyebrow · valor · legenda). |
@@ -48,7 +48,7 @@ sistema.
 | `.seg-control` | Seletor de opções no trilho do IconNavRail (sunken + ativo preto). |
 | Densidade (`--ui-text-size`, `--ui-control-h`, `--ui-control-radius`, `--page-title-size`) | Refino pedido para aproximar a plataforma da ferramenta de controladoria que usa o mesmo DS: interface em 13px, controles de 30px, título leve. Os tokens do DS continuam intactos em `tokens.css`. |
 | `.kpi-group` | Mantém os KPIs juntos e à direita na barra de filtros (quebram de linha como bloco). |
-| `.th-sort` e `table.table-dense` | Cabeçalho ordenável (o eyebrow vira botão; a coluna ativa fica preta, com `aria-sort`) e tabela larga com filete lateral de 8px — usados no ranking de salários. |
+| `.th-sort` e `table.table-dense` | Cabeçalho ordenável (o eyebrow vira botão; a coluna ativa fica preta, com `aria-sort`) e tabela larga com filete lateral de 8px — usados no detalhamento de jogadores. |
 | Navegação **lateral** | O DS desenha um trilho de ícones no TopBar para ~7 destinos; a plataforma tem 17, em seções. A navegação lateral usa a mesma linguagem (ghost + ativo preto) e, recolhida, vira o próprio trilho de ícones 32×32 (itens de 32px, texto de 13px, ícones de 16px). |
 | Vocabulário de cor dos ícones de ação (`RowActions`) | Mantido, agora nos tons de status do DS: preto abrir/editar · lilás parcelas · areia pagamento · âmbar desfazer · vermelho excluir · cinza indisponível. |
 
