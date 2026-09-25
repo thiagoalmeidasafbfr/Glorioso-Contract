@@ -7,6 +7,7 @@
 
 import { Link } from 'react-router-dom'
 import { Icon, type IconName } from './Icon'
+import { tr } from '../i18n'
 
 export interface Crumb { label: string; to?: string; icon?: IconName }
 
@@ -26,12 +27,12 @@ const ORG = 'Botafogo SAF'
 
 export function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="breadcrumb">
+    <nav aria-label={tr('Breadcrumb')} className="breadcrumb">
       {items.map((it, i) => {
         const body = (
           <>
             {it.icon && <Icon name={it.icon} size={12} style={{ opacity: 0.45 }} />}
-            {it.label}
+            {tr(it.label)}
           </>
         )
         return (
@@ -59,8 +60,8 @@ export default function PageHero({ title, subtitle, crumbs, caption: captionProp
     <div className="page-header">
       <div className="page-header__text">
         {trail && <Breadcrumb items={trail} />}
-        <h1 className="page-title">{title}</h1>
-        {caption && <p className="page-caption">{caption}</p>}
+        <h1 className="page-title">{tr(title)}</h1>
+        {caption && <p className="page-caption">{tr(caption)}</p>}
       </div>
       {children && <div className="page-actions">{children}</div>}
     </div>

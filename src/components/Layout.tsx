@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { USE_SUPABASE } from '../lib/supabase'
 import { Icon, type IconName } from './Icon'
 import Wordmark from './Wordmark'
+import { tr } from '../i18n'
 
 // Shell do Glorioso Finance DS:
 //  • navegação lateral sobre o fundo da página — itens "ghost" com ícone
@@ -66,10 +67,10 @@ interface Props { children: React.ReactNode }
 
 function NavItem({ to, label, icon, collapsed }: NavItemDef & { collapsed: boolean }) {
   return (
-    <NavLink to={to} end title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined}
+    <NavLink to={to} end title={collapsed ? tr(label) : undefined} aria-label={collapsed ? tr(label) : undefined}
       className={({ isActive }) => `nav-item${isActive ? ' active' : ''}${collapsed ? ' collapsed' : ''}`}>
       <Icon name={icon} size={16} />
-      {!collapsed && <span className="nav-item__label">{label}</span>}
+      {!collapsed && <span className="nav-item__label">{tr(label)}</span>}
     </NavLink>
   )
 }
@@ -105,26 +106,26 @@ export default function Layout({ children }: Props) {
             : (
               <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <Wordmark size={15} />
-                <span className="eyebrow">Gestão contratual</span>
+                <span className="eyebrow">{tr('Gestão contratual')}</span>
               </div>
             )}
           {!collapsed && (
-            <button type="button" className="icon-btn" onClick={toggle} title="Recolher navegação" aria-label="Recolher navegação">
+            <button type="button" className="icon-btn" onClick={toggle} title={tr('Recolher navegação')} aria-label={tr('Recolher navegação')}>
               <Icon name="panelClose" size={16} />
             </button>
           )}
         </div>
 
-        <nav className="app-nav" aria-label="Navegação principal">
+        <nav className="app-nav" aria-label={tr('Navegação principal')}>
           {collapsed && (
-            <button type="button" className="icon-btn" onClick={toggle} title="Expandir navegação" aria-label="Expandir navegação"
+            <button type="button" className="icon-btn" onClick={toggle} title={tr('Expandir navegação')} aria-label={tr('Expandir navegação')}
               style={{ margin: '0 auto 8px' }}>
               <Icon name="panelOpen" size={16} />
             </button>
           )}
           {NAV_SECTIONS.map((section, i) => (
             <div key={i} className="nav-section">
-              {section.label && !collapsed && <div className="eyebrow nav-section__label">{section.label}</div>}
+              {section.label && !collapsed && <div className="eyebrow nav-section__label">{tr(section.label)}</div>}
               {section.label && collapsed && <div className="nav-section__rule" />}
               {section.items.map(item => <NavItem key={item.to} {...item} collapsed={collapsed} />)}
             </div>
@@ -135,12 +136,12 @@ export default function Layout({ children }: Props) {
       {/* ── Conteúdo ── */}
       <div className="app-main">
         <header className="app-topbar">
-          <select aria-label="Moeda de exibição" value={currency} onChange={e => setCurrency(e.target.value as AppCurrency)}
+          <select aria-label={tr('Moeda de exibição')} value={currency} onChange={e => setCurrency(e.target.value as AppCurrency)}
             className="app-topbar__select">
-            {CURRENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            {CURRENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{tr(opt.label)}</option>)}
           </select>
 
-          <div className="seg-tabs" role="tablist" aria-label="Idioma" style={{ gap: 'var(--space-3)', margin: '0 var(--space-2)' }}>
+          <div className="seg-tabs" role="tablist" aria-label={tr('Idioma')} style={{ gap: 'var(--space-3)', margin: '0 var(--space-2)' }}>
             {LANGS.map(l => (
               <button key={l} type="button" role="tab" aria-selected={language === l} className="seg-tab"
                 onClick={() => setLanguage(l)} style={{ fontSize: 'var(--text-body-sm-size)' }}>
@@ -156,11 +157,11 @@ export default function Layout({ children }: Props) {
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25, minWidth: 0 }}>
                   <span className="app-topbar__user-name">{userName}</span>
                   <span style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-muted)' }}>
-                    {profile.role === 'master' ? 'Master' : 'Jurídico'}
+                    {profile.role === 'master' ? tr('Master') : tr('Jurídico')}
                   </span>
                 </span>
               </span>
-              <button type="button" className="icon-btn outline" onClick={() => signOut()} title="Sair" aria-label="Sair">
+              <button type="button" className="icon-btn outline" onClick={() => signOut()} title={tr('Sair')} aria-label={tr('Sair')}>
                 <Icon name="logout" size={16} />
               </button>
             </>

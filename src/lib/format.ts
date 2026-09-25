@@ -1,6 +1,8 @@
 // src/lib/format.ts
 // Utilitários de formatação de moeda, datas e valores
 
+import { locale, tr, trf } from '../i18n'
+
 export const CURRENCY_SYMBOLS: Record<string, string> = {
   BRL: 'R$', EUR: '€', USD: '$', GBP: '£',
 }
@@ -10,10 +12,10 @@ export function fmtCurrencyShort(value: number | null | undefined, currency = 'B
   if (value === null || value === undefined) return '—'
   const sym = CURRENCY_SYMBOLS[currency] ?? currency
   const abs = Math.abs(value)
-  if (abs >= 1_000_000_000) return `${sym} ${(value / 1_000_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}Bi`
-  if (abs >= 1_000_000)     return `${sym} ${(value / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`
-  if (abs >= 1_000)         return `${sym} ${(value / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}K`
-  return `${sym} ${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+  if (abs >= 1_000_000_000) return `${sym} ${(value / 1_000_000_000).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${tr('Bi')}`
+  if (abs >= 1_000_000)     return `${sym} ${(value / 1_000_000).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`
+  if (abs >= 1_000)         return `${sym} ${(value / 1_000).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}K`
+  return `${sym} ${value.toLocaleString(locale(), { maximumFractionDigits: 0 })}`
 }
 
 // Divide um valor compacto em partes para renderização tipográfica editorial.
@@ -26,25 +28,30 @@ export function fmtCurrencyParts(
   if (value === null || value === undefined) return { sym: '', num: '—', suffix: '' }
   const abs = Math.abs(value)
   if (abs >= 1_000_000_000)
-    return { sym, num: (value / 1_000_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), suffix: 'Bi' }
+    return { sym, num: (value / 1_000_000_000).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }), suffix: tr('Bi') }
   if (abs >= 1_000_000)
-    return { sym, num: (value / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), suffix: 'M' }
+    return { sym, num: (value / 1_000_000).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }), suffix: 'M' }
   if (abs >= 1_000)
-    return { sym, num: (value / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), suffix: 'K' }
-  return { sym, num: value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }), suffix: '' }
+    return { sym, num: (value / 1_000).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }), suffix: 'K' }
+  return { sym, num: value.toLocaleString(locale(), { maximumFractionDigits: 0 }), suffix: '' }
 }
 
 // Formata valor completo com casas decimais (ex: R$ 7.500.000,00)
 export function fmtCurrencyFull(value: number | null | undefined, currency = 'BRL'): string {
   if (value === null || value === undefined) return '—'
   const sym = CURRENCY_SYMBOLS[currency] ?? currency
-  return `${sym} ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `${sym} ${value.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+// Número com casas decimais no padrão do idioma (ex.: 12,5 · 12.5)
+export function fmtDec(value: number, digits = 1): string {
+  return value.toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }
 
 // Formata percentual (ex: 50,00%)
 export function fmtPercent(value: number | null | undefined): string {
   if (value === null || value === undefined) return '—'
-  return `${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+  return `${value.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
 }
 
 // Formata data ISO → dd/mm/yyyy
@@ -59,7 +66,13 @@ export function fmtDate(iso: string | null | undefined): string {
 export function fmtMonthYear(iso: string | null | undefined): string {
   if (!iso) return '—'
   const date = new Date(iso + 'T12:00:00Z')
-  return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+  return date.toLocaleDateString(locale(), { month: 'short', year: 'numeric' })
+}
+
+// Mês abreviado no idioma atual (1–12 → "jan" · "Jan" · "ene"), sem ponto final.
+export function monthShort(month: number): string {
+  return new Date(Date.UTC(2000, month - 1, 15)).toLocaleDateString(locale(), { month: 'short', timeZone: 'UTC' })
+    .replace('.', '').replace('Sept', 'Sep')
 }
 
 // Retorna quantos dias faltam/passaram desde hoje
@@ -75,11 +88,11 @@ export function daysFromToday(iso: string | null | undefined): number | null {
 export function fmtRelative(iso: string | null | undefined): string {
   const days = daysFromToday(iso)
   if (days === null) return '—'
-  if (days === 0)  return 'Hoje'
-  if (days === 1)  return 'Amanhã'
-  if (days === -1) return 'Ontem'
-  if (days < 0)   return `${Math.abs(days)} dias atraso`
-  return `Em ${days} dias`
+  if (days === 0)  return tr('Hoje')
+  if (days === 1)  return tr('Amanhã')
+  if (days === -1) return tr('Ontem')
+  if (days < 0)   return trf('{0} dias atraso', Math.abs(days))
+  return trf('Em {0} dias', days)
 }
 
 export function isOverdue(dueDate: string | null | undefined, status: string): boolean {

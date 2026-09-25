@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Currency } from '../../types/athlete-system'
 import NumberInput from '../NumberInput'
 import { modalInput, modalLabel } from '../modals/styles'
+import { tr, locale } from '../../i18n'
 
 interface PaymentModalProps {
   label: string
@@ -48,23 +49,23 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
     <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 420 }}>
         <div style={{ marginBottom: 'var(--space-5)' }}>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Registrar pagamento</div>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>{tr('Registrar pagamento')}</div>
           <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)' }}>
-            {label}
+            {tr(label)}
           </div>
           <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', marginTop: 4 }}>
-            Valor previsto: {sym} {value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {tr('Valor previsto:')} {tr(sym)} {value.toLocaleString(locale(), { minimumFractionDigits: 2 })}
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={labelStyle}>Data do pagamento</label>
+            <label style={labelStyle}>{tr('Data do pagamento')}</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
           </div>
 
           <div>
-            <label style={labelStyle}>Valor recebido ({sym})</label>
+            <label style={labelStyle}>{tr('Valor recebido (')}{tr(sym)})</label>
             <NumberInput
               value={valueCurrency || ''}
               onChange={v => setValueCurrency(v ? parseFloat(v) : 0)}
@@ -75,9 +76,9 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
           {currency !== 'BRL' && (
             <div>
               <label style={labelStyle}>
-                Taxa de câmbio (1 {currency} = R$)
+                {tr('Taxa de câmbio (1')} {tr(currency)} {tr('= R$)')}
                 <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>
-                  PTAX estimado: {defaultRate.toFixed(2)}
+                  {tr('PTAX estimado:')} {defaultRate.toFixed(2)}
                 </span>
               </label>
               <NumberInput
@@ -94,26 +95,26 @@ export default function PaymentModal({ label, currency, value, onClose, onSave }
               background: 'var(--surface-sunken)', borderRadius: 'var(--radius-control)', padding: '8px 12px',
               fontSize: 'var(--text-body-sm-size)', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums',
             }}>
-              R$ {valueBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {tr('R$')} {valueBRL.toLocaleString(locale(), { minimumFractionDigits: 2 })}
             </div>
           )}
 
           <div>
-            <label style={labelStyle}>Observações</label>
+            <label style={labelStyle}>{tr('Observações')}</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
-              placeholder="Referência bancária, anotações..."
+              placeholder={tr('Referência bancária, anotações...')}
               style={{ ...inputStyle, resize: 'vertical' as const }}
             />
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-6)', justifyContent: 'flex-end' }}>
-          <button type="button" onClick={onClose} className="btn btn-outline">Cancelar</button>
+          <button type="button" onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
           <button type="button" onClick={handleSave} disabled={!date || valueCurrency <= 0} className="btn btn-primary">
-            Confirmar
+            {tr('Confirmar')}
           </button>
         </div>
       </div>

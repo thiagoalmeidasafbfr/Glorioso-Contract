@@ -20,6 +20,7 @@ import { ClauseFlowModal } from '../components/modals/EditModals'
 import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import { useAuth } from '../context/AuthContext'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
+import { tr, trf, trCols } from '../i18n'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -122,7 +123,7 @@ export default function PageAcordos() {
     { key: 'andamento', header: 'Andamento' }, { key: 'note', header: 'Observações' },
   ]
   function exportXlsx() {
-    exportWorkbook([{ name: 'Acordos', cols: exportCols, rows: filtered.map(r => ({ ...r, andamento: AND_STYLE[r.andamento].label })) as unknown as Record<string, unknown>[] }], 'acordos-renegociacoes.xlsx')
+    exportWorkbook([{ name: tr('Acordos'), cols: trCols(exportCols), rows: filtered.map(r => ({ ...r, andamento: tr(AND_STYLE[r.andamento].label) })) as unknown as Record<string, unknown>[] }], 'acordos-renegociacoes.xlsx')
   }
 
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1, textAlign: 'left' }
@@ -131,34 +132,34 @@ export default function PageAcordos() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Acordos e Renegociações" section="Relatórios" subtitle="Relatório de dívidas reabertas em novos fluxos" />
+      <PageHero title={tr('Acordos e Renegociações')} section={tr('Relatórios')} subtitle={tr('Relatório de dívidas reabertas em novos fluxos')} />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> {tr('Exportar')}</button>
       </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, credor, observações..."
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Atleta, credor, observações...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: fontBody, color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Atleta</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Atleta')}</div>
           <select value={atletaFilter} onChange={e => setAtletaFilter(e.target.value)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: fontBody, color: 'var(--ink-primary)', maxWidth: 200 }}>
-            {atletas.map(s => <option key={s} value={s}>{s}</option>)}
+            {atletas.map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Andamento</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Andamento')}</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: fontBody, color: 'var(--ink-primary)' }}>
-            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            {statuses.map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
         <div className="kpi-group">
           <KpiPill
-            label={totalDiscountBRL < 0 ? 'Acréscimo total (aprox. BRL)' : 'Desconto total (aprox. BRL)'}
+            label={totalDiscountBRL < 0 ? tr('Acréscimo total (aprox. BRL)') : tr('Desconto total (aprox. BRL)')}
             value={fmtCurrencyShort(Math.abs(totalDiscountBRL), 'BRL')}
             tone={totalDiscountBRL < 0 ? 'neg' : 'pos'}
           />
@@ -170,31 +171,31 @@ export default function PageAcordos() {
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
             <thead>
               <tr>
-                <th style={th}>Atleta</th>
-                <th style={th}>Credor</th>
-                <th style={th}>Data</th>
-                <th style={{ ...th, textAlign: 'right' }}>Dívida Original</th>
-                <th style={{ ...th, textAlign: 'right' }}>Novo Total</th>
-                <th style={{ ...th, textAlign: 'right' }}>Desconto</th>
-                <th style={{ ...th, textAlign: 'center' }}>Parcelas</th>
-                <th style={th}>Andamento</th>
-                <th style={{ ...th, textAlign: 'right' }}>Ações</th>
+                <th style={th}>{tr('Atleta')}</th>
+                <th style={th}>{tr('Credor')}</th>
+                <th style={th}>{tr('Data')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Dívida Original')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Novo Total')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Desconto')}</th>
+                <th style={{ ...th, textAlign: 'center' }}>{tr('Parcelas')}</th>
+                <th style={th}>{tr('Andamento')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Ações')}</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum acordo registrado.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum acordo registrado.')}</td></tr>}
               {filtered.map(r => {
                 const st = AND_STYLE[r.andamento]
                 return (
                   <tr key={r.id}>
-                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
-                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.credor}</td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={trf('Abrir {0}', r.atleta)}>{tr(r.atleta)}</RefLink></td>
+                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{tr(r.credor)}</td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 12, color: 'var(--text-secondary)' }}>{r.data ? fmtDate(r.data) : '—'}</td>
                     <td style={tdNum}>{fmtCurrencyShort(r.originalTotal, r.currency)}</td>
                     <td style={tdNum}>{fmtCurrencyShort(r.newTotal, r.currency)}</td>
                     <td style={{ ...tdNum, color: r.discount > 0 ? 'var(--pos)' : r.discount < 0 ? 'var(--neg)' : 'var(--text-muted)' }}
-                      title={r.discount < 0 ? 'Acréscimo: o novo fluxo é maior que a dívida de origem' : undefined}>
+                      title={r.discount < 0 ? tr('Acréscimo: o novo fluxo é maior que a dívida de origem') : undefined}>
                       {r.discount
                         ? (r.discount < 0
                           ? `+ ${fmtCurrencyShort(-r.discount, r.currency)}`
@@ -202,7 +203,7 @@ export default function PageAcordos() {
                         : '—'}
                     </td>
                     <td style={{ ...td, textAlign: 'center', fontFamily: fontMono }}>{r.paid}/{r.count}</td>
-                    <td style={td}><span style={badgeStyle(st)}>{st.label}</span></td>
+                    <td style={td}><span style={badgeStyle(st)}>{tr(st.label)}</span></td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions
                         open={{ to: `/obrigacoes/${r.id}`, label: 'Abrir o acordo' }}
@@ -218,7 +219,7 @@ export default function PageAcordos() {
         </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
-        {filtered.length} {filtered.length === 1 ? 'acordo' : 'acordos'}
+        {filtered.length} {filtered.length === 1 ? tr('acordo') : tr('acordos')}
       </div>
 
       {editId && (() => {

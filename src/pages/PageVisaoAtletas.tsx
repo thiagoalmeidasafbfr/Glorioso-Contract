@@ -27,6 +27,7 @@ import { Icon, IconButton } from '../components/Icon'
 import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
+import { tr, trf, trn, trCols } from '../i18n'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -45,7 +46,7 @@ function StatusPill({ status }: { status: NatureStatus }) {
     <span style={badgeStyle(s)}>
       {status === 'EM_ATRASO' && <Icon name="alert" size={12} />}
       {status === 'EM_DIA' && <Icon name="check" size={12} />}
-      {s.label}
+      {tr(s.label)}
     </span>
   )
 }
@@ -138,7 +139,7 @@ export default function PageVisaoAtletas() {
         })
       }
     }
-    exportWorkbook([{ name: 'Visão por atleta', cols, rows: out }], 'visao-consolidada-atletas.xlsx')
+    exportWorkbook([{ name: tr('Visão por atleta'), cols: trCols(cols), rows: out }], 'visao-consolidada-atletas.xlsx')
   }
 
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
@@ -146,30 +147,30 @@ export default function PageVisaoAtletas() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Visão por Atleta" section="Relatórios" subtitle="Consolidado por natureza">
-        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
+      <PageHero title={tr('Visão por Atleta')} section={tr('Relatórios')} subtitle={tr('Consolidado por natureza')}>
+        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> {tr('Exportar')}</button>
       </PageHero>
 
       {/* Filtros + totais */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Nome do atleta...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
-        <div className="seg-control" role="group" aria-label="Filtrar atletas">
+        <div className="seg-control" role="group" aria-label={tr('Filtrar atletas')}>
           {([['todos', 'Todos'], ['atraso', 'Com atraso'], ['aberto', 'Com saldo em aberto']] as [Filter, string][]).map(([k, l]) => (
-            <button key={k} type="button" onClick={() => setFilter(k)} aria-pressed={filter === k} className="seg-control__item">{l}</button>
+            <button key={k} type="button" onClick={() => setFilter(k)} aria-pressed={filter === k} className="seg-control__item">{tr(l)}</button>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button onClick={expandAll} className="btn btn-sm btn-ghost">Expandir tudo</button>
-          <button onClick={collapseAll} className="btn btn-sm btn-ghost">Recolher</button>
+          <button onClick={expandAll} className="btn btn-sm btn-ghost">{tr('Expandir tudo')}</button>
+          <button onClick={collapseAll} className="btn btn-sm btn-ghost">{tr('Recolher')}</button>
         </div>
         <div className="kpi-group">
-          <KpiPill label="Em atraso (aprox. BRL)" value={fmtCurrencyShort(totals.overdue, 'BRL')} tone="neg" />
-          <KpiPill label="Em aberto (aprox. BRL)" value={fmtCurrencyShort(totals.open, 'BRL')} tone="neutral" />
-          <KpiPill label="Em Rec. Judicial (aprox. BRL)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
+          <KpiPill label={tr('Em atraso (aprox. BRL)')} value={fmtCurrencyShort(totals.overdue, 'BRL')} tone="neg" />
+          <KpiPill label={tr('Em aberto (aprox. BRL)')} value={fmtCurrencyShort(totals.open, 'BRL')} tone="neutral" />
+          <KpiPill label={tr('Em Rec. Judicial (aprox. BRL)')} value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
         </div>
       </div>
 
@@ -177,19 +178,19 @@ export default function PageVisaoAtletas() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, width: 36 }} aria-label="Expandir" />
-              <th style={{ ...th, minWidth: 180 }}>Atleta / natureza</th>
-              <th style={{ ...th, minWidth: 110 }}>Situação</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em aberto</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Em atraso (aprox. BRL)</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 140 }} title="Obrigações incluídas no processo de Recuperação Judicial — devidas mas fora do em atraso.">Em Rec. Judicial</th>
-              <th style={{ ...th, minWidth: 130 }}>Atraso desde</th>
-              <th style={{ ...th, minWidth: 110 }}>Próx. venc.</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>
+              <th style={{ ...th, width: 36 }} aria-label={tr('Expandir')} />
+              <th style={{ ...th, minWidth: 180 }}>{tr('Atleta / natureza')}</th>
+              <th style={{ ...th, minWidth: 110 }}>{tr('Situação')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>{tr('Em aberto')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>{tr('Em atraso (aprox. BRL)')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 140 }} title={tr('Obrigações incluídas no processo de Recuperação Judicial — devidas mas fora do em atraso.')}>{tr('Em Rec. Judicial')}</th>
+              <th style={{ ...th, minWidth: 130 }}>{tr('Atraso desde')}</th>
+              <th style={{ ...th, minWidth: 110 }}>{tr('Próx. venc.')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>{tr('Ações')}</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta para os filtros escolhidos.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && visible.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum atleta para os filtros escolhidos.')}</td></tr>}
               {visible.map(r => {
                 const open = expanded.has(r.athlete.id)
                 const shown = r.natures.filter(n => n.totalCount > 0)
@@ -198,27 +199,27 @@ export default function PageVisaoAtletas() {
                   <tr key={r.athlete.id} style={{ background: r.overdueCount > 0 ? 'var(--row-late-bg)' : 'var(--cream-card)' }}>
                     <td style={{ ...td, textAlign: 'center' }}>
                       <IconButton icon={open ? 'chevronDown' : 'chevronRight'} small
-                        label={open ? `Recolher ${r.athlete.short_name}` : `Ver naturezas de ${r.athlete.short_name}`}
+                        label={open ? trf('Recolher {0}', r.athlete.short_name) : trf('Ver naturezas de {0}', r.athlete.short_name)}
                         onClick={() => toggle(r.athlete.id)} />
                     </td>
                     <td style={{ ...td, fontWeight: 500 }}>
-                      <RefLink to={`/atletas/${r.athlete.id}`} title="Abrir a ficha do atleta">{r.athlete.short_name || r.athlete.full_name}</RefLink>
+                      <RefLink to={`/atletas/${r.athlete.id}`} title={tr('Abrir a ficha do atleta')}>{r.athlete.short_name || r.athlete.full_name}</RefLink>
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, fontWeight: 400 }}>
-                        {' '}· {shown.length} natureza{shown.length === 1 ? '' : 's'}
+                        {' '}· {trn(shown.length, '{0} natureza', '{0} naturezas')}
                       </span>
                     </td>
                     <td style={td}><StatusPill status={r.status} /></td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{r.openBRL > 0 ? fmtCurrencyShort(r.openBRL, 'BRL') : '—'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500, color: r.overdueBRL > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
                       {r.overdueBRL > 0 ? fmtCurrencyShort(r.overdueBRL, 'BRL') : '—'}
-                      {r.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.overdueCount} parcela(s)</div>}
+                      {r.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{trn(r.overdueCount, '{0} parcela', '{0} parcelas')}</div>}
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500, color: r.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
                       {r.rjBRL > 0 ? fmtCurrencyShort(r.rjBRL, 'BRL') : '—'}
-                      {r.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{r.rjCount} lançamento(s)</div>}
+                      {r.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{trn(r.rjCount, '{0} lançamento', '{0} lançamentos')}</div>}
                     </td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: r.daysLate > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>
-                      {r.daysLate > 0 ? lateLabel(r.daysLate) : '—'}
+                      {r.daysLate > 0 ? tr(lateLabel(r.daysLate)) : '—'}
                     </td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{r.nextDue ? fmtDate(r.nextDue) : '—'}</td>
                     <td style={{ ...td, textAlign: 'right' }}>
@@ -240,7 +241,7 @@ export default function PageVisaoAtletas() {
         </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono }}>
-        {visible.length} atleta(s) · {totals.late} com atraso
+        {trn(visible.length, '{0} atleta ·', '{0} atletas ·')} {totals.late} {tr('com atraso')}
       </div>
     </div>
   )
@@ -256,10 +257,10 @@ function NatureRow({ n, td, onOpen }: {
       <td style={{ ...td, paddingLeft: 6 }}>
         <button onClick={onOpen}
           style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', fontFamily: font, fontSize: 12, color: 'var(--ink-primary)', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }}>
-          {n.label}
+          {tr(n.label)}
         </button>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 2 }}>
-          {n.openCount} em aberto · {n.paidCount} paga(s) de {n.totalCount}
+          {n.openCount} {tr('em aberto ·')} {trn(n.paidCount, '{0} paga de', '{0} pagas de')} {n.totalCount}
         </div>
       </td>
       <td style={td}><StatusPill status={n.status} /></td>
@@ -268,14 +269,14 @@ function NatureRow({ n, td, onOpen }: {
       </td>
       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: late ? 500 : 400, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
         {n.overdueBRL > 0 ? fmtCurrencyShort(n.overdueBRL, 'BRL') : '—'}
-        {n.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.overdueCount} parcela(s)</div>}
+        {n.overdueCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{trn(n.overdueCount, '{0} parcela', '{0} parcelas')}</div>}
       </td>
       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: n.rjBRL > 0 ? 500 : 400, color: n.rjBRL > 0 ? 'var(--warn)' : 'var(--text-muted)' }}>
         {n.rjBRL > 0 ? fmtCurrencyShort(n.rjBRL, 'BRL') : '—'}
-        {n.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{n.rjCount} lançamento(s)</div>}
+        {n.rjCount > 0 && <div style={{ fontSize: 10, fontWeight: 400 }}>{trn(n.rjCount, '{0} lançamento', '{0} lançamentos')}</div>}
       </td>
       <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-muted)' }}>
-        {n.oldestOverdue ? <>{fmtDate(n.oldestOverdue)}<div style={{ fontSize: 10 }}>{lateLabel(n.daysLate)}</div></> : '—'}
+        {n.oldestOverdue ? <>{fmtDate(n.oldestOverdue)}<div style={{ fontSize: 10 }}>{tr(lateLabel(n.daysLate))}</div></> : '—'}
       </td>
       <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{n.nextDue ? fmtDate(n.nextDue) : '—'}</td>
       <td style={{ ...td, textAlign: 'right' }}>

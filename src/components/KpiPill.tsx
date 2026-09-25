@@ -5,6 +5,8 @@
 // O tom vai num indicador de 5px ao lado do eyebrow e na cor do valor — o
 // fundo continua neutro (no DS a cor só aparece onde significa algo).
 
+import { tr } from '../i18n'
+
 type Tone = 'pos' | 'neg' | 'warn' | 'neutral'
 
 interface Props {
@@ -35,13 +37,13 @@ export default function KpiPill({ label, value, tone = 'neutral' }: Props) {
     }}>
       <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
         <span aria-hidden="true" style={{ width: 5, height: 5, borderRadius: 'var(--radius-circle)', background: TONE_DOT[tone], flex: 'none' }} />
-        {label}
+        {tr(label)}
       </div>
       <div style={{
         height: 'var(--ui-control-h)', display: 'flex', alignItems: 'center',
         fontSize: 'var(--ui-text-size)', fontWeight: 500, color: TONE_FG[tone],
         whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
-      }}>{value}</div>
+      }}>{tr(value)}</div>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { exportWorkbook, parseWorkbookFile, type ColDef } from '../lib/xlsx-utils'
+import { tr } from '../i18n'
 
 export interface ExportSheet {
   name: string
@@ -55,13 +56,13 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
   return (
     <>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={handleExport} title="Exportar dados como XLSX" className="btn btn-dark">
-          <Icon name="download" size={16} /> Exportar
+        <button onClick={handleExport} title={tr('Exportar dados como XLSX')} className="btn btn-dark">
+          <Icon name="download" size={16} /> {tr('Exportar')}
         </button>
         {onImport && (
           <button onClick={() => fileRef.current?.click()} disabled={parsing}
-            title="Importar dados de um arquivo XLSX" className="btn btn-outline">
-            <Icon name="upload" size={16} /> {parsing ? 'Lendo…' : 'Importar'}
+            title={tr('Importar dados de um arquivo XLSX')} className="btn btn-outline">
+            <Icon name="upload" size={16} /> {parsing ? tr('Lendo…') : tr('Importar')}
           </button>
         )}
         <input
@@ -75,7 +76,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
 
       {/* ── Preview modal ── */}
       {preview && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Preview de importação">
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={tr('Preview de importação')}>
           <div className="modal-panel" style={{
             width: '100%', maxWidth: 960, maxHeight: '88vh',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -88,12 +89,12 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
               flexShrink: 0,
             }}>
               <div>
-                <div className="eyebrow" style={{ marginBottom: 6 }}>Preview de importação</div>
+                <div className="eyebrow" style={{ marginBottom: 6 }}>{tr('Preview de importação')}</div>
                 <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 'var(--text-title-line)', letterSpacing: '-.01em', color: 'var(--text-primary)' }}>
-                  {totalRows} {totalRows === 1 ? 'registro' : 'registros'} encontrados
+                  {totalRows} {totalRows === 1 ? tr('registro') : tr('registros')} {tr('encontrados')}
                 </div>
               </div>
-              <button type="button" className="icon-btn md" onClick={() => setPreview(null)} title="Fechar" aria-label="Fechar">
+              <button type="button" className="icon-btn md" onClick={() => setPreview(null)} title={tr('Fechar')} aria-label={tr('Fechar')}>
                 <Icon name="x" size={20} />
               </button>
             </div>
@@ -130,7 +131,7 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                       <tr>
                         {activeKeys.map(k => (
                           <th key={k} style={{ padding: '10px 8px 8px' }}>
-                            {k}
+                            {tr(k)}
                           </th>
                         ))}
                       </tr>
@@ -154,13 +155,13 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
                   </table>
                   {activeRows.length > 12 && (
                     <div style={{ padding: '10px 8px', fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)' }}>
-                      + {activeRows.length - 12} linhas adicionais não exibidas
+                      + {activeRows.length - 12} {tr('linhas adicionais não exibidas')}
                     </div>
                   )}
                 </>
               ) : (
                 <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 'var(--ui-text-size)', color: 'var(--text-secondary)' }}>
-                  Nenhum dado encontrado nesta aba
+                  {tr('Nenhum dado encontrado nesta aba')}
                 </div>
               )}
             </div>
@@ -173,10 +174,10 @@ export default function SheetIO({ exportSheets, exportFilename, onImport }: Prop
               flexShrink: 0,
             }}>
               <button type="button" onClick={() => setPreview(null)} className="btn btn-outline">
-                Cancelar
+                {tr('Cancelar')}
               </button>
               <button type="button" onClick={handleConfirm} className="btn btn-primary">
-                Confirmar importação
+                {tr('Confirmar importação')}
               </button>
             </div>
           </div>

@@ -29,6 +29,7 @@ import { parseRJ, toggleItemRJ, markManyRJ, unmarkItemRJ } from '../lib/judicial
 import { useAuth } from '../context/AuthContext'
 import { modalInput, modalLabel } from '../components/modals/styles'
 import { PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, badgeStyle, humanizeEnum } from '../lib/tones'
+import { tr, trf, trn } from '../i18n'
 
 const font = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -39,7 +40,7 @@ const CLAUSE_TYPES = Object.keys(CLAUSE_TYPE_LABELS) as ClauseType[]
 
 function Badge({ status }: { status: string }) {
   const tone = PAYMENT_STATUS_TONE[status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral'
-  return <span style={badgeStyle(tone)}>{PAYMENT_STATUS_LABEL[status] ?? humanizeEnum(status)}</span>
+  return <span style={badgeStyle(tone)}>{tr(PAYMENT_STATUS_LABEL[status]) ?? tr(humanizeEnum(status))}</span>
 }
 
 const inp = modalInput
@@ -91,11 +92,11 @@ export default function PageClauseDetail() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
-  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>CARREGANDO...</div>
+  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>{tr('CARREGANDO...')}</div>
   if (notFound || !clause) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
-      <div style={{ color: 'var(--text-secondary)' }}>Obrigação não encontrada.</div>
-      <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 16 }}><Icon name="chevronLeft" size={16} /> Voltar</button>
+      <div style={{ color: 'var(--text-secondary)' }}>{tr('Obrigação não encontrada.')}</div>
+      <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 16 }}><Icon name="chevronLeft" size={16} /> {tr('Voltar')}</button>
     </div>
   )
 
@@ -111,7 +112,7 @@ export default function PageClauseDetail() {
     const club = clubIdx.get(k)
     const agent = agentIdx.get(k)
     const to = club ? `/clubes/${club}` : agent ? `/intermediarios/${agent}` : null
-    return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{name}</RefLink> : <>{name}</>
+    return to ? <RefLink to={to} title={tr('Abrir cadastro da contraparte')}>{name}</RefLink> : <>{name}</>
   }
 
   async function handleQuickPay(id: string) { await markInstallmentPaid(id, todayISO()); load() }
@@ -121,7 +122,7 @@ export default function PageClauseDetail() {
     setPayInstId(null); load()
   }
   async function handleDelete() {
-    if (!clause || !window.confirm('Excluir esta obrigação e suas parcelas? Esta ação não pode ser desfeita.')) return
+    if (!clause || !window.confirm(tr('Excluir esta obrigação e suas parcelas? Esta ação não pode ser desfeita.'))) return
     await deleteClause(clause.id)
     navigate(athlete ? `/atletas/${athlete.id}` : '/atletas')
   }
@@ -150,14 +151,14 @@ export default function PageClauseDetail() {
   async function bulkMarkParcRJ() {
     const chosen = installments.filter(p => selectedRJ.has(p.id) && !parseRJ(p.notes))
     if (chosen.length === 0) return
-    if (!window.confirm(`Incluir ${chosen.length} parcela(s) na Recuperação Judicial em ${fmtDate(rjDate)}?`)) return
+    if (!window.confirm(trn(chosen.length, 'Incluir {0} parcela na Recuperação Judicial em {1}?', 'Incluir {0} parcelas na Recuperação Judicial em {1}?', fmtDate(rjDate)))) return
     await markManyRJ(chosen.map(p => ({ kind: 'inst' as const, id: p.id, notes: p.notes })), rjDate)
     setSelectedRJ(new Set())
     await load()
   }
   async function unmarkParcRJ(pid: string) {
     const p = installments.find(i => i.id === pid); if (!p) return
-    if (!window.confirm('Retirar esta parcela da Recuperação Judicial?')) return
+    if (!window.confirm(tr('Retirar esta parcela da Recuperação Judicial?'))) return
     await unmarkItemRJ({ kind: 'inst', id: pid }, p.notes)
     await load()
   }
@@ -165,9 +166,9 @@ export default function PageClauseDetail() {
     if (!clause) return
     const marked = !!parseRJ(clause.notes)
     if (marked) {
-      if (!window.confirm('Retirar a obrigação inteira da Recuperação Judicial?')) return
+      if (!window.confirm(tr('Retirar a obrigação inteira da Recuperação Judicial?'))) return
     } else {
-      if (!window.confirm(`Incluir a obrigação inteira na Recuperação Judicial em ${fmtDate(rjDate)}?`)) return
+      if (!window.confirm(trf('Incluir a obrigação inteira na Recuperação Judicial em {0}?', fmtDate(rjDate)))) return
     }
     await toggleItemRJ({ kind: 'clause', id: clause.id }, clause.notes, rjDate)
     await load()
@@ -175,7 +176,7 @@ export default function PageClauseDetail() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 920, margin: '0 auto' }}>
-      <PageHero title={clause.description || CLAUSE_TYPE_LABELS[clause.clause_type]}
+      <PageHero title={tr(clause.description) || tr(CLAUSE_TYPE_LABELS[clause.clause_type])}
         crumbs={[
           { label: 'Atletas', to: '/atletas', icon: 'athletes' },
           ...(athlete ? [{ label: athlete.short_name ?? athlete.full_name, to: `/atletas/${athlete.id}` }] : []),
@@ -185,25 +186,25 @@ export default function PageClauseDetail() {
       {/* Dados da obrigação */}
       <div className="card" style={{ padding: 'var(--gutter-card)', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>Dados da obrigação</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>{tr('Dados da obrigação')}</div>
           {canEdit && (
             <IconRow>
               <IconButton
                 icon="gavel"
-                label={parseRJ(clause.notes) ? 'Retirar obrigação da Recuperação Judicial' : 'Incluir obrigação inteira na Recuperação Judicial'}
+                label={parseRJ(clause.notes) ? tr('Retirar obrigação da Recuperação Judicial') : tr('Incluir obrigação inteira na Recuperação Judicial')}
                 tone={parseRJ(clause.notes) ? 'warn' : 'muted'}
                 onClick={toggleClauseRJ}
               />
-              <IconButton icon={editing ? 'x' : 'edit'} label={editing ? 'Fechar edição' : 'Editar dados da obrigação'} onClick={() => setEditing(e => !e)} />
-              <IconButton icon="trash" label="Excluir obrigação" tone="danger" onClick={handleDelete} />
+              <IconButton icon={editing ? 'x' : 'edit'} label={editing ? tr('Fechar edição') : tr('Editar dados da obrigação')} onClick={() => setEditing(e => !e)} />
+              <IconButton icon="trash" label={tr('Excluir obrigação')} tone="danger" onClick={handleDelete} />
             </IconRow>
           )}
         </div>
 
         {parseRJ(clause.notes) && (
           <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-warning-soft)', fontSize: 12, color: 'var(--text-primary)' }}>
-            <strong style={{ fontWeight: 500, color: 'var(--text-warning)' }}>Recuperação judicial</strong>
-            {' — '}obrigação inteira incluída no processo em {fmtDate(parseRJ(clause.notes)!.filedAt)}.
+            <strong style={{ fontWeight: 500, color: 'var(--text-warning)' }}>{tr('Recuperação judicial')}</strong>
+            {' — '}{tr('obrigação inteira incluída no processo em')} {fmtDate(parseRJ(clause.notes)!.filedAt)}.
           </div>
         )}
 
@@ -211,21 +212,21 @@ export default function PageClauseDetail() {
           <ClauseFields clause={clause} onSaved={() => { setEditing(false); load() }} onCancel={() => setEditing(false)} />
         ) : (
           <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '8px 18px', fontFamily: font, fontSize: 13, margin: 0 }}>
-            <dt style={dt}>Jogador</dt>
-            <dd style={dd}>{athlete ? <RefLink to={`/atletas/${athlete.id}`} title="Abrir atleta">{athlete.full_name}</RefLink> : '—'}</dd>
-            <dt style={dt}>Transação vinculada</dt>
+            <dt style={dt}>{tr('Jogador')}</dt>
+            <dd style={dd}>{athlete ? <RefLink to={`/atletas/${athlete.id}`} title={tr('Abrir atleta')}>{athlete.full_name}</RefLink> : '—'}</dd>
+            <dt style={dt}>{tr('Transação vinculada')}</dt>
             <dd style={dd}>
               {contract
-                ? <RefLink to={`/atletas/${contract.athlete_id}?tab=historico`} title="Abrir vínculo">{CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}{contract.start_date ? ` · ${fmtDate(contract.start_date)}` : ''}</RefLink>
-                : <span style={{ color: 'var(--text-secondary)' }}>Nenhuma</span>}
-              {parent && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>Vínculo pai: {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}</div>}
+                ? <RefLink to={`/atletas/${contract.athlete_id}?tab=historico`} title={tr('Abrir vínculo')}>{tr(CONTRACT_TYPE_LABELS[contract.type])} · {contract.counterpart_club || '—'}{contract.start_date ? ` · ${fmtDate(contract.start_date)}` : ''}</RefLink>
+                : <span style={{ color: 'var(--text-secondary)' }}>{tr('Nenhuma')}</span>}
+              {parent && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>{tr('Vínculo pai:')} {tr(CONTRACT_TYPE_LABELS[parent.type])} · {parent.counterpart_club}</div>}
             </dd>
-            <dt style={dt}>Natureza</dt><dd style={dd}>{CLAUSE_TYPE_LABELS[clause.clause_type]}</dd>
-            <dt style={dt}>Credor</dt><dd style={dd}>{partyNode(clause.creditor_party)}</dd>
-            <dt style={dt}>Devedor</dt><dd style={dd}>{partyNode(clause.debtor_party)}</dd>
-            <dt style={dt}>Valor</dt><dd style={dd}>{clause.original_value != null ? fmtCurrencyShort(clause.original_value, clause.currency) : (clause.percentage_value != null ? `${clause.percentage_value}%` : '—')}</dd>
-            {clause.condition_description && <><dt style={dt}>Condição</dt><dd style={dd}>{clause.condition_description}</dd></>}
-            <dt style={dt}>Status</dt><dd style={dd}><Badge status={clause.payment_status} /></dd>
+            <dt style={dt}>{tr('Natureza')}</dt><dd style={dd}>{tr(CLAUSE_TYPE_LABELS[clause.clause_type])}</dd>
+            <dt style={dt}>{tr('Credor')}</dt><dd style={dd}>{partyNode(clause.creditor_party)}</dd>
+            <dt style={dt}>{tr('Devedor')}</dt><dd style={dd}>{partyNode(clause.debtor_party)}</dd>
+            <dt style={dt}>{tr('Valor')}</dt><dd style={dd}>{clause.original_value != null ? fmtCurrencyShort(clause.original_value, clause.currency) : (clause.percentage_value != null ? `${clause.percentage_value}%` : '—')}</dd>
+            {clause.condition_description && <><dt style={dt}>{tr('Condição')}</dt><dd style={dd}>{tr(clause.condition_description)}</dd></>}
+            <dt style={dt}>{tr('Status')}</dt><dd style={dd}><Badge status={clause.payment_status} /></dd>
           </dl>
         )}
       </div>
@@ -234,15 +235,15 @@ export default function PageClauseDetail() {
       <div className="card" style={{ padding: 'var(--gutter-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div>
-            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>Fluxo de pagamento</div>
+            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 400 }}>{tr('Fluxo de pagamento')}</div>
             <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--text-secondary)', marginTop: 4 }}>
-              {installments.length > 0 ? `${installments.length} parcela${installments.length !== 1 ? 's' : ''} · ${fmtCurrencyShort(paidParc, clause.currency)} pago de ${fmtCurrencyShort(total, clause.currency)}` : `Sem parcelas · total ${fmtCurrencyShort(total, clause.currency)}`}
+              {installments.length > 0 ? trn(installments.length, '{0} parcela · {1} pago de {2}', '{0} parcelas · {1} pago de {2}', fmtCurrencyShort(paidParc, clause.currency), fmtCurrencyShort(total, clause.currency)) : trf('Sem parcelas · total {0}', fmtCurrencyShort(total, clause.currency))}
             </div>
           </div>
           {canEdit && (
             <button onClick={() => setShowFlow(s => !s)} className="btn btn-outline">
               <Icon name={showFlow ? 'x' : 'flow'} size={16} />
-              {showFlow ? 'Fechar' : (installments.length ? 'Editar fluxo' : 'Gerar fluxo')}
+              {showFlow ? tr('Fechar') : (installments.length ? tr('Editar fluxo') : tr('Gerar fluxo'))}
             </button>
           )}
         </div>
@@ -258,22 +259,22 @@ export default function PageClauseDetail() {
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
               <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontFamily: fontMono, fontSize: 11, color: 'var(--ink-secondary)', cursor: selectableParcIds.length ? 'pointer' : 'default' }}>
                 <input type="checkbox" checked={allParcSelected} disabled={selectableParcIds.length === 0} onChange={toggleAllParcSel} />
-                Selecionar todas
+                {tr('Selecionar todas')}
               </label>
               {selectedRJ.size > 0 && (
                 <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '4px 10px', borderRadius: 'var(--radius-md)', background: 'var(--surface-warning-soft)' }}>
-                  <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 500 }}>{selectedRJ.size} parcela(s)</span>
-                  <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Protocolo:</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 11, fontWeight: 500 }}>{trn(selectedRJ.size, '{0} parcela', '{0} parcelas')}</span>
+                  <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Protocolo:')}</span>
                   <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)} style={{ minHeight: 'var(--control-h-sm)', padding: '0 8px', fontSize: 12 }} />
                   <button onClick={bulkMarkParcRJ} className="btn btn-outline btn-sm" style={{ color: 'var(--text-warning)' }}>
-                    Incluir na RJ
+                    {tr('Incluir na RJ')}
                   </button>
-                  <button onClick={() => setSelectedRJ(new Set())} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 10 }}>limpar</button>
+                  <button onClick={() => setSelectedRJ(new Set())} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 10 }}>{tr('limpar')}</button>
                 </span>
               )}
               {parcRJ.length > 0 && (
                 <span style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--warn)' }}>
-                  {parcRJ.length} parcela(s) em RJ
+                  {trn(parcRJ.length, '{0} parcela em RJ', '{0} parcelas em RJ')}
                 </span>
               )}
             </div>
@@ -283,7 +284,7 @@ export default function PageClauseDetail() {
 
         {installments.length === 0 ? (
           <div style={{ fontFamily: font, fontSize: 13, color: 'var(--text-secondary)', padding: '10px 0' }}>
-            Nenhuma parcela cadastrada. Use "{installments.length ? 'Editar' : 'Gerar'} fluxo" para lançar as parcelas (ex.: dividir {fmtCurrencyShort(total, clause.currency)} em vencimentos).
+            {tr('Nenhuma parcela cadastrada. Use "')}{installments.length ? tr('Editar') : tr('Gerar')} {tr('fluxo" para lançar as parcelas (ex.: dividir')} {fmtCurrencyShort(total, clause.currency)} {tr('em vencimentos).')}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -310,12 +311,12 @@ export default function PageClauseDetail() {
                   <span style={{ fontFamily: fontMono, fontSize: 12, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{fmtDate(p.due_date)}</span>
                   <span style={{ fontFamily: fontMono, fontSize: 13, fontWeight: 500 }}>
                     {fmtCurrencyShort(p.original_value, p.currency)}
-                    {rj && <span style={{ ...badgeStyle('warning'), marginLeft: 8 }} title={`Em RJ desde ${fmtDate(rj.filedAt)}`}>RJ</span>}
+                    {rj && <span style={{ ...badgeStyle('warning'), marginLeft: 8 }} title={trf('Em RJ desde {0}', fmtDate(rj.filedAt))}>{tr('RJ')}</span>}
                   </span>
                   <Badge status={p.payment_status} />
                   {canEdit && (
                     <RowActions small={false}
-                      edit={{ onClick: () => setEditInstId(p.id), label: `Editar parcela ${p.installment_number}` }}
+                      edit={{ onClick: () => setEditInstId(p.id), label: trf('Editar parcela {0}', p.installment_number) }}
                       markPaid={{
                         onClick: !paid && !cancelled ? () => handleQuickPay(p.id) : undefined,
                         reason: paid ? 'parcela já paga' : 'parcela cancelada',
@@ -337,7 +338,7 @@ export default function PageClauseDetail() {
         )}
       </div>
 
-      {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handlePay(payInst.id, p)} />}
+      {payInst && <PaymentModal label={trf('Parcela {0}', payInst.installment_number)} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handlePay(payInst.id, p)} />}
       {editInst && <InstallmentEditModal inst={editInst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); load() }} />}
     </div>
   )
@@ -378,29 +379,29 @@ function ClauseFields({ clause, onSaved, onCancel }: { clause: Clause; onSaved: 
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div><label style={lbl}>Natureza</label>
+      <div><label style={lbl}>{tr('Natureza')}</label>
         <select style={inp} value={f.clause_type} onChange={e => set('clause_type', e.target.value)}>
-          {CLAUSE_TYPES.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
+          {CLAUSE_TYPES.map(t => <option key={t} value={t}>{tr(CLAUSE_TYPE_LABELS[t])}</option>)}
         </select>
       </div>
-      <div><label style={lbl}>Descrição</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+      <div><label style={lbl}>{tr('Descrição')}</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} /></div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
-        <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
-        <div><label style={lbl}>Valor</label><NumberInput style={inp} value={f.original_value} onChange={v => set('original_value', v)} /></div>
-        <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div><label style={lbl}>Percentual (%)</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} /></div>
-        <div><label style={lbl}>Vencimento</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+        <div><label style={lbl}>{tr('Credor')}</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
+        <div><label style={lbl}>{tr('Devedor')}</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
+        <div><label style={lbl}>{tr('Valor')}</label><NumberInput style={inp} value={f.original_value} onChange={v => set('original_value', v)} /></div>
+        <div><label style={lbl}>{tr('Moeda')}</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{CUR.map(c => <option key={c} value={c}>{tr(c)}</option>)}</select></div>
+        <div><label style={lbl}>{tr('Percentual (%)')}</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} /></div>
+        <div><label style={lbl}>{tr('Vencimento')}</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
       </div>
-      <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
-      <div><label style={lbl}>Status</label>
+      <div><label style={lbl}>{tr('Condição / gatilho')}</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} /></div>
+      <div><label style={lbl}>{tr('Status')}</label>
         <select style={inp} value={f.payment_status} onChange={e => set('payment_status', e.target.value)}>
-          {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{humanizeEnum(s)}</option>)}
+          {['PENDENTE', 'PAGA', 'PARCIALMENTE_PAGA', 'EM_ATRASO', 'CANCELADA'].map(s => <option key={s} value={s}>{tr(humanizeEnum(s))}</option>)}
         </select>
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <button onClick={onCancel} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
+        <button onClick={onCancel} className="btn btn-outline">{tr('Cancelar')}</button>
+        <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? tr('Salvando…') : tr('Salvar')}</button>
       </div>
     </div>
   )
@@ -430,8 +431,8 @@ function FlowEditor({ clause, installments, onSaved }: { clause: Clause; install
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} defaultFirst={clause.due_date ?? ''} seedRows={4} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Salvar substitui as parcelas atuais. Total: <strong>{fmtCurrencyShort(total, currency)}</strong>.</span>
-        <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
+        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Salvar substitui as parcelas atuais. Total:')} <strong>{fmtCurrencyShort(total, currency)}</strong>.</span>
+        <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? tr('Salvando…') : tr('Salvar fluxo')}</button>
       </div>
     </div>
   )

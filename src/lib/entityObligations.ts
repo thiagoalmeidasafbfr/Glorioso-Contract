@@ -12,6 +12,7 @@ import type {
   Contract, ClauseType, Currency, LiabilityDirection,
 } from '../types/athlete-system'
 import { norm } from './importHelpers'
+import { trf } from '../i18n'
 
 export type EntityKind = 'clube' | 'intermediario'
 
@@ -89,7 +90,7 @@ export function buildEntityObligations({
     if (parcelas.length > 0) {
       for (const p of parcelas) out.push({
         id: p.id, kind: 'inst', athlete_id: c.athlete_id, clauseId: c.id, contractId: c.contract_id,
-        natureza, description: `${c.description} — parcela ${p.installment_number}`,
+        natureza, description: trf('{0} — parcela {1}', c.description, p.installment_number),
         direction, amount: p.original_value, currency: p.currency,
         due_date: p.due_date, status: p.payment_status, notes: p.notes ?? null,
       })

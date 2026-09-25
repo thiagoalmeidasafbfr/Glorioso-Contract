@@ -15,6 +15,7 @@ import { fmtDate, todayISO } from '../../lib/format'
 import FlowBuilder, { type FlowLine } from '../FlowBuilder'
 import { ModalShell } from './EditModals'
 import { modalInput, modalLabel } from './styles'
+import { tr, trf, trn } from '../../i18n'
 
 const font = "var(--font-body)"
 
@@ -93,54 +94,54 @@ export default function NewObligationModal({ entityName, kind, athletes, onClose
   }
 
   return (
-    <ModalShell title="Nova obrigação" width={700} onClose={onClose}
-      subtitle={`contraparte: ${entityName}`}
+    <ModalShell title={tr('Nova obrigação')} width={700} onClose={onClose}
+      subtitle={trf('contraparte: {0}', entityName)}
       footer={<>
-        {error && <span style={{ marginRight: 'auto', color: 'var(--neg)', fontSize: 12, fontFamily: font }}>{error}</span>}
-        <button onClick={onClose} className="btn btn-outline">Cancelar</button>
+        {error && <span style={{ marginRight: 'auto', color: 'var(--neg)', fontSize: 12, fontFamily: font }}>{tr(error)}</span>}
+        <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
         <button onClick={save} className="btn btn-primary" disabled={!canSave}>
-          {saving ? 'Salvando…' : `Criar com ${valid.length} parcela${valid.length === 1 ? '' : 's'}`}
+          {saving ? tr('Salvando…') : trn(valid.length, 'Criar com {0} parcela', 'Criar com {0} parcelas')}
         </button>
       </>}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label style={modalLabel}>Atleta *</label>
+          <label style={modalLabel}>{tr('Atleta *')}</label>
           <select style={modalInput} value={athleteId} onChange={e => chooseAthlete(e.target.value)}>
-            <option value="">— selecione o atleta —</option>
+            <option value="">{tr('— selecione o atleta —')}</option>
             {sortedAthletes.map(a => <option key={a.id} value={a.id}>{a.short_name || a.full_name}</option>)}
           </select>
         </div>
         <div>
-          <label style={modalLabel}>Vínculo do atleta (opcional)</label>
+          <label style={modalLabel}>{tr('Vínculo do atleta (opcional)')}</label>
           <select style={modalInput} value={contractId} onChange={e => setContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
             <option value="">
-              {!athleteId ? '— escolha o atleta primeiro —' : contracts.length === 0 ? '— sem vínculos cadastrados —' : '— nenhum (obrigação independente) —'}
+              {!athleteId ? tr('— escolha o atleta primeiro —') : contracts.length === 0 ? tr('— sem vínculos cadastrados —') : tr('— nenhum (obrigação independente) —')}
             </option>
-            {contracts.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
+            {contracts.map(c => <option key={c.id} value={c.id}>{tr(contractLabel(c))}</option>)}
           </select>
         </div>
         <div>
-          <label style={modalLabel}>Natureza</label>
+          <label style={modalLabel}>{tr('Natureza')}</label>
           <select style={modalInput} value={clauseType} onChange={e => setClauseType(e.target.value as ClauseType)}>
-            {types.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
+            {types.map(t => <option key={t} value={t}>{tr(CLAUSE_TYPE_LABELS[t])}</option>)}
           </select>
         </div>
         <div>
-          <label style={modalLabel}>Direção</label>
+          <label style={modalLabel}>{tr('Direção')}</label>
           <select style={modalInput} value={direction} onChange={e => setDirection(e.target.value as LiabilityDirection)}>
-            <option value="A_PAGAR">Botafogo paga (a pagar)</option>
-            <option value="A_RECEBER">Botafogo recebe (a receber)</option>
+            <option value="A_PAGAR">{tr('Botafogo paga (a pagar)')}</option>
+            <option value="A_RECEBER">{tr('Botafogo recebe (a receber)')}</option>
           </select>
         </div>
       </div>
       <div>
-        <label style={modalLabel}>Descrição</label>
+        <label style={modalLabel}>{tr('Descrição')}</label>
         <input style={modalInput} value={description} onChange={e => setDescription(e.target.value)}
           placeholder={`${CLAUSE_TYPE_LABELS[clauseType]} — ${entityName}`} />
       </div>
       <div style={{ borderTop: '1px solid var(--divider)', paddingTop: 14 }}>
         <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines}
-          seedRows={4} title="Fluxo de parcelas" />
+          seedRows={4} title={tr('Fluxo de parcelas')} />
       </div>
     </ModalShell>
   )

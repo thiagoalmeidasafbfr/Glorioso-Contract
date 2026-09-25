@@ -23,6 +23,7 @@ import { Icon } from '../components/Icon'
 import { fmtCurrencyShort } from '../lib/format'
 import { ModalShell } from '../components/modals/EditModals'
 import { modalInput, modalLabel } from '../components/modals/styles'
+import { tr, trf, trn } from '../i18n'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -87,25 +88,25 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title={title} section="Cadastros">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar"
+      <PageHero title={tr(title)} section={tr('Cadastros')}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Buscar...')} aria-label={tr('Buscar')}
           style={{ minWidth: 220 }} />
         <button onClick={() => setShowNew(true)} className="btn btn-outline">
-          <Icon name="plus" size={16} /> {isClube ? 'Novo clube' : 'Novo agente'}
+          <Icon name="plus" size={16} /> {isClube ? tr('Novo clube') : tr('Novo agente')}
         </button>
       </PageHero>
 
       {/* Resumo + ordenação */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ fontFamily: fontMono, fontSize: 12, color: 'var(--text-secondary)' }}>
-          {filtered.length} {isClube ? 'clube(s)' : 'agente(s)'} · em aberto (aprox.) <strong style={{ color: 'var(--ink-primary)' }}>{fmtCurrencyShort(totalOpen, 'BRL')}</strong>
+          {isClube ? trn(filtered.length, '{0} clube', '{0} clubes') : trn(filtered.length, '{0} agente', '{0} agentes')} {tr('· em aberto (aprox.)')} <strong style={{ color: 'var(--ink-primary)' }}>{fmtCurrencyShort(totalOpen, 'BRL')}</strong>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Ordenar</span>
-          <div className="seg-control" role="group" aria-label="Ordenar">
+          <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Ordenar')}</span>
+          <div className="seg-control" role="group" aria-label={tr('Ordenar')}>
             {(['nome', 'valor'] as const).map(s => (
               <button key={s} type="button" onClick={() => setSort(s)} aria-pressed={sort === s} className="seg-control__item">
-                {s === 'nome' ? 'Nome' : 'Valor em aberto'}
+                {s === 'nome' ? tr('Nome') : tr('Valor em aberto')}
               </button>
             ))}
           </div>
@@ -113,10 +114,10 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
       </div>
 
       {loading ? (
-        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>Carregando…</div>
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12 }}>{tr('Carregando…')}</div>
       ) : filtered.length === 0 ? (
         <div className="card" style={{ padding: 60, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontBody }}>
-          Nenhum {isClube ? 'clube' : 'agente'} cadastrado.
+          {tr('Nenhum')} {isClube ? tr('clube') : tr('agente')} {tr('cadastrado.')}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
@@ -132,14 +133,14 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.name}</div>
-                {e.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.sub}</div>}
+                {e.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontBody, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tr(e.sub)}</div>}
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 5 }}>
-                  {e.count} obrigaç{e.count === 1 ? 'ão' : 'ões'}
-                  {e.athletes > 0 && <> · {e.athletes} atleta{e.athletes === 1 ? '' : 's'}</>}
+                  {trn(e.count, '{0} obrigação', '{0} obrigações')}
+                  {e.athletes > 0 && <> · {trn(e.athletes, '{0} atleta', '{0} atletas')}</>}
                 </div>
                 <div style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 500, color: e.openBRL > 0 ? 'var(--ink-primary)' : 'var(--text-muted)', marginTop: 2 }}>
                   {fmtCurrencyShort(e.openBRL, 'BRL')}
-                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-secondary)' }}> em aberto</span>
+                  <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-secondary)' }}> {tr('em aberto')}</span>
                 </div>
               </div>
               <Icon name="chevronRight" size={16} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
@@ -183,19 +184,19 @@ function NewModal({ kind, onClose, onSaved }: { kind: Kind; onClose: () => void;
   }
 
   return (
-    <ModalShell title={`Novo ${isClube ? 'clube' : 'agente'}`} width={470} onClose={onClose}
+    <ModalShell title={trf('Novo {0}', isClube ? tr('clube') : tr('agente'))} width={470} onClose={onClose}
       footer={<>
-        <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-        <button onClick={save} className="btn btn-primary" disabled={!name.trim() || saving}>{saving ? 'Salvando…' : 'Criar'}</button>
+        <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
+        <button onClick={save} className="btn btn-primary" disabled={!name.trim() || saving}>{saving ? tr('Salvando…') : tr('Criar')}</button>
       </>}>
       <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
         <ImageUpload value={logo} onChange={setLogo} fallbackText={name} size={88} rounded={!isClube} maxSize={512} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div><label style={modalLabel}>Nome *</label><input style={modalInput} value={name} onChange={e => setName(e.target.value)} placeholder={isClube ? 'Ex: Benfica' : 'Ex: Agência XYZ'} /></div>
-          <div><label style={modalLabel}>{isClube ? 'País' : 'Contato'}</label><input style={modalInput} value={sub} onChange={e => setSub(e.target.value)} /></div>
+          <div><label style={modalLabel}>{tr('Nome *')}</label><input style={modalInput} value={name} onChange={e => setName(e.target.value)} placeholder={isClube ? tr('Ex: Benfica') : tr('Ex: Agência XYZ')} /></div>
+          <div><label style={modalLabel}>{isClube ? tr('País') : tr('Contato')}</label><input style={modalInput} value={sub} onChange={e => setSub(e.target.value)} /></div>
         </div>
       </div>
-      <div><label style={modalLabel}>Observações</label><textarea style={{ ...modalInput, minHeight: 54, resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} /></div>
+      <div><label style={modalLabel}>{tr('Observações')}</label><textarea style={{ ...modalInput, minHeight: 54, resize: 'vertical' }} value={notes} onChange={e => setNotes(e.target.value)} /></div>
     </ModalShell>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Wordmark from '../components/Wordmark'
+import { tr } from '../i18n'
 
 // Login no padrão do Glorioso Finance DS: capa com o gradiente creme
 // (--gradient-mint), headline em duas partes (400 / 600), campos de 44px com
@@ -18,6 +19,11 @@ const label: React.CSSProperties = {
 }
 
 export default function PageLogin() {
+  // Título em duas linhas no idioma atual: quebra antes da última palavra
+  // ("Gestão de / Contratos" · "Contract / Management").
+  const heading = tr('Gestão de Contratos')
+  const cut = heading.lastIndexOf(' ')
+  const headingLines = cut > 0 ? [heading.slice(0, cut), heading.slice(cut + 1)] : [heading, '']
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -48,21 +54,21 @@ export default function PageLogin() {
             fontSize: 'var(--text-h1-size)', lineHeight: 'var(--text-h1-line)',
             letterSpacing: 'var(--text-h1-tracking)', color: 'var(--text-primary)',
           }}>
-            <span style={{ display: 'block', fontWeight: 400 }}>Gestão de</span>
-            <span style={{ display: 'block', fontWeight: 500 }}>Contratos</span>
+            <span style={{ display: 'block', fontWeight: 400 }}>{headingLines[0]}</span>
+            <span style={{ display: 'block', fontWeight: 500 }}>{headingLines[1]}</span>
           </h1>
-          <div className="eyebrow" style={{ marginTop: 'var(--space-3)' }}>SAF Botafogo</div>
+          <div className="eyebrow" style={{ marginTop: 'var(--space-3)' }}>{tr('SAF Botafogo')}</div>
         </div>
 
         <form onSubmit={handleSubmit} className="card" style={{ padding: 'var(--gutter-card)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div>
-            <label htmlFor="login-email" style={label}>E-mail</label>
+            <label htmlFor="login-email" style={label}>{tr('E-mail')}</label>
             <input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
               required autoComplete="email" style={field} />
           </div>
 
           <div>
-            <label htmlFor="login-password" style={label}>Senha</label>
+            <label htmlFor="login-password" style={label}>{tr('Senha')}</label>
             <input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)}
               required autoComplete="current-password" style={field} />
           </div>
@@ -75,17 +81,17 @@ export default function PageLogin() {
               fontSize: 'var(--text-body-sm-size)',
               color: 'var(--text-negative)',
             }}>
-              {error}
+              {tr(error)}
             </div>
           )}
 
           <button type="submit" disabled={loading} className="btn btn-primary btn-lg btn-block" style={{ marginTop: 'var(--space-2)' }}>
-            {loading ? 'Entrando…' : 'Entrar'}
+            {loading ? tr('Entrando…') : tr('Entrar')}
           </button>
         </form>
 
         <div style={{ marginTop: 'var(--space-6)', fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center' }}>
-          Acesso restrito — SAF Botafogo
+          {tr('Acesso restrito — SAF Botafogo')}
         </div>
       </div>
     </div>

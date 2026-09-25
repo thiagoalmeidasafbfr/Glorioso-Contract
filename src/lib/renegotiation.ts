@@ -22,6 +22,7 @@ import {
   deleteClause, fetchClauseInstallments, fetchAllInstallments,
 } from './athleteQueries'
 import { addMonths, todayISO } from './format'
+import { locale } from '../i18n'
 
 export const ACORDO_TYPE = 'ACORDO_RENEGOCIACAO' as const
 
@@ -143,7 +144,7 @@ export async function createRenegotiation(input: RenegotiationInput): Promise<Re
     userNote: input.userNote,
   }
 
-  const discountLabel = discount > 0 ? ` (desconto ${input.currency} ${discount.toLocaleString('pt-BR')})` : discount < 0 ? ` (acréscimo ${input.currency} ${Math.abs(discount).toLocaleString('pt-BR')})` : ''
+  const discountLabel = discount > 0 ? ` (desconto ${input.currency} ${discount.toLocaleString(locale())})` : discount < 0 ? ` (acréscimo ${input.currency} ${Math.abs(discount).toLocaleString(locale())})` : ''
   const startLabel = custom ? input.schedule![0]?.due_date ?? input.startDate : input.startDate
   const description = `Renegociação — ${input.creditor}: ${input.sources.length} item(ns) → ${n}x${custom ? ' (fluxo personalizado)' : ''} a partir de ${startLabel}${discountLabel}`
 

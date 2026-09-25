@@ -15,6 +15,7 @@ import { ENCARGOS_DEFAULT, ANTECIPACAO_DEFAULT, DECISAO_LABELS } from '../types/
 import type { PremissaAtleta, PremissaDecisao } from '../types/premissas'
 import type { Athlete } from '../types/athlete-system'
 import { useAuth } from '../context/AuthContext'
+import { tr, trf } from '../i18n'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -94,7 +95,7 @@ function CellInput(props: {
       type={props.type ?? 'text'}
       step={props.step}
       disabled={props.disabled}
-      placeholder={props.placeholder}
+      placeholder={tr(props.placeholder)}
       onChange={e => setV(e.target.value)}
       onBlur={() => { if (v !== (props.value == null ? '' : String(props.value))) props.onCommit(v) }}
       onKeyDown={e => {
@@ -152,10 +153,8 @@ function explainError(e: unknown): string {
     /ac_premissas_atleta/i.test(msg)
   if (missingTable) {
     return (
-      'A tabela de premissas ainda não existe no banco. ' +
-      'Rode a migration "018_premissas_atleta.sql" no Supabase ' +
-      '(SQL Editor → New query → cole o arquivo → Run) e recarregue a página. ' +
-      `Detalhe técnico: ${msg}`
+      tr('A tabela de premissas ainda não existe no banco. Rode a migration "018_premissas_atleta.sql" no Supabase (SQL Editor → New query → cole o arquivo → Run) e recarregue a página.') +
+      ' ' + trf('Detalhe técnico: {0}', msg)
     )
   }
   return msg
@@ -204,7 +203,7 @@ export default function PagePremissas() {
   }, [])
 
   const removeRow = useCallback(async (id: string) => {
-    if (!confirm('Excluir esta linha de premissas?')) return
+    if (!confirm(tr('Excluir esta linha de premissas?'))) return
     try { await deletePremissa(id); setRows(rs => rs.filter(r => r.id !== id)) }
     catch (e) { setErr(explainError(e)) }
   }, [])
@@ -245,16 +244,16 @@ export default function PagePremissas() {
   return (
     <div style={{ padding: 'clamp(16px, 3vw, 32px)', maxWidth: '100%' }}>
       <PageHero
-        title="Premissas por atleta"
-        section="Modelo financeiro" subtitle="Fase 1"
+        title={tr('Premissas por atleta')}
+        section={tr('Modelo financeiro')} subtitle={tr('Fase 1')}
       >
         {canEdit && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => void addNew('ATLETA_EXISTENTE')} className="btn btn-outline">
-              <Icon name="plus" size={16} /> Atleta existente
+              <Icon name="plus" size={16} /> {tr('Atleta existente')}
             </button>
             <button onClick={() => void addNew('NOVA_CONTRATACAO')} className="btn btn-primary">
-              <Icon name="plus" size={16} /> Nova contratação
+              <Icon name="plus" size={16} /> {tr('Nova contratação')}
             </button>
           </div>
         )}
@@ -265,20 +264,20 @@ export default function PagePremissas() {
         <input
           type="search"
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por atleta ou posição"
-          aria-label="Buscar por atleta ou posição"
+          placeholder={tr('Buscar por atleta ou posição')}
+          aria-label={tr('Buscar por atleta ou posição')}
           style={{ minWidth: 260 }}
         />
         {/* Filtro por decisão — SegmentedTabs do DS */}
-        <div className="seg-tabs" role="tablist" aria-label="Filtrar por decisão">
+        <div className="seg-tabs" role="tablist" aria-label={tr('Filtrar por decisão')}>
           {(['TODOS', ...DECISAO_OPTIONS] as const).map(d => (
             <button key={d} type="button" role="tab" aria-selected={filter === d} className="seg-tab" onClick={() => setFilter(d)}>
-              {d === 'TODOS' ? 'Todos' : DECISAO_LABELS[d as PremissaDecisao]}
+              {d === 'TODOS' ? tr('Todos') : tr(DECISAO_LABELS[d as PremissaDecisao])}
             </button>
           ))}
         </div>
         <span style={{ marginLeft: 'auto', fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)' }}>
-          {filtered.length} {filtered.length === 1 ? 'linha' : 'linhas'}
+          {filtered.length} {filtered.length === 1 ? tr('linha') : tr('linhas')}
         </span>
       </div>
 
@@ -286,53 +285,53 @@ export default function PagePremissas() {
         <div role="alert" style={{
           padding: '10px 14px', background: 'var(--surface-negative-soft)',
           borderRadius: 'var(--radius-control)', color: 'var(--text-negative)', fontFamily: fontBody, fontSize: 13, marginBottom: 12,
-        }}>{err}</div>
+        }}>{tr(err)}</div>
       )}
 
       <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 2400 }}>
           <thead>
             <tr>
-              <Head sticky width={220}>Atleta</Head>
-              <Head width={110}>Nascimento</Head>
-              <Head width={110}>Posição</Head>
-              <Head width={130}>Valor merc. (EUR)</Head>
-              <Head width={110}>Contrato início</Head>
-              <Head width={110}>Contrato fim</Head>
-              <Head width={110}>Salário (BRL)</Head>
-              <Head width={110}>Imagem (BRL)</Head>
-              <Head width={90}>INSS %</Head>
-              <Head width={90}>FGTS %</Head>
+              <Head sticky width={220}>{tr('Atleta')}</Head>
+              <Head width={110}>{tr('Nascimento')}</Head>
+              <Head width={110}>{tr('Posição')}</Head>
+              <Head width={130}>{tr('Valor merc. (EUR)')}</Head>
+              <Head width={110}>{tr('Contrato início')}</Head>
+              <Head width={110}>{tr('Contrato fim')}</Head>
+              <Head width={110}>{tr('Salário (BRL)')}</Head>
+              <Head width={110}>{tr('Imagem (BRL)')}</Head>
+              <Head width={90}>{tr('INSS %')}</Head>
+              <Head width={90}>{tr('FGTS %')}</Head>
               <Head width={90}>13º %</Head>
-              <Head width={90}>Férias %</Head>
-              <Head width={90}>Outros %</Head>
-              <Head width={70}>Σ enc.</Head>
-              <Head width={130}>Luvas total (BRL)</Head>
-              <Head width={140}>Intermediação (BRL)</Head>
-              <Head width={150}>Decisão</Head>
-              <Head width={120}>Data decisão</Head>
-              <Head width={130}>Venda (EUR)</Head>
-              <Head width={90}>Comis. %</Head>
-              <Head width={90}>Solid. %</Head>
-              <Head width={80}>Antec.?</Head>
-              <Head width={100}>Antec. modo</Head>
-              <Head width={90}>Antec. %/vlr</Head>
-              <Head width={90}>CDI a.a.</Head>
-              <Head width={90}>Spread a.a.</Head>
-              <Head width={130}>Renov. salário</Head>
-              <Head width={130}>Renov. imagem</Head>
-              <Head width={130}>Renov. luvas</Head>
-              <Head width={90}>Renov. m</Head>
+              <Head width={90}>{tr('Férias %')}</Head>
+              <Head width={90}>{tr('Outros %')}</Head>
+              <Head width={70}>{tr('Σ enc.')}</Head>
+              <Head width={130}>{tr('Luvas total (BRL)')}</Head>
+              <Head width={140}>{tr('Intermediação (BRL)')}</Head>
+              <Head width={150}>{tr('Decisão')}</Head>
+              <Head width={120}>{tr('Data decisão')}</Head>
+              <Head width={130}>{tr('Venda (EUR)')}</Head>
+              <Head width={90}>{tr('Comis. %')}</Head>
+              <Head width={90}>{tr('Solid. %')}</Head>
+              <Head width={80}>{tr('Antec.?')}</Head>
+              <Head width={100}>{tr('Antec. modo')}</Head>
+              <Head width={90}>{tr('Antec. %/vlr')}</Head>
+              <Head width={90}>{tr('CDI a.a.')}</Head>
+              <Head width={90}>{tr('Spread a.a.')}</Head>
+              <Head width={130}>{tr('Renov. salário')}</Head>
+              <Head width={130}>{tr('Renov. imagem')}</Head>
+              <Head width={130}>{tr('Renov. luvas')}</Head>
+              <Head width={90}>{tr('Renov. m')}</Head>
               <Head width={60}>{' '}</Head>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>Carregando…</td></tr>
+              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>{tr('Carregando…')}</td></tr>
             )}
             {!loading && filtered.length === 0 && (
               <tr><td colSpan={31} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13 }}>
-                Nenhuma premissa cadastrada. Clique em <b>+ Atleta existente</b> ou <b>+ Nova contratação</b> para começar.
+                {tr('Nenhuma premissa cadastrada. Clique em')} <b>{tr('+ Atleta existente')}</b> {tr('ou')} <b>{tr('+ Nova contratação')}</b> {tr('para começar.')}
               </td></tr>
             )}
             {filtered.map(r => {
@@ -353,7 +352,7 @@ export default function PagePremissas() {
                           onChange={e => linkToAthlete(r, e.target.value)}
                           style={selectStyle()}
                         >
-                          <option value="">— sem vínculo —</option>
+                          <option value="">{tr('— sem vínculo —')}</option>
                           {athletes.map(a => (
                             <option key={a.id} value={a.id}>{a.full_name}</option>
                           ))}
@@ -364,7 +363,7 @@ export default function PagePremissas() {
                         <CellInput
                           value={r.nome ?? ''}
                           onCommit={v => void patch(r.id, { nome: v || null })}
-                          placeholder="Nome (nova contratação)"
+                          placeholder={tr('Nome (nova contratação)')}
                           disabled={disabled}
                         />
                         <select
@@ -373,7 +372,7 @@ export default function PagePremissas() {
                           onChange={e => e.target.value && linkToAthlete(r, e.target.value)}
                           style={{ ...selectStyle(), fontSize: 11, color: 'var(--ink-secondary)' }}
                         >
-                          <option value="">vincular a atleta existente...</option>
+                          <option value="">{tr('vincular a atleta existente...')}</option>
                           {athletes.map(a => (
                             <option key={a.id} value={a.id}>{a.full_name}</option>
                           ))}
@@ -431,7 +430,7 @@ export default function PagePremissas() {
                       }}
                     >
                       {DECISAO_OPTIONS.map(d => (
-                        <option key={d} value={d}>{DECISAO_LABELS[d]}</option>
+                        <option key={d} value={d}>{tr(DECISAO_LABELS[d])}</option>
                       ))}
                     </select>
                   </Cell>
@@ -460,8 +459,8 @@ export default function PagePremissas() {
                       onChange={e => void patch(r.id, { antecipacao_modo: e.target.value as 'PERCENTUAL' | 'VALOR' })}
                       style={selectStyle()}
                     >
-                      <option value="PERCENTUAL">% do total</option>
-                      <option value="VALOR">Valor fixo</option>
+                      <option value="PERCENTUAL">{tr('% do total')}</option>
+                      <option value="VALOR">{tr('Valor fixo')}</option>
                     </select>
                   </Cell>
                   <Cell align="right">
@@ -491,7 +490,7 @@ export default function PagePremissas() {
                   {/* Ações */}
                   <Cell align="center">
                     {canEdit && (
-                      <IconButton icon="trash" label="Excluir linha" tone="danger" small
+                      <IconButton icon="trash" label={tr('Excluir linha')} tone="danger" small
                         onClick={() => void removeRow(r.id)} />
                     )}
                   </Cell>
@@ -503,7 +502,7 @@ export default function PagePremissas() {
       </div>
 
       <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, color: 'var(--ink-secondary)' }}>
-        Encargos padrão: INSS {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}% · FGTS {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}% · férias {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}%. Antecipação padrão: CDI {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}% a.a.
+        {tr('Encargos padrão: INSS')} {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}{tr('% · FGTS')} {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}{tr('% · férias')} {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}{tr('%. Antecipação padrão: CDI')} {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}{tr('% a.a.')}
       </p>
     </div>
   )

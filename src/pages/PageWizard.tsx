@@ -27,6 +27,7 @@ import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import EntityPicker from '../components/EntityPicker'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
+import { tr, trn } from '../i18n'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -181,7 +182,7 @@ export default function PageWizard() {
       const isPay = direction === 'A_PAGAR'
       const creditor = isPay ? beneficiary : 'Botafogo SAF'
       const debtor = isPay ? 'Botafogo SAF' : beneficiary
-      const desc = description.trim() || `${nature.label}${beneficiary ? ` — ${beneficiary}` : ''}`
+      const desc = description.trim() || `${tr(nature.label)}${beneficiary ? ` — ${beneficiary}` : ''}`
       const sorted = [...valid].sort((a, b) => a.due_date.localeCompare(b.due_date))
       const firstDue = sorted[0]?.due_date || todayISO()
 
@@ -233,7 +234,7 @@ export default function PageWizard() {
 
   return (
     <div style={{ padding: '26px 30px', maxWidth: 940, margin: '0 auto' }}>
-      <PageHero title="O que você quer registrar?" subtitle="Assistente de criação · Botafogo SAF" />
+      <PageHero title={tr('O que você quer registrar?')} subtitle={tr('Assistente de criação · Botafogo SAF')} />
 
       {/* Passos */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -251,7 +252,7 @@ export default function PageWizard() {
               <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 500, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                 {done ? <Icon name="check" size={12} /> : i + 1}
               </span>
-              <span style={{ fontFamily: font, fontSize: 12, fontWeight: active ? 500 : 400, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{s}</span>
+              <span style={{ fontFamily: font, fontSize: 12, fontWeight: active ? 500 : 400, color: active ? 'var(--text-inverse)' : done ? 'var(--ink-primary)' : 'var(--text-muted)' }}>{tr(s)}</span>
             </button>
           )
         })}
@@ -260,11 +261,11 @@ export default function PageWizard() {
       {/* Resumo das escolhas — mantém o contexto visível em todos os passos */}
       {nature && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          <Pill label="Natureza" value={nature.label} />
-          {athlete && <Pill label="Atleta" value={athlete.short_name || athlete.full_name} />}
-          {beneficiary && <Pill label={direction === 'A_PAGAR' ? 'Pago a' : 'Recebido de'} value={beneficiary} />}
-          {linked && <Pill label="Vínculo" value={`${CONTRACT_TYPE_LABELS[linked.type]} · ${linked.counterpart_club || '—'}`} />}
-          {valid.length > 0 && <Pill label="Fluxo" value={`${valid.length}x · ${fmtCurrencyShort(total, currency)}`} />}
+          <Pill label={tr('Natureza')} value={nature.label} />
+          {athlete && <Pill label={tr('Atleta')} value={athlete.short_name || athlete.full_name} />}
+          {beneficiary && <Pill label={direction === 'A_PAGAR' ? tr('Pago a') : tr('Recebido de')} value={beneficiary} />}
+          {linked && <Pill label={tr('Vínculo')} value={`${CONTRACT_TYPE_LABELS[linked.type]} · ${linked.counterpart_club || '—'}`} />}
+          {valid.length > 0 && <Pill label={tr('Fluxo')} value={`${valid.length}x · ${fmtCurrencyShort(total, currency)}`} />}
         </div>
       )}
 
@@ -273,7 +274,7 @@ export default function PageWizard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {groups.map(g => (
             <div key={g} style={card}>
-              <div style={{ ...sectionTitle, marginBottom: 12 }}>{g}</div>
+              <div style={{ ...sectionTitle, marginBottom: 12 }}>{tr(g)}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
                 {NATURES.filter(n => n.group === g).map(n => (
                   <button key={n.key} onClick={() => pickNature(n)}
@@ -282,10 +283,10 @@ export default function PageWizard() {
                       background: natureKey === n.key ? 'var(--gray-150)' : 'transparent',
                       border: `1px solid ${natureKey === n.key ? 'var(--action-inverse)' : 'var(--divider-strong)'}`,
                     }}>
-                    <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--ink-primary)' }}>{n.label}</div>
-                    <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.4 }}>{n.hint}</div>
+                    <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--ink-primary)' }}>{tr(n.label)}</div>
+                    <div style={{ fontFamily: font, fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.4 }}>{tr(n.hint)}</div>
                     <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: 6 }}>
-                      {n.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}{n.isMovement ? ' · cria vínculo' : ''}
+                      {n.direction === 'A_PAGAR' ? tr('a pagar') : tr('a receber')}{n.isMovement ? tr(' · cria vínculo') : ''}
                     </div>
                   </button>
                 ))}
@@ -301,9 +302,9 @@ export default function PageWizard() {
           {/* Atleta */}
           <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
-              <div style={sectionTitle}>Atleta {athlete ? '' : '*'}</div>
+              <div style={sectionTitle}>{tr('Atleta')} {athlete ? '' : '*'}</div>
               <button onClick={() => setCreatingAth(v => !v)} className="btn btn-outline">
-                <Icon name={creatingAth ? 'x' : 'plus'} size={16} /> {creatingAth ? 'Cancelar' : 'Novo atleta'}
+                <Icon name={creatingAth ? 'x' : 'plus'} size={16} /> {creatingAth ? tr('Cancelar') : tr('Novo atleta')}
               </button>
             </div>
 
@@ -311,19 +312,19 @@ export default function PageWizard() {
               <div style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', marginBottom: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={lbl}>Nome completo *</label>
-                    <input style={input} autoFocus value={newAth.full_name} onChange={e => setNewAth(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: João da Silva Santos" />
+                    <label style={lbl}>{tr('Nome completo *')}</label>
+                    <input style={input} autoFocus value={newAth.full_name} onChange={e => setNewAth(p => ({ ...p, full_name: e.target.value }))} placeholder={tr('Ex: João da Silva Santos')} />
                   </div>
                   <div>
-                    <label style={lbl}>Posição</label>
-                    <input style={input} value={newAth.position} onChange={e => setNewAth(p => ({ ...p, position: e.target.value }))} placeholder="Ex: Atacante" />
+                    <label style={lbl}>{tr('Posição')}</label>
+                    <input style={input} value={newAth.position} onChange={e => setNewAth(p => ({ ...p, position: e.target.value }))} placeholder={tr('Ex: Atacante')} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button onClick={createNewAthlete} disabled={!newAth.full_name.trim() || savingAth} className="btn btn-primary">
-                    {savingAth ? 'Criando…' : 'Criar e selecionar'}
+                    {savingAth ? tr('Criando…') : tr('Criar e selecionar')}
                   </button>
-                  <span style={hint}>Os demais dados você completa depois na ficha do atleta.</span>
+                  <span style={hint}>{tr('Os demais dados você completa depois na ficha do atleta.')}</span>
                 </div>
               </div>
             )}
@@ -332,13 +333,13 @@ export default function PageWizard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--action-ghost-hover)', border: '1px solid var(--divider-strong)' }}>
                 <Icon name="check" size={16} />
                 <span style={{ fontFamily: font, fontSize: 13, fontWeight: 500, color: 'var(--ink-primary)' }}>{athlete.full_name}</span>
-                <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>· {athlete.position || 'posição não informada'}</span>
-                <button onClick={() => { setAthleteId(''); setContracts([]); setLinkContractId('') }} className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }}>Trocar</button>
+                <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>· {tr(athlete.position) || tr('posição não informada')}</span>
+                <button onClick={() => { setAthleteId(''); setContracts([]); setLinkContractId('') }} className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }}>{tr('Trocar')}</button>
               </div>
             )}
 
             {!athlete && (<>
-              <input style={{ ...input, marginBottom: 10 }} placeholder="Buscar atleta..." value={athleteQuery} onChange={e => setAthleteQuery(e.target.value)} />
+              <input style={{ ...input, marginBottom: 10 }} placeholder={tr('Buscar atleta...')} value={athleteQuery} onChange={e => setAthleteQuery(e.target.value)} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
                 {filteredAthletes.map(a => (
                   <button key={a.id} onClick={() => pickAthlete(a)}
@@ -346,34 +347,34 @@ export default function PageWizard() {
                       textAlign: 'left', padding: '9px 12px', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: font, fontSize: 13,
                       background: 'transparent', border: '1px solid var(--divider)', color: 'var(--ink-primary)',
                     }}>
-                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)' }}>· {a.position || '—'}</span>
+                    {a.full_name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)' }}>· {tr(a.position) || '—'}</span>
                   </button>
                 ))}
-                {filteredAthletes.length === 0 && <div style={hint}>Nenhum atleta encontrado. Use “Novo atleta” acima.</div>}
+                {filteredAthletes.length === 0 && <div style={hint}>{tr('Nenhum atleta encontrado. Use “Novo atleta” acima.')}</div>}
               </div>
             </>)}
           </div>
 
           {/* Contraparte + direção */}
           <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={sectionTitle}>Contraparte e direção</div>
+            <div style={sectionTitle}>{tr('Contraparte e direção')}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
-                <label style={lbl}>Direção</label>
+                <label style={lbl}>{tr('Direção')}</label>
                 <select style={input} value={direction} onChange={e => setDirection(e.target.value as Dir)}>
-                  <option value="A_PAGAR">Botafogo paga (a pagar)</option>
-                  <option value="A_RECEBER">Botafogo recebe (a receber)</option>
+                  <option value="A_PAGAR">{tr('Botafogo paga (a pagar)')}</option>
+                  <option value="A_RECEBER">{tr('Botafogo recebe (a receber)')}</option>
                 </select>
               </div>
               <div>
                 {nature.benef === 'clube' ? (
-                  <EntityPicker kind="clube" label={direction === 'A_PAGAR' ? 'Clube (pago a) *' : 'Clube (recebido de) *'} value={beneficiary} onChange={(name, sub) => { setBeneficiary(name); if (sub) setCountry(sub) }} />
+                  <EntityPicker kind="clube" label={direction === 'A_PAGAR' ? tr('Clube (pago a) *') : tr('Clube (recebido de) *')} value={beneficiary} onChange={(name, sub) => { setBeneficiary(name); if (sub) setCountry(sub) }} />
                 ) : nature.benef === 'agente' ? (
-                  <EntityPicker kind="intermediario" label="Agente *" value={beneficiary} onChange={name => setBeneficiary(name)} />
+                  <EntityPicker kind="intermediario" label={tr('Agente *')} value={beneficiary} onChange={name => setBeneficiary(name)} />
                 ) : (
                   <>
-                    <label style={lbl}>{direction === 'A_PAGAR' ? 'Pago a *' : 'Recebido de *'}</label>
-                    <input style={input} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder="Nome do beneficiário" />
+                    <label style={lbl}>{direction === 'A_PAGAR' ? tr('Pago a *') : tr('Recebido de *')}</label>
+                    <input style={input} value={beneficiary} onChange={e => setBeneficiary(e.target.value)} placeholder={tr('Nome do beneficiário')} />
                   </>
                 )}
               </div>
@@ -381,32 +382,32 @@ export default function PageWizard() {
 
             {nature.isMovement ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                <div><label style={lbl}>País da contraparte</label><input style={input} value={country} onChange={e => setCountry(e.target.value)} placeholder="Ex: Espanha" /></div>
-                <div><label style={lbl}>Início do vínculo *</label><input style={input} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-                <div><label style={lbl}>Término</label><input style={input} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+                <div><label style={lbl}>{tr('País da contraparte')}</label><input style={input} value={country} onChange={e => setCountry(e.target.value)} placeholder={tr('Ex: Espanha')} /></div>
+                <div><label style={lbl}>{tr('Início do vínculo *')}</label><input style={input} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+                <div><label style={lbl}>{tr('Término')}</label><input style={input} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
               </div>
             ) : (
               <div>
-                <label style={lbl}>Vincular a uma transação do atleta (opcional)</label>
+                <label style={lbl}>{tr('Vincular a uma transação do atleta (opcional)')}</label>
                 <select style={input} value={linkContractId} onChange={e => setLinkContractId(e.target.value)} disabled={!athleteId || contracts.length === 0}>
                   <option value="">
-                    {!athleteId ? '— escolha o atleta primeiro —' : contracts.length === 0 ? '— sem vínculos cadastrados —' : '— não vinculado —'}
+                    {!athleteId ? tr('— escolha o atleta primeiro —') : contracts.length === 0 ? tr('— sem vínculos cadastrados —') : tr('— não vinculado —')}
                   </option>
                   {contracts.map(c => (
                     <option key={c.id} value={c.id}>
-                      {CONTRACT_TYPE_LABELS[c.type]} · {c.counterpart_club || '—'} · {fmtDate(c.start_date)}
+                      {tr(CONTRACT_TYPE_LABELS[c.type])} · {c.counterpart_club || '—'} · {fmtDate(c.start_date)}
                     </option>
                   ))}
                 </select>
                 <div style={{ ...hint, marginTop: 6 }}>
-                  Vincular liga este fluxo ao contrato de compra/venda — é o que amarra agentes, luvas e cláusulas ao vínculo do atleta.
+                  {tr('Vincular liga este fluxo ao contrato de compra/venda — é o que amarra agentes, luvas e cláusulas ao vínculo do atleta.')}
                 </div>
               </div>
             )}
 
             <div>
-              <label style={lbl}>Descrição (opcional)</label>
-              <input style={input} value={description} onChange={e => setDescription(e.target.value)} placeholder={`${nature.label}${beneficiary ? ` — ${beneficiary}` : ''}`} />
+              <label style={lbl}>{tr('Descrição (opcional)')}</label>
+              <input style={input} value={description} onChange={e => setDescription(e.target.value)} placeholder={`${tr(nature.label)}${beneficiary ? ` — ${beneficiary}` : ''}`} />
             </div>
           </div>
         </div>
@@ -415,9 +416,9 @@ export default function PageWizard() {
       {/* 3 — Fluxo */}
       {step === 2 && nature && (
         <div style={card}>
-          <div style={{ ...sectionTitle, marginBottom: 4 }}>Fluxo de parcelas</div>
+          <div style={{ ...sectionTitle, marginBottom: 4 }}>{tr('Fluxo de parcelas')}</div>
           <div style={{ ...hint, marginBottom: 14 }}>
-            Lance cada vencimento e valor. Precisa de muitas parcelas iguais? Use “Gerar automaticamente”.
+            {tr('Lance cada vencimento e valor. Precisa de muitas parcelas iguais? Use “Gerar automaticamente”.')}
           </div>
           <FlowBuilder
             currency={currency} onCurrencyChange={setCurrency}
@@ -432,20 +433,20 @@ export default function PageWizard() {
       {step === 3 && nature && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 8, fontFamily: font, fontSize: 13, color: 'var(--ink-primary)' }}>
-            <div style={{ ...sectionTitle, marginBottom: 6 }}>Confira antes de criar</div>
+            <div style={{ ...sectionTitle, marginBottom: 6 }}>{tr('Confira antes de criar')}</div>
             <Row k="Natureza" v={nature.label} />
             <Row k="Atleta" v={athlete?.full_name || '—'} />
             <Row k="Direção" v={direction === 'A_PAGAR' ? 'A pagar (Botafogo paga)' : 'A receber (Botafogo recebe)'} />
             <Row k={direction === 'A_PAGAR' ? 'Pago a' : 'Recebido de'} v={beneficiary || '—'} />
             {nature.isMovement
-              ? <Row k="Vínculo criado" v={`${CONTRACT_TYPE_LABELS[nature.contractType!]} · ${fmtDate(startDate)}${endDate ? ` → ${fmtDate(endDate)}` : ''}`} />
-              : <Row k="Transação" v={linked ? `${CONTRACT_TYPE_LABELS[linked.type]} · ${linked.counterpart_club}` : 'Não vinculado'} />}
-            <Row k="Fluxo" v={`${valid.length} parcela(s) · total ${fmtCurrencyShort(total, currency)}`} />
+              ? <Row k="Vínculo criado" v={`${tr(CONTRACT_TYPE_LABELS[nature.contractType!])} · ${fmtDate(startDate)}${endDate ? ` → ${fmtDate(endDate)}` : ''}`} />
+              : <Row k="Transação" v={linked ? `${tr(CONTRACT_TYPE_LABELS[linked.type])} · ${linked.counterpart_club}` : 'Não vinculado'} />}
+            <Row k="Fluxo" v={trn(valid.length, '{0} parcela · total {1}', '{0} parcelas · total {1}', fmtCurrencyShort(total, currency))} />
             <Row k="1º vencimento" v={valid.length ? fmtDate([...valid].sort((a, b) => a.due_date.localeCompare(b.due_date))[0].due_date) : '—'} />
-            {error && <div style={{ marginTop: 8, color: 'var(--neg)', fontSize: 13 }}>{error}</div>}
+            {error && <div style={{ marginTop: 8, color: 'var(--neg)', fontSize: 13 }}>{tr(error)}</div>}
           </div>
           <div className="card" style={{ padding: 'var(--gutter-card-sm)', overflow: 'hidden' }}>
-            <div style={{ ...sectionTitle, marginBottom: 10 }}>Parcelas</div>
+            <div style={{ ...sectionTitle, marginBottom: 10 }}>{tr('Parcelas')}</div>
             <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {[...valid].sort((a, b) => a.due_date.localeCompare(b.due_date)).map((l, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr', gap: 10, padding: '6px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)' }}>
@@ -462,15 +463,15 @@ export default function PageWizard() {
       {/* Navegação */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 22, gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => step === 0 ? navigate(-1) : setStep(s => s - 1)} className="btn btn-outline">
-          {step === 0 ? 'Cancelar' : <><Icon name="chevronLeft" size={16} /> Voltar</>}
+          {step === 0 ? tr('Cancelar') : <><Icon name="chevronLeft" size={16} /> {tr('Voltar')}</>}
         </button>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {blocked && <span style={hint}>{blocked}</span>}
+          {blocked && <span style={hint}>{tr(blocked)}</span>}
           {step < 3 ? (
-            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">Próximo <Icon name="chevronRight" size={16} /></button>
+            <button onClick={() => !blocked && setStep(s => s + 1)} disabled={!!blocked} className="btn btn-primary">{tr('Próximo')} <Icon name="chevronRight" size={16} /></button>
           ) : (
             <button onClick={handleSave} disabled={saving || valid.length === 0} className="btn btn-primary">
-              {saving ? 'Criando…' : 'Criar e abrir obrigação'}
+              {saving ? tr('Criando…') : tr('Criar e abrir obrigação')}
             </button>
           )}
         </div>
@@ -482,8 +483,8 @@ export default function PageWizard() {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12 }}>
-      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: 'var(--text-overline-tracking)' }}>{k}</span>
-      <span>{v}</span>
+      <span style={{ color: 'var(--text-muted)', fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: 'var(--text-overline-tracking)' }}>{tr(k)}</span>
+      <span>{tr(v)}</span>
     </div>
   )
 }
@@ -494,8 +495,8 @@ function Pill({ label, value }: { label: string; value: string }) {
       display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 'var(--radius-md)',
       background: 'var(--bg-subtle)', maxWidth: 320,
     }}>
-      <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</span>
-      <span style={{ fontFamily: font, fontSize: 12, fontWeight: 500, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+      <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr(label)}</span>
+      <span style={{ fontFamily: font, fontSize: 12, fontWeight: 500, color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tr(value)}</span>
     </span>
   )
 }

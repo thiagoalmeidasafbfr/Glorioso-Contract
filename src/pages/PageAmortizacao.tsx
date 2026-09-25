@@ -30,6 +30,8 @@ import type {
 import PageHero from '../components/PageHero'
 import KpiPill from '../components/KpiPill'
 import { Icon } from '../components/Icon'
+import { tr, trf, locale } from '../i18n'
+import { humanizeEnum } from '../lib/tones'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -233,19 +235,19 @@ export default function PageAmortizacao() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Calculadora — Amortização & Baixa de Intangível" section="Relatórios" subtitle="Por atleta cadastrado" />
+      <PageHero title={tr('Calculadora — Amortização & Baixa de Intangível')} section={tr('Relatórios')} subtitle={tr('Por atleta cadastrado')} />
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <div style={{ fontSize: 10, fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Nome do atleta...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div className="kpi-group">
-          <KpiPill label="Intangível (BRL)" value={fmtCurrencyShort(totals.intangible, 'BRL')} tone="neutral" />
-          <KpiPill label="Amortizado (BRL)" value={fmtCurrencyShort(totals.accum, 'BRL')} tone="neutral" />
-          <KpiPill label="Residual (BRL)" value={fmtCurrencyShort(totals.residual, 'BRL')} tone="warn" />
-          <KpiPill label="Amortiz. / mês" value={fmtCurrencyShort(totals.monthly, 'BRL')} tone="neutral" />
+          <KpiPill label={tr('Intangível (BRL)')} value={fmtCurrencyShort(totals.intangible, 'BRL')} tone="neutral" />
+          <KpiPill label={tr('Amortizado (BRL)')} value={fmtCurrencyShort(totals.accum, 'BRL')} tone="neutral" />
+          <KpiPill label={tr('Residual (BRL)')} value={fmtCurrencyShort(totals.residual, 'BRL')} tone="warn" />
+          <KpiPill label={tr('Amortiz. / mês')} value={fmtCurrencyShort(totals.monthly, 'BRL')} tone="neutral" />
         </div>
       </div>
 
@@ -254,22 +256,22 @@ export default function PageAmortizacao() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ ...th, width: 36 }} aria-label="Expandir" />
-                <th style={{ ...th, minWidth: 180 }}>Atleta</th>
-                <th style={{ ...th, minWidth: 140 }}>Contrato</th>
-                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Intangível (BRL)</th>
-                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Amortiz./mês</th>
-                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Amortizado</th>
-                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Residual</th>
-                <th style={{ ...th, textAlign: 'right', minWidth: 80 }}>% baixado</th>
+                <th style={{ ...th, width: 36 }} aria-label={tr('Expandir')} />
+                <th style={{ ...th, minWidth: 180 }}>{tr('Atleta')}</th>
+                <th style={{ ...th, minWidth: 140 }}>{tr('Contrato')}</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>{tr('Intangível (BRL)')}</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>{tr('Amortiz./mês')}</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>{tr('Amortizado')}</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>{tr('Residual')}</th>
+                <th style={{ ...th, textAlign: 'right', minWidth: 80 }}>{tr('% baixado')}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando PTAX e cadastros…</td></tr>
+                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando PTAX e cadastros…')}</td></tr>
               )}
               {!loading && visible.length === 0 && (
-                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta cadastrado.</td></tr>
+                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum atleta cadastrado.')}</td></tr>
               )}
               {!loading && visible.map(r => {
                 const isOpen = expandedId === r.athlete.id
@@ -284,7 +286,7 @@ export default function PageAmortizacao() {
                       <td style={{ ...td, fontWeight: 500 }}>
                         {r.athlete.short_name || r.athlete.full_name}
                         <div style={{ fontSize: 11, fontFamily: mono, color: 'var(--text-secondary)', fontWeight: 400 }}>
-                          {r.athlete.position ?? '—'} · {r.athlete.current_status}
+                          {tr(r.athlete.position) ?? '—'} · {tr(humanizeEnum(r.athlete.current_status))}
                         </div>
                       </td>
                       <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>
@@ -292,7 +294,7 @@ export default function PageAmortizacao() {
                         {' → '}
                         {r.entryContractEnd ? fmtDate(r.entryContractEnd) : '—'}
                         <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
-                          {r.contractMonths ? `${r.contractMonths} m · restam ${r.monthsRemaining}` : 'sem contrato de entrada'}
+                          {r.contractMonths ? trf('{0} m · restam {1}', r.contractMonths, r.monthsRemaining) : tr('sem contrato de entrada')}
                         </div>
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>
@@ -324,7 +326,7 @@ export default function PageAmortizacao() {
         </div>
       </div>
       <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono }}>
-        Amortização linear pelo prazo do contrato de entrada; PTAX corrente do BACEN quando disponível.
+        {tr('Amortização linear pelo prazo do contrato de entrada; PTAX corrente do BACEN quando disponível.')}
       </div>
     </div>
   )
@@ -350,28 +352,28 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
     <div>
       {/* Composição do intangível */}
       <div style={sec}>
-        <div style={secTitle}>1. Composição do intangível</div>
+        <div style={secTitle}>{tr('1. Composição do intangível')}</div>
         {c.intangibleItems.length === 0 ? (
-          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Sem cláusulas de Transfer Fee / Intermediação / Luvas cadastradas para o contrato de entrada.</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{tr('Sem cláusulas de Transfer Fee / Intermediação / Luvas cadastradas para o contrato de entrada.')}</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ ...detTh }}>Item</th>
-                <th style={{ ...detTh, textAlign: 'right' }}>Valor original</th>
-                <th style={{ ...detTh, textAlign: 'right' }}>BRL (aprox.)</th>
+                <th style={{ ...detTh }}>{tr('Item')}</th>
+                <th style={{ ...detTh, textAlign: 'right' }}>{tr('Valor original')}</th>
+                <th style={{ ...detTh, textAlign: 'right' }}>{tr('BRL (aprox.)')}</th>
               </tr>
             </thead>
             <tbody>
               {c.intangibleItems.map((it, i) => (
                 <tr key={i}>
-                  <td style={detTd}>{it.description}</td>
+                  <td style={detTd}>{tr(it.description)}</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>{fmtCurrencyFull(it.originalValue, it.currency)}</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>{fmtCurrencyShort(it.brl, 'BRL')}</td>
                 </tr>
               ))}
               <tr>
-                <td style={{ ...detTd, fontWeight: 500 }}>Total do intangível</td>
+                <td style={{ ...detTd, fontWeight: 500 }}>{tr('Total do intangível')}</td>
                 <td style={detTd} />
                 <td style={{ ...detTd, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(c.intangibleBRL, 'BRL')}</td>
               </tr>
@@ -382,57 +384,57 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
 
       {/* Amortização e folha */}
       <div style={sec}>
-        <div style={secTitle}>2. Amortização & folha mensal</div>
+        <div style={secTitle}>{tr('2. Amortização & folha mensal')}</div>
         <div style={kvRow}>
-          <div><div style={label}>Prazo (meses)</div><div style={val}>{c.contractMonths || '—'}</div></div>
-          <div><div style={label}>Decorridos / restantes</div><div style={val}>{c.monthsElapsed} / {c.monthsRemaining}</div></div>
-          <div><div style={label}>Amortização mensal</div><div style={val}>{fmtCurrencyShort(c.monthlyAmortBRL, 'BRL')}</div></div>
-          <div><div style={label}>Amortizado até hoje</div><div style={val}>{fmtCurrencyShort(c.accumAmortBRL, 'BRL')}</div></div>
-          <div><div style={label}>Residual (a baixar)</div><div style={{ ...val, color: 'var(--warn)' }}>{fmtCurrencyShort(c.residualBRL, 'BRL')}</div></div>
-          <div><div style={label}>Salário mensal</div><div style={val}>{fmtCurrencyShort(c.monthlySalaryBRL, 'BRL')}</div></div>
-          <div><div style={label}>Imagem mensal</div><div style={val}>{fmtCurrencyShort(c.monthlyImageBRL, 'BRL')}</div></div>
-          <div><div style={label}>Folha total / mês</div><div style={val}>{fmtCurrencyShort(c.monthlyPayrollBRL, 'BRL')}</div></div>
+          <div><div style={label}>{tr('Prazo (meses)')}</div><div style={val}>{c.contractMonths || '—'}</div></div>
+          <div><div style={label}>{tr('Decorridos / restantes')}</div><div style={val}>{c.monthsElapsed} / {c.monthsRemaining}</div></div>
+          <div><div style={label}>{tr('Amortização mensal')}</div><div style={val}>{fmtCurrencyShort(c.monthlyAmortBRL, 'BRL')}</div></div>
+          <div><div style={label}>{tr('Amortizado até hoje')}</div><div style={val}>{fmtCurrencyShort(c.accumAmortBRL, 'BRL')}</div></div>
+          <div><div style={label}>{tr('Residual (a baixar)')}</div><div style={{ ...val, color: 'var(--warn)' }}>{fmtCurrencyShort(c.residualBRL, 'BRL')}</div></div>
+          <div><div style={label}>{tr('Salário mensal')}</div><div style={val}>{fmtCurrencyShort(c.monthlySalaryBRL, 'BRL')}</div></div>
+          <div><div style={label}>{tr('Imagem mensal')}</div><div style={val}>{fmtCurrencyShort(c.monthlyImageBRL, 'BRL')}</div></div>
+          <div><div style={label}>{tr('Folha total / mês')}</div><div style={val}>{fmtCurrencyShort(c.monthlyPayrollBRL, 'BRL')}</div></div>
         </div>
       </div>
 
       {/* Quem recebe em caso de venda */}
       <div style={sec}>
-        <div style={secTitle}>3. Quem recebe se vender (cadastro)</div>
+        <div style={secTitle}>{tr('3. Quem recebe se vender (cadastro)')}</div>
         <div style={{ ...kvRow, marginBottom: 12 }}>
-          <div><div style={label}>Sell-on total (%)</div><div style={val}>{fmtPercent(c.sellOnPct)}</div></div>
-          <div><div style={label}>Solidariedade FIFA (%)</div><div style={val}>{fmtPercent(c.solidariedadePct)}</div></div>
-          <div><div style={label}>Intermed. venda futura (BRL)</div><div style={val}>{fmtCurrencyShort(c.intermedFutureBRL, 'BRL')}</div></div>
+          <div><div style={label}>{tr('Sell-on total (%)')}</div><div style={val}>{fmtPercent(c.sellOnPct)}</div></div>
+          <div><div style={label}>{tr('Solidariedade FIFA (%)')}</div><div style={val}>{fmtPercent(c.solidariedadePct)}</div></div>
+          <div><div style={label}>{tr('Intermed. venda futura (BRL)')}</div><div style={val}>{fmtCurrencyShort(c.intermedFutureBRL, 'BRL')}</div></div>
         </div>
         {(c.sellOnPayees.length + c.solidariedadePayees.length + c.intermedFuturePayees.length + c.clubLiabilities.length + c.intermLiabilities.length) === 0 ? (
-          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Nenhuma obrigação cadastrada para este atleta.</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{tr('Nenhuma obrigação cadastrada para este atleta.')}</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={detTh}>Beneficiário</th>
-                <th style={detTh}>Tipo</th>
-                <th style={{ ...detTh, textAlign: 'right' }}>Base / valor</th>
+                <th style={detTh}>{tr('Beneficiário')}</th>
+                <th style={detTh}>{tr('Tipo')}</th>
+                <th style={{ ...detTh, textAlign: 'right' }}>{tr('Base / valor')}</th>
               </tr>
             </thead>
             <tbody>
               {c.sellOnPayees.map((p, i) => (
                 <tr key={'so' + i}>
-                  <td style={detTd}>{p.party}</td>
-                  <td style={detTd}>Sell-on ({p.basis})</td>
+                  <td style={detTd}>{tr(p.party)}</td>
+                  <td style={detTd}>{tr('Sell-on (')}{tr(p.basis)})</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>{fmtPercent(p.pct)}</td>
                 </tr>
               ))}
               {c.solidariedadePayees.map((p, i) => (
                 <tr key={'sd' + i}>
-                  <td style={detTd}>{p.party}</td>
-                  <td style={detTd}>Solidariedade FIFA</td>
+                  <td style={detTd}>{tr(p.party)}</td>
+                  <td style={detTd}>{tr('Solidariedade FIFA')}</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>{fmtPercent(p.pct)}</td>
                 </tr>
               ))}
               {c.intermedFuturePayees.map((p, i) => (
                 <tr key={'if' + i}>
-                  <td style={detTd}>{p.party}</td>
-                  <td style={detTd}>Intermediação (venda futura)</td>
+                  <td style={detTd}>{tr(p.party)}</td>
+                  <td style={detTd}>{tr('Intermediação (venda futura)')}</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>
                     {fmtCurrencyFull(p.original, p.currency)} · {fmtCurrencyShort(p.brl, 'BRL')}
                   </td>
@@ -441,7 +443,7 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
               {c.clubLiabilities.map(l => (
                 <tr key={'cl' + l.id}>
                   <td style={detTd}>{l.club_name}</td>
-                  <td style={detTd}>Passivo com clube {l.solidarity ? '(solidariedade)' : ''}</td>
+                  <td style={detTd}>{tr('Passivo com clube')} {l.solidarity ? tr('(solidariedade)') : ''}</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>
                     {fmtCurrencyFull(l.amount, l.currency)}
                   </td>
@@ -450,7 +452,7 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
               {c.intermLiabilities.map(l => (
                 <tr key={'il' + l.id}>
                   <td style={detTd}>{l.intermediary_name}</td>
-                  <td style={detTd}>Passivo com agente</td>
+                  <td style={detTd}>{tr('Passivo com agente')}</td>
                   <td style={{ ...detTd, textAlign: 'right', fontFamily: mono }}>
                     {fmtCurrencyFull(l.amount, l.currency)}
                   </td>
@@ -463,54 +465,54 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
 
       {/* Simulador de venda */}
       <div style={sec}>
-        <div style={secTitle}>4. Simulação de venda</div>
+        <div style={secTitle}>{tr('4. Simulação de venda')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12, marginBottom: 14 }}>
           <div>
-            <div style={label}>Valor de venda</div>
+            <div style={label}>{tr('Valor de venda')}</div>
             <input type="number" style={inp} value={sale.saleValue || ''}
               onChange={e => setSale(s => ({ ...s, saleValue: parseFloat(e.target.value) || 0 }))} />
           </div>
           <div>
-            <div style={label}>Moeda</div>
+            <div style={label}>{tr('Moeda')}</div>
             <select style={inp} value={sale.saleCurrency}
               onChange={e => setSale(s => ({ ...s, saleCurrency: e.target.value as Currency }))}>
-              <option value="BRL">BRL</option><option value="EUR">EUR</option>
-              <option value="USD">USD</option><option value="GBP">GBP</option>
+              <option value="BRL">{tr('BRL')}</option><option value="EUR">{tr('EUR')}</option>
+              <option value="USD">{tr('USD')}</option><option value="GBP">{tr('GBP')}</option>
             </select>
             <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 3, fontFamily: mono }}>
-              PTAX: {ptaxRateFor(sale.saleCurrency, ptax).toLocaleString('pt-BR', { minimumFractionDigits: 4 })}
+              {tr('PTAX:')} {ptaxRateFor(sale.saleCurrency, ptax).toLocaleString(locale(), { minimumFractionDigits: 4 })}
             </div>
           </div>
           <div>
-            <div style={label}>Data da venda</div>
+            <div style={label}>{tr('Data da venda')}</div>
             <input type="date" style={inp} value={sale.saleDate}
               onChange={e => setSale(s => ({ ...s, saleDate: e.target.value }))} />
           </div>
           <div>
-            <div style={label}>Intermediação NOVA</div>
+            <div style={label}>{tr('Intermediação NOVA')}</div>
             <input type="number" style={inp} value={sale.commissionValue || ''}
               onChange={e => setSale(s => ({ ...s, commissionValue: parseFloat(e.target.value) || 0 }))} />
           </div>
           <div>
-            <div style={label}>Moeda comissão</div>
+            <div style={label}>{tr('Moeda comissão')}</div>
             <select style={inp} value={sale.commissionCurrency}
               onChange={e => setSale(s => ({ ...s, commissionCurrency: e.target.value as Currency }))}>
-              <option value="BRL">BRL</option><option value="EUR">EUR</option>
-              <option value="USD">USD</option><option value="GBP">GBP</option>
+              <option value="BRL">{tr('BRL')}</option><option value="EUR">{tr('EUR')}</option>
+              <option value="USD">{tr('USD')}</option><option value="GBP">{tr('GBP')}</option>
             </select>
           </div>
           <div>
-            <div style={label}>Impostos (%)</div>
+            <div style={label}>{tr('Impostos (%)')}</div>
             <input type="number" style={inp} value={sale.taxesPct || ''}
               onChange={e => setSale(s => ({ ...s, taxesPct: parseFloat(e.target.value) || 0 }))} />
           </div>
           <div>
-            <div style={label}>Sell-on extra (%)</div>
+            <div style={label}>{tr('Sell-on extra (%)')}</div>
             <input type="number" style={inp} value={sale.extraSellOnPct || ''}
               onChange={e => setSale(s => ({ ...s, extraSellOnPct: parseFloat(e.target.value) || 0 }))} />
           </div>
           <div>
-            <div style={label}>Solidariedade extra (%)</div>
+            <div style={label}>{tr('Solidariedade extra (%)')}</div>
             <input type="number" style={inp} value={sale.extraSolidariedadePct || ''}
               onChange={e => setSale(s => ({ ...s, extraSolidariedadePct: parseFloat(e.target.value) || 0 }))} />
           </div>
@@ -519,14 +521,14 @@ function AthleteDetail({ c, ptax }: { c: AthleteCalc; ptax: Record<string, numbe
         <div style={{ background: 'var(--cream-card)', border: '1px solid var(--divider-soft)', borderRadius: 'var(--radius-md)', padding: 14 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
-              <SaleLine label="(+) Valor de venda (BRL)" v={result.saleBRL} />
-              <SaleLine label="(−) Solidariedade FIFA" v={-result.solidariedadeBRL} />
-              <SaleLine label="(−) Baixa de intangível (residual)" v={-result.intangibleWriteoffBRL} />
-              <SaleLine label="(−) Sell-on a pagar" v={-result.sellOnFeeBRL} />
-              <SaleLine label="(−) Intermediação (cadastrada — venda futura)" v={-result.intermedCadastradaBRL} />
-              <SaleLine label="(−) Intermediação (nova)" v={-result.intermedNewBRL} />
-              <SaleLine label="(−) Impostos" v={-result.taxesBRL} />
-              <SaleLine bold label="(=) Lucro contábil (mais-valia líquida)" v={result.gainBRL} highlight />
+              <SaleLine label={tr('(+) Valor de venda (BRL)')} v={result.saleBRL} />
+              <SaleLine label={tr('(−) Solidariedade FIFA')} v={-result.solidariedadeBRL} />
+              <SaleLine label={tr('(−) Baixa de intangível (residual)')} v={-result.intangibleWriteoffBRL} />
+              <SaleLine label={tr('(−) Sell-on a pagar')} v={-result.sellOnFeeBRL} />
+              <SaleLine label={tr('(−) Intermediação (cadastrada — venda futura)')} v={-result.intermedCadastradaBRL} />
+              <SaleLine label={tr('(−) Intermediação (nova)')} v={-result.intermedNewBRL} />
+              <SaleLine label={tr('(−) Impostos')} v={-result.taxesBRL} />
+              <SaleLine bold label={tr('(=) Lucro contábil (mais-valia líquida)')} v={result.gainBRL} highlight />
             </tbody>
           </table>
         </div>
@@ -549,7 +551,7 @@ function SaleLine({ label, v, bold, highlight }: { label: string; v: number; bol
   const neg = v < 0
   return (
     <tr>
-      <td style={{ padding: '6px 4px', fontFamily: font, fontSize: 12, fontWeight: bold ? 500 : 400, color: 'var(--ink-primary)' }}>{label}</td>
+      <td style={{ padding: '6px 4px', fontFamily: font, fontSize: 12, fontWeight: bold ? 500 : 400, color: 'var(--ink-primary)' }}>{tr(label)}</td>
       <td style={{
         padding: '6px 4px', textAlign: 'right', fontFamily: mono,
         fontSize: highlight ? 14 : 13, fontWeight: bold ? 500 : 400,
