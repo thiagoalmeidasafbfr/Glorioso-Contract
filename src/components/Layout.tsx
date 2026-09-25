@@ -11,8 +11,10 @@ import { tr } from '../i18n'
 //  • navegação lateral sobre o fundo da página — itens "ghost" com ícone
 //    monolinha; o ativo é o quadrado PRETO sólido do IconNavRail do DS;
 //    recolhida, vira o próprio trilho de ícones 36×36;
-//  • TopBar de 56px (--layout-topbar) com o cluster de moeda, idioma e perfil
-//    à direita, fixa no topo da área de conteúdo.
+//  • TopBar de 56px (--layout-topbar) com moeda e idioma à direita, fixa no
+//    topo da área de conteúdo;
+//  • usuário logado no rodapé da navegação (canto inferior esquerdo): avatar,
+//    nome, perfil e o "sair" discreto.
 
 const SIDEBAR_W_OPEN = 240
 const SIDEBAR_W_COLLAPSED = 64
@@ -95,6 +97,7 @@ export default function Layout({ children }: Props) {
 
   const toggle = () => setCollapsed(c => !c)
   const userName = profile?.nome || profile?.email || ''
+  const roleLabel = profile?.role === 'master' ? tr('Master') : tr('Jurídico')
 
   return (
     <div className="app-shell">
@@ -131,6 +134,25 @@ export default function Layout({ children }: Props) {
             </div>
           ))}
         </nav>
+
+        {USE_SUPABASE && profile && (
+          <div className="app-sidebar__user">
+            <span className="app-sidebar__avatar" aria-hidden="true"
+              title={collapsed ? `${userName} · ${roleLabel}` : undefined}>
+              {initials(userName)}
+            </span>
+            {!collapsed && (
+              <span className="app-sidebar__user-text">
+                <span className="app-sidebar__user-name" title={userName}>{userName}</span>
+                <span className="app-sidebar__user-role">{roleLabel}</span>
+              </span>
+            )}
+            <button type="button" className="icon-btn sm app-sidebar__logout" onClick={() => signOut()}
+              title={tr('Sair')} aria-label={tr('Sair')}>
+              <Icon name="logout" size={14} />
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* ── Conteúdo ── */}
@@ -150,22 +172,6 @@ export default function Layout({ children }: Props) {
             ))}
           </div>
 
-          {USE_SUPABASE && profile && (
-            <>
-              <span className="app-topbar__user">
-                <span className="app-topbar__avatar" aria-hidden="true">{initials(userName)}</span>
-                <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25, minWidth: 0 }}>
-                  <span className="app-topbar__user-name">{userName}</span>
-                  <span style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-muted)' }}>
-                    {profile.role === 'master' ? tr('Master') : tr('Jurídico')}
-                  </span>
-                </span>
-              </span>
-              <button type="button" className="icon-btn outline" onClick={() => signOut()} title={tr('Sair')} aria-label={tr('Sair')}>
-                <Icon name="logout" size={16} />
-              </button>
-            </>
-          )}
         </header>
         <main className="app-content">
           {children}

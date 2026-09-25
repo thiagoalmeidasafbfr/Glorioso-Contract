@@ -17,7 +17,7 @@ sistema.
 | `src/components/Badge.tsx` | Badge do DS (pílula 18/24px, peso 500). |
 | `src/components/Wordmark.tsx` | O nome do produto ("Glorioso Contract") composto em Urbanist. O DS **não tem logotipo**: nunca desenhar/aproximar um símbolo. `public/favicon.svg` é a forma compacta (placa creme + inicial). |
 | `src/components/PageHero.tsx` | PageHeader do DS: breadcrumb, título 24px regular, legenda e ações. Props `section`, `crumbs`, `caption`. |
-| `src/components/Layout.tsx` | Shell: navegação lateral + TopBar de 56px. |
+| `src/components/Layout.tsx` | Shell: navegação lateral + TopBar de 56px (moeda e idioma). O usuário logado fica no rodapé da navegação: avatar de 24px, nome/perfil em 12/11px e "sair" como ícone fantasma de 24px. |
 | `src/components/KpiPill.tsx`, `KpiCard.tsx` | MetricCard compacto (eyebrow · valor · legenda). |
 | `src/components/AthleteAvatar.tsx` | Retrato do atleta: quadrado, raio 8, placa creme com filete; iniciais sem foto. |
 | `src/components/Flag.tsx` | Bandeira da nacionalidade em SVG (`country-flag-icons`) — nunca emoji. |
