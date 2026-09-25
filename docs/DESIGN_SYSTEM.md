@@ -19,6 +19,8 @@ sistema.
 | `src/components/PageHero.tsx` | PageHeader do DS: breadcrumb, título 24px regular, legenda e ações. Props `section`, `crumbs`, `caption`. |
 | `src/components/Layout.tsx` | Shell: navegação lateral + TopBar de 56px. |
 | `src/components/KpiPill.tsx`, `KpiCard.tsx` | MetricCard compacto (eyebrow · valor · legenda). |
+| `src/components/AthleteAvatar.tsx` | Retrato do atleta: quadrado, raio 8, placa creme com filete; iniciais sem foto. |
+| `src/components/Flag.tsx` | Bandeira da nacionalidade em SVG (`country-flag-icons`) — nunca emoji. |
 
 ## Regras do DS que valem para qualquer tela
 
@@ -42,6 +44,7 @@ sistema.
 | Tons `warning` e `info` em `lib/tones` | Status "atenção" (vencimento próximo, RJ, em andamento) e "informativo" (empréstimo, renegociação, parcelas). |
 | `.btn-negative` | Confirmação destrutiva (ex.: "Apagar definitivamente"), com o mesmo preenchimento do Badge `negative`. |
 | `.seg-control` | Seletor de opções no trilho do IconNavRail (sunken + ativo preto). |
+| `.th-sort` e `table.table-dense` | Cabeçalho ordenável (o eyebrow vira botão; a coluna ativa fica preta, com `aria-sort`) e tabela larga com filete lateral de 8px — usados no ranking de salários. |
 | Navegação **lateral** | O DS desenha um trilho de ícones no TopBar para ~7 destinos; a plataforma tem 17, em seções. A navegação lateral usa a mesma linguagem (ghost + ativo preto) e, recolhida, vira o próprio trilho de ícones 36×36. |
 | Vocabulário de cor dos ícones de ação (`RowActions`) | Mantido, agora nos tons de status do DS: preto abrir/editar · lilás parcelas · areia pagamento · âmbar desfazer · vermelho excluir · cinza indisponível. |
 

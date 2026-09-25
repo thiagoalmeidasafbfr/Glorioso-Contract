@@ -22,6 +22,7 @@ import {
   fetchAllClubLiabilities, fetchAllIntermediaryLiabilities,
 } from '../lib/athleteQueries'
 import { fetchPtaxRates, toBRL, ptaxRateFor } from '../lib/ptax'
+import { computeIntangible, type IntangibleItem } from '../lib/intangible'
 import { fmtCurrencyShort, fmtCurrencyFull, fmtPercent, fmtDate } from '../lib/format'
 import type {
   Athlete, Contract, Clause, ClubLiability, IntermediaryLiability, Currency,
@@ -32,16 +33,7 @@ import KpiPill from '../components/KpiPill'
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
 
-// ── Helpers de data / meses ────────────────────────────────────────────────
-function parseISO(iso: string | null | undefined): Date | null {
-  if (!iso) return null
-  const [y, m, d] = iso.split('-').map(Number)
-  if (!y || !m || !d) return null
-  return new Date(y, m - 1, d)
-}
-function monthsInclusive(a: Date, b: Date): number {
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) + 1
-}
+// ── Helpers de data ────────────────────────────────────────────────────────
 function todayISO(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -49,12 +41,9 @@ function todayISO(): string {
 
 // ── Modelo por atleta ──────────────────────────────────────────────────────
 // Um contrato de ENTRADA compõe o intangível (transfer fee + intermediação +
-// luvas). Outros contratos (empréstimo, agentes, etc.) não são considerados
-// para o intangível — mas ainda aparecem em "quem recebe" via passivos/cláusulas.
-const INTANGIBLE_CLAUSE_TYPES = new Set<Clause['clause_type']>([
-  'TRANSFER_FEE_FIXO', 'INTERMEDIACAO', 'LUVAS',
-])
-
+// luvas — ver lib/intangible). Outros contratos (empréstimo, agentes, etc.) não
+// são considerados para o intangível — mas ainda aparecem em "quem recebe" via
+// passivos/cláusulas.
 interface AthleteCalc {
   athlete: Athlete
   entryContract: Contract | null
@@ -64,10 +53,7 @@ interface AthleteCalc {
   monthsElapsed: number
   monthsRemaining: number
   intangibleBRL: number             // custo de aquisição em BRL na data do contrato
-  intangibleItems: {
-    clauseType: Clause['clause_type']; description: string;
-    currency: Currency; originalValue: number; brl: number;
-  }[]
+  intangibleItems: IntangibleItem[]
   monthlyAmortBRL: number           // BRL / mês
   accumAmortBRL: number             // baixado até hoje
   residualBRL: number               // saldo do intangível
@@ -96,43 +82,11 @@ function buildAthleteCalcs(
   const today = new Date()
 
   return athletes.map(a => {
-    // Contratos do atleta — pegamos o contrato de ENTRADA vigente ou mais recente
-    const aContracts = contracts
-      .filter(c => c.athlete_id === a.id)
-      .sort((x, y) => (y.start_date ?? '').localeCompare(x.start_date ?? ''))
-    const entry = aContracts.find(c => c.type === 'ENTRADA') ?? null
-
-    const startD = parseISO(entry?.start_date ?? null)
-    const endD = parseISO(entry?.end_date ?? null)
-    const contractMonths = startD && endD ? Math.max(0, monthsInclusive(startD, endD)) : 0
-
-    let monthsElapsed = 0
-    if (startD) {
-      const cap = endD && today > endD ? endD : today
-      monthsElapsed = Math.max(0, Math.min(contractMonths, monthsInclusive(startD, cap)))
-    }
-    const monthsRemaining = Math.max(0, contractMonths - monthsElapsed)
-
-    // Intangível — cláusulas ligadas ao contrato de entrada
-    const intangibleItems = clauses
-      .filter(cl => cl.athlete_id === a.id
-        && (entry ? cl.contract_id === entry.id : false)
-        && INTANGIBLE_CLAUSE_TYPES.has(cl.clause_type)
-        && (cl.original_value ?? 0) > 0)
-      .map(cl => ({
-        clauseType: cl.clause_type,
-        description: cl.description || cl.clause_type,
-        currency: cl.currency,
-        originalValue: cl.original_value ?? 0,
-        brl: cl.fixed_exchange_rate
-          ? (cl.original_value ?? 0) * cl.fixed_exchange_rate
-          : toBRL(cl.original_value ?? 0, cl.currency, ptax),
-      }))
-    const intangibleBRL = intangibleItems.reduce((s, it) => s + it.brl, 0)
-
-    const monthlyAmortBRL = contractMonths > 0 ? intangibleBRL / contractMonths : 0
-    const accumAmortBRL = Math.min(intangibleBRL, monthlyAmortBRL * monthsElapsed)
-    const residualBRL = Math.max(0, intangibleBRL - accumAmortBRL)
+    // Contrato de ENTRADA vigente ou mais recente + intangível e amortização
+    const {
+      entryContract: entry, contractMonths, monthsElapsed, monthsRemaining,
+      intangibleItems, intangibleBRL, monthlyAmortBRL, accumAmortBRL, residualBRL,
+    } = computeIntangible(a.id, contracts, clauses, ptax, today)
 
     // Folha mensal — pega do contrato de entrada (salário e imagem já são mensais)
     const salCur = (entry?.salary_currency ?? 'BRL') as Currency

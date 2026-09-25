@@ -96,6 +96,26 @@ export function isDueSoon(dueDate: string | null | undefined, status: string, da
   return d >= 0 && d <= days
 }
 
+// Texto "dobrado" para comparação: minúsculas, sem acento, só letras e dígitos
+// separados por um espaço (ex.: "São Paulo-FC" → "sao paulo fc").
+export function foldText(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+// Idade em anos completos a partir da data de nascimento ISO (null se ausente
+// ou inválida).
+export function calcAge(birthDate: string | null | undefined): number | null {
+  if (!birthDate) return null
+  const b = new Date(birthDate + 'T12:00:00Z')
+  if (Number.isNaN(b.getTime())) return null
+  const now = new Date()
+  let age = now.getFullYear() - b.getFullYear()
+  const m = now.getMonth() - b.getMonth()
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--
+  return age >= 0 && age < 120 ? age : null
+}
+
 // Retorna YYYY-MM de uma data ISO
 export function isoToYearMonth(iso: string): string {
   return iso.split('T')[0].substring(0, 7)

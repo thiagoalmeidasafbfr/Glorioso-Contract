@@ -224,6 +224,20 @@ tbody td {
   font-variant-numeric: tabular-nums;
 }
 thead th[style*="cursor: pointer"]:hover { color: var(--text-primary); }
+/* Tabela larga (10+ colunas): mesmo ritmo vertical, filete lateral menor. */
+table.table-dense th, table.table-dense td { padding-left: 8px; padding-right: 8px; }
+table.table-dense th:first-child, table.table-dense td:first-child { padding-left: 16px; }
+table.table-dense th:last-child, table.table-dense td:last-child { padding-right: 16px; }
+/* Cabeçalho ordenável: o próprio eyebrow vira botão; a coluna ativa fica preta. */
+.th-sort {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 0; border: none; background: none; cursor: pointer;
+  font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; text-align: inherit;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.th-sort:hover, th[aria-sort] .th-sort { color: var(--text-primary); }
+th[aria-sort] .th-sort { font-weight: var(--font-weight-medium); }
+.th-sort:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; border-radius: var(--radius-xs); }
 
 /* ── Badges (pílula, 18px, 10px/500) ─────────────────────────────────────── */
 .badge, .chip {

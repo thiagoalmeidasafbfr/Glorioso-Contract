@@ -41,6 +41,7 @@ const NAV_SECTIONS: { label: string | null; items: NavItemDef[] }[] = [
     label: 'Relatórios',
     items: [
       { to: '/relatorios/visao-atletas',        label: 'Visão por atleta',        icon: 'athlete' },
+      { to: '/relatorios/salarios',             label: 'Ranking de salários',     icon: 'ranking' },
       { to: '/relatorios/consolidado',          label: 'Consolidado',             icon: 'consolidated' },
       { to: '/relatorios/acordos',              label: 'Acordos e renegociações', icon: 'deals' },
       { to: '/relatorios/sell-on',              label: 'Vendas futuras',          icon: 'sellOn' },

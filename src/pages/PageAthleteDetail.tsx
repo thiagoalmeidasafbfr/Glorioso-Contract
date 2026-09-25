@@ -51,7 +51,7 @@ import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import LoanShareModal from '../components/modals/LoanShareModal'
 import { loanShareTriggers, decodeLoanShare, splitLoanSalary } from '../lib/loanSalary'
 import { sumOwnership, isOwnershipValid, sortRights } from '../lib/ownership'
-import { effectiveSalary } from '../lib/salary'
+import { effectiveSalary, employmentContract } from '../lib/salary'
 import { useAuth } from '../context/AuthContext'
 import { exportWorkbook } from '../lib/xlsx-utils'
 import { COLS_ATLETA_CONSOLIDADO, buildConsolidatedRows } from '../lib/athleteConsolidado'
@@ -346,16 +346,6 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
       </div>
     </div>
   )
-}
-
-// ── Escolhe o vínculo de trabalho (remuneração paga pelo Botafogo) ──────────
-function employmentContract(contracts: Contract[]): Contract | null {
-  const emp = contracts.filter(c => c.type === 'ENTRADA' || c.type === 'EMPRESTIMO_ENTRADA')
-  const pool = emp.length ? emp : contracts.filter(c => c.base_salary != null)
-  if (!pool.length) return null
-  const active = pool.filter(c => c.status === 'ATIVO')
-  const arr = active.length ? active : pool
-  return [...arr].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
 }
 
 // Rótulo curto de um vínculo (usado nos seletores/labels de contrato relacionado).

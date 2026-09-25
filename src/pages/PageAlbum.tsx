@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllEconomicRights, fetchAllClauses,
 } from '../lib/athleteQueries'
+import { calcAge } from '../lib/format'
 import { bfrShare } from '../lib/ownership'
 import OwnershipBar from '../components/OwnershipBar'
 import PageHero from '../components/PageHero'
@@ -24,17 +25,6 @@ const STATUS_LABELS: Record<AthleteStatus, string> = {
 
 function getInitials(name: string): string {
   return name.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('')
-}
-
-function calcAge(birthDate: string | null): number | null {
-  if (!birthDate) return null
-  const b = new Date(birthDate + 'T12:00:00Z')
-  if (Number.isNaN(b.getTime())) return null
-  const now = new Date()
-  let age = now.getFullYear() - b.getFullYear()
-  const m = now.getMonth() - b.getMonth()
-  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--
-  return age >= 0 && age < 120 ? age : null
 }
 
 // Foto grande da figurinha, com fallback para iniciais. Retrato do DS: sobre
