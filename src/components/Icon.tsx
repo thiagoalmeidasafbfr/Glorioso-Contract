@@ -6,12 +6,12 @@
 
 import { Link } from 'react-router-dom'
 import {
-  ArrowLeftRight, Banknote, Briefcase, Calculator, CalendarDays, ChartLine, ChartPie,
-  Check, ChevronDown, ChevronLeft, ChevronRight, CirclePlus, Clock, Download, Ellipsis,
-  ExternalLink, FileSpreadsheet, Folder, Handshake, Images, Layers, LayoutDashboard,
-  LayoutGrid, Link2, List, LogOut, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Scale,
-  Search, Shield, Split, Target, Trash2, TrendingUp, TriangleAlert, Undo2, Upload,
-  UserRound, Users, X, type LucideIcon,
+  ArrowLeftRight, Banknote, Briefcase, Calculator, CalendarDays, ChartBarDecreasing, ChartLine,
+  ChartPie, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CirclePlus, Clock,
+  Download, Ellipsis, ExternalLink, FileSpreadsheet, Folder, Handshake, Images, Info, Layers,
+  LayoutDashboard, LayoutGrid, Link2, List, LogOut, PanelLeftClose, PanelLeftOpen, Pencil,
+  Plus, Scale, Search, Shield, Split, Target, Trash2, TrendingUp, TriangleAlert, Undo2,
+  Upload, UserRound, Users, X, type LucideIcon,
 } from 'lucide-react'
 
 const ICONS = {
@@ -28,6 +28,7 @@ const ICONS = {
   split: Split,               // gerar parcelas a partir de um valor único
   x: X,                       // fechar / remover linha
   chevronDown: ChevronDown,
+  chevronUp: ChevronUp,
   chevronRight: ChevronRight,
   chevronLeft: ChevronLeft,
   link: Link2,                // vínculo
@@ -37,6 +38,7 @@ const ICONS = {
   dots: Ellipsis,             // mais ações
   alert: TriangleAlert,       // vencimento em atraso
   clock: Clock,               // vencimento próximo
+  info: Info,                 // como o valor é calculado (tooltip)
   gavel: Scale,               // recuperação judicial
   // Navegação / estrutura
   create: CirclePlus,
@@ -53,6 +55,7 @@ const ICONS = {
   ownership: ChartPie,
   target: Target,
   amortization: ChartLine,
+  ranking: ChartBarDecreasing,
   transfer: ArrowLeftRight,
   spreadsheet: FileSpreadsheet,
   folder: Folder,

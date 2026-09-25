@@ -13,6 +13,7 @@ import { OwnershipBadge } from '../components/OwnershipBar'
 import { sortRights, sumOwnership } from '../lib/ownership'
 import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
+import AthleteAvatar from '../components/AthleteAvatar'
 import { Icon, IconButton } from '../components/Icon'
 import { modalInput, modalLabel } from '../components/modals/styles'
 import { ATHLETE_STATUS_TONE, badgeStyle } from '../lib/tones'
@@ -53,34 +54,6 @@ function positionOrder(pos: string | null): number {
   if (p.includes('meia') || p.includes('meio')) return 4
   if (p.includes('atacante') || p.includes('ponta') || p.includes('centroavante')) return 5
   return 98
-}
-
-function getInitials(name: string): string {
-  return name.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('')
-}
-
-function AthleteAvatar({ athlete, size = 38 }: { athlete: Athlete; size?: number }) {
-  const [err, setErr] = useState(false)
-  if (athlete.profile_photo_url && !err) {
-    return (
-      <img src={athlete.profile_photo_url} alt={athlete.short_name}
-        onError={() => setErr(true)}
-        style={{
-          width: size, height: size, borderRadius: 'var(--radius-sm)', objectFit: 'cover', objectPosition: 'center top', flexShrink: 0,
-          background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line)',
-        }} />
-    )
-  }
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: 'var(--radius-sm)', flexShrink: 0,
-      background: 'var(--surface-accent)', boxShadow: 'inset 0 0 0 1px var(--accent-line)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.34, fontWeight: 500, color: 'var(--ink-900)',
-    }}>
-      {getInitials(athlete.short_name)}
-    </div>
-  )
 }
 
 interface NewAthleteModalProps {

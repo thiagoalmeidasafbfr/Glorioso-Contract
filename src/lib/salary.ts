@@ -34,6 +34,20 @@ export interface EffectiveRemuneration {
   since: string | null
 }
 
+/**
+ * Vínculo de trabalho do atleta (remuneração paga pelo Botafogo): o contrato de
+ * ENTRADA ou EMPRESTIMO_ENTRADA — ativo e mais recente, quando houver. Sem
+ * nenhum dos dois, o contrato mais recente que tenha salário informado.
+ */
+export function employmentContract(contracts: Contract[]): Contract | null {
+  const emp = contracts.filter(c => c.type === 'ENTRADA' || c.type === 'EMPRESTIMO_ENTRADA')
+  const pool = emp.length ? emp : contracts.filter(c => c.base_salary != null)
+  if (!pool.length) return null
+  const active = pool.filter(c => c.status === 'ATIVO')
+  const arr = active.length ? active : pool
+  return [...arr].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]
+}
+
 /** Gatilhos ATINGIDOS com data, ordenados por achieved_date crescente. */
 export function achievedTriggers(triggers: SalaryTrigger[]): SalaryTrigger[] {
   return triggers

@@ -315,6 +315,7 @@ base `MAIS_VALIA` ou `VALOR_TOTAL`. Relatório específico em
 | `/relatorios/direitos-economicos` | `PageRelDirEconomicos` | ownership |
 | `/relatorios/gatilhos` | `PageRelGatilhos` | gatilhos ativos |
 | `/relatorios/recuperacao-judicial` | `PageRecuperacaoJudicial` | firme × contingente |
+| `/relatorios/salarios` | `PageRankingSalarios` | ranking de salários: folha, custo anual, amortização e valor contábil por jogador |
 | `/dados` · `/dados/planilhas` | `PageDados` · `PageImportarPlanilhas` | import/export |
 | `/login` | `PageLogin` | autenticação Supabase |
 
@@ -326,6 +327,8 @@ Em `src/components/`:
 - `EntityPicker.tsx` — seletor de contraparte
 - `FlowBuilder.tsx` — builder de fluxo de parcelas
 - `Icon.tsx`, `ImageUpload.tsx`, `KpiCard.tsx`, `KpiPill.tsx`
+- `AthleteAvatar.tsx` — retrato do atleta (foto ou iniciais)
+- `Flag.tsx` — bandeira da nacionalidade (SVG)
 - `OwnershipBar.tsx` — distribuição de direitos econômicos
 - `NumberInput.tsx`, `PageHero.tsx`, `RefLink.tsx`
 - `RemunerationChart.tsx` — timeline de remuneração
@@ -353,6 +356,8 @@ Em `src/components/`:
 | `liabilityFlow.ts`, `salaryFlow.ts`, `remflow.ts` | Fluxos de passivo/salário/remuneração |
 | `loanSalary.ts` | Salário em empréstimo |
 | `ownership.ts` | Direitos econômicos |
+| `intangible.ts` | Intangível do atleta: custo de aquisição, amortização linear e valor contábil |
+| `nationality.ts` | Nacionalidade (texto livre) → país, bandeira e estrangeiro/nacional |
 | `ptax.ts` | Câmbio |
 | `renegotiation.ts` | Renegociação |
 | `reportPorters.ts` | Adapters para relatórios |
