@@ -7,7 +7,7 @@
 // meses inclusivos; o que ainda não foi amortizado é o valor contábil
 // (residual). Outros contratos (empréstimo, agentes etc.) não entram aqui.
 //
-// Usado pela calculadora de amortização e pelo ranking de salários.
+// Usado pela calculadora de amortização e pelo detalhamento de jogadores.
 
 import type { Clause, Contract, Currency } from '../types/athlete-system'
 import { toBRL } from './ptax'

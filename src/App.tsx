@@ -32,7 +32,7 @@ import PageRecuperacaoJudicial from './pages/PageRecuperacaoJudicial'
 import PageDados from './pages/PageDados'
 import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
 import PageAmortizacao from './pages/PageAmortizacao'
-import PageRankingSalarios from './pages/PageRankingSalarios'
+import PageDetalhamentoJogadores from './pages/PageDetalhamentoJogadores'
 import PagePremissas from './pages/PagePremissas'
 
 function AppRoutes() {
@@ -89,7 +89,8 @@ function AppRoutes() {
           <Route path="/relatorios/gatilhos" element={<PageRelGatilhos />} />
           <Route path="/relatorios/recuperacao-judicial" element={<PageRecuperacaoJudicial />} />
           <Route path="/relatorios/amortizacao" element={<PageAmortizacao />} />
-          <Route path="/relatorios/salarios" element={<PageRankingSalarios />} />
+          <Route path="/relatorios/jogadores" element={<PageDetalhamentoJogadores />} />
+          <Route path="/relatorios/salarios" element={<Navigate to="/relatorios/jogadores" replace />} />
 
           {/* Modelo financeiro (CFO) */}
           <Route path="/modelo/premissas" element={<PagePremissas />} />
