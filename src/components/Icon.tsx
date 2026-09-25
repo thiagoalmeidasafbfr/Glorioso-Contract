@@ -13,6 +13,7 @@ import {
   Plus, Scale, Search, Shield, Split, TableProperties, Target, Trash2, TrendingUp, TriangleAlert, Undo2,
   Upload, UserRound, Users, X, type LucideIcon,
 } from 'lucide-react'
+import { tr } from '../i18n'
 
 const ICONS = {
   // Ações
@@ -107,17 +108,20 @@ export function IconButton({
 }: IconButtonProps) {
   const cls = `icon-btn ${tone}${small ? ' sm' : ''}`
   const size = 16
-  const tip = disabled ? `${label}${disabledReason ? ` — ${disabledReason}` : ' (indisponível)'}` : (title ?? label)
+  // Traduz as partes: o tooltip é montado (rótulo + motivo) e não bate com uma chave inteira.
+  const tip = disabled
+    ? `${tr(label)}${disabledReason ? ` — ${tr(disabledReason)}` : ` ${tr('(indisponível)')}`}`
+    : tr(title ?? label)
   if (to && !disabled) {
     return (
-      <Link to={to} className={cls} title={tip} aria-label={label} style={style}
+      <Link to={to} className={cls} title={tip} aria-label={tr(label)} style={style}
         onClick={e => e.stopPropagation()}>
         <Icon name={icon} size={size} />
       </Link>
     )
   }
   return (
-    <button type="button" className={cls} title={tip} aria-label={label} aria-disabled={disabled} disabled={disabled} style={style}
+    <button type="button" className={cls} title={tip} aria-label={tr(label)} aria-disabled={disabled} disabled={disabled} style={style}
       onClick={e => { e.stopPropagation(); onClick?.() }}>
       <Icon name={icon} size={size} />
     </button>

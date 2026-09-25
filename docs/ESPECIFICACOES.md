@@ -78,7 +78,7 @@ Glorioso-Contract/
 │   ├── lib/                   # regras de negócio, queries, importadores
 │   ├── pages/                 # 19 páginas de rota
 │   ├── types/                 # tipos TS espelhando o schema
-│   ├── i18n/
+│   ├── i18n/              # idiomas PT/EN/ES (ver docs/I18N.md)
 │   └── assets/
 ├── supabase/
 │   └── migrations/            # 17 migrations (001 → 017)

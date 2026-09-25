@@ -31,6 +31,7 @@ import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import type { AthleteCategory } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
+import { tr, trf } from '../i18n'
 
 // Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
 function parseCategory(v: unknown): AthleteCategory {
@@ -311,7 +312,7 @@ export default function PageDados() {
       setWipeText('')
       setMsg({ key: '__wipe__', text: 'Base apagada. Toda a base foi removida com sucesso.', ok: true })
     } catch (err) {
-      setMsg({ key: '__wipe__', text: `Erro ao apagar a base: ${(err as Error).message}`, ok: false })
+      setMsg({ key: '__wipe__', text: trf('Erro ao apagar a base: {0}', (err as Error).message), ok: false })
     } finally {
       setWiping(false)
     }
@@ -319,62 +320,59 @@ export default function PageDados() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Dados & Modelos" section="Dados">
+      <PageHero title={tr('Dados & Modelos')} section={tr('Dados')}>
         <button onClick={exportAll} disabled={exportingAll} className="btn btn-accent">
-          <Icon name="download" size={16} /> {exportingAll ? 'Exportando…' : 'Exportar toda a base'}
+          <Icon name="download" size={16} /> {exportingAll ? tr('Exportando…') : tr('Exportar toda a base')}
         </button>
         <button onClick={() => { setConfirmWipe(true); setMsg(null) }} className="btn btn-danger">
-          <Icon name="trash" size={16} /> Apagar toda a base
+          <Icon name="trash" size={16} /> {tr('Apagar toda a base')}
         </button>
       </PageHero>
 
       {confirmWipe && (
-        <div role="alertdialog" aria-label="Apagar toda a base" style={{ background: 'var(--surface-negative-soft)', borderRadius: 'var(--radius-card)', padding: 'var(--gutter-card)', marginBottom: 'var(--space-6)' }}>
-          <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--text-negative)', marginBottom: 6 }}>Apagar toda a base?</div>
+        <div role="alertdialog" aria-label={tr('Apagar toda a base')} style={{ background: 'var(--surface-negative-soft)', borderRadius: 'var(--radius-card)', padding: 'var(--gutter-card)', marginBottom: 'var(--space-6)' }}>
+          <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--text-negative)', marginBottom: 6 }}>{tr('Apagar toda a base?')}</div>
           <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
-            Isto remove <strong>permanentemente</strong> todos os atletas, vínculos, cláusulas, parcelas, titularidade,
-            metas de salário, passivos, direito de imagem, PJs, clubes e agentes. Esta ação <strong>não pode ser desfeita</strong>.
-            Recomendamos <strong>Exportar toda a base</strong> antes de continuar.
-            Para confirmar, digite <span style={{ fontFamily: fontMono, fontWeight: 500 }}>APAGAR</span> abaixo.
+            {tr('Isto remove')} <strong>{tr('permanentemente')}</strong> {tr('todos os atletas, vínculos, cláusulas, parcelas, titularidade, metas de salário, passivos, direito de imagem, PJs, clubes e agentes. Esta ação')} <strong>{tr('não pode ser desfeita')}</strong>{tr('. Recomendamos')} <strong>{tr('Exportar toda a base')}</strong> {tr('antes de continuar. Para confirmar, digite')} <span style={{ fontFamily: fontMono, fontWeight: 500 }}>{tr('APAGAR')}</span> {tr('abaixo.')}
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input
-              autoFocus value={wipeText} onChange={e => setWipeText(e.target.value)} placeholder="APAGAR"
+              autoFocus value={wipeText} onChange={e => setWipeText(e.target.value)} placeholder={tr('APAGAR')}
               style={{ width: 160 }}
             />
-            <button onClick={handleWipe} disabled={wipeText.trim().toUpperCase() !== 'APAGAR' || wiping} className="btn btn-negative">
-              {wiping ? 'Apagando…' : 'Apagar definitivamente'}
+            <button onClick={handleWipe} disabled={wipeText.trim().toUpperCase() !== tr('APAGAR') || wiping} className="btn btn-negative">
+              {wiping ? tr('Apagando…') : tr('Apagar definitivamente')}
             </button>
             <button onClick={() => { setConfirmWipe(false); setWipeText('') }} disabled={wiping} className="btn btn-outline">
-              Cancelar
+              {tr('Cancelar')}
             </button>
           </div>
         </div>
       )}
 
       {msg?.key === '__wipe__' && (
-        <div style={{ marginBottom: 22, fontSize: 13, fontFamily: fontBody, fontWeight: 500, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</div>
+        <div style={{ marginBottom: 22, fontSize: 13, fontFamily: fontBody, fontWeight: 500, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{tr(msg.text)}</div>
       )}
 
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, marginBottom: 18, maxWidth: 760 }}>
-        Cada bloco tem um <strong>modelo</strong> (planilha em branco com as colunas), <strong>exportar</strong> (dados atuais) e <strong>importar</strong>. Onde há
-        <span style={{ fontFamily: fontMono, fontSize: 11 }}> Atleta ID</span>, preencha com o ID do atleta (exporte a aba Atletas para obter os IDs).
+        {tr('Cada bloco tem um')} <strong>{tr('modelo')}</strong> {tr('(planilha em branco com as colunas),')} <strong>{tr('exportar')}</strong> {tr('(dados atuais) e')} <strong>{tr('importar')}</strong>{tr('. Onde há')}
+        <span style={{ fontFamily: fontMono, fontSize: 11 }}> {tr('Atleta ID')}</span>{tr(', preencha com o ID do atleta (exporte a aba Atletas para obter os IDs).')}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
         {DESCRIPTORS.map(d => (
           <div key={d.key} className="card" style={{ padding: 'var(--gutter-card)' }}>
-            <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', marginBottom: 2 }}>{d.label}</div>
+            <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', marginBottom: 2 }}>{tr(d.label)}</div>
             <div style={{ fontFamily: fontMono, fontSize: 10, color: 'var(--text-secondary)', marginBottom: 14 }}>
-              {d.cols.length} colunas{d.parent ? ` · requer ${d.parent}` : ''}
+              {d.cols.length} {tr('colunas')}{d.parent ? trf(' · requer {0}', d.parent) : ''}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={() => downloadTemplate(d)} className="btn btn-outline">Baixar modelo</button>
-              <button onClick={() => exportData(d)} className="btn btn-outline">Exportar</button>
+              <button onClick={() => downloadTemplate(d)} className="btn btn-outline">{tr('Baixar modelo')}</button>
+              <button onClick={() => exportData(d)} className="btn btn-outline">{tr('Exportar')}</button>
               <ImportButton onDone={(text, ok) => setMsg({ key: d.key, text, ok })} d={d} />
             </div>
             {msg?.key === d.key && (
-              <div style={{ marginTop: 10, fontSize: 12, fontFamily: fontBody, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{msg.text}</div>
+              <div style={{ marginTop: 10, fontSize: 12, fontFamily: fontBody, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{tr(msg.text)}</div>
             )}
           </div>
         ))}
@@ -396,12 +394,12 @@ function ImportButton({ d, onDone }: { d: Descriptor; onDone: (text: string, ok:
       const res = await d.importRows(rows)
       onDone(resultMessage(res), true)
     } catch (err) {
-      onDone(`Erro: ${(err as Error).message}`, false)
+      onDone(trf('Erro: {0}', (err as Error).message), false)
     } finally { setBusy(false) }
   }
   return (
     <>
-      <button onClick={() => ref.current?.click()} disabled={busy} className="btn btn-primary">{busy ? 'Importando…' : 'Importar'}</button>
+      <button onClick={() => ref.current?.click()} disabled={busy} className="btn btn-primary">{busy ? tr('Importando…') : tr('Importar')}</button>
       <input ref={ref} type="file" accept=".xlsx,.xls" onChange={handle} style={{ display: 'none' }} />
     </>
   )

@@ -32,6 +32,7 @@ import { promoteLiabilityToClause } from '../lib/liabilityFlow'
 import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 import { badgeStyle, PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, humanizeEnum } from '../lib/tones'
+import { tr, trf, trn, locale, trCols } from '../i18n'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -116,7 +117,7 @@ export default function PageConsolidado() {
           date: it.due_date, athleteId: it.athlete_id, atleta: nameOf.get(it.athlete_id) ?? '—',
           natureza: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela',
           contraparte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—',
-          descricao: c ? `${c.description} — parc. ${it.installment_number}` : `Parcela ${it.installment_number}`,
+          descricao: c ? trf('{0} — parc. {1}', c.description, it.installment_number) : trf('Parcela {0}', it.installment_number),
           dir, valor: it.original_value, moeda: it.currency, status: it.payment_status,
           fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
           notes: it.notes ?? null, rjFiledAt: parseRJ(it.notes)?.filedAt ?? null,
@@ -234,13 +235,13 @@ export default function PageConsolidado() {
   async function bulkMarkRJ() {
     const chosen = movs.filter(m => selected.has(m.id) && canMarkRJ(m))
     if (chosen.length === 0) return
-    if (!confirm(`Marcar ${chosen.length} lançamento(s) como Recuperação Judicial em ${rjDate}?`)) return
+    if (!confirm(trn(chosen.length, 'Marcar {0} lançamento como Recuperação Judicial em {1}?', 'Marcar {0} lançamentos como Recuperação Judicial em {1}?', rjDate))) return
     await markManyRJ(chosen.map(m => ({ kind: m.kind, id: m.id, notes: m.notes })), rjDate)
     setSelected(new Set())
     await load()
   }
   async function unmarkRJ(m: Mov) {
-    if (!confirm('Remover a marcação de Recuperação Judicial deste lançamento?')) return
+    if (!confirm(tr('Remover a marcação de Recuperação Judicial deste lançamento?'))) return
     await unmarkItemRJ({ kind: m.kind, id: m.id }, m.notes)
     await load()
   }
@@ -287,7 +288,7 @@ export default function PageConsolidado() {
       ptaxRate: effectiveRate(m),
       vencimento: m.date ?? '',
     }))
-    exportWorkbook([{ name: 'Consolidado', cols, rows }], 'consolidado-movimentacoes.xlsx')
+    exportWorkbook([{ name: tr('Consolidado'), cols: trCols(cols), rows }], 'consolidado-movimentacoes.xlsx')
   }
 
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
@@ -295,49 +296,49 @@ export default function PageConsolidado() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Consolidado" section="Relatórios" subtitle="Todas as movimentações financeiras">
-        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
+      <PageHero title={tr('Consolidado')} section={tr('Relatórios')} subtitle={tr('Todas as movimentações financeiras')}>
+        <button onClick={exportAll} className="btn btn-outline"><Icon name="download" size={16} /> {tr('Exportar')}</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, natureza, contraparte, descrição..." style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Busca')}</label>
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={tr('Atleta, natureza, contraparte, descrição...')} style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Atleta</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Atleta')}</label>
           <select value={atletaF} onChange={e => setAtletaF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
-            {atletas.map(s => <option key={s} value={s}>{s}</option>)}
+            {atletas.map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Posição</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Posição')}</label>
           <select value={posF} onChange={e => setPosF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
-            {posicoes.map(s => <option key={s} value={s}>{s}</option>)}
+            {posicoes.map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Natureza</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Natureza')}</label>
           <select value={naturezaF} onChange={e => setNaturezaF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 180 }}>
-            {naturezas.map(s => <option key={s} value={s}>{s}</option>)}
+            {naturezas.map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Status')}</label>
           <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
-            {STATUS_OPTS.map(s => <option key={s} value={s}>{s === 'Todos' ? s : (PAYMENT_STATUS_LABEL[s] ?? humanizeEnum(s))}</option>)}
+            {STATUS_OPTS.map(s => <option key={s} value={s}>{s === 'Todos' ? tr(s) : (tr(PAYMENT_STATUS_LABEL[s]) ?? tr(humanizeEnum(s)))}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Rec. Judicial</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Rec. Judicial')}</label>
           <select value={rjFilter} onChange={e => setRjFilter(e.target.value as 'Todos' | 'Em RJ' | 'Fora da RJ')} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
-            {['Todos', 'Em RJ', 'Fora da RJ'].map(s => <option key={s} value={s}>{s}</option>)}
+            {['Todos', 'Em RJ', 'Fora da RJ'].map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
         <div className="kpi-group">
-          <KpiPill label="A pagar (BRL PTAX)" value={fmtCurrencyShort(totals.pay, 'BRL')} tone="neg" />
-          <KpiPill label="A receber (BRL PTAX)" value={fmtCurrencyShort(totals.rec, 'BRL')} tone="pos" />
-          <KpiPill label="Em Rec. Judicial (BRL PTAX)" value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
+          <KpiPill label={tr('A pagar (BRL PTAX)')} value={fmtCurrencyShort(totals.pay, 'BRL')} tone="neg" />
+          <KpiPill label={tr('A receber (BRL PTAX)')} value={fmtCurrencyShort(totals.rec, 'BRL')} tone="pos" />
+          <KpiPill label={tr('Em Rec. Judicial (BRL PTAX)')} value={fmtCurrencyShort(totals.rj, 'BRL')} tone="warn" />
         </div>
       </div>
 
@@ -348,15 +349,15 @@ export default function PageConsolidado() {
           background: 'var(--surface-warning-soft)',
         }}>
           <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--ink-primary)', fontWeight: 500 }}>
-            {selected.size} lançamento(s) selecionado(s)
+            {trn(selected.size, '{0} lançamento selecionado', '{0} lançamentos selecionados')}
           </span>
-          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase' }}>Data protocolo RJ:</span>
+          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase' }}>{tr('Data protocolo RJ:')}</span>
           <input type="date" value={rjDate} onChange={e => setRjDate(e.target.value)}
             style={{ fontSize: 12 }} />
           <button onClick={bulkMarkRJ} className="btn btn-outline" style={{ color: 'var(--text-warning)' }}>
-            Marcar como recuperação judicial
+            {tr('Marcar como recuperação judicial')}
           </button>
-          <button onClick={() => setSelected(new Set())} className="btn btn-outline">Limpar seleção</button>
+          <button onClick={() => setSelected(new Set())} className="btn btn-outline">{tr('Limpar seleção')}</button>
         </div>
       )}
       <div style={{ marginBottom: 8 }}>
@@ -369,22 +370,22 @@ export default function PageConsolidado() {
               {canEdit && (
                 <th style={{ ...th, width: 34, textAlign: 'center' }}>
                   <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                    title="Selecionar todos os passivos elegíveis (a pagar, fora da RJ)" />
+                    title={tr('Selecionar todos os passivos elegíveis (a pagar, fora da RJ)')} />
                 </th>
               )}
-              <th style={{ ...th, minWidth: 90 }}>Vencimento</th>
-              <th style={{ ...th, minWidth: 140 }}>Atleta</th>
-              <th style={{ ...th, minWidth: 150 }}>Natureza</th>
-              <th style={{ ...th, minWidth: 150 }}>Contraparte</th>
-              <th style={{ ...th, minWidth: 80 }}>Direção</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }} title="Convertido pela PTAX atual do Banco Central">Valor (BRL PTAX)</th>
-              <th style={{ ...th, minWidth: 90 }}>Status</th>
-              <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>Ações</th>
+              <th style={{ ...th, minWidth: 90 }}>{tr('Vencimento')}</th>
+              <th style={{ ...th, minWidth: 140 }}>{tr('Atleta')}</th>
+              <th style={{ ...th, minWidth: 150 }}>{tr('Natureza')}</th>
+              <th style={{ ...th, minWidth: 150 }}>{tr('Contraparte')}</th>
+              <th style={{ ...th, minWidth: 80 }}>{tr('Direção')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>{tr('Valor')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 120 }} title={tr('Convertido pela PTAX atual do Banco Central')}>{tr('Valor (BRL PTAX)')}</th>
+              <th style={{ ...th, minWidth: 90 }}>{tr('Status')}</th>
+              <th style={{ ...th, minWidth: 110, textAlign: 'right' }}>{tr('Ações')}</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhuma movimentação.</td></tr>}
+              {loading && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 10 : 9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhuma movimentação.')}</td></tr>}
               {filtered.map(m => {
                 const late = isOverdue(m.date, m.status)
                 return (
@@ -394,33 +395,33 @@ export default function PageConsolidado() {
                         {canMarkRJ(m) ? (
                           <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleOne(m.id)} />
                         ) : m.rjFiledAt ? (
-                          <button title={`Em RJ desde ${fmtDate(m.rjFiledAt)} — clique para remover`}
+                          <button title={trf('Em RJ desde {0} — clique para remover', fmtDate(m.rjFiledAt))}
                             onClick={() => unmarkRJ(m)}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--warn)', fontFamily: mono, fontSize: 10, fontWeight: 500 }}>RJ</button>
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--warn)', fontFamily: mono, fontSize: 10, fontWeight: 500 }}>{tr('RJ')}</button>
                         ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                       </td>
                     )}
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{m.date ? fmtDate(m.date) : '—'}</td>
-                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${m.athleteId}`} title="Abrir atleta">{m.atleta}</RefLink></td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${m.athleteId}`} title={tr('Abrir atleta')}>{tr(m.atleta)}</RefLink></td>
                     <td style={{ ...td, fontSize: 12 }}>
-                      {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title="Abrir a obrigação">{m.natureza}</RefLink> : m.natureza}
-                      {m.rjFiledAt && <span style={{ ...badgeStyle('warning'), marginLeft: 6 }} title={`Em RJ desde ${fmtDate(m.rjFiledAt)}`}>RJ</span>}
+                      {m.clauseId ? <RefLink to={`/obrigacoes/${m.clauseId}`} title={tr('Abrir a obrigação')}>{tr(m.natureza)}</RefLink> : tr(m.natureza)}
+                      {m.rjFiledAt && <span style={{ ...badgeStyle('warning'), marginLeft: 6 }} title={trf('Em RJ desde {0}', fmtDate(m.rjFiledAt))}>{tr('RJ')}</span>}
                     </td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
-                      {(() => { const to = entityLink(m.contraparte); return to ? <RefLink to={to} title="Abrir cadastro da contraparte">{m.contraparte}</RefLink> : m.contraparte })()}
+                      {(() => { const to = entityLink(m.contraparte); return to ? <RefLink to={to} title={tr('Abrir cadastro da contraparte')}>{tr(m.contraparte)}</RefLink> : m.contraparte })()}
                     </td>
-                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--text-negative)' : 'var(--text-positive)' }}>{m.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: mono, color: m.dir === 'A_PAGAR' ? 'var(--text-negative)' : 'var(--text-positive)' }}>{m.dir === 'A_PAGAR' ? tr('a pagar') : tr('a receber')}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(m.valor, m.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}
-                      title={m.moeda === 'BRL' ? 'BRL'
+                      title={m.moeda === 'BRL' ? tr('BRL')
                         : m.fixedRate != null
-                          ? `PTAX FIXADA ${m.moeda}/BRL: ${m.fixedRate.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`
-                          : `PTAX ${m.moeda}/BRL: ${ptaxRateFor(m.moeda, ptax).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}>
+                          ? trf('PTAX FIXADA {0}/BRL: {1}', m.moeda, m.fixedRate.toLocaleString(locale(), { maximumFractionDigits: 4 }))
+                          : trf('PTAX {0}/BRL: {1}', m.moeda, ptaxRateFor(m.moeda, ptax).toLocaleString(locale(), { maximumFractionDigits: 4 }))}>
                       {fmtCurrencyShort(effectiveBRL(m), 'BRL')}
-                      {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--warn)', fontWeight: 500 }}>fx</span>}
+                      {m.fixedRate != null && <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--warn)', fontWeight: 500 }}>{tr('fx')}</span>}
                     </td>
                     <td style={td}>
-                      <span style={badgeStyle(PAYMENT_STATUS_TONE[m.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{PAYMENT_STATUS_LABEL[m.status] ?? humanizeEnum(m.status)}</span>
+                      <span style={badgeStyle(PAYMENT_STATUS_TONE[m.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{tr(PAYMENT_STATUS_LABEL[m.status]) ?? tr(humanizeEnum(m.status))}</span>
                     </td>
                     <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <RowActions
@@ -455,12 +456,12 @@ export default function PageConsolidado() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 10, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{filtered.length} movimentação(ões)</div>
+      <div style={{ marginTop: 10, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{trn(filtered.length, '{0} movimentação', '{0} movimentações')}</div>
 
       {payInstId && (() => {
         const inst = insts.find(i => i.id === payInstId)
         return inst ? (
-          <PaymentModal label={`Parcela ${inst.installment_number}`} currency={inst.currency} value={inst.original_value}
+          <PaymentModal label={trf('Parcela {0}', inst.installment_number)} currency={inst.currency} value={inst.original_value}
             onClose={() => setPayInstId(null)} onSave={pmt => registerPayment(inst.id, pmt)} />
         ) : null
       })()}

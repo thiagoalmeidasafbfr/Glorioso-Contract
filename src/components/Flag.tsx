@@ -4,6 +4,7 @@
 // renderizado quando a nacionalidade não é reconhecida.
 
 import { countryOf } from '../lib/nationality'
+import { tr } from '../i18n'
 
 interface Props {
   nationality: string | null | undefined
@@ -18,7 +19,7 @@ export default function Flag({ nationality, size = 12, round = false, style }: P
   const c = countryOf(nationality)
   if (!c) return null
   return (
-    <img src={c.flagSrc} alt={c.name} title={c.name}
+    <img src={c.flagSrc} alt={tr(c.name)} title={tr(c.name)}
       width={round ? size : Math.round(size * 1.5)} height={size}
       style={{
         display: 'block', flex: 'none', objectFit: 'cover',

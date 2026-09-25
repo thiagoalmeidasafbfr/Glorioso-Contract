@@ -1,6 +1,7 @@
 import './index.css'
+import { Fragment, useEffect, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AppProvider } from './context/AppContext'
+import { AppProvider, useApp } from './context/AppContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { USE_SUPABASE } from './lib/supabase'
 import Layout from './components/Layout'
@@ -34,6 +35,15 @@ import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
 import PageAmortizacao from './pages/PageAmortizacao'
 import PageDetalhamentoJogadores from './pages/PageDetalhamentoJogadores'
 import PagePremissas from './pages/PagePremissas'
+import { tr } from './i18n'
+
+// Troca de idioma remonta a árvore: todo texto passa por tr() no render, e
+// rótulos calculados fora de componentes também são refeitos no novo idioma.
+function LanguageBoundary({ children }: { children: ReactNode }) {
+  const { language } = useApp()
+  useEffect(() => { document.title = tr('Botafogo SAF · Gestão Contratual') }, [language])
+  return <Fragment key={language}>{children}</Fragment>
+}
 
 function AppRoutes() {
   const { session, loading } = useAuth()
@@ -45,7 +55,7 @@ function AppRoutes() {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)',
       }}>
         <Wordmark compact size={18} />
-        <span className="eyebrow">Carregando…</span>
+        <span className="eyebrow">{tr('Carregando…')}</span>
       </div>
     )
   }
@@ -60,6 +70,7 @@ function AppRoutes() {
 
   return (
     <AppProvider>
+      <LanguageBoundary>
       <Layout>
         <Routes>
           <Route path="/" element={<Navigate to="/atletas" replace />} />
@@ -104,6 +115,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/atletas" replace />} />
         </Routes>
       </Layout>
+      </LanguageBoundary>
     </AppProvider>
   )
 }

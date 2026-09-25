@@ -16,6 +16,7 @@ import { fmtCurrencyShort, fmtDate } from '../../lib/format'
 import NumberInput from '../NumberInput'
 import { ModalShell } from './EditModals'
 import { modalInput, modalLabel } from './styles'
+import { tr, trf, trn } from '../../i18n'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -74,7 +75,7 @@ export default function LoanShareModal({
   }
 
   async function remove() {
-    if (!window.confirm('Remover o rateio? A remuneração volta ao valor integral do contrato e o fluxo é regerado.')) return
+    if (!window.confirm(tr('Remover o rateio? A remuneração volta ao valor integral do contrato e o fluxo é regerado.'))) return
     setSaving(true); setError(null)
     try {
       await removeLoanSalaryShare({
@@ -89,31 +90,30 @@ export default function LoanShareModal({
 
   const cell = (label: string, value: string, hi?: boolean) => (
     <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-control)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line-soft)' : 'transparent'}` }}>
-      <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, fontFamily: mono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{tr(label)}</div>
+      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, fontFamily: mono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{tr(value)}</div>
     </div>
   )
 
   return (
-    <ModalShell title="Rateio de salário no empréstimo" width={640} onClose={onClose}
+    <ModalShell title={tr('Rateio de salário no empréstimo')} width={640} onClose={onClose}
       subtitle={`${loanContract.counterpart_club || 'clube'} · ${fmtDate(loanContract.start_date)}${loanContract.end_date ? ` → ${fmtDate(loanContract.end_date)}` : ''}`}
       footer={<>
         {existing.length > 0 && (
           <button onClick={remove} className="btn btn-danger" style={{ marginRight: 'auto' }} disabled={saving}>
-            Remover rateio
+            {tr('Remover rateio')}
           </button>
         )}
-        {error && <span style={{ color: 'var(--neg)', fontSize: 12, fontFamily: font }}>{error}</span>}
-        <button onClick={onClose} className="btn btn-outline">Cancelar</button>
+        {error && <span style={{ color: 'var(--neg)', fontSize: 12, fontFamily: font }}>{tr(error)}</span>}
+        <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
         <button onClick={save} className="btn btn-primary" disabled={saving}>
-          {saving ? 'Aplicando…' : existing.length > 0 ? 'Atualizar rateio' : 'Aplicar rateio'}
+          {saving ? tr('Aplicando…') : existing.length > 0 ? tr('Atualizar rateio') : tr('Aplicar rateio')}
         </button>
       </>}>
 
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, lineHeight: 1.5 }}>
-        Informe quanto o <strong>{loanContract.counterpart_club || 'clube que recebe o atleta'}</strong> assume.
-        O que sobrar continua com o Botafogo e o fluxo mensal é regerado a partir de
-        <strong> {fmtDate(loanContract.start_date)}</strong> — as parcelas já pagas não são tocadas.
+        {tr('Informe quanto o')} <strong>{loanContract.counterpart_club || tr('clube que recebe o atleta')}</strong> {tr('assume. O que sobrar continua com o Botafogo e o fluxo mensal é regerado a partir de')}
+        <strong> {fmtDate(loanContract.start_date)}</strong> {tr('— as parcelas já pagas não são tocadas.')}
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -121,26 +121,26 @@ export default function LoanShareModal({
           const active = sPct === p.salary && iPct === p.image
           return (
             <button key={p.label} onClick={() => { setSalaryPct(String(p.salary)); setImagePct(String(p.image)) }}
-              className={`btn btn-sm ${active ? 'btn-primary' : 'btn-outline'}`}>{p.label}</button>
+              className={`btn btn-sm ${active ? 'btn-primary' : 'btn-outline'}`}>{tr(p.label)}</button>
           )
         })}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label style={modalLabel}>Clube arca com (% do CLT)</label>
+          <label style={modalLabel}>{tr('Clube arca com (% do CLT)')}</label>
           <NumberInput style={modalInput} decimals={2} grouping={false} value={salaryPct}
             onChange={v => setSalaryPct(v)} placeholder="0" />
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>
-            CLT integral {fmtCurrencyShort(fullSalary, currency)}/mês
+            {tr('CLT integral')} {fmtCurrencyShort(fullSalary, currency)}{tr('/mês')}
           </div>
         </div>
         <div>
-          <label style={modalLabel}>Clube arca com (% da imagem)</label>
+          <label style={modalLabel}>{tr('Clube arca com (% da imagem)')}</label>
           <NumberInput style={modalInput} decimals={2} grouping={false} value={imagePct}
             onChange={v => setImagePct(v)} placeholder="0" />
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono, marginTop: 4 }}>
-            Imagem integral {fmtCurrencyShort(fullImage, currency)}/mês
+            {tr('Imagem integral')} {fmtCurrencyShort(fullImage, currency)}{tr('/mês')}
           </div>
         </div>
       </div>
@@ -150,7 +150,7 @@ export default function LoanShareModal({
         {cell('Botafogo — CLT', fmtCurrencyShort(split.botafogoSalary, currency))}
         {cell('Botafogo — imagem', fmtCurrencyShort(split.botafogoImage, currency))}
         {cell('Botafogo — total/mês', fmtCurrencyShort(botafogoTotal, currency), true)}
-        {cell(`${loanContract.counterpart_club || 'Clube'} — total/mês`, fmtCurrencyShort(clubTotal, currency))}
+        {cell(trf('{0} — total/mês', loanContract.counterpart_club || tr('Clube')), fmtCurrencyShort(clubTotal, currency))}
       </div>
 
       <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: loanContract.end_date ? 'pointer' : 'not-allowed', color: loanContract.end_date ? undefined : 'var(--text-disabled)' }}>
@@ -158,15 +158,14 @@ export default function LoanShareModal({
           onChange={e => setRestoreAtEnd(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
         <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
           {loanContract.end_date
-            ? <>Voltar à remuneração integral após <strong>{fmtDate(loanContract.end_date)}</strong> (fim do empréstimo).</>
-            : <>Informe a <strong>data de término</strong> do empréstimo para voltar automaticamente ao valor integral.</>}
+            ? <>{tr('Voltar à remuneração integral após')} <strong>{fmtDate(loanContract.end_date)}</strong> {tr('(fim do empréstimo).')}</>
+            : <>{tr('Informe a')} <strong>{tr('data de término')}</strong> {tr('do empréstimo para voltar automaticamente ao valor integral.')}</>}
         </span>
       </label>
 
       {existing.length > 0 && (
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, padding: '9px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
-          Rateio já aplicado: {existing.length} degrau(s) na linha do tempo de remuneração
-          (aba <strong>Gatilhos</strong>). Atualizar recalcula o fluxo; remover devolve o valor integral.
+          {tr('Rateio já aplicado:')} {trn(existing.length, '{0} degrau na linha do tempo de remuneração (aba', '{0} degraus na linha do tempo de remuneração (aba')} <strong>{tr('Gatilhos')}</strong>{tr('). Atualizar recalcula o fluxo; remover devolve o valor integral.')}
         </div>
       )}
     </ModalShell>

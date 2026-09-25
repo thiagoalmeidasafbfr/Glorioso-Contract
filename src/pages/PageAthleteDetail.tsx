@@ -60,6 +60,7 @@ import {
   BADGE_TONES, ATHLETE_STATUS_TONE, PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, TRIGGER_STATUS_TONE, CONTRACT_STATUS_TONE,
   badgeStyle, humanizeEnum, type BadgeTone, type ToneStyle,
 } from '../lib/tones'
+import { tr, trf, locale, trn, trParts } from '../i18n'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -88,7 +89,7 @@ function StatusBadge({ status, map, label }: { status: string; map: Record<strin
   const s = map[status] ?? BADGE_TONES.neutral
   return (
     <span style={badgeStyle(s)}>
-      {label ?? PAYMENT_STATUS_LABEL[status] ?? humanizeEnum(status)}
+      {tr(label) ?? tr(PAYMENT_STATUS_LABEL[status]) ?? tr(humanizeEnum(status))}
     </span>
   )
 }
@@ -100,9 +101,9 @@ function LabelSpan({ children }: { children: React.ReactNode }) {
 function FinancialCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
     <div className="card" style={{ padding: 'var(--gutter-card)', minWidth: 160 }}>
-      <div className="eyebrow" style={{ marginBottom: 'var(--space-3)' }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 1.15, fontWeight: 400, letterSpacing: '-.01em', fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{sub}</div>}
+      <div className="eyebrow" style={{ marginBottom: 'var(--space-3)' }}>{tr(label)}</div>
+      <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 1.15, fontWeight: 400, letterSpacing: '-.01em', fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>{tr(value)}</div>
+      {sub && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{tr(sub)}</div>}
     </div>
   )
 }
@@ -120,7 +121,7 @@ function BigNumberCard({ label, totals, sub, color }: {
   const rest = entries.slice(1)
   return (
     <div className="card" style={{ padding: 'var(--gutter-card)', minWidth: 160 }}>
-      <div className="eyebrow" style={{ marginBottom: 'var(--space-3)' }}>{label}</div>
+      <div className="eyebrow" style={{ marginBottom: 'var(--space-3)' }}>{tr(label)}</div>
       <div style={{ fontSize: 'var(--text-title-size)', lineHeight: 1.15, fontWeight: 400, letterSpacing: '-.01em', fontFamily: fontMono, color: color ?? 'var(--ink-primary)', fontVariantNumeric: 'tabular-nums' }}>
         {primary ? fmtCurrencyShort(primary[1], primary[0]) : '—'}
       </div>
@@ -129,7 +130,7 @@ function BigNumberCard({ label, totals, sub, color }: {
           {rest.map(([c, v]) => `+ ${fmtCurrencyShort(v, c)}`).join(' · ')}
         </div>
       )}
-      {sub && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{tr(sub)}</div>}
     </div>
   )
 }
@@ -172,7 +173,7 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
   const set = <K extends keyof NewSalaryTriggerInput>(k: K, v: NewSalaryTriggerInput[K]) => setF(prev => ({ ...prev, [k]: v }))
   const inp = modalInput
   const lbl = modalLabel
-  if (!open) return <button onClick={() => setOpen(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={16} /> Nova meta de salário</button>
+  if (!open) return <button onClick={() => setOpen(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={16} /> {tr('Nova meta de salário')}</button>
   async function submit() {
     if (!f.description.trim() || !f.new_salary) return
     await onAdd({ ...f, contract_id: contract.id })
@@ -181,19 +182,19 @@ function NewTriggerForm({ contract, onAdd }: { contract: Contract; onAdd: (input
   }
   return (
     <div className="card card-outline" style={{ padding: 'var(--gutter-card)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="eyebrow">Nova meta de aumento salarial</div>
+      <div className="eyebrow">{tr('Nova meta de aumento salarial')}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10 }}>
-        <div><label style={lbl}>Descrição *</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Ex: Ao atingir 10 jogos, salário sobe" /></div>
-        <div><label style={lbl}>Métrica</label><select style={inp} value={f.metric} onChange={e => set('metric', e.target.value as TriggerMetric)}>{(Object.keys(TRIGGER_METRIC_LABELS) as TriggerMetric[]).map(m => <option key={m} value={m}>{TRIGGER_METRIC_LABELS[m]}</option>)}</select></div>
-        <div><label style={lbl}>Meta (nº)</label><input style={inp} type="number" value={f.threshold ?? ''} onChange={e => set('threshold', e.target.value ? Number(e.target.value) : null)} placeholder="Ex: 10" /></div>
-        <div><label style={lbl}>Novo salário CLT *</label><NumberInput style={inp} value={f.new_salary || ''} onChange={v => set('new_salary', v ? Number(v) : 0)} placeholder="Ex: 600.000" /></div>
-        <div><label style={lbl}>Novo direito de imagem</label><NumberInput style={inp} value={f.new_image_value ?? ''} onChange={v => set('new_image_value', v ? Number(v) : null)} placeholder="Ex: 600.000 (opcional)" /></div>
-        <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value as Currency)}>{(['BRL','EUR','USD','GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-        <div><label style={lbl}>Observações</label><input style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        <div><label style={lbl}>{tr('Descrição *')}</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder={tr('Ex: Ao atingir 10 jogos, salário sobe')} /></div>
+        <div><label style={lbl}>{tr('Métrica')}</label><select style={inp} value={f.metric} onChange={e => set('metric', e.target.value as TriggerMetric)}>{(Object.keys(TRIGGER_METRIC_LABELS) as TriggerMetric[]).map(m => <option key={m} value={m}>{tr(TRIGGER_METRIC_LABELS[m])}</option>)}</select></div>
+        <div><label style={lbl}>{tr('Meta (nº)')}</label><input style={inp} type="number" value={f.threshold ?? ''} onChange={e => set('threshold', e.target.value ? Number(e.target.value) : null)} placeholder={tr('Ex: 10')} /></div>
+        <div><label style={lbl}>{tr('Novo salário CLT *')}</label><NumberInput style={inp} value={f.new_salary || ''} onChange={v => set('new_salary', v ? Number(v) : 0)} placeholder={tr('Ex: 600.000')} /></div>
+        <div><label style={lbl}>{tr('Novo direito de imagem')}</label><NumberInput style={inp} value={f.new_image_value ?? ''} onChange={v => set('new_image_value', v ? Number(v) : null)} placeholder={tr('Ex: 600.000 (opcional)')} /></div>
+        <div><label style={lbl}>{tr('Moeda')}</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value as Currency)}>{(['BRL','EUR','USD','GBP'] as Currency[]).map(c => <option key={c} value={c}>{tr(c)}</option>)}</select></div>
+        <div><label style={lbl}>{tr('Observações')}</label><input style={inp} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button onClick={() => setOpen(false)} className="btn btn-outline">Cancelar</button>
-        <button onClick={submit} disabled={!f.description.trim() || !f.new_salary} className="btn btn-primary">Adicionar meta</button>
+        <button onClick={() => setOpen(false)} className="btn btn-outline">{tr('Cancelar')}</button>
+        <button onClick={submit} disabled={!f.description.trim() || !f.new_salary} className="btn btn-primary">{tr('Adicionar meta')}</button>
       </div>
     </div>
   )
@@ -205,22 +206,22 @@ function TriggerRow({ t, canEdit, onMark, onReset, onDelete }: { t: SalaryTrigge
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 'var(--radius-md)', background: achieved ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${achieved ? 'var(--accent-line-soft)' : 'transparent'}` }}>
       <div style={{ flex: 1, minWidth: 200 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>{t.description}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 2 }}>{TRIGGER_METRIC_LABELS[t.metric]}{t.threshold != null ? ` ≥ ${t.threshold}` : ''} → CLT {fmtCurrencyShort(t.new_salary, t.currency)}{t.new_image_value != null ? ` + Imagem ${fmtCurrencyShort(t.new_image_value, t.currency)}` : ''}{t.notes ? ` · ${t.notes}` : ''}</div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>{tr(t.description)}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 2 }}>{tr(TRIGGER_METRIC_LABELS[t.metric])}{t.threshold != null ? ` ≥ ${t.threshold}` : ''} {tr('→ CLT')} {fmtCurrencyShort(t.new_salary, t.currency)}{t.new_image_value != null ? trf(' + Imagem {0}', fmtCurrencyShort(t.new_image_value, t.currency)) : ''}{t.notes ? ` · ${t.notes}` : ''}</div>
       </div>
-      <span style={badgeStyle(TRIGGER_STATUS_STYLE[t.status] ?? BADGE_TONES.neutral)}>{TRIGGER_STATUS_LABELS[t.status]}</span>
+      <span style={badgeStyle(TRIGGER_STATUS_STYLE[t.status] ?? BADGE_TONES.neutral)}>{tr(TRIGGER_STATUS_LABELS[t.status])}</span>
       {achieved ? (
         <>
-          <span style={{ fontSize: 12, color: 'var(--text-positive)' }}>desde {fmtDate(t.achieved_date)}</span>
-          {canEdit && <button onClick={onReset} className="btn btn-outline">Reverter</button>}
+          <span style={{ fontSize: 12, color: 'var(--text-positive)' }}>{tr('desde')} {fmtDate(t.achieved_date)}</span>
+          {canEdit && <button onClick={onReset} className="btn btn-outline">{tr('Reverter')}</button>}
         </>
       ) : canEdit ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ minHeight: 'var(--control-h-sm)', padding: '0 10px', fontSize: 12 }} />
-          <button onClick={() => onMark(date)} className="btn btn-accent btn-sm"><Icon name="check" size={16} /> Meta atingida</button>
+          <button onClick={() => onMark(date)} className="btn btn-accent btn-sm"><Icon name="check" size={16} /> {tr('Meta atingida')}</button>
         </div>
       ) : null}
-      {canEdit && <IconButton icon="x" label="Remover meta" tone="danger" onClick={onDelete} />}
+      {canEdit && <IconButton icon="x" label={tr('Remover meta')} tone="danger" onClick={onDelete} />}
     </div>
   )
 }
@@ -257,7 +258,7 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
   async function save() {
     if (!f.full_name.trim()) return
     if (sum > 100.01) {
-      alert(`A soma dos detentores é ${sum.toFixed(2)}%. O total não pode passar de 100%.`)
+      alert(trf('A soma dos detentores é {0}%. O total não pode passar de 100%.', sum.toFixed(2)))
       return
     }
     setSaving(true)
@@ -280,23 +281,23 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
   }
 
   const field = (label: string, key: keyof typeof f, type = 'text', opts?: string[]) => (
-    <div><label style={lbl}>{label}</label>{opts ? <select style={inp} value={f[key]} onChange={e => set(key, e.target.value)}>{opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}</select> : <input type={type} style={inp} value={f[key]} onChange={e => set(key, e.target.value)} />}</div>
+    <div><label style={lbl}>{tr(label)}</label>{opts ? <select style={inp} value={f[key]} onChange={e => set(key, e.target.value)}>{opts.map(o => <option key={o} value={o}>{tr(o) || '—'}</option>)}</select> : <input type={type} style={inp} value={f[key]} onChange={e => set(key, e.target.value)} />}</div>
   )
 
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 660, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Editar atleta</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{tr('Editar atleta')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {field('Nome completo *', 'full_name')}
           {field('Nome curto', 'short_name')}
           {field('Posição', 'position', 'text', ATHLETE_POSITIONS)}
           {field('Status', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
           <div>
-            <label style={lbl}>Categoria</label>
+            <label style={lbl}>{tr('Categoria')}</label>
             <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
               {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
-                <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
+                <option key={c} value={c}>{tr(ATHLETE_CATEGORY_LABELS[c])}</option>
               ))}
             </select>
           </div>
@@ -305,33 +306,33 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
           {field('CPF', 'cpf')}
           {field('Passaporte', 'passport_number')}
         </div>
-        <div><label style={lbl}>Observações</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        <div><label style={lbl}>{tr('Observações')}</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
 
         {/* Titularidade econômica */}
         <div style={{ borderTop: '1px solid var(--divider)', paddingTop: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Detentores</div>
+            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Detentores')}</div>
             <span style={{ fontSize: 11, fontFamily: fontMono, color: sum > 100.01 ? 'var(--neg)' : Math.abs(sum - 100) < 0.1 ? 'var(--pos)' : 'var(--warn)' }}>
-              Soma: {sum.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%{sum > 100.01 ? ' — passa de 100%' : ''}
+              {tr('Soma:')} {sum.toLocaleString(locale(), { maximumFractionDigits: 2 })}%{sum > 100.01 ? tr(' — passa de 100%') : ''}
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {rows.map((r, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 76px 1fr 30px', gap: 8, alignItems: 'center' }}>
                 <select value={r.holder_type} onChange={e => setRow(i, { holder_type: e.target.value as HolderType })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }}>
-                  {(Object.keys(HOLDER_TYPE_LABELS) as HolderType[]).map(k => <option key={k} value={k}>{HOLDER_TYPE_LABELS[k]}</option>)}
+                  {(Object.keys(HOLDER_TYPE_LABELS) as HolderType[]).map(k => <option key={k} value={k}>{tr(HOLDER_TYPE_LABELS[k])}</option>)}
                 </select>
-                <input placeholder="Nome do detentor" value={r.holder_name} onChange={e => setRow(i, { holder_name: e.target.value })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }} />
+                <input placeholder={tr('Nome do detentor')} value={r.holder_name} onChange={e => setRow(i, { holder_name: e.target.value })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                   <input inputMode="decimal" value={r.percentage} onChange={e => setRow(i, { percentage: e.target.value.replace(',', '.').replace(/[^\d.]/g, '') })} placeholder="0" style={{ ...inp, padding: '4px 10px', fontSize: 12, textAlign: 'right', fontFamily: fontMono }} />
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontMono }}>%</span>
                 </div>
-                <input placeholder="Obs." value={r.notes} onChange={e => setRow(i, { notes: e.target.value })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }} />
-                <IconButton icon="x" label="Remover detentor" tone="danger" onClick={() => removeRow(i)} />
+                <input placeholder={tr('Obs.')} value={r.notes} onChange={e => setRow(i, { notes: e.target.value })} style={{ ...inp, padding: '4px 10px', fontSize: 12 }} />
+                <IconButton icon="x" label={tr('Remover detentor')} tone="danger" onClick={() => removeRow(i)} />
               </div>
             ))}
           </div>
-          <button onClick={addRow} className="btn btn-outline" style={{ marginTop: 10, borderStyle: 'dashed', padding: '6px 14px' }}><Icon name="plus" size={16} /> Detentor</button>
+          <button onClick={addRow} className="btn btn-outline" style={{ marginTop: 10, borderStyle: 'dashed', padding: '6px 14px' }}><Icon name="plus" size={16} /> {tr('Detentor')}</button>
         </div>
 
         {/* PJ do atleta — parte do cadastro */}
@@ -340,8 +341,8 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving || !f.full_name.trim()} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
+          <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
+          <button onClick={save} disabled={saving || !f.full_name.trim()} className="btn btn-primary">{saving ? tr('Salvando…') : tr('Salvar')}</button>
         </div>
       </div>
     </div>
@@ -350,7 +351,7 @@ function EditAthleteModal({ athlete, rights, pjs, canEdit, onAddPJ, onUpdatePJ, 
 
 // Rótulo curto de um vínculo (usado nos seletores/labels de contrato relacionado).
 function contractLabel(c: Contract): string {
-  const parts = [CONTRACT_TYPE_LABELS[c.type], c.counterpart_club || '—']
+  const parts = [tr(CONTRACT_TYPE_LABELS[c.type]), c.counterpart_club || '—']
   if (c.start_date) parts.push(fmtDate(c.start_date))
   return parts.join(' · ')
 }
@@ -500,15 +501,15 @@ export default function PageAthleteDetail() {
   const unreadCrit = alerts.filter(a => a.severity === 'RED' && !a.is_read).length
 
   async function handleDeleteContract(cid: string) {
-    if (!window.confirm('Excluir este vínculo e todo o seu fluxo (cláusulas e parcelas)? Esta ação não pode ser desfeita.')) return
+    if (!window.confirm(tr('Excluir este vínculo e todo o seu fluxo (cláusulas e parcelas)? Esta ação não pode ser desfeita.'))) return
     await deleteContract(cid); loadData()
   }
   async function handleDeleteClause(clauseId: string) {
-    if (!window.confirm('Excluir esta cláusula e suas parcelas? Esta ação não pode ser desfeita.')) return
+    if (!window.confirm(tr('Excluir esta cláusula e suas parcelas? Esta ação não pode ser desfeita.'))) return
     await deleteClause(clauseId); loadData()
   }
   async function handleDeleteClubLiab(lid: string) {
-    if (!window.confirm('Excluir esta obrigação com clube?')) return
+    if (!window.confirm(tr('Excluir esta obrigação com clube?'))) return
     await deleteClubLiability(lid); setClubLiabs(prev => prev.filter(l => l.id !== lid))
   }
   // Passivo "flat" (agente/clube) → obrigação com página própria e parcelas.
@@ -522,7 +523,7 @@ export default function PageAthleteDetail() {
     setFlowClauseId(clause.id)
   }
   async function handleDeleteIntermLiab(lid: string) {
-    if (!window.confirm('Excluir esta obrigação com agente?')) return
+    if (!window.confirm(tr('Excluir esta obrigação com agente?'))) return
     await deleteIntermediaryLiability(lid); setIntermLiabs(prev => prev.filter(l => l.id !== lid))
   }
   async function handleMarkAchieved(clauseId: string) { const u = await updateClause(clauseId, { achievement_status: 'ATINGIDA', achievement_date: todayISO() }); setClauses(prev => prev.map(c => c.id === clauseId ? u : c)) }
@@ -599,7 +600,7 @@ export default function PageAthleteDetail() {
   async function handlePhoto(url: string | null) { if (!id) return; const u = await updateAthlete(id, { profile_photo_url: url }); setAthlete(u) }
   async function handleDeleteAthlete() {
     if (!id || !athlete) return
-    if (!window.confirm(`Excluir o atleta "${athlete.full_name}" e TODOS os seus vínculos (contratos, salário, luvas, agentes, gatilhos, transferências, parcelas, PJs)? Esta ação é irreversível.`)) return
+    if (!window.confirm(trf('Excluir o atleta "{0}" e TODOS os seus vínculos (contratos, salário, luvas, agentes, gatilhos, transferências, parcelas, PJs)? Esta ação é irreversível.', athlete.full_name))) return
     try {
       await deleteAthlete(id)
       navigate('/atletas')
@@ -613,8 +614,8 @@ export default function PageAthleteDetail() {
       else if (err && typeof err === 'object') {
         if (err.message) parts.push(err.message)
         if (err.details) parts.push(err.details)
-        if (err.hint) parts.push(`Dica: ${err.hint}`)
-        if (err.code) parts.push(`(código ${err.code})`)
+        if (err.hint) parts.push(trf('Dica: {0}', err.hint))
+        if (err.code) parts.push(trf('(código {0})', err.code))
         if (parts.length === 0) parts.push(JSON.stringify(err))
       } else {
         parts.push(String(err))
@@ -622,7 +623,7 @@ export default function PageAthleteDetail() {
       const msg = parts.join('\n')
       // eslint-disable-next-line no-console
       console.error('deleteAthlete falhou:', e)
-      window.alert(`Não foi possível excluir o atleta.\n\n${msg}\n\nAbra o console do navegador para ver o objeto completo do erro.`)
+      window.alert(trf('Não foi possível excluir o atleta.\n\n{0}\n\nAbra o console do navegador para ver o objeto completo do erro.', msg))
     }
   }
 
@@ -646,11 +647,11 @@ export default function PageAthleteDetail() {
     )
   }
 
-  if (loading) return <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>Carregando…</div>
+  if (loading) return <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>{tr('Carregando…')}</div>
   if (!athlete) return (
     <div style={{ padding: 40, textAlign: 'center', fontFamily: font }}>
-      <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--text-secondary)' }}>Atleta não encontrado.</div>
-      <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 'var(--space-4)' }}><Icon name="chevronLeft" size={16} /> Voltar</button>
+      <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--text-secondary)' }}>{tr('Atleta não encontrado.')}</div>
+      <button onClick={() => navigate('/atletas')} className="btn btn-outline" style={{ marginTop: 'var(--space-4)' }}><Icon name="chevronLeft" size={16} /> {tr('Voltar')}</button>
     </div>
   )
 
@@ -708,37 +709,37 @@ export default function PageAthleteDetail() {
           <div style={{ flex: 1, minWidth: 260 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
               <h2 style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font, margin: 0 }}>{athlete.full_name}</h2>
-              <span style={badgeStyle(st)}>{st.label}</span>
-              {unreadCrit > 0 && <span title={`${unreadCrit} alerta(s) crítico(s)`} style={badgeStyle('negative')}>{unreadCrit} {unreadCrit === 1 ? 'crítico' : 'críticos'}</span>}
-              {warnCount > 0 && <span title={`${warnCount} vencimento(s) próximo(s)`} style={badgeStyle('warning')}>{warnCount} atenção</span>}
+              <span style={badgeStyle(st)}>{tr(st.label)}</span>
+              {unreadCrit > 0 && <span title={trn(unreadCrit, '{0} alerta crítico', '{0} alertas críticos')} style={badgeStyle('negative')}>{unreadCrit} {unreadCrit === 1 ? tr('crítico') : tr('críticos')}</span>}
+              {warnCount > 0 && <span title={trn(warnCount, '{0} vencimento próximo', '{0} vencimentos próximos')} style={badgeStyle('warning')}>{warnCount} {tr('atenção')}</span>}
             </div>
             <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>
-              <span><LabelSpan>Categoria</LabelSpan> {ATHLETE_CATEGORY_LABELS[athlete.category ?? 'PROFISSIONAL']}</span>
-              {athlete.position && <span><LabelSpan>Posição</LabelSpan> {athlete.position}</span>}
-              {athlete.nationality && <span><LabelSpan>Nacionalidade</LabelSpan> {athlete.nationality}</span>}
-              {athlete.birth_date && <span><LabelSpan>Nasc.</LabelSpan> {fmtDate(athlete.birth_date)}</span>}
+              <span><LabelSpan>{tr('Categoria')}</LabelSpan> {tr(ATHLETE_CATEGORY_LABELS[athlete.category ?? 'PROFISSIONAL'])}</span>
+              {athlete.position && <span><LabelSpan>{tr('Posição')}</LabelSpan> {tr(athlete.position)}</span>}
+              {athlete.nationality && <span><LabelSpan>{tr('Nacionalidade')}</LabelSpan> {tr(athlete.nationality)}</span>}
+              {athlete.birth_date && <span><LabelSpan>{tr('Nasc.')}</LabelSpan> {fmtDate(athlete.birth_date)}</span>}
             </div>
-            {athlete.notes && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontFamily: font }}>{athlete.notes}</div>}
+            {athlete.notes && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontFamily: font }}>{tr(athlete.notes)}</div>}
 
             {/* Detentores — compacto, largura ajustada ao conteúdo */}
             <div style={{ marginTop: 14, width: 'fit-content', maxWidth: '100%', minWidth: 260 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
-                <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Detentores</span>
+                <span style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Detentores')}</span>
                 {rights.length > 0 && (
                   <span style={badgeStyle(isOwnershipValid(rights) ? 'accent' : 'negative')}>
-                    {isOwnershipValid(rights) ? 'Total 100%' : `${sumOwnership(rights).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% ≠ 100%`}
+                    {isOwnershipValid(rights) ? tr('Total 100%') : `${sumOwnership(rights).toLocaleString(locale(), { maximumFractionDigits: 2 })}% ≠ 100%`}
                   </span>
                 )}
               </div>
               {rights.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>Não cadastrado{canEdit ? ' — use “Editar”.' : '.'}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Não cadastrado')}{canEdit ? tr(' — use “Editar”.') : '.'}</div>
               ) : (
                 <>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginBottom: 6 }}>
                     {sortedRights.map(r => (
                       <span key={r.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontFamily: font, color: 'var(--text-secondary)' }}>
                         <span style={{ width: 9, height: 9, borderRadius: 'var(--radius-circle)', background: HOLDER_TYPE_COLORS[r.holder_type], flexShrink: 0 }} />
-                        <strong style={{ color: 'var(--ink-primary)' }}>{r.holder_name || HOLDER_TYPE_LABELS[r.holder_type]}</strong> {r.percentage}%
+                        <strong style={{ color: 'var(--ink-primary)' }}>{r.holder_name || tr(HOLDER_TYPE_LABELS[r.holder_type])}</strong> {r.percentage}%
                       </span>
                     ))}
                   </div>
@@ -750,30 +751,30 @@ export default function PageAthleteDetail() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0, alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', gap: 8 }}>
-              <IconButton icon="download" label="Exportar dados deste atleta (XLSX)" onClick={exportAthlete} />
-              {canEdit && <IconButton icon="edit" label="Editar atleta" onClick={() => setShowEdit(true)} />}
+              <IconButton icon="download" label={tr('Exportar dados deste atleta (XLSX)')} onClick={exportAthlete} />
+              {canEdit && <IconButton icon="edit" label={tr('Editar atleta')} onClick={() => setShowEdit(true)} />}
               <Link to={`/atletas/${athlete.id}/contratos/novo`} className="btn btn-primary">
-                <Icon name="plus" size={16} /> Novo contrato
+                <Icon name="plus" size={16} /> {tr('Novo contrato')}
               </Link>
-              {canEdit && <IconButton icon="trash" label="Excluir atleta e todos os vínculos" tone="danger" onClick={handleDeleteAthlete} />}
+              {canEdit && <IconButton icon="trash" label={tr('Excluir atleta e todos os vínculos')} tone="danger" onClick={handleDeleteAthlete} />}
             </div>
             {(Object.keys(exposure).length > 0 || Object.keys(rjExposure).length > 0) && (
               <div style={{ minWidth: 180, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
-                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 5 }}>Exposição cambial</div>
+                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 5 }}>{tr('Exposição cambial')}</div>
                 {Object.entries(exposure).length === 0 && Object.entries(rjExposure).length === 0
                   ? <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>—</div>
                   : Object.entries(exposure).map(([c, v]) => (
                     <div key={c} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontFamily: fontMono, fontSize: 11 }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>{c}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{tr(c)}</span>
                       <span style={{ fontWeight: 500, color: 'var(--ink-primary)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
                     </div>
                   ))}
                 {Object.entries(rjExposure).length > 0 && (
                   <>
-                    <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px dashed var(--divider)', fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--warn)' }}>Em RJ</div>
+                    <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px dashed var(--divider)', fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--warn)' }}>{tr('Em RJ')}</div>
                     {Object.entries(rjExposure).map(([c, v]) => (
                       <div key={`rj-${c}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontFamily: fontMono, fontSize: 11 }}>
-                        <span style={{ color: 'var(--warn)' }}>{c}</span>
+                        <span style={{ color: 'var(--warn)' }}>{tr(c)}</span>
                         <span style={{ fontWeight: 500, color: 'var(--warn)' }}>{fmtCurrencyShort(v, c as Currency)}</span>
                       </div>
                     ))}
@@ -787,18 +788,18 @@ export default function PageAthleteDetail() {
 
       {/* Resumo financeiro */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
-        <FinancialCard label="A Receber" value={fmtCurrencyShort(receivable, 'BRL')} sub="Botafogo como credor" color="var(--pos)" />
-        <FinancialCard label="A Pagar" value={fmtCurrencyShort(payable, 'BRL')} sub="Botafogo como devedor · exclui RJ" color="var(--neg)" />
-        <FinancialCard label="Recuperação Judicial" value={fmtCurrencyShort(rjPayable, 'BRL')} sub="Devido dentro do processo" color="var(--warn)" />
-        <FinancialCard label="Já Recebido / Pago" value={fmtCurrencyShort(paid, 'BRL')} />
+        <FinancialCard label={tr('A Receber')} value={fmtCurrencyShort(receivable, 'BRL')} sub={tr('Botafogo como credor')} color="var(--pos)" />
+        <FinancialCard label={tr('A Pagar')} value={fmtCurrencyShort(payable, 'BRL')} sub={tr('Botafogo como devedor · exclui RJ')} color="var(--neg)" />
+        <FinancialCard label={tr('Recuperação Judicial')} value={fmtCurrencyShort(rjPayable, 'BRL')} sub={tr('Devido dentro do processo')} color="var(--warn)" />
+        <FinancialCard label={tr('Já Recebido / Pago')} value={fmtCurrencyShort(paid, 'BRL')} />
       </div>
 
       {/* Big numbers — custos consolidados por natureza */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
-        <BigNumberCard label="Custo total de transfer" totals={transferTotals} sub="Transfer fee (fixo + variável)" />
-        <BigNumberCard label="Salário + imagem (atual)" totals={{ [salImgCurrency]: salImgMonthly }} sub="Remuneração mensal vigente" />
-        <BigNumberCard label="Custo total de intermediação" totals={intermTotals} sub="Agentes (cláusulas + passivos)" />
-        <BigNumberCard label="Custo total de luvas" totals={luvasTotals} sub="Luvas contratadas" />
+        <BigNumberCard label={tr('Custo total de transfer')} totals={transferTotals} sub={tr('Transfer fee (fixo + variável)')} />
+        <BigNumberCard label={tr('Salário + imagem (atual)')} totals={{ [salImgCurrency]: salImgMonthly }} sub={tr('Remuneração mensal vigente')} />
+        <BigNumberCard label={tr('Custo total de intermediação')} totals={intermTotals} sub={tr('Agentes (cláusulas + passivos)')} />
+        <BigNumberCard label={tr('Custo total de luvas')} totals={luvasTotals} sub={tr('Luvas contratadas')} />
       </div>
 
       {/* Tabs */}
@@ -806,7 +807,7 @@ export default function PageAthleteDetail() {
         {TABS.map(t => (
           <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className="seg-tab"
             onClick={() => setTab(t.id)} style={{ padding: '10px 0 9px', marginBottom: -1 }}>
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </div>
@@ -841,11 +842,11 @@ export default function PageAthleteDetail() {
           {!emp ? (
             <div className="card" style={{ padding: 32, textAlign: 'center', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
-                Nenhum vínculo de trabalho com remuneração cadastrado. Cadastre um contrato de entrada com salário base — o fluxo mensal é gerado automaticamente.
+                {tr('Nenhum vínculo de trabalho com remuneração cadastrado. Cadastre um contrato de entrada com salário base — o fluxo mensal é gerado automaticamente.')}
               </div>
               {canEdit && athlete && (
                 <button className="btn btn-primary" onClick={() => navigate(`/atletas/${athlete.id}/contratos/novo`)}>
-                  <Icon name="plus" size={16} /> Cadastrar vínculo de trabalho
+                  <Icon name="plus" size={16} /> {tr('Cadastrar vínculo de trabalho')}
                 </button>
               )}
             </div>
@@ -858,7 +859,7 @@ export default function PageAthleteDetail() {
               onConfigure={cid => setLoanShareContractId(cid)}
             />
           )}
-          <FlowList title="Fluxo mensal — Salário CLT + Imagem" installments={installments} clauses={clauses}
+          <FlowList title={tr('Fluxo mensal — Salário CLT + Imagem')} installments={installments} clauses={clauses}
             types={['SALARIO_CETD', 'DIREITO_IMAGEM']} canEdit={canEdit}
             onEditInst={id => setEditInstId(id)} onPayInst={id => setPayInstId(id)}
             onQuickPayInst={handleMarkInstallmentPaidQuick} onRevertInst={handleRevertInstallment}
@@ -930,7 +931,7 @@ export default function PageAthleteDetail() {
         const transferContracts = contracts.filter(ct => TRANSFER_CONTRACT_TYPES.includes(ct.type))
         return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {transferContracts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: font }}>Nenhuma transferência cadastrada. Use “+ Novo Contrato” para registrar uma compra, venda ou empréstimo.</div>}
+          {transferContracts.length === 0 && <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)', fontFamily: font }}>{tr('Nenhuma transferência cadastrada. Use “+ Novo Contrato” para registrar uma compra, venda ou empréstimo.')}</div>}
           {transferContracts.map(ct => {
             // Só as cláusulas de transferência (transfer fee, sell-on, taxas, etc.).
             const ctClauses = clauses.filter(c => c.contract_id === ct.id && TRANSFER_FEE_TYPES.includes(c.clause_type))
@@ -946,20 +947,20 @@ export default function PageAthleteDetail() {
                       icon={expandedContracts.has(ct.id) ? 'chevronDown' : 'chevronRight'}
                       small
                       label={expandedContracts.has(ct.id)
-                        ? `Recolher vencimentos de ${CONTRACT_TYPE_LABELS[ct.type]}`
-                        : `Ver vencimentos de ${CONTRACT_TYPE_LABELS[ct.type]} (${ctClauses.length} cláusula${ctClauses.length !== 1 ? 's' : ''})`}
+                        ? trf('Recolher vencimentos de {0}', tr(CONTRACT_TYPE_LABELS[ct.type]))
+                        : trf('Ver vencimentos de {0} ({1})', tr(CONTRACT_TYPE_LABELS[ct.type]), trn(ctClauses.length, '{0} cláusula', '{0} cláusulas'))}
                       onClick={() => toggleExpand(ct.id)}
                     />
                   )}
-                  <span style={badgeStyle(ts)}>{CONTRACT_TYPE_LABELS[ct.type]}</span>
+                  <span style={badgeStyle(ts)}>{tr(CONTRACT_TYPE_LABELS[ct.type])}</span>
                   <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font }}>
-                    {(() => { const cid = clubIdx.get(norm(ct.counterpart_club)); return cid ? <RefLink to={`/clubes/${cid}`} title={`Abrir ${ct.counterpart_club}`}>{ct.counterpart_club}</RefLink> : ct.counterpart_club })()}
+                    {(() => { const cid = clubIdx.get(norm(ct.counterpart_club)); return cid ? <RefLink to={`/clubes/${cid}`} title={trf('Abrir {0}', ct.counterpart_club)}>{ct.counterpart_club}</RefLink> : ct.counterpart_club })()}
                   </span>
                   {ct.counterpart_country && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{ct.counterpart_country}</span>}
-                  <StatusBadge status={ct.status} map={CONTRACT_STATUS_STYLE} label={humanizeEnum(ct.status)} />
+                  <StatusBadge status={ct.status} map={CONTRACT_STATUS_STYLE} label={tr(humanizeEnum(ct.status))} />
                   {parent && (
-                    <span title={`Contrato vinculado a ${contractLabel(parent)}`} style={badgeStyle('outline')}>
-                      <Icon name="link" size={12} /> vinculado a {CONTRACT_TYPE_LABELS[parent.type]} · {parent.counterpart_club}
+                    <span title={trf('Contrato vinculado a {0}', contractLabel(parent))} style={badgeStyle('outline')}>
+                      <Icon name="link" size={12} /> {tr('vinculado a')} {tr(CONTRACT_TYPE_LABELS[parent.type])} · {parent.counterpart_club}
                     </span>
                   )}
                   {canEdit && (
@@ -969,32 +970,32 @@ export default function PageAthleteDetail() {
                           <IconButton icon="split"
                             label={emp
                               ? (loanShareTriggers(triggers, ct.id).length > 0
-                                ? 'Editar o rateio de salário deste empréstimo'
-                                : 'Ratear o salário deste empréstimo (quanto o clube assume)')
-                              : 'Cadastre o vínculo de trabalho para ratear o salário'}
+                                ? tr('Editar o rateio de salário deste empréstimo')
+                                : tr('Ratear o salário deste empréstimo (quanto o clube assume)'))
+                              : tr('Cadastre o vínculo de trabalho para ratear o salário')}
                             tone={loanShareTriggers(triggers, ct.id).length > 0 ? 'default' : 'info'}
                             onClick={emp ? () => setLoanShareContractId(ct.id) : undefined}
-                            disabled={!emp} disabledReason="sem vínculo de trabalho ativo" />
+                            disabled={!emp} disabledReason={tr('sem vínculo de trabalho ativo')} />
                         )}
-                        <IconButton icon="plus" label="Adicionar cláusula a este vínculo (ex.: Sell-on Fee, intermediação)" tone="info" onClick={() => setNewClauseContractId(ct.id)} />
-                        <IconButton icon="link" label="Criar um contrato atrelado a este vínculo (ex.: intermediação)" tone="info" onClick={() => navigate(`/atletas/${ct.athlete_id}/contratos/novo?rel=${ct.id}`)} />
-                        <IconButton icon="edit" label="Editar vínculo" onClick={() => setEditContractId(ct.id)} />
-                        <IconButton icon="trash" label="Excluir vínculo" tone="danger" onClick={() => handleDeleteContract(ct.id)} />
+                        <IconButton icon="plus" label={tr('Adicionar cláusula a este vínculo (ex.: Sell-on Fee, intermediação)')} tone="info" onClick={() => setNewClauseContractId(ct.id)} />
+                        <IconButton icon="link" label={tr('Criar um contrato atrelado a este vínculo (ex.: intermediação)')} tone="info" onClick={() => navigate(`/atletas/${ct.athlete_id}/contratos/novo?rel=${ct.id}`)} />
+                        <IconButton icon="edit" label={tr('Editar vínculo')} onClick={() => setEditContractId(ct.id)} />
+                        <IconButton icon="trash" label={tr('Excluir vínculo')} tone="danger" onClick={() => handleDeleteContract(ct.id)} />
                       </IconRow>
                     </div>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span>Início: {fmtDate(ct.start_date)}</span>
-                  {ct.end_date && <span>Fim: {fmtDate(ct.end_date)}</span>}
-                  {ct.transfer_fee_gross && <span style={{ fontWeight: 500, color: 'var(--ink-primary)' }}>{CURRENCY_SYMBOLS[ct.transfer_currency]} {ct.transfer_fee_gross.toLocaleString('pt-BR')}</span>}
+                  <span>{tr('Início:')} {fmtDate(ct.start_date)}</span>
+                  {ct.end_date && <span>{tr('Fim:')} {fmtDate(ct.end_date)}</span>}
+                  {ct.transfer_fee_gross && <span style={{ fontWeight: 500, color: 'var(--ink-primary)' }}>{tr(CURRENCY_SYMBOLS[ct.transfer_currency])} {ct.transfer_fee_gross.toLocaleString(locale())}</span>}
                   {ctClauses.length > 0 && (
-                    <span style={{ color: 'var(--text-secondary)' }}>{ctClauses.length} cláusula{ctClauses.length !== 1 ? 's' : ''} — {expandedContracts.has(ct.id) ? 'ocultar' : 'ver'} vencimentos</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{trn(ctClauses.length, '{0} cláusula', '{0} cláusulas')} — {expandedContracts.has(ct.id) ? tr('ocultar vencimentos') : tr('ver vencimentos')}</span>
                   )}
-                  {ctClauses.length === 0 && <span style={{ color: 'var(--text-secondary)' }}>0 cláusulas</span>}
-                  {children.length > 0 && <span style={{ color: 'var(--ink-secondary)', fontWeight: 500 }}>· {children.length} contrato{children.length !== 1 ? 's' : ''} vinculado{children.length !== 1 ? 's' : ''}</span>}
+                  {ctClauses.length === 0 && <span style={{ color: 'var(--text-secondary)' }}>{tr('0 cláusulas')}</span>}
+                  {children.length > 0 && <span style={{ color: 'var(--ink-secondary)', fontWeight: 500 }}>· {trn(children.length, '{0} contrato vinculado', '{0} contratos vinculados')}</span>}
                 </div>
-                {ct.description && <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>{ct.description}</div>}
+                {ct.description && <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>{tr(ct.description)}</div>}
 
                 {expandedContracts.has(ct.id) && (
                   <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1005,7 +1006,7 @@ export default function PageAthleteDetail() {
                         <div key={cl.id} style={{ border: '1px solid var(--divider-soft)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-subtle)' }}>
                             <span style={{ fontFamily: font, fontSize: 12, fontWeight: 500, color: 'var(--ink-primary)' }}>
-                              {CLAUSE_TYPE_LABELS[cl.clause_type]} <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>· {cl.description}</span>
+                              {tr(CLAUSE_TYPE_LABELS[cl.clause_type])} <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>· {tr(cl.description)}</span>
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontFamily: fontMono, fontSize: 12, fontWeight: 500 }}>{fmtCurrencyShort(totalCl, cl.currency)}{parc.length ? ` · ${parc.length}x` : ''}</span>
@@ -1048,8 +1049,8 @@ export default function PageAthleteDetail() {
         )
       })()}
 
-      {payClause && <PaymentModal label={payClause.description} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
-      {payInst && <PaymentModal label={`Parcela ${payInst.installment_number}`} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
+      {payClause && <PaymentModal label={tr(payClause.description)} currency={payClause.currency} value={payClause.original_value ?? 0} onClose={() => setPayClauseId(null)} onSave={p => handleClausePayment(payClause.id, p)} />}
+      {payInst && <PaymentModal label={trf('Parcela {0}', payInst.installment_number)} currency={payInst.currency} value={payInst.original_value} onClose={() => setPayInstId(null)} onSave={p => handleInstallmentPayment(payInst.id, p)} />}
       {editInst && <InstallmentEditModal inst={editInst} onClose={() => setEditInstId(null)} onSaved={() => { setEditInstId(null); loadData() }} />}
       {editClause && <ClauseEditModal clause={editClause} onClose={() => setEditClauseId(null)} onSaved={() => { setEditClauseId(null); loadData() }} />}
       {editAcordoId && (() => {
@@ -1123,36 +1124,36 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
     <div className="card" style={{ padding: 'var(--gutter-card)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', fontFamily: font }}>PJs do atleta</div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 2 }}>Pessoas jurídicas que recebem o direito de imagem. O atleta pode ter mais de uma.</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', fontFamily: font }}>{tr('PJs do atleta')}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 2 }}>{tr('Pessoas jurídicas que recebem o direito de imagem. O atleta pode ter mais de uma.')}</div>
         </div>
-        {canEdit && !adding && <button onClick={() => setAdding(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={16} /> Nova PJ</button>}
+        {canEdit && !adding && <button onClick={() => setAdding(true)} className="btn btn-outline" style={{ borderStyle: 'dashed' }}><Icon name="plus" size={16} /> {tr('Nova PJ')}</button>}
       </div>
 
       {adding && (
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end', marginBottom: 12, padding: 12, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
-          <div><label style={pjLbl}>Razão social *</label><input style={{ ...pjInp, width: '100%' }} value={f.legal_name} onChange={e => setF(p => ({ ...p, legal_name: e.target.value }))} placeholder="Ex: Fulano Sports LTDA" /></div>
-          <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={f.cnpj} onChange={e => setF(p => ({ ...p, cnpj: e.target.value }))} /></div>
-          <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
+          <div><label style={pjLbl}>{tr('Razão social *')}</label><input style={{ ...pjInp, width: '100%' }} value={f.legal_name} onChange={e => setF(p => ({ ...p, legal_name: e.target.value }))} placeholder={tr('Ex: Fulano Sports LTDA')} /></div>
+          <div><label style={pjLbl}>{tr('CNPJ')}</label><input style={{ ...pjInp, width: '100%' }} value={f.cnpj} onChange={e => setF(p => ({ ...p, cnpj: e.target.value }))} /></div>
+          <div><label style={pjLbl}>{tr('Observações')}</label><input style={{ ...pjInp, width: '100%' }} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={submitNew} disabled={!f.legal_name.trim()} className="btn btn-primary">Salvar</button>
-            <IconButton icon="x" label="Cancelar" onClick={() => setAdding(false)} />
+            <button onClick={submitNew} disabled={!f.legal_name.trim()} className="btn btn-primary">{tr('Salvar')}</button>
+            <IconButton icon="x" label={tr('Cancelar')} onClick={() => setAdding(false)} />
           </div>
         </div>
       )}
 
       {pjs.length === 0 && !adding ? (
-        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>Nenhuma PJ cadastrada.</div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Nenhuma PJ cadastrada.')}</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {pjs.map(p => editId === p.id ? (
             <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'end', padding: 12, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
-              <div><label style={pjLbl}>Razão social *</label><input style={{ ...pjInp, width: '100%' }} value={ef.legal_name} onChange={e => setEf(s => ({ ...s, legal_name: e.target.value }))} /></div>
-              <div><label style={pjLbl}>CNPJ</label><input style={{ ...pjInp, width: '100%' }} value={ef.cnpj} onChange={e => setEf(s => ({ ...s, cnpj: e.target.value }))} /></div>
-              <div><label style={pjLbl}>Observações</label><input style={{ ...pjInp, width: '100%' }} value={ef.notes} onChange={e => setEf(s => ({ ...s, notes: e.target.value }))} /></div>
+              <div><label style={pjLbl}>{tr('Razão social *')}</label><input style={{ ...pjInp, width: '100%' }} value={ef.legal_name} onChange={e => setEf(s => ({ ...s, legal_name: e.target.value }))} /></div>
+              <div><label style={pjLbl}>{tr('CNPJ')}</label><input style={{ ...pjInp, width: '100%' }} value={ef.cnpj} onChange={e => setEf(s => ({ ...s, cnpj: e.target.value }))} /></div>
+              <div><label style={pjLbl}>{tr('Observações')}</label><input style={{ ...pjInp, width: '100%' }} value={ef.notes} onChange={e => setEf(s => ({ ...s, notes: e.target.value }))} /></div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={submitEdit} className="btn btn-primary">Salvar</button>
-                <IconButton icon="x" label="Cancelar edição" onClick={() => setEditId(null)} />
+                <button onClick={submitEdit} className="btn btn-primary">{tr('Salvar')}</button>
+                <IconButton icon="x" label={tr('Cancelar edição')} onClick={() => setEditId(null)} />
               </div>
             </div>
           ) : (
@@ -1160,16 +1161,16 @@ function PjSection({ pjs, canEdit, onAdd, onUpdate, onDelete, imageCountByPj }: 
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontWeight: 500, fontFamily: font, fontSize: 'var(--ui-text-size)', color: 'var(--ink-primary)' }}>{p.legal_name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 2 }}>
-                  {p.cnpj ? `CNPJ ${p.cnpj}` : 'CNPJ não informado'}{p.notes ? ` · ${p.notes}` : ''}
+                  {p.cnpj ? trf('CNPJ {0}', p.cnpj) : tr('CNPJ não informado')}{p.notes ? ` · ${p.notes}` : ''}
                 </div>
               </div>
               <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                {imageCountByPj[p.id] ?? 0} lanç. de imagem
+                {imageCountByPj[p.id] ?? 0} {tr('lanç. de imagem')}
               </span>
               {canEdit && (
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => startEdit(p)} className="btn btn-outline">Editar</button>
-                  <button onClick={() => { if (window.confirm(`Excluir a PJ "${p.legal_name}"? Os lançamentos de imagem ficarão sem PJ.`)) onDelete(p.id) }} title="Excluir" style={{ padding: '5px 10px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>Excluir</button>
+                  <button onClick={() => startEdit(p)} className="btn btn-outline">{tr('Editar')}</button>
+                  <button onClick={() => { if (window.confirm(trf('Excluir a PJ "{0}"? Os lançamentos de imagem ficarão sem PJ.', p.legal_name))) onDelete(p.id) }} title={tr('Excluir')} style={{ padding: '5px 10px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', background: 'transparent', color: 'var(--neg)', fontSize: 11, fontFamily: font, cursor: 'pointer' }}>{tr('Excluir')}</button>
                 </div>
               )}
             </div>
@@ -1226,21 +1227,21 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
   // Tile sunken do DS; o destaque (hi) é o creme com filete — um acento por card.
   const kcard = (label: string, val: string, hi?: boolean) => (
     <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: hi ? 'var(--surface-accent)' : 'var(--surface-sunken)', border: `1px solid ${hi ? 'var(--accent-line-soft)' : 'transparent'}` }}>
-      <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, fontFamily: fontMono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{val}</div>
+      <div className="eyebrow" style={{ color: hi ? 'var(--sand-800)' : undefined, marginBottom: 6 }}>{tr(label)}</div>
+      <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, fontFamily: fontMono, color: 'var(--ink-900)', fontVariantNumeric: 'tabular-nums' }}>{tr(val)}</div>
     </div>
   )
 
   return (
     <div className="card" style={{ padding: 'var(--gutter-card)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font }}>Remuneração — paga pelo Botafogo</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', fontFamily: font }}>{tr('Remuneração — paga pelo Botafogo')}</div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
-            Vínculo {fmtDate(contract.start_date)}{contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ''} · origem: {contract.counterpart_club}
+            {tr('Vínculo')} {fmtDate(contract.start_date)}{contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ''} {tr('· origem:')} {contract.counterpart_club}
           </div>
           {canEdit && !editing && (
-            <IconButton icon="edit" label="Editar salário e imagem — o fluxo mensal é regerado automaticamente" onClick={() => setEditing(true)} />
+            <IconButton icon="edit" label={tr('Editar salário e imagem — o fluxo mensal é regerado automaticamente')} onClick={() => setEditing(true)} />
           )}
         </div>
       </div>
@@ -1248,18 +1249,18 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
       {editing ? (
         <div style={{ marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-            <div><label style={lbl2}>Salário CLT</label><NumberInput style={inp} value={f.base_salary} onChange={v => setF(p => ({ ...p, base_salary: v }))} /></div>
-            <div><label style={lbl2}>Direito de imagem</label><NumberInput style={inp} value={f.image_value} onChange={v => setF(p => ({ ...p, image_value: v }))} /></div>
-            <div><label style={lbl2}>Outros (moradia/aux.)</label><NumberInput style={inp} value={f.other_value} onChange={v => setF(p => ({ ...p, other_value: v }))} /></div>
-            <div><label style={lbl2}>Moeda</label>
+            <div><label style={lbl2}>{tr('Salário CLT')}</label><NumberInput style={inp} value={f.base_salary} onChange={v => setF(p => ({ ...p, base_salary: v }))} /></div>
+            <div><label style={lbl2}>{tr('Direito de imagem')}</label><NumberInput style={inp} value={f.image_value} onChange={v => setF(p => ({ ...p, image_value: v }))} /></div>
+            <div><label style={lbl2}>{tr('Outros (moradia/aux.)')}</label><NumberInput style={inp} value={f.other_value} onChange={v => setF(p => ({ ...p, other_value: v }))} /></div>
+            <div><label style={lbl2}>{tr('Moeda')}</label>
               <select style={inp} value={f.salary_currency} onChange={e => setF(p => ({ ...p, salary_currency: e.target.value as Currency }))}>
-                {(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}
+                {(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{tr(c)}</option>)}
               </select>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
-            <button onClick={() => setEditing(false)} className="btn btn-outline">Cancelar</button>
+            <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? tr('Salvando…') : tr('Salvar')}</button>
+            <button onClick={() => setEditing(false)} className="btn btn-outline">{tr('Cancelar')}</button>
           </div>
         </div>
       ) : (
@@ -1271,7 +1272,7 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
         </div>
       )}
 
-      <div style={{ marginBottom: 8, fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Evolução da remuneração</div>
+      <div style={{ marginBottom: 8, fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Evolução da remuneração')}</div>
       <RemunerationChart contract={contract} triggers={triggers} />
     </div>
   )
@@ -1300,18 +1301,17 @@ function LoanShareSection({ workContract, contracts, triggers, canEdit, onConfig
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-            Empréstimos — rateio de salário
+            {tr('Empréstimos — rateio de salário')}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, marginTop: 3 }}>
-            O clube que recebe o atleta pode arcar com parte do CLT e/ou da imagem. O fluxo mensal passa a
-            considerar só a parte do Botafogo a partir da data do empréstimo.
+            {tr('O clube que recebe o atleta pode arcar com parte do CLT e/ou da imagem. O fluxo mensal passa a considerar só a parte do Botafogo a partir da data do empréstimo.')}
           </div>
         </div>
       </div>
 
       {loans.length === 0 ? (
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>
-          Nenhum empréstimo de saída cadastrado. Registre o empréstimo em “+ Novo contrato” para configurar o rateio.
+          {tr('Nenhum empréstimo de saída cadastrado. Registre o empréstimo em “+ Novo contrato” para configurar o rateio.')}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1332,23 +1332,23 @@ function LoanShareSection({ workContract, contracts, triggers, canEdit, onConfig
                 {share ? (
                   <>
                     <span style={{ padding: '2px 9px', borderRadius: 'var(--radius-xs)', fontSize: 10, fontWeight: 500, fontFamily: fontMono, background: 'var(--info-tint)', color: 'var(--info)' }}>
-                      rateio ativo
+                      {tr('rateio ativo')}
                     </span>
                     <span style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--text-secondary)' }}>
-                      clube arca {share.clubSalaryPct}% CLT · {share.clubImagePct}% imagem
+                      {tr('clube arca')} {share.clubSalaryPct}{tr('% CLT ·')} {share.clubImagePct}{tr('% imagem')}
                     </span>
                     <span style={{ fontSize: 12, fontFamily: fontMono, fontWeight: 500, color: 'var(--ink-primary)' }}>
-                      Botafogo {fmtCurrencyShort(botafogo, currency)}/mês
+                      {tr('Botafogo')} {fmtCurrencyShort(botafogo, currency)}{tr('/mês')}
                     </span>
                   </>
                 ) : (
                   <span style={{ fontSize: 12, fontFamily: font, color: 'var(--text-secondary)' }}>
-                    sem rateio — Botafogo paga integral ({fmtCurrencyShort(fullSalary + fullImage, currency)}/mês)
+                    {tr('sem rateio — Botafogo paga integral (')}{fmtCurrencyShort(fullSalary + fullImage, currency)}{tr('/mês)')}
                   </span>
                 )}
                 {canEdit && (
                   <IconButton icon={share ? 'edit' : 'split'} tone={share ? 'default' : 'info'}
-                    label={share ? 'Editar o rateio deste empréstimo' : 'Configurar o rateio deste empréstimo'}
+                    label={share ? tr('Editar o rateio deste empréstimo') : tr('Configurar o rateio deste empréstimo')}
                     onClick={() => onConfigure(loan.id)} />
                 )}
               </div>
@@ -1383,8 +1383,8 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
   return (
     <div className="card" style={{ padding: 'var(--gutter-card)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{title}</div>
-        <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{rows.length} parcela(s) · {fmtCurrencyShort(total, cur)}</div>
+        <div style={{ fontSize: 10, fontFamily: fontMono, fontWeight: 400, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr(title)}</div>
+        <div style={{ fontSize: 12, fontFamily: fontMono, color: 'var(--ink-primary)' }}>{trn(rows.length, '{0} parcela ·', '{0} parcelas ·')} {fmtCurrencyShort(total, cur)}</div>
       </div>
 
       {/* Uma "pastilha" por fluxo, com o nome escrito — evita ícones repetidos e
@@ -1394,11 +1394,11 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
           {flowClauses.map(c => (
             <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 6px 4px 12px', borderRadius: 'var(--radius-tile)', background: 'var(--bg-subtle)' }}>
               <span style={{ fontFamily: font, fontSize: 12, fontWeight: 500, color: 'var(--ink-primary)' }}>
-                {c.clause_type === 'SALARIO_CETD' ? 'Salário CLT' : c.clause_type === 'DIREITO_IMAGEM' ? 'Direito de imagem' : CLAUSE_TYPE_LABELS[c.clause_type]}
+                {c.clause_type === 'SALARIO_CETD' ? tr('Salário CLT') : c.clause_type === 'DIREITO_IMAGEM' ? tr('Direito de imagem') : tr(CLAUSE_TYPE_LABELS[c.clause_type])}
               </span>
               <RowActions align="left"
-                open={{ to: `/obrigacoes/${c.id}`, label: `Abrir ${CLAUSE_TYPE_LABELS[c.clause_type]}` }}
-                schedule={{ onClick: () => onFlowClause(c.id), label: `Ver / editar as parcelas de ${CLAUSE_TYPE_LABELS[c.clause_type]}` }}
+                open={{ to: `/obrigacoes/${c.id}`, label: trf('Abrir {0}', tr(CLAUSE_TYPE_LABELS[c.clause_type])) }}
+                schedule={{ onClick: () => onFlowClause(c.id), label: trf('Ver / editar as parcelas de {0}', tr(CLAUSE_TYPE_LABELS[c.clause_type])) }}
               />
             </span>
           ))}
@@ -1410,7 +1410,7 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
         </div>
       )}
       {rows.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>Nenhuma parcela gerada. Use o assistente (+ Criar) ou o novo vínculo para gerar o fluxo.</div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Nenhuma parcela gerada. Use o assistente (+ Criar) ou o novo vínculo para gerar o fluxo.')}</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 340, overflowY: 'auto' }}>
           {rows.map(r => {
@@ -1419,7 +1419,7 @@ function FlowList({ title, installments, clauses, types, canEdit, onEditInst, on
             return (
               <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 120px 90px 120px', gap: 10, alignItems: 'center', padding: '6px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)' }}>
                 <span style={{ fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{fmtDate(r.due_date)}</span>
-                <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{tipo === 'SALARIO_CETD' ? 'Salário CLT' : tipo === 'DIREITO_IMAGEM' ? 'Imagem' : (tipo ? CLAUSE_TYPE_LABELS[tipo as keyof typeof CLAUSE_TYPE_LABELS] : '')}</span>
+                <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{tipo === 'SALARIO_CETD' ? tr('Salário CLT') : tipo === 'DIREITO_IMAGEM' ? tr('Imagem') : (tipo ? tr(CLAUSE_TYPE_LABELS[tipo as keyof typeof CLAUSE_TYPE_LABELS]) : '')}</span>
                 <span style={{ fontFamily: fontMono, fontWeight: 500, fontSize: 13, textAlign: 'right' }}>{fmtCurrencyShort(r.original_value, r.currency)}</span>
                 <span style={{ textAlign: 'right' }}><StatusBadge status={r.payment_status} map={PAYMENT_STATUS_STYLE} /></span>
                 <span style={{ textAlign: 'right' }}>
@@ -1514,13 +1514,13 @@ function ConsolidadoTab({
             const [dir, moeda] = k.split('|')
             const pay = dir === 'A_PAGAR'
             return (
-              <KpiPill key={k} label={`${pay ? 'A pagar' : 'A receber'} · ${moeda} (em aberto)`} value={fmtCurrencyShort(v, moeda as Currency)} tone={pay ? 'neg' : 'pos'} />
+              <KpiPill key={k} label={trf('{0} · {1} (em aberto)', pay ? tr('A pagar') : tr('A receber'), moeda)} value={fmtCurrencyShort(v, moeda as Currency)} tone={pay ? 'neg' : 'pos'} />
             )
           })}
           {rjEntries.sort().map(([k, v]) => {
             const [, moeda] = k.split('|')
             return (
-              <KpiPill key={`rj-${k}`} label={`Em RJ · ${moeda}`} value={fmtCurrencyShort(v, moeda as Currency)} tone="warn" />
+              <KpiPill key={`rj-${k}`} label={trf('Em RJ · {0}', moeda)} value={fmtCurrencyShort(v, moeda as Currency)} tone="warn" />
             )
           })}
         </div>
@@ -1530,16 +1530,16 @@ function ConsolidadoTab({
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, textAlign: 'left', minWidth: 90 }}>Vencimento</th>
-              <th style={{ ...th, textAlign: 'left', minWidth: 150 }}>Natureza</th>
-              <th style={{ ...th, textAlign: 'left', minWidth: 150 }}>Contraparte</th>
-              <th style={{ ...th, minWidth: 80 }}>Direção</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-              <th style={{ ...th, minWidth: 90 }}>Status</th>
-              {canEdit && <th style={{ ...th, minWidth: 120, textAlign: 'right' }}>Ações</th>}
+              <th style={{ ...th, textAlign: 'left', minWidth: 90 }}>{tr('Vencimento')}</th>
+              <th style={{ ...th, textAlign: 'left', minWidth: 150 }}>{tr('Natureza')}</th>
+              <th style={{ ...th, textAlign: 'left', minWidth: 150 }}>{tr('Contraparte')}</th>
+              <th style={{ ...th, minWidth: 80 }}>{tr('Direção')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>{tr('Valor')}</th>
+              <th style={{ ...th, minWidth: 90 }}>{tr('Status')}</th>
+              {canEdit && <th style={{ ...th, minWidth: 120, textAlign: 'right' }}>{tr('Ações')}</th>}
             </tr></thead>
             <tbody>
-              {items.length === 0 && <tr><td colSpan={canEdit ? 7 : 6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum fluxo financeiro para este atleta.</td></tr>}
+              {items.length === 0 && <tr><td colSpan={canEdit ? 7 : 6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum fluxo financeiro para este atleta.')}</td></tr>}
               {items.map((it, i) => {
                 const late = isOverdue(it.date, it.status)
                 const inst = it.kind === 'inst' ? installments.find(p => p.id === it.ref) : null
@@ -1549,14 +1549,14 @@ function ConsolidadoTab({
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: late ? 500 : 400 }}>{it.date ? fmtDate(it.date) : '—'}</td>
                     <td style={{ ...td, fontSize: 12 }}>
                       {it.clauseRef
-                        ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title="Abrir a obrigação">{it.nat}</button>
-                        : it.nat}
-                      {parseRJ(it.notes) && <span style={{ ...badgeStyle('warning'), marginLeft: 6 }} title={`Em RJ desde ${fmtDate(parseRJ(it.notes)!.filedAt)}`}>RJ</span>}
+                        ? <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }} onClick={() => onOpenClause(it.clauseRef!)} title={tr('Abrir a obrigação')}>{tr(it.nat)}</button>
+                        : tr(it.nat)}
+                      {parseRJ(it.notes) && <span style={{ ...badgeStyle('warning'), marginLeft: 6 }} title={trf('Em RJ desde {0}', fmtDate(parseRJ(it.notes)!.filedAt))}>{tr('RJ')}</span>}
                     </td>
                     <td style={{ ...td, fontSize: 12, color: 'var(--text-secondary)' }}>
-                      {link ? <RefLink to={link} title="Abrir cadastro da contraparte">{it.parte}</RefLink> : it.parte}
+                      {link ? <RefLink to={link} title={tr('Abrir cadastro da contraparte')}>{tr(it.parte)}</RefLink> : tr(it.parte)}
                     </td>
-                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: fontMono, color: it.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{it.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
+                    <td style={{ ...td, textAlign: 'center', fontSize: 10, fontFamily: fontMono, color: it.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{it.dir === 'A_PAGAR' ? tr('a pagar') : tr('a receber')}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{fmtCurrencyShort(it.valor, it.moeda)}</td>
                     <td style={td}><StatusBadge status={it.status} map={PAYMENT_STATUS_STYLE} /></td>
                     {canEdit && (
@@ -1648,7 +1648,7 @@ function AccessoryFlowTab({
     const contraparte = isBFRparty(c.debtor_party) ? c.creditor_party : c.debtor_party
     const parc = installments.filter(i => i.clause_id === c.id).sort((a, b) => a.due_date.localeCompare(b.due_date))
     if (parc.length) {
-      for (const p of parc) rows.push({ id: p.id, kind: 'inst', parte: contraparte, natureza: CLAUSE_TYPE_LABELS[c.clause_type], descricao: `${c.description} — parcela ${p.installment_number}`, valor: p.original_value, moeda: p.currency, venc: p.due_date, pag: p.payment_date, status: p.payment_status, clauseRef: c.id })
+      for (const p of parc) rows.push({ id: p.id, kind: 'inst', parte: contraparte, natureza: CLAUSE_TYPE_LABELS[c.clause_type], descricao: trf('{0} — parcela {1}', c.description, p.installment_number), valor: p.original_value, moeda: p.currency, venc: p.due_date, pag: p.payment_date, status: p.payment_status, clauseRef: c.id })
     } else {
       rows.push({ id: c.id, kind: 'clause', parte: contraparte, natureza: CLAUSE_TYPE_LABELS[c.clause_type], descricao: c.description, valor: c.original_value, moeda: c.currency, venc: c.due_date, pag: c.payment_date, status: c.payment_status, clauseRef: c.id })
     }
@@ -1666,11 +1666,11 @@ function AccessoryFlowTab({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontMono }}>
-          {rows.length} lançamento(s) · Total aprox. {fmtCurrencyShort(total, 'BRL')}
+          {trn(rows.length, '{0} lançamento · Total aprox.', '{0} lançamentos · Total aprox.')} {fmtCurrencyShort(total, 'BRL')}
         </div>
         {canEdit && (
           <button onClick={() => setShowNew(true)} className="btn btn-primary">
-            <Icon name="plus" size={16} /> Novo fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}
+            <Icon name="plus" size={16} /> {tr('Novo fluxo de')} {kind === 'luvas' ? tr('luvas') : tr('agente')}
           </button>
         )}
       </div>
@@ -1679,22 +1679,22 @@ function AccessoryFlowTab({
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={th}>Parte</th>
-              <th style={th}>Natureza</th>
-              <th style={th}>Descrição</th>
-              <th style={{ ...th, textAlign: 'right' }}>Valor</th>
-              <th style={th}>Vencimento</th>
-              <th style={th}>Pagamento</th>
-              <th style={th}>Status</th>
-              <th style={{ ...th, textAlign: 'right' }}>Ações</th>
+              <th style={th}>{tr('Parte')}</th>
+              <th style={th}>{tr('Natureza')}</th>
+              <th style={th}>{tr('Descrição')}</th>
+              <th style={{ ...th, textAlign: 'right' }}>{tr('Valor')}</th>
+              <th style={th}>{tr('Vencimento')}</th>
+              <th style={th}>{tr('Pagamento')}</th>
+              <th style={th}>{tr('Status')}</th>
+              <th style={{ ...th, textAlign: 'right' }}>{tr('Ações')}</th>
             </tr></thead>
             <tbody>
               {rows.length === 0 && (
                 <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 32 }}>
-                  <div style={{ marginBottom: 10 }}>Nenhum fluxo de {title.toLowerCase()} cadastrado.</div>
+                  <div style={{ marginBottom: 10 }}>{trf('Nenhum fluxo de {0} cadastrado.', tr(title).toLowerCase())}</div>
                   {canEdit && (
                     <button className="btn btn-primary" onClick={() => setShowNew(true)}>
-                      <Icon name="plus" size={16} /> Criar fluxo de {kind === 'luvas' ? 'luvas' : 'agente'}
+                      <Icon name="plus" size={16} /> {tr('Criar fluxo de')} {kind === 'luvas' ? tr('luvas') : tr('agente')}
                     </button>
                   )}
                 </td></tr>
@@ -1706,14 +1706,14 @@ function AccessoryFlowTab({
                 return (
                   <tr key={`${r.kind}:${r.id}`} style={{ background: late ? 'var(--row-late-bg)' : undefined }}>
                     <td style={{ ...td, fontWeight: 500 }}>
-                      {link ? <RefLink to={link} title="Abrir cadastro da contraparte">{r.parte}</RefLink> : r.parte}
+                      {link ? <RefLink to={link} title={tr('Abrir cadastro da contraparte')}>{tr(r.parte)}</RefLink> : tr(r.parte)}
                     </td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>
                       {r.clauseRef
-                        ? <button onClick={() => onOpenClause(r.clauseRef!)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }}>{r.natureza}</button>
-                        : r.natureza}
+                        ? <button onClick={() => onOpenClause(r.clauseRef!)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--border-default)', textUnderlineOffset: 2 }}>{tr(r.natureza)}</button>
+                        : tr(r.natureza)}
                     </td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{r.descricao || '—'}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', maxWidth: 320 }}>{tr(r.descricao) || '—'}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{r.valor != null ? fmtCurrencyShort(r.valor, r.moeda) : '—'}</td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: late ? 'var(--neg)' : 'var(--text-secondary)' }}>{r.venc ? fmtDate(r.venc) : '—'}</td>
                     <td style={{ ...td, fontFamily: fontMono, fontSize: 11, color: r.pag ? 'var(--pos)' : 'var(--text-muted)' }}>{r.pag ? fmtDate(r.pag) : '—'}</td>
@@ -1753,7 +1753,7 @@ function AccessoryFlowTab({
       </div>
       {showNew && (
         <NewAccessoryFlowModal
-          clauseType={clauseType} title={title} athleteId={athleteId} contracts={contracts}
+          clauseType={clauseType} title={tr(title)} athleteId={athleteId} contracts={contracts}
           onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); onSaved() }}
         />
       )}
@@ -1802,31 +1802,31 @@ function NewAccessoryFlowModal({ clauseType, title, athleteId, contracts, onClos
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 680, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Novo fluxo — {title}</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{tr('Novo fluxo —')} {tr(title)}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             {clauseType === 'INTERMEDIACAO'
-              ? <EntityPicker kind="intermediario" label="Agente / Intermediário *" value={name} onChange={n => setName(n)} />
-              : <><label style={lbl}>Credor (atleta/agente/clube) *</label><input style={inp} value={name} onChange={e => setName(e.target.value)} placeholder="Nome do credor" /></>}
+              ? <EntityPicker kind="intermediario" label={tr('Agente / Intermediário *')} value={name} onChange={n => setName(n)} />
+              : <><label style={lbl}>{tr('Credor (atleta/agente/clube) *')}</label><input style={inp} value={name} onChange={e => setName(e.target.value)} placeholder={tr('Nome do credor')} /></>}
           </div>
-          <div><label style={lbl}>Moeda</label><select style={inp} value={currency} onChange={e => setCurrency(e.target.value as Currency)}>{(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label style={lbl}>{tr('Moeda')}</label><select style={inp} value={currency} onChange={e => setCurrency(e.target.value as Currency)}>{(['BRL', 'EUR', 'USD', 'GBP'] as Currency[]).map(c => <option key={c} value={c}>{tr(c)}</option>)}</select></div>
         </div>
-        <div><label style={lbl}>Descrição</label><input style={inp} value={desc} onChange={e => setDesc(e.target.value)} placeholder={`Ex.: Contrato de ${title.toLowerCase()} 2M em 10x`} /></div>
+        <div><label style={lbl}>{tr('Descrição')}</label><input style={inp} value={desc} onChange={e => setDesc(e.target.value)} placeholder={trf('Ex.: Contrato de {0} 2M em 10x', tr(title).toLowerCase())} /></div>
         <div>
-          <label style={lbl}>Contrato guarda-chuva</label>
+          <label style={lbl}>{tr('Contrato guarda-chuva')}</label>
           <select style={inp} value={contractId} onChange={e => setContractId(e.target.value)}>
-            <option value="">— nenhum (independente) —</option>
-            {contracts.filter(c => TRANSFER_CONTRACT_TYPES.includes(c.type)).map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
+            <option value="">{tr('— nenhum (independente) —')}</option>
+            {contracts.filter(c => TRANSFER_CONTRACT_TYPES.includes(c.type)).map(c => <option key={c.id} value={c.id}>{tr(contractLabel(c))}</option>)}
           </select>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 4 }}>Atrela este fluxo à transferência de compra do atleta.</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 4 }}>{tr('Atrela este fluxo à transferência de compra do atleta.')}</div>
         </div>
         <div>
-          <label style={lbl}>Fluxo de pagamento</label>
+          <label style={lbl}>{tr('Fluxo de pagamento')}</label>
           <FlowBuilder currency={currency} onCurrencyChange={setCurrency} lines={lines} onChange={setLines} seedRows={4} />
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={!canSave} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar fluxo'}</button>
+          <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
+          <button onClick={save} disabled={!canSave} className="btn btn-primary">{saving ? tr('Salvando…') : tr('Salvar fluxo')}</button>
         </div>
       </div>
     </div>
@@ -1861,15 +1861,15 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Metas salariais (gatilhos que mudam salário/imagem) */}
       <div className="card" style={{ padding: 'var(--gutter-card)' }}>
-        <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Gatilhos de salário / imagem</div>
+        <div style={{ marginBottom: 10, fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Gatilhos de salário / imagem')}</div>
         {!emp ? (
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}>
-            Cadastre um vínculo de trabalho com salário na aba <strong>Salário</strong> para criar gatilhos de aumento.
+            {tr('Cadastre um vínculo de trabalho com salário na aba')} <strong>{tr('Salário')}</strong> {tr('para criar gatilhos de aumento.')}
           </div>
         ) : (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-              {empTriggers.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>Nenhum gatilho cadastrado.</div>
+              {empTriggers.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Nenhum gatilho cadastrado.')}</div>
                 : empTriggers.map(t => <TriggerRow key={t.id} t={t} canEdit={canEdit} onMark={d => onMarkTrigger(t.id, d)} onReset={() => onResetTrigger(t.id)} onDelete={() => onDeleteTrigger(t.id)} />)}
             </div>
             {canEdit && <NewTriggerForm contract={emp} onAdd={onAddTrigger} />}
@@ -1880,26 +1880,26 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
       {/* Cláusulas diversas / de performance */}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--divider-soft)' }}>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Cláusulas diversas e de performance</div>
-          {canEdit && umbrella && <button onClick={() => onNewClause(umbrella.id)} className="btn btn-outline" style={{ padding: '6px 12px' }}><Icon name="plus" size={16} /> Nova cláusula</button>}
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Cláusulas diversas e de performance')}</div>
+          {canEdit && umbrella && <button onClick={() => onNewClause(umbrella.id)} className="btn btn-outline" style={{ padding: '6px 12px' }}><Icon name="plus" size={16} /> {tr('Nova cláusula')}</button>}
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={th}>Tipo</th>
-              <th style={th}>Descrição</th>
-              <th style={{ ...th, textAlign: 'right' }}>Valor</th>
-              <th style={th}>Atingimento</th>
-              <th style={th}>Pagamento</th>
-              <th style={{ ...th, textAlign: 'center' }}>Ações</th>
+              <th style={th}>{tr('Tipo')}</th>
+              <th style={th}>{tr('Descrição')}</th>
+              <th style={{ ...th, textAlign: 'right' }}>{tr('Valor')}</th>
+              <th style={th}>{tr('Atingimento')}</th>
+              <th style={th}>{tr('Pagamento')}</th>
+              <th style={{ ...th, textAlign: 'center' }}>{tr('Ações')}</th>
             </tr></thead>
             <tbody>
               {diverse.length === 0 && (
                 <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 32 }}>
-                  <div style={{ marginBottom: 10 }}>Nenhuma cláusula de performance. Ex.: 10k por gol, 10k por clean sheet, bônus de convocação.</div>
+                  <div style={{ marginBottom: 10 }}>{tr('Nenhuma cláusula de performance. Ex.: 10k por gol, 10k por clean sheet, bônus de convocação.')}</div>
                   {canEdit && umbrella && (
                     <button className="btn btn-primary" onClick={() => onNewClause(umbrella.id)}>
-                      <Icon name="plus" size={16} /> Criar cláusula de performance
+                      <Icon name="plus" size={16} /> {tr('Criar cláusula de performance')}
                     </button>
                   )}
                 </td></tr>
@@ -1909,10 +1909,10 @@ function GatilhosTab({ emp, empTriggers, clauses, installments, umbrella, canEdi
                 const tot = parc.length ? parc.reduce((s, p) => s + p.original_value, 0) : (c.original_value ?? 0)
                 return (
                   <tr key={c.id}>
-                    <td style={{ ...td, fontFamily: fontMono, fontSize: 10, fontWeight: 500, color: 'var(--text-secondary)' }}>{CLAUSE_TYPE_LABELS[c.clause_type]}</td>
+                    <td style={{ ...td, fontFamily: fontMono, fontSize: 10, fontWeight: 500, color: 'var(--text-secondary)' }}>{tr(CLAUSE_TYPE_LABELS[c.clause_type])}</td>
                     <td style={td}>
-                      <div style={{ fontWeight: 500 }}>{c.description}</div>
-                      {c.condition_description && <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>{c.condition_description}</div>}
+                      <div style={{ fontWeight: 500 }}>{tr(c.description)}</div>
+                      {c.condition_description && <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>{tr(c.condition_description)}</div>}
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: fontMono, fontWeight: 500 }}>{tot ? fmtCurrencyShort(tot, c.currency) : c.percentage_value ? `${c.percentage_value}%` : '—'}</td>
                     <td style={td}><StatusBadge status={c.achievement_status} map={{ PENDENTE: TRIGGER_STATUS_STYLE.PENDENTE, ATINGIDA: TRIGGER_STATUS_STYLE.ATINGIDA, NAO_ATINGIDA: TRIGGER_STATUS_STYLE.NAO_ATINGIDA, NAO_APLICAVEL: TRIGGER_STATUS_STYLE.NAO_ATINGIDA }} /></td>
@@ -1989,53 +1989,53 @@ function ContractEditModal({ contract, siblings, onClose, onSaved }: {
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 660, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Editar vínculo</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{tr('Editar vínculo')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div><label style={lbl}>Tipo</label>
+          <div><label style={lbl}>{tr('Tipo')}</label>
             <select style={inp} value={f.type} onChange={e => set('type', e.target.value)}>
-              <optgroup label="Transferência">
-                {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+              <optgroup label={tr('Transferência')}>
+                {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{tr(CONTRACT_TYPE_LABELS[t])}</option>)}
               </optgroup>
-              <optgroup label="Contratos acessórios / vinculados">
-                {ACCESSORY_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+              <optgroup label={tr('Contratos acessórios / vinculados')}>
+                {ACCESSORY_CONTRACT_TYPES.map(t => <option key={t} value={t}>{tr(CONTRACT_TYPE_LABELS[t])}</option>)}
               </optgroup>
             </select>
           </div>
-          <div><label style={lbl}>Status</label>
+          <div><label style={lbl}>{tr('Status')}</label>
             <select style={inp} value={f.status} onChange={e => set('status', e.target.value)}>
-              <option value="ATIVO">Ativo</option><option value="ENCERRADO">Encerrado</option><option value="RESCINDIDO">Rescindido</option>
+              <option value="ATIVO">{tr('Ativo')}</option><option value="ENCERRADO">{tr('Encerrado')}</option><option value="RESCINDIDO">{tr('Rescindido')}</option>
             </select>
           </div>
-          <div><label style={lbl}>Clube / Contraparte</label><input style={inp} value={f.counterpart_club} onChange={e => set('counterpart_club', e.target.value)} /></div>
-          <div><label style={lbl}>País</label><input style={inp} value={f.counterpart_country} onChange={e => set('counterpart_country', e.target.value)} /></div>
-          <div><label style={lbl}>Início</label><input style={inp} type="date" value={f.start_date} onChange={e => set('start_date', e.target.value)} /></div>
-          <div><label style={lbl}>Término</label><input style={inp} type="date" value={f.end_date} onChange={e => set('end_date', e.target.value)} /></div>
-          <div><label style={lbl}>Valor transferência</label><NumberInput style={inp} value={f.transfer_fee_gross} onChange={v => set('transfer_fee_gross', v)} /></div>
-          <div><label style={lbl}>Moeda transf.</label><select style={inp} value={f.transfer_currency} onChange={e => set('transfer_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label style={lbl}>Salário CLT/mês</label><NumberInput style={inp} value={f.base_salary} onChange={v => set('base_salary', v)} /></div>
-          <div><label style={lbl}>Imagem/mês</label><NumberInput style={inp} value={f.image_value} onChange={v => set('image_value', v)} /></div>
-          <div><label style={lbl}>Outros/mês</label><NumberInput style={inp} value={f.other_value} onChange={v => set('other_value', v)} /></div>
-          <div><label style={lbl}>Moeda salário</label><select style={inp} value={f.salary_currency} onChange={e => set('salary_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label style={lbl}>{tr('Clube / Contraparte')}</label><input style={inp} value={f.counterpart_club} onChange={e => set('counterpart_club', e.target.value)} /></div>
+          <div><label style={lbl}>{tr('País')}</label><input style={inp} value={f.counterpart_country} onChange={e => set('counterpart_country', e.target.value)} /></div>
+          <div><label style={lbl}>{tr('Início')}</label><input style={inp} type="date" value={f.start_date} onChange={e => set('start_date', e.target.value)} /></div>
+          <div><label style={lbl}>{tr('Término')}</label><input style={inp} type="date" value={f.end_date} onChange={e => set('end_date', e.target.value)} /></div>
+          <div><label style={lbl}>{tr('Valor transferência')}</label><NumberInput style={inp} value={f.transfer_fee_gross} onChange={v => set('transfer_fee_gross', v)} /></div>
+          <div><label style={lbl}>{tr('Moeda transf.')}</label><select style={inp} value={f.transfer_currency} onChange={e => set('transfer_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{tr(c)}</option>)}</select></div>
+          <div><label style={lbl}>{tr('Salário CLT/mês')}</label><NumberInput style={inp} value={f.base_salary} onChange={v => set('base_salary', v)} /></div>
+          <div><label style={lbl}>{tr('Imagem/mês')}</label><NumberInput style={inp} value={f.image_value} onChange={v => set('image_value', v)} /></div>
+          <div><label style={lbl}>{tr('Outros/mês')}</label><NumberInput style={inp} value={f.other_value} onChange={v => set('other_value', v)} /></div>
+          <div><label style={lbl}>{tr('Moeda salário')}</label><select style={inp} value={f.salary_currency} onChange={e => set('salary_currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{tr(c)}</option>)}</select></div>
         </div>
-        <div><label style={lbl}>Descrição</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.description} onChange={e => set('description', e.target.value)} /></div>
+        <div><label style={lbl}>{tr('Descrição')}</label><textarea style={{ ...inp, minHeight: 52, resize: 'vertical' }} value={f.description} onChange={e => set('description', e.target.value)} /></div>
         {relatable.length > 0 && (
           <div>
-            <label style={lbl}>Contrato relacionado</label>
+            <label style={lbl}>{tr('Contrato relacionado')}</label>
             <select style={inp} value={f.related_contract_id} onChange={e => set('related_contract_id', e.target.value)}>
-              <option value="">— nenhum (contrato independente) —</option>
-              {relatable.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
+              <option value="">{tr('— nenhum (contrato independente) —')}</option>
+              {relatable.map(c => <option key={c.id} value={c.id}>{tr(contractLabel(c))}</option>)}
             </select>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 4 }}>
-              Atrele este contrato a outro vínculo do atleta (ex.: intermediação/sell-on de uma compra ou venda).
+              {tr('Atrele este contrato a outro vínculo do atleta (ex.: intermediação/sell-on de uma compra ou venda).')}
             </div>
           </div>
         )}
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>
-          Alterar salário/imagem aqui muda os valores do vínculo. Para regerar as parcelas mensais, use "Atualizar fluxo mensal" na aba CLT + Imagem.
+          {tr('Alterar salário/imagem aqui muda os valores do vínculo. Para regerar as parcelas mensais, use "Atualizar fluxo mensal" na aba CLT + Imagem.')}
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Salvando…' : 'Salvar'}</button>
+          <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
+          <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? tr('Salvando…') : tr('Salvar')}</button>
         </div>
       </div>
     </div>
@@ -2157,51 +2157,51 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 660, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Nova cláusula</div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 3 }}>atrelada a {CONTRACT_TYPE_LABELS[contract.type]} · {contract.counterpart_club || '—'}</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{tr('Nova cláusula')}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginTop: 3 }}>{tr('atrelada a')} {tr(CONTRACT_TYPE_LABELS[contract.type])} · {contract.counterpart_club || '—'}</div>
         </div>
 
-        <div><label style={lbl}>Tipo</label>
+        <div><label style={lbl}>{tr('Tipo')}</label>
           <select style={inp} value={f.clause_type} onChange={e => changeType(e.target.value as ClauseType)}>
-            {clauseTypes.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
+            {clauseTypes.map(t => <option key={t} value={t}>{tr(CLAUSE_TYPE_LABELS[t])}</option>)}
           </select>
         </div>
 
         {isFuture && (
           <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--gray-150)', border: '1px solid var(--divider-strong)', fontFamily: font, fontSize: 12, color: 'var(--ink-secondary)' }}>
-            Cláusula de <strong>valor futuro</strong>: informe apenas o <strong>percentual (%)</strong>. O valor será apurado quando a venda futura acontecer — deixe o valor em branco.
+            {tr('Cláusula de')} <strong>{tr('valor futuro')}</strong>{tr(': informe apenas o')} <strong>{tr('percentual (%)')}</strong>{tr('. O valor será apurado quando a venda futura acontecer — deixe o valor em branco.')}
           </div>
         )}
 
-        <div><label style={lbl}>Descrição *</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder={isFuture ? 'Ex: Sell-on de 15% sobre venda futura ao exterior' : 'Descreva a cláusula...'} /></div>
+        <div><label style={lbl}>{tr('Descrição *')}</label><input style={inp} value={f.description} onChange={e => set('description', e.target.value)} placeholder={isFuture ? tr('Ex: Sell-on de 15% sobre venda futura ao exterior') : tr('Descreva a cláusula...')} /></div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div><label style={lbl}>Credor</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
-          <div><label style={lbl}>Devedor</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
-          <div><label style={lbl}>Percentual (%){isFuture ? ' *' : ''}</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} placeholder="Ex: 15" /></div>
-          <div><label style={lbl}>Valor{isFuture ? ' (indefinido)' : ''}</label><NumberInput style={{ ...inp, ...(isFuture ? { background: 'var(--gray-100)', color: 'var(--text-disabled)' } : null) }} value={f.original_value} onChange={v => set('original_value', v)} placeholder={isFuture ? 'a definir na venda' : '0,00'} /></div>
-          <div><label style={lbl}>Moeda</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label style={lbl}>{isFuture ? 'Vencimento (opcional)' : 'Vencimento / 1ª parcela'}</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
+          <div><label style={lbl}>{tr('Credor')}</label><input style={inp} value={f.creditor_party} onChange={e => set('creditor_party', e.target.value)} /></div>
+          <div><label style={lbl}>{tr('Devedor')}</label><input style={inp} value={f.debtor_party} onChange={e => set('debtor_party', e.target.value)} /></div>
+          <div><label style={lbl}>{tr('Percentual (%)')}{isFuture ? ' *' : ''}</label><NumberInput style={inp} decimals={2} grouping={false} value={f.percentage_value} onChange={v => set('percentage_value', v)} placeholder={tr('Ex: 15')} /></div>
+          <div><label style={lbl}>{tr('Valor')}{isFuture ? tr(' (indefinido)') : ''}</label><NumberInput style={{ ...inp, ...(isFuture ? { background: 'var(--gray-100)', color: 'var(--text-disabled)' } : null) }} value={f.original_value} onChange={v => set('original_value', v)} placeholder={isFuture ? tr('a definir na venda') : '0,00'} /></div>
+          <div><label style={lbl}>{tr('Moeda')}</label><select style={inp} value={f.currency} onChange={e => set('currency', e.target.value)}>{cur.map(c => <option key={c} value={c}>{tr(c)}</option>)}</select></div>
+          <div><label style={lbl}>{isFuture ? tr('Vencimento (opcional)') : tr('Vencimento / 1ª parcela')}</label><input style={inp} type="date" value={f.due_date} onChange={e => set('due_date', e.target.value)} /></div>
         </div>
 
         {isSellOn && (
-          <div><label style={lbl}>Base de cálculo do Sell-on</label>
+          <div><label style={lbl}>{tr('Base de cálculo do Sell-on')}</label>
             <select style={inp} value={f.basis} onChange={e => set('basis', e.target.value)}>
-              {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+              {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{tr(SELLON_BASIS_LABELS[b])}</option>)}
             </select>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, marginTop: 4 }}>
-              O sell-on incide sobre {f.basis === 'MAIS_VALIA' ? 'a mais-valia (lucro na revenda)' : 'o valor total da venda'} futura.
+              {tr('O sell-on incide sobre')} {f.basis === 'MAIS_VALIA' ? tr('a mais-valia (lucro na revenda)') : tr('o valor total da venda')} {tr('futura.')}
             </div>
           </div>
         )}
 
         {!isFuture && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={lbl}>Nº parcelas</label><input style={inp} type="number" min={1} max={120} value={f.installments_total} onChange={e => set('installments_total', e.target.value)} /></div>
+            <div><label style={lbl}>{tr('Nº parcelas')}</label><input style={inp} type="number" min={1} max={120} value={f.installments_total} onChange={e => set('installments_total', e.target.value)} /></div>
             {installments > 1 && (
-              <div><label style={lbl}>Periodicidade</label>
+              <div><label style={lbl}>{tr('Periodicidade')}</label>
                 <select style={inp} value={f.period} onChange={e => set('period', e.target.value)}>
-                  {(Object.keys(NEW_CLAUSE_PERIOD_LABEL) as NewClausePeriod[]).map(p => <option key={p} value={p}>{NEW_CLAUSE_PERIOD_LABEL[p]}</option>)}
+                  {(Object.keys(NEW_CLAUSE_PERIOD_LABEL) as NewClausePeriod[]).map(p => <option key={p} value={p}>{tr(NEW_CLAUSE_PERIOD_LABEL[p])}</option>)}
                 </select>
               </div>
             )}
@@ -2210,16 +2210,16 @@ function NewClauseModal({ contract, athleteId, onClose, onSaved }: {
 
         {showSchedule && f.due_date && (
           <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)', fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)' }}>
-            {installments}× {f.currency} {(parseFloat(f.original_value) / installments).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} · {NEW_CLAUSE_PERIOD_LABEL[f.period].toLowerCase()} · 1º venc. {fmtDate(f.due_date)}
+            {installments}× {tr(f.currency)} {(parseFloat(f.original_value) / installments).toLocaleString(locale(), { maximumFractionDigits: 2 })} · {NEW_CLAUSE_PERIOD_LABEL[f.period].toLowerCase()} {tr('· 1º venc.')} {fmtDate(f.due_date)}
           </div>
         )}
 
-        {!isSellOn && <div><label style={lbl}>Condição / gatilho</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} placeholder="Ex: sobre o valor de uma venda futura" /></div>}
-        <div><label style={lbl}>Notas</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
+        {!isSellOn && <div><label style={lbl}>{tr('Condição / gatilho')}</label><input style={inp} value={f.condition_description} onChange={e => set('condition_description', e.target.value)} placeholder={tr('Ex: sobre o valor de uma venda futura')} /></div>}
+        <div><label style={lbl}>{tr('Notas')}</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} /></div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={save} disabled={saving || !canSave} className="btn btn-primary">{saving ? 'Salvando…' : 'Adicionar cláusula'}</button>
+          <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
+          <button onClick={save} disabled={saving || !canSave} className="btn btn-primary">{saving ? tr('Salvando…') : tr('Adicionar cláusula')}</button>
         </div>
       </div>
     </div>
@@ -2274,22 +2274,22 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div className="card" style={{ padding: 'var(--gutter-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', fontFamily: font }}>Acordos e Renegociações</div>
+          <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--ink-primary)', fontFamily: font }}>{tr('Acordos e Renegociações')}</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font, marginTop: 3, maxWidth: 620 }}>
-            Selecione parcelas/cláusulas em aberto e reabra o saldo em um novo fluxo (com desconto, se houver). As parcelas originais são preservadas como canceladas, mantendo o rastreio.
+            {tr('Selecione parcelas/cláusulas em aberto e reabra o saldo em um novo fluxo (com desconto, se houver). As parcelas originais são preservadas como canceladas, mantendo o rastreio.')}
           </div>
         </div>
-        {canEdit && <button onClick={onNew} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}><Icon name="plus" size={16} /> Nova renegociação</button>}
+        {canEdit && <button onClick={onNew} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}><Icon name="plus" size={16} /> {tr('Nova renegociação')}</button>}
       </div>
 
       {acordos.length === 0 && (
         <div className="card" style={{ padding: 32, textAlign: 'center', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
           <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--ink-secondary)', maxWidth: 460, lineHeight: 1.5 }}>
-            Nenhuma renegociação registrada para este atleta. Uma renegociação reabre parcelas ou obrigações vencidas em um novo fluxo, mantendo o rastreio das originais.
+            {tr('Nenhuma renegociação registrada para este atleta. Uma renegociação reabre parcelas ou obrigações vencidas em um novo fluxo, mantendo o rastreio das originais.')}
           </div>
           {canEdit && (
             <button className="btn btn-primary" onClick={onNew}>
-              <Icon name="plus" size={16} /> Registrar renegociação
+              <Icon name="plus" size={16} /> {tr('Registrar renegociação')}
             </button>
           )}
         </div>
@@ -2303,9 +2303,9 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
         return (
           <div key={ac.id} id={`acordo-${ac.id}`} className="card" style={{ padding: 'var(--gutter-card)', border: isHi ? '1px solid var(--gold-ring)' : undefined, boxShadow: isHi ? '0 0 0 3px var(--divider-strong)' : undefined, transition: 'box-shadow 0.4s, border-color 0.4s' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-              <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>{meta?.creditor ?? ac.creditor_party}</div>
+              <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, color: 'var(--ink-primary)', fontFamily: font }}>{tr(meta?.creditor) ?? ac.creditor_party}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>{meta ? `acordado em ${fmtDate(meta.createdAt)}` : ''}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>{meta ? trf('acordado em {0}', fmtDate(meta.createdAt)) : ''}</span>
                 <RowActions small={false}
                   open={{ to: `/obrigacoes/${ac.id}` }}
                   edit={{ onClick: canEdit ? () => onEditAcordo(ac.id) : undefined, label: 'Editar / desfazer a renegociação', reason: 'sem permissão de edição' }}
@@ -2324,21 +2324,21 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
                   ['Pagas', `${paidCount}/${parc.length}`],
                 ].map(([l, v], i) => (
                   <div key={i} style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
-                    <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{l}</div>
-                    <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, fontFamily: fontMono, color: l === 'Desconto' && meta.discount > 0 ? 'var(--pos)' : 'var(--ink-primary)' }}>{v}</div>
+                    <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr(l)}</div>
+                    <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, fontFamily: fontMono, color: l === 'Desconto' && meta.discount > 0 ? 'var(--pos)' : 'var(--ink-primary)' }}>{tr(v)}</div>
                   </div>
                 ))}
               </div>
             )}
-            {meta?.userNote && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', borderLeft: '2px solid var(--gold-ring)', borderRadius: 'var(--radius-xs)', padding: '7px 12px', fontFamily: font, marginBottom: 14 }}>{meta.userNote}</div>}
+            {meta?.userNote && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', borderLeft: '2px solid var(--gold-ring)', borderRadius: 'var(--radius-xs)', padding: '7px 12px', fontFamily: font, marginBottom: 14 }}>{tr(meta.userNote)}</div>}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               {/* Novo fluxo */}
               <div>
-                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Novo fluxo</div>
+                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>{tr('Novo fluxo')}</div>
                 <div style={{ maxHeight: 260, overflowY: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead><tr><th style={th}>#</th><th style={th}>Vencimento</th><th style={{ ...th, textAlign: 'right' }}>Valor</th><th style={{ ...th, textAlign: 'center' }}>Ação</th></tr></thead>
+                    <thead><tr><th style={th}>#</th><th style={th}>{tr('Vencimento')}</th><th style={{ ...th, textAlign: 'right' }}>{tr('Valor')}</th><th style={{ ...th, textAlign: 'center' }}>{tr('Ação')}</th></tr></thead>
                     <tbody>
                       {parc.map(p => {
                         const late = isOverdue(p.due_date, p.payment_status)
@@ -2357,11 +2357,11 @@ function AcordosTab({ clauses, installments, canEdit, highlight, onHighlighted, 
               </div>
               {/* Itens de origem (rastreio) */}
               <div>
-                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Itens de origem (renegociados)</div>
+                <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>{tr('Itens de origem (renegociados)')}</div>
                 <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {(meta?.sources ?? []).map((s, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '6px 10px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)' }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trParts(s.label)}</span>
                       <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 500, whiteSpace: 'nowrap' }}>{fmtCurrencyShort(s.value, meta?.currency ?? 'BRL')}</span>
                     </div>
                   ))}
@@ -2521,13 +2521,13 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 760, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Nova renegociação</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{tr('Nova renegociação')}</div>
 
         {/* Seleção de itens */}
         <div>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>1 · Selecione os itens em aberto</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>{tr('1 · Selecione os itens em aberto')}</div>
           {items.length === 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>Nenhum item em aberto para renegociar.</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Nenhum item em aberto para renegociar.')}</div>
           ) : (
             <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {Array.from(groups.entries()).map(([parte, arr]) => {
@@ -2537,14 +2537,14 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--bg-subtle)' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: font, color: 'var(--ink-primary)' }}>
                         <input type="checkbox" checked={allOn} onChange={e => toggleGroup(parte, e.target.checked)} />
-                        {parte}
+                        {tr(parte)}
                       </label>
-                      <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{arr.length} item(ns)</span>
+                      <span style={{ fontSize: 10, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{trn(arr.length, '{0} item', '{0} itens')}</span>
                     </div>
                     {arr.map(it => (
                       <label key={it.key} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 110px 90px', gap: 8, alignItems: 'center', padding: '6px 10px', borderTop: '1px solid var(--divider-soft)', cursor: 'pointer' }}>
                         <input type="checkbox" checked={selected.has(it.key)} onChange={() => toggle(it.key)} />
-                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.source.label}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trParts(it.source.label)}</span>
                         <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)' }}>{it.dueDate ? fmtDate(it.dueDate) : '—'}</span>
                         <span style={{ fontSize: 11, fontFamily: fontMono, fontWeight: 500, textAlign: 'right' }}>{fmtCurrencyShort(it.source.value, it.currency)}</span>
                       </label>
@@ -2554,63 +2554,63 @@ function RenegotiationModal({ athleteId, clauses, installments, clubLiabs, inter
               })}
             </div>
           )}
-          {mixedCurrency && <div role="alert" style={{ fontSize: 12, color: 'var(--text-negative)', fontFamily: font, marginTop: 6 }}>Selecione itens de uma única moeda.</div>}
-          {mixedParty && <div role="alert" style={{ fontSize: 12, color: 'var(--text-negative)', fontFamily: font, marginTop: 6 }}>Selecione itens de uma única contraparte.</div>}
+          {mixedCurrency && <div role="alert" style={{ fontSize: 12, color: 'var(--text-negative)', fontFamily: font, marginTop: 6 }}>{tr('Selecione itens de uma única moeda.')}</div>}
+          {mixedParty && <div role="alert" style={{ fontSize: 12, color: 'var(--text-negative)', fontFamily: font, marginTop: 6 }}>{tr('Selecione itens de uma única contraparte.')}</div>}
         </div>
 
         {/* Parâmetros do novo fluxo */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>2 · Defina o novo fluxo</div>
-            <div className="seg-control" role="group" aria-label="Modo do novo fluxo">
+            <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('2 · Defina o novo fluxo')}</div>
+            <div className="seg-control" role="group" aria-label={tr('Modo do novo fluxo')}>
               {(['igual', 'custom'] as const).map(m => (
-                <button key={m} type="button" onClick={() => setMode(m)} aria-pressed={mode === m} className="seg-control__item">{m === 'igual' ? 'Parcelas iguais' : 'Fluxo personalizado'}</button>
+                <button key={m} type="button" onClick={() => setMode(m)} aria-pressed={mode === m} className="seg-control__item">{m === 'igual' ? tr('Parcelas iguais') : tr('Fluxo personalizado')}</button>
               ))}
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
-            <div><label style={lbl}>Dívida selecionada</label><input style={{ ...inp, fontFamily: fontMono }} value={`${currency} ${sum.toLocaleString('pt-BR')}`} disabled /></div>
-            <div><label style={lbl}>Novo total ({currency})</label><NumberInput style={{ ...inp, fontFamily: fontMono }} value={mode === 'custom' ? (scheduleSum || '') : (touchedTotal ? newTotal : (sum || ''))} onChange={v => { setTouchedTotal(true); setNewTotal(v) }} disabled={mode === 'custom'} placeholder="Igual à dívida" /></div>
-            <div><label style={lbl}>Desconto</label><input style={{ ...inp, fontFamily: fontMono, color: discount > 0 ? 'var(--pos)' : discount < 0 ? 'var(--neg)' : undefined }} value={`${currency} ${discount.toLocaleString('pt-BR')}`} disabled /></div>
-            <div><label style={lbl}>{mode === 'custom' ? 'Data 1ª parcela' : 'Data-base'}</label><input style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-            <div><label style={lbl}>Nº de parcelas</label><input style={inp} type="number" min={1} step={1} value={count} onChange={e => setCount(e.target.value)} /></div>
-            <div><label style={lbl}>Periodicidade (meses)</label><input style={inp} type="number" min={1} step={1} value={period} onChange={e => setPeriod(e.target.value)} disabled={mode === 'custom'} /></div>
+            <div><label style={lbl}>{tr('Dívida selecionada')}</label><input style={{ ...inp, fontFamily: fontMono }} value={`${currency} ${sum.toLocaleString(locale())}`} disabled /></div>
+            <div><label style={lbl}>{tr('Novo total (')}{tr(currency)})</label><NumberInput style={{ ...inp, fontFamily: fontMono }} value={mode === 'custom' ? (scheduleSum || '') : (touchedTotal ? newTotal : (sum || ''))} onChange={v => { setTouchedTotal(true); setNewTotal(v) }} disabled={mode === 'custom'} placeholder={tr('Igual à dívida')} /></div>
+            <div><label style={lbl}>{tr('Desconto')}</label><input style={{ ...inp, fontFamily: fontMono, color: discount > 0 ? 'var(--pos)' : discount < 0 ? 'var(--neg)' : undefined }} value={`${currency} ${discount.toLocaleString(locale())}`} disabled /></div>
+            <div><label style={lbl}>{mode === 'custom' ? tr('Data 1ª parcela') : tr('Data-base')}</label><input style={inp} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+            <div><label style={lbl}>{tr('Nº de parcelas')}</label><input style={inp} type="number" min={1} step={1} value={count} onChange={e => setCount(e.target.value)} /></div>
+            <div><label style={lbl}>{tr('Periodicidade (meses)')}</label><input style={inp} type="number" min={1} step={1} value={period} onChange={e => setPeriod(e.target.value)} disabled={mode === 'custom'} /></div>
           </div>
 
           {mode === 'custom' && (
             <div style={{ marginTop: 12, borderRadius: 'var(--radius-md)', padding: 12, background: 'var(--bg-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>Gere as parcelas pelo nº/data acima e edite cada vencimento e valor.</span>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Gere as parcelas pelo nº/data acima e edite cada vencimento e valor.')}</span>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', background: 'var(--action-ghost-hover)', color: 'var(--action-inverse)', fontSize: 11, fontFamily: font, fontWeight: 500, cursor: 'pointer' }}>Gerar fluxo</button>
-                  <button onClick={addSchedRow} className="btn btn-outline"><Icon name="plus" size={16} /> Linha</button>
+                  <button onClick={generateSchedule} style={{ padding: '5px 12px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--divider-strong)', background: 'var(--action-ghost-hover)', color: 'var(--action-inverse)', fontSize: 11, fontFamily: font, fontWeight: 500, cursor: 'pointer' }}>{tr('Gerar fluxo')}</button>
+                  <button onClick={addSchedRow} className="btn btn-outline"><Icon name="plus" size={16} /> {tr('Linha')}</button>
                 </div>
               </div>
               {schedule.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>Nenhuma parcela — clique em “Gerar fluxo”.</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: font }}>{tr('Nenhuma parcela — clique em “Gerar fluxo”.')}</div>
               ) : (
                 <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {schedule.map((r, i) => (
                     <div key={i} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr 30px', gap: 8, alignItems: 'center' }}>
                       <span style={{ fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)', textAlign: 'right' }}>{i + 1}</span>
                       <input style={{ ...inp, padding: '4px 10px', fontSize: 12 }} type="date" value={r.due_date} onChange={e => setSchedRow(i, { due_date: e.target.value })} />
-                      <NumberInput style={{ ...inp, padding: '6px 8px', fontSize: 12, fontFamily: fontMono }} value={r.value} onChange={v => setSchedRow(i, { value: v })} placeholder="Valor" />
-                      <IconButton icon="x" label="Remover parcela" tone="danger" small onClick={() => removeSchedRow(i)} />
+                      <NumberInput style={{ ...inp, padding: '6px 8px', fontSize: 12, fontFamily: fontMono }} value={r.value} onChange={v => setSchedRow(i, { value: v })} placeholder={tr('Valor')} />
+                      <IconButton icon="x" label={tr('Remover parcela')} tone="danger" small onClick={() => removeSchedRow(i)} />
                     </div>
                   ))}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)', paddingTop: 4 }}>Soma: {fmtCurrencyShort(scheduleSum, currency)}</div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 11, fontFamily: fontMono, color: 'var(--text-secondary)', paddingTop: 4 }}>{tr('Soma:')} {fmtCurrencyShort(scheduleSum, currency)}</div>
                 </div>
               )}
             </div>
           )}
 
-          <div style={{ marginTop: 12 }}><label style={lbl}>Observações do acordo</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={note} onChange={e => setNote(e.target.value)} placeholder="Termos, motivo do desconto, referência do aditivo..." /></div>
+          <div style={{ marginTop: 12 }}><label style={lbl}>{tr('Observações do acordo')}</label><textarea style={{ ...inp, minHeight: 48, resize: 'vertical' }} value={note} onChange={e => setNote(e.target.value)} placeholder={tr('Termos, motivo do desconto, referência do aditivo...')} /></div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginRight: 'auto' }}>{selItems.length} item(ns) → {mode === 'custom' ? `${schedule.length}x personalizado` : `${nParcelas}x de ${fmtCurrencyShort(effectiveTotal / nParcelas, currency)}`}</span>
-          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
-          <button onClick={submit} disabled={!canSave || saving} className="btn btn-primary">{saving ? 'Renegociando...' : 'Renegociar'}</button>
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono, marginRight: 'auto' }}>{trn(selItems.length, '{0} item →', '{0} itens →')} {mode === 'custom' ? trf('{0}x personalizado', schedule.length) : trf('{0}x de {1}', nParcelas, fmtCurrencyShort(effectiveTotal / nParcelas, currency))}</span>
+          <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
+          <button onClick={submit} disabled={!canSave || saving} className="btn btn-primary">{saving ? tr('Renegociando...') : tr('Renegociar')}</button>
         </div>
       </div>
     </div>

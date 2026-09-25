@@ -15,6 +15,7 @@ import RefLink from '../components/RefLink'
 import { Icon, IconButton } from '../components/Icon'
 import RowActions from '../components/RowActions'
 import { badgeStyle } from '../lib/tones'
+import { tr, trf, trn, trCols } from '../i18n'
 
 interface HolderRow { holderType: HolderType; holderName: string; percentage: number }
 interface AthleteRow {
@@ -108,7 +109,7 @@ export default function PageRelDirEconomicos() {
         })
       }
     }
-    exportWorkbook([{ name: 'Direitos econômicos', cols, rows: flat }], 'relatorio-direitos-economicos.xlsx')
+    exportWorkbook([{ name: tr('Direitos econômicos'), cols: trCols(cols), rows: flat }], 'relatorio-direitos-economicos.xlsx')
   }
 
   const toggle = (id: string) => setExpanded(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
@@ -120,29 +121,29 @@ export default function PageRelDirEconomicos() {
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Direitos Econômicos" section="Relatórios" subtitle="Consolidado de titularidade por atleta · Botafogo, parceiros, agentes e terceiros">
-        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
+      <PageHero title={tr('Direitos Econômicos')} section={tr('Relatórios')} subtitle={tr('Consolidado de titularidade por atleta · Botafogo, parceiros, agentes e terceiros')}>
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> {tr('Exportar')}</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta ou detentor..."
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Atleta ou detentor...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Status')}</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
-            <option value="Todos">Todos</option>
+            <option value="Todos">{tr('Todos')}</option>
             {(['PARCIAL', 'SEM_LANCAMENTO'] as const).map(s => (
-              <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
+              <option key={s} value={s}>{tr(STATUS_STYLE[s].label)}</option>
             ))}
           </select>
         </div>
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-          <button onClick={expandAll} className="btn btn-outline btn-sm">Expandir tudo</button>
-          <button onClick={collapseAll} className="btn btn-outline btn-sm">Recolher</button>
+          <button onClick={expandAll} className="btn btn-outline btn-sm">{tr('Expandir tudo')}</button>
+          <button onClick={collapseAll} className="btn btn-outline btn-sm">{tr('Recolher')}</button>
         </div>
       </div>
 
@@ -151,16 +152,16 @@ export default function PageRelDirEconomicos() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ ...th, width: 36 }} aria-label="Expandir" />
-                <th style={th}>Atleta</th>
-                <th style={{ ...th, textAlign: 'right' }}>Total</th>
-                <th style={{ ...th }}>Detentores</th>
-                <th style={{ ...th, textAlign: 'right' }}>Ações</th>
+                <th style={{ ...th, width: 36 }} aria-label={tr('Expandir')} />
+                <th style={th}>{tr('Atleta')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Total')}</th>
+                <th style={{ ...th }}>{tr('Detentores')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Ações')}</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum atleta.</td></tr>}
+              {loading && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum atleta.')}</td></tr>}
               {filtered.map(r => {
                 const isOpen = expanded.has(r.athlete.id)
                 const canExpand = r.holders.length > 0
@@ -170,18 +171,18 @@ export default function PageRelDirEconomicos() {
                       <td style={{ ...td, textAlign: 'center' }}>
                         {canExpand && (
                           <IconButton icon={isOpen ? 'chevronDown' : 'chevronRight'} tone="muted" small
-                            label={isOpen ? 'Recolher' : 'Expandir'} onClick={() => toggle(r.athlete.id)} />
+                            label={isOpen ? tr('Recolher') : tr('Expandir')} onClick={() => toggle(r.athlete.id)} />
                         )}
                       </td>
                       <td style={{ ...td, fontWeight: 500 }}>
-                        <RefLink to={`/atletas/${r.athlete.id}`} title={`Abrir ${r.athlete.full_name}`}>{r.athlete.full_name}</RefLink>
+                        <RefLink to={`/atletas/${r.athlete.id}`} title={trf('Abrir {0}', r.athlete.full_name)}>{r.athlete.full_name}</RefLink>
                       </td>
                       <td style={{ ...tdNum, color: r.status === 'PARCIAL' ? 'var(--warn)' : 'var(--ink-primary)' }}>{r.total.toFixed(0)}%</td>
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {r.holders.slice(0, 3).map((h, i) => (
                             <span key={i} style={{ ...badgeStyle('outline'), height: 22, fontSize: 11 }}>
-                              <HolderDot type={h.holderType} /> {h.holderName} · {h.percentage.toFixed(0)}%
+                              <HolderDot type={h.holderType} /> {tr(h.holderName)} · {h.percentage.toFixed(0)}%
                             </span>
                           ))}
                           {r.holders.length > 3 && <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>+{r.holders.length - 3}</span>}
@@ -198,8 +199,8 @@ export default function PageRelDirEconomicos() {
                       <tr key={`${r.athlete.id}-${i}`} style={{ background: 'var(--cream-page)' }}>
                         <td style={td} />
                         <td style={{ ...td, paddingLeft: 40, color: 'var(--text-secondary)' }}>
-                          <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 8 }}><HolderDot type={h.holderType} />{HOLDER_TYPE_LABELS[h.holderType]}</span>
-                          {h.holderName}
+                          <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 8 }}><HolderDot type={h.holderType} />{tr(HOLDER_TYPE_LABELS[h.holderType])}</span>
+                          {tr(h.holderName)}
                         </td>
                         <td style={{ ...tdNum, fontWeight: 500 }}>{h.percentage.toFixed(2)}%</td>
                         <td colSpan={2} style={td} />
@@ -213,7 +214,7 @@ export default function PageRelDirEconomicos() {
         </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>
-        {filtered.length} atleta(s){stats.parcial > 0 ? ` · ${stats.parcial} parcial(is)` : ''}
+        {trn(filtered.length, '{0} atleta', '{0} atletas')}{stats.parcial > 0 ? trn(stats.parcial, ' · {0} parcial', ' · {0} parciais') : ''}
       </div>
     </div>
   )

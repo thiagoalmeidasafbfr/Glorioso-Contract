@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { fetchAllAlerts, fetchAthletes, fetchAthleteClauses, markAlertRead, fetchAllEconomicRights } from '../lib/athleteQueries'
 import type { Alert, Athlete, Clause, EconomicRight } from '../types/athlete-system'
-import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO } from '../lib/format'
+import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO, fmtDec, monthShort } from '../lib/format'
 import { isOwnershipValid } from '../lib/ownership'
 import { useApp } from '../context/AppContext'
 import PageHero from '../components/PageHero'
 import Badge from '../components/Badge'
 import { Icon } from '../components/Icon'
+import { tr, locale } from '../i18n'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -21,8 +22,8 @@ function monthKey(iso: string) {
 
 function fmtMonth(key: string) {
   const [y, m] = key.split('-')
-  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-  return `${months[parseInt(m) - 1]}/${y.slice(2)}`
+  const mon = monthShort(parseInt(m))
+  return `${mon.charAt(0).toUpperCase()}${mon.slice(1)}/${y.slice(2)}`
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -148,7 +149,7 @@ export default function PageDashboard() {
   if (loading) {
     return (
       <div className="eyebrow" style={{ padding: 'var(--space-8) var(--gutter-screen)' }}>
-        Carregando…
+        {tr('Carregando…')}
       </div>
     )
   }
@@ -163,22 +164,22 @@ export default function PageDashboard() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Visão Geral" subtitle="Dashboard · Botafogo SAF" />
+      <PageHero title={tr('Visão Geral')} subtitle={tr('Dashboard · Botafogo SAF')} />
 
       {/* KPI strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
         {kpis.map(kpi => (
           <div key={kpi.label} className={kpi.inverse ? 'card card-inverse' : 'card'} style={{ ...cardStyle, gap: 'var(--space-3)' }}>
-            <div className="eyebrow" style={kpi.inverse ? { color: 'var(--gray-500)' } : undefined}>{kpi.label}</div>
+            <div className="eyebrow" style={kpi.inverse ? { color: 'var(--gray-500)' } : undefined}>{tr(kpi.label)}</div>
             <div>
               <div style={{
                 fontSize: 'var(--text-h2-size)', lineHeight: 'var(--text-h2-line)', fontWeight: 500,
                 letterSpacing: 'var(--text-h2-tracking)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
                 color: kpi.inverse ? 'var(--text-inverse)' : (kpi.color ?? 'var(--text-primary)'),
               }}>
-                {kpi.value}
+                {tr(kpi.value)}
               </div>
-              <div style={{ marginTop: 2, fontSize: 'var(--text-body-sm-size)', color: kpi.inverse ? 'var(--gray-500)' : 'var(--text-secondary)' }}>{kpi.caption}</div>
+              <div style={{ marginTop: 2, fontSize: 'var(--text-body-sm-size)', color: kpi.inverse ? 'var(--gray-500)' : 'var(--text-secondary)' }}>{tr(kpi.caption)}</div>
             </div>
           </div>
         ))}
@@ -193,7 +194,7 @@ export default function PageDashboard() {
           {/* Monthly chart */}
           <section className="card" style={cardStyle}>
             <div style={eyebrowRow}>
-              <span className="eyebrow">Fluxo por mês · próximos 6 meses (R$)</span>
+              <span className="eyebrow">{tr('Fluxo por mês · próximos 6 meses (R$)')}</span>
               <Legend items={[{ label: 'A receber', color: 'var(--chart-1)' }, { label: 'A pagar', color: 'var(--chart-2)' }]} />
             </div>
             <ResponsiveContainer width="100%" height={220}>
@@ -201,12 +202,12 @@ export default function PageDashboard() {
                 <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                 <XAxis dataKey="label" tick={{ fontFamily: 'var(--font-core)', fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontFamily: 'var(--font-core)', fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={44}
-                  tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1).replace('.', ',')}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+                  tickFormatter={v => v >= 1_000_000 ? `${fmtDec(v / 1_000_000)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
                 <Tooltip
                   cursor={{ fill: 'var(--surface-sunken)' }}
                   contentStyle={CHART_TOOLTIP}
                   labelStyle={{ color: 'var(--text-secondary)', fontSize: 11, marginBottom: 4 }}
-                  formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString('pt-BR')}`, name === 'receivable' ? 'A receber' : 'A pagar']}
+                  formatter={(v: unknown, name: unknown) => [`R$ ${(v as number).toLocaleString(locale())}`, name === 'receivable' ? 'A receber' : 'A pagar']}
                 />
                 <Bar dataKey="receivable" fill="var(--chart-1)" radius={[6, 6, 0, 0]} maxBarSize={28} />
                 <Bar dataKey="payable" fill="var(--chart-2)" radius={[6, 6, 0, 0]} maxBarSize={28} />
@@ -217,13 +218,13 @@ export default function PageDashboard() {
           {/* Due in 60 days */}
           <section className="card" style={cardStyle}>
             <div style={eyebrowRow}>
-              <span className="eyebrow">Vencimentos · próximos 60 dias</span>
+              <span className="eyebrow">{tr('Vencimentos · próximos 60 dias')}</span>
               <Badge tone="neutral">{dueClauses.length}</Badge>
             </div>
             {overdueClauses.length > 0 && (
               <div>
                 <div className="eyebrow" style={{ color: 'var(--text-negative)', marginBottom: 6 }}>
-                  Em atraso ({overdueClauses.length})
+                  {tr('Em atraso (')}{overdueClauses.length})
                 </div>
                 {overdueClauses.map(c => (
                   <DueRow key={c.id} clause={c} athleteName={athleteName(athleteIdForClause(c))} overdue />
@@ -232,7 +233,7 @@ export default function PageDashboard() {
             )}
             {dueClauses.length === 0 && overdueClauses.length === 0 && (
               <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center', padding: '16px 0' }}>
-                Nenhum vencimento nos próximos 60 dias
+                {tr('Nenhum vencimento nos próximos 60 dias')}
               </div>
             )}
             {dueClauses.length > 0 && (
@@ -244,19 +245,19 @@ export default function PageDashboard() {
             )}
             {dueClauses.length > 10 && (
               <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                +{dueClauses.length - 10} mais
+                +{dueClauses.length - 10} {tr('mais')}
               </div>
             )}
           </section>
 
           {/* Currency exposure */}
           <section className="card" style={cardStyle}>
-            <span className="eyebrow">Exposição cambial</span>
+            <span className="eyebrow">{tr('Exposição cambial')}</span>
             <table>
               <thead>
                 <tr>
                   {['Moeda', 'A receber', 'A pagar', 'Líquido', 'Em R$'].map(h => (
-                    <th key={h} style={{ position: 'static', padding: '0 8px 10px', textAlign: h === 'Moeda' ? 'left' : 'right' }}>{h}</th>
+                    <th key={h} style={{ position: 'static', padding: '0 8px 10px', textAlign: h === 'Moeda' ? 'left' : 'right' }}>{tr(h)}</th>
                   ))}
                 </tr>
               </thead>
@@ -266,20 +267,20 @@ export default function PageDashboard() {
                   const netBRL = toBRL(Math.abs(net), cur)
                   return (
                     <tr key={cur}>
-                      <td style={{ padding: '10px 8px', fontWeight: 500 }}>{cur}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-positive)' }}>{v.receivable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'right' }}>{v.payable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: '10px 8px', fontWeight: 500 }}>{tr(cur)}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-positive)' }}>{v.receivable.toLocaleString(locale(), { minimumFractionDigits: 2 })}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right' }}>{v.payable.toLocaleString(locale(), { minimumFractionDigits: 2 })}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'right', color: net >= 0 ? 'var(--text-positive)' : 'var(--text-negative)', fontWeight: 500 }}>
-                        {net >= 0 ? '+' : ''}{net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {net >= 0 ? '+' : ''}{net.toLocaleString(locale(), { minimumFractionDigits: 2 })}
                       </td>
                       <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                        R$ {netBRL.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                        {tr('R$')} {netBRL.toLocaleString(locale(), { maximumFractionDigits: 0 })}
                       </td>
                     </tr>
                   )
                 })}
                 {Object.keys(exposures).length === 0 && (
-                  <tr><td colSpan={5} style={{ padding: '12px 8px', color: 'var(--text-secondary)', textAlign: 'center' }}>Sem dados</td></tr>
+                  <tr><td colSpan={5} style={{ padding: '12px 8px', color: 'var(--text-secondary)', textAlign: 'center' }}>{tr('Sem dados')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -290,13 +291,13 @@ export default function PageDashboard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <section className="card" style={cardStyle}>
             <div style={eyebrowRow}>
-              <span className="eyebrow">Alertas não lidos</span>
+              <span className="eyebrow">{tr('Alertas não lidos')}</span>
               <Badge tone={unreadAlerts.length > 0 ? 'negative' : 'neutral'}>{unreadAlerts.length}</Badge>
             </div>
 
             {unreadAlerts.length === 0 && (
               <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)', textAlign: 'center', padding: '8px 0' }}>
-                Nenhum alerta ativo
+                {tr('Nenhum alerta ativo')}
               </div>
             )}
 
@@ -308,15 +309,15 @@ export default function PageDashboard() {
                       <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 'var(--radius-circle)', background: alert.severity === 'RED' ? 'var(--red-500)' : 'var(--amber-500)', flexShrink: 0, marginTop: 5 }} />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-primary)', marginBottom: 4 }}>
-                          {alert.message}
+                          {tr(alert.message)}
                         </div>
                         <Link to={`/atletas/${alert.athlete_id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>
-                          {athleteName(alert.athlete_id)} <Icon name="chevronRight" size={16} />
+                          {tr(athleteName(alert.athlete_id))} <Icon name="chevronRight" size={16} />
                         </Link>
                       </div>
                     </div>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleMarkRead(alert.id)} style={{ flexShrink: 0 }}>
-                      Marcar lido
+                      {tr('Marcar lido')}
                     </button>
                   </div>
                 </div>
@@ -326,7 +327,7 @@ export default function PageDashboard() {
 
           {/* Quick links */}
           <section className="card" style={cardStyle}>
-            <span className="eyebrow">Acesso rápido</span>
+            <span className="eyebrow">{tr('Acesso rápido')}</span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
               {[
                 { to: '/atletas', label: 'Lista de atletas' },
@@ -336,7 +337,7 @@ export default function PageDashboard() {
                 { to: '/intermediarios', label: 'Obrigações — agentes' },
               ].map(link => (
                 <Link key={link.to} to={link.to} className="list-link">
-                  {link.label}
+                  {tr(link.label)}
                   <Icon name="chevronRight" size={16} />
                 </Link>
               ))}
@@ -362,7 +363,7 @@ function Legend({ items }: { items: { label: string; color: string }[] }) {
       {items.map(it => (
         <span key={it.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)' }}>
           <span style={{ width: 9, height: 9, borderRadius: 'var(--radius-circle)', background: it.color, flex: 'none' }} />
-          {it.label}
+          {tr(it.label)}
         </span>
       ))}
     </div>
@@ -379,16 +380,16 @@ function DueRow({ clause, athleteName, overdue = false }: { clause: Clause; athl
     <Link to={`/atletas/${clause.athlete_id}`} className="due-row">
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {athleteName} — {clause.description}
+          {tr(athleteName)} — {tr(clause.description)}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)', marginTop: 3 }}>
           {clause.due_date ? fmtDate(clause.due_date) : '—'}
-          {overdue && <Badge tone="negative">Em atraso</Badge>}
-          {soon && <Badge tone="warning">Em breve</Badge>}
+          {overdue && <Badge tone="negative">{tr('Em atraso')}</Badge>}
+          {soon && <Badge tone="warning">{tr('Em breve')}</Badge>}
         </div>
       </div>
       <div style={{ fontSize: 'var(--text-body-sm-size)', color: overdue ? 'var(--text-negative)' : 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap', marginLeft: 8, fontVariantNumeric: 'tabular-nums' }}>
-        {clause.original_value != null ? `${s} ${clause.original_value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` : '—'}
+        {clause.original_value != null ? `${s} ${clause.original_value.toLocaleString(locale(), { maximumFractionDigits: 0 })}` : '—'}
       </div>
     </Link>
   )

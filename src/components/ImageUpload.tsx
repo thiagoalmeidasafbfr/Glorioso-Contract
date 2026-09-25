@@ -6,6 +6,7 @@
 import { useRef, useState } from 'react'
 import { fileToResizedDataUrl } from '../lib/image'
 import { Icon } from './Icon'
+import { tr } from '../i18n'
 
 interface Props {
   value: string | null
@@ -54,7 +55,7 @@ export default function ImageUpload({
           <img src={value} alt="" style={{ width: '100%', height: '100%', objectFit: rounded ? 'cover' : 'contain', objectPosition: rounded ? 'center top' : 'center' }} />
         ) : (
           <span style={{ fontSize: size * 0.30, fontWeight: 500, color: 'var(--ink-900)' }}>
-            {initials || '—'}
+            {tr(initials) || '—'}
           </span>
         )}
       </div>
@@ -66,8 +67,8 @@ export default function ImageUpload({
             className="icon-btn solid"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            title={value ? 'Trocar imagem' : 'Enviar imagem'}
-            aria-label={value ? 'Trocar imagem' : 'Enviar imagem'}
+            title={value ? tr('Trocar imagem') : tr('Enviar imagem')}
+            aria-label={value ? tr('Trocar imagem') : tr('Enviar imagem')}
             style={{ position: 'absolute', right: -8, bottom: -8, boxShadow: '0 0 0 2px var(--surface-card)', cursor: busy ? 'wait' : undefined }}
           >
             <Icon name="upload" size={16} />
@@ -77,8 +78,8 @@ export default function ImageUpload({
               type="button"
               className="icon-btn outline danger"
               onClick={() => onChange(null)}
-              title="Remover imagem"
-              aria-label="Remover imagem"
+              title={tr('Remover imagem')}
+              aria-label={tr('Remover imagem')}
               style={{ position: 'absolute', left: -8, bottom: -8 }}
             >
               <Icon name="x" size={16} />

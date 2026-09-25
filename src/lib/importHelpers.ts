@@ -4,6 +4,7 @@
 // divergência entre telas e garante validação de duplicidade consistente.
 
 import type { Athlete, Currency } from '../types/athlete-system'
+import { trf, trn } from '../i18n'
 
 // ── Parsing ─────────────────────────────────────────────────────────────────
 
@@ -78,9 +79,9 @@ export const emptyResult = (): ImportResult => ({ created: 0, dupSkipped: 0, noA
 
 /** Mensagem amigável a partir de um ImportResult. */
 export function resultMessage(r: ImportResult): string {
-  const parts = [`${r.created} criado(s)`]
-  if (r.dupSkipped) parts.push(`${r.dupSkipped} duplicado(s) ignorado(s)`)
-  if (r.noAthlete) parts.push(`${r.noAthlete} sem atleta correspondente`)
-  if (r.invalid) parts.push(`${r.invalid} inválido(s)`)
+  const parts = [trn(r.created, '{0} criado', '{0} criados')]
+  if (r.dupSkipped) parts.push(trn(r.dupSkipped, '{0} duplicado ignorado', '{0} duplicados ignorados'))
+  if (r.noAthlete) parts.push(trf('{0} sem atleta correspondente', r.noAthlete))
+  if (r.invalid) parts.push(trn(r.invalid, '{0} inválido', '{0} inválidos'))
   return parts.join(' · ')
 }

@@ -8,6 +8,7 @@
 //   warning / info → extensões da plataforma nos swatches âmbar e lilás do DS
 
 import { BADGE_TONES, type BadgeTone } from '../lib/tones'
+import { tr } from '../i18n'
 
 interface Props {
   tone?: BadgeTone
@@ -20,7 +21,7 @@ interface Props {
 export default function Badge({ tone = 'neutral', size = 'sm', title, style, children }: Props) {
   const t = BADGE_TONES[tone]
   return (
-    <span title={title} style={{
+    <span title={tr(title)} style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4,
       height: size === 'sm' ? 18 : 24, padding: size === 'sm' ? '0 7px' : '0 10px',
       fontFamily: 'var(--font-core)',

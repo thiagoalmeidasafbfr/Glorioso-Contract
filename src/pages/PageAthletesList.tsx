@@ -4,7 +4,7 @@ import {
   fetchAthletes, createAthlete, fetchAllEconomicRights,
   fetchAllClauses, fetchAllInstallments, fetchAllAlerts,
 } from '../lib/athleteQueries'
-import { fmtDate, isOverdue, isDueSoon } from '../lib/format'
+import { fmtDate, isOverdue, isDueSoon, fmtDec } from '../lib/format'
 import type {
   Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause, ClauseInstallment, Alert,
 } from '../types/athlete-system'
@@ -20,6 +20,7 @@ import { ATHLETE_STATUS_TONE, badgeStyle } from '../lib/tones'
 import SheetIO from '../components/SheetIO'
 import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
+import { tr, trf, trn } from '../i18n'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -74,10 +75,10 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   const lbl = modalLabel
   const field = (label: string, key: string, type = 'text', opts?: string[]) => (
     <div>
-      <label style={lbl}>{label}</label>
+      <label style={lbl}>{tr(label)}</label>
       {opts ? (
         <select style={inp} value={(f as Record<string, string>)[key]} onChange={e => set(key, e.target.value)}>
-          {opts.map(o => <option key={o} value={o}>{o}</option>)}
+          {opts.map(o => <option key={o} value={o}>{tr(o)}</option>)}
         </select>
       ) : (
         <input type={type} style={inp} value={(f as Record<string, string>)[key]} onChange={e => set(key, e.target.value)} />
@@ -107,10 +108,10 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
   }
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Novo atleta"
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={tr('Novo atleta')}
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-panel" style={{ padding: 'var(--space-6)', width: 600, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>Novo atleta</div>
+        <div style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--text-primary)', fontFamily: font }}>{tr('Novo atleta')}</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {field('Nome completo *', 'full_name')}
@@ -122,27 +123,27 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
           {field('Posição', 'position', 'text', ['', 'Goleiro', 'Zagueiro', 'Lateral Direito', 'Lateral Esquerdo', 'Volante', 'Meia', 'Meia-atacante', 'Atacante'])}
           {field('Status atual', 'current_status', 'text', ['ATIVO', 'EMPRESTADO', 'VENDIDO', 'DESLIGADO'])}
           <div>
-            <label style={lbl}>Categoria</label>
+            <label style={lbl}>{tr('Categoria')}</label>
             <select style={inp} value={f.category} onChange={e => set('category', e.target.value)}>
               {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
-                <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
+                <option key={c} value={c}>{tr(ATHLETE_CATEGORY_LABELS[c])}</option>
               ))}
             </select>
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: font }}>
-          Agentes são vinculados a cada transferência/vínculo, não ao atleta. Cadastre-os ao criar um vínculo.
+          {tr('Agentes são vinculados a cada transferência/vínculo, não ao atleta. Cadastre-os ao criar um vínculo.')}
         </div>
 
         <div>
-          <label style={lbl}>Observações</label>
+          <label style={lbl}>{tr('Observações')}</label>
           <textarea style={{ ...inp, minHeight: 60, resize: 'vertical' }} value={f.notes} onChange={e => set('notes', e.target.value)} />
         </div>
 
         <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-          <button onClick={onClose} className="btn btn-outline">Cancelar</button>
+          <button onClick={onClose} className="btn btn-outline">{tr('Cancelar')}</button>
           <button onClick={handleSave} disabled={!f.full_name.trim()} className="btn btn-primary">
-            Criar atleta
+            {tr('Criar atleta')}
           </button>
         </div>
       </div>
@@ -155,7 +156,7 @@ function NewAthleteModal({ onSave, onClose }: NewAthleteModalProps) {
 function AlertCount({ kind, count }: { kind: 'atraso' | 'breve'; count: number }) {
   const atraso = kind === 'atraso'
   return (
-    <span title={atraso ? `${count} parcela(s) em atraso` : `${count} parcela(s) vencendo em breve`}
+    <span title={atraso ? trn(count, '{0} parcela em atraso', '{0} parcelas em atraso') : trn(count, '{0} parcela vencendo em breve', '{0} parcelas vencendo em breve')}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: atraso ? 'var(--neg)' : 'var(--warn)' }}>
       <Icon name={atraso ? 'alert' : 'clock'} size={16} />
       <span style={{ fontSize: 12, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
@@ -243,37 +244,37 @@ export default function PageAthletesList() {
       .filter(r => r.percentage > 0)
       .map(r => {
         const label = r.holder_type === 'BFR' ? 'BFR' : (r.holder_name || HOLDER_TYPE_LABELS[r.holder_type])
-        const pct = Number.isInteger(r.percentage) ? r.percentage : r.percentage.toFixed(1).replace('.', ',')
+        const pct = Number.isInteger(r.percentage) ? r.percentage : fmtDec(r.percentage)
         return `${pct}% ${label}`
       })
     const total = sumOwnership(rights)
-    if (total < 99.9) parts.push(`${(100 - total).toFixed(1).replace('.', ',')}% n/atrib.`)
+    if (total < 99.9) parts.push(`${fmtDec(100 - total)}% ${tr('n/atrib.')}`)
     return parts.join(' · ')
   }
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Atletas" subtitle="Gestão de plantel · Botafogo SAF" />
+      <PageHero title={tr('Atletas')} subtitle={tr('Gestão de plantel · Botafogo SAF')} />
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Nome do atleta...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+          <div style={{ fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Status')}</div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)' }}>
-            <option value="Todos">Todos</option>
+            <option value="Todos">{tr('Todos')}</option>
             {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
-              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+              <option key={s} value={s}>{tr(STATUS_LABELS[s])}</option>
             ))}
           </select>
         </div>
         <button onClick={() => setShowNew(true)} className="btn btn-primary">
-          <Icon name="plus" size={16} /> Novo atleta
+          <Icon name="plus" size={16} /> {tr('Novo atleta')}
         </button>
         <SheetIO
           exportFilename="atletas.xlsx"
@@ -285,10 +286,10 @@ export default function PageAthletesList() {
             const consolidated = Object.values(sheets).find(rows => isConsolidatedSheet(rows))
             if (consolidated) {
               const r = await importConsolidatedAthletes(consolidated)
-              const parts = [`${r.athletes} atleta(s)`, `${r.records} registro(s)`]
-              if (r.dupSkipped) parts.push(`${r.dupSkipped} já existente(s)`)
-              if (r.invalid) parts.push(`${r.invalid} grupo(s) inválido(s)`)
-              setImportMsg('Importado: ' + parts.join(' · '))
+              const parts = [trn(r.athletes, '{0} atleta', '{0} atletas'), trn(r.records, '{0} registro', '{0} registros')]
+              if (r.dupSkipped) parts.push(trn(r.dupSkipped, '{0} já existente', '{0} já existentes'))
+              if (r.invalid) parts.push(trn(r.invalid, '{0} grupo inválido', '{0} grupos inválidos'))
+              setImportMsg(trf('Importado: {0}', parts.join(' · ')))
             } else {
               const rows = sheets['Atletas'] ?? sheets[Object.keys(sheets)[0]] ?? []
               let n = 0
@@ -312,7 +313,7 @@ export default function PageAthletesList() {
                 })
                 n++
               }
-              setImportMsg(`Importado: ${n} atleta(s)`)
+              setImportMsg(trf('Importado: {0}', trn(n, '{0} atleta', '{0} atletas')))
             }
             loadAll()
           }}
@@ -321,7 +322,7 @@ export default function PageAthletesList() {
 
       {importMsg && (
         <div style={{ fontFamily: fontMono, fontSize: 11, color: 'var(--text-secondary)', marginBottom: 14 }}>
-          {importMsg}
+          {tr(importMsg)}
         </div>
       )}
 
@@ -332,30 +333,30 @@ export default function PageAthletesList() {
             <thead>
               <tr>
                 <th style={{ ...th, width: 52 }}></th>
-                <th style={{ ...th, width: 200, textAlign: 'left' }}>Nome</th>
-                <th style={{ ...th, width: 110 }}>Status</th>
-                <th style={{ ...th, width: 90 }}>País</th>
-                <th style={{ ...th, width: 220 }}>Detentores</th>
-                <th style={{ ...th, width: 140 }}>Posição</th>
-                <th style={{ ...th, width: 120 }}>Próx. Venc.</th>
-                <th style={{ ...th, width: 110 }}>Alertas</th>
+                <th style={{ ...th, width: 200, textAlign: 'left' }}>{tr('Nome')}</th>
+                <th style={{ ...th, width: 110 }}>{tr('Status')}</th>
+                <th style={{ ...th, width: 90 }}>{tr('País')}</th>
+                <th style={{ ...th, width: 220 }}>{tr('Detentores')}</th>
+                <th style={{ ...th, width: 140 }}>{tr('Posição')}</th>
+                <th style={{ ...th, width: 120 }}>{tr('Próx. Venc.')}</th>
+                <th style={{ ...th, width: 110 }}>{tr('Alertas')}</th>
                 <th style={{ ...th, width: 70 }}></th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>
+                <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>
                   <div style={{ marginBottom: 12 }}>
                     {athletes.length === 0
-                      ? 'Nenhum atleta cadastrado ainda.'
-                      : 'Nenhum atleta corresponde aos filtros.'}
+                      ? tr('Nenhum atleta cadastrado ainda.')
+                      : tr('Nenhum atleta corresponde aos filtros.')}
                   </div>
                   {athletes.length === 0 && (
                     <button className="btn btn-primary" onClick={() => setShowNew(true)}>
-                      <Icon name="plus" size={16} /> Cadastrar o primeiro atleta
+                      <Icon name="plus" size={16} /> {tr('Cadastrar o primeiro atleta')}
                     </button>
                   )}
                 </td></tr>
@@ -379,15 +380,15 @@ export default function PageAthletesList() {
                     </td>
                     <td style={{ ...td, width: 110 }}>
                       <span style={badgeStyle(tone)}>
-                        {STATUS_LABELS[a.current_status]}
+                        {tr(STATUS_LABELS[a.current_status])}
                       </span>
                     </td>
-                    <td style={{ ...td, width: 90, color: 'var(--text-secondary)', fontSize: 12 }}>{a.nationality ?? '—'}</td>
+                    <td style={{ ...td, width: 90, color: 'var(--text-secondary)', fontSize: 12 }}>{tr(a.nationality) ?? '—'}</td>
                     <td style={{ ...td, width: 220, fontSize: 12 }}>
                       {(rightsByAthlete[a.id]?.length ?? 0) > 0 ? (
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                           <span style={{ fontFamily: fontMono, color: 'var(--ink-primary)' }}>
-                            {ownershipText(rightsByAthlete[a.id])}
+                            {tr(ownershipText(rightsByAthlete[a.id]))}
                           </span>
                           <OwnershipBadge rights={rightsByAthlete[a.id]} />
                         </div>
@@ -396,7 +397,7 @@ export default function PageAthletesList() {
                       )}
                     </td>
                     <td style={{ ...td, width: 140, color: a.position ? 'var(--ink-primary)' : 'var(--text-muted)', fontSize: 12 }}>
-                      {a.position || '—'}
+                      {tr(a.position) || '—'}
                     </td>
                     <td style={{ ...td, width: 120, fontFamily: fontMono, fontSize: 12, color: stats.nextDue ? (isOverdue(stats.nextDue, 'PENDENTE') ? 'var(--neg)' : 'var(--ink-secondary)') : 'var(--text-muted)' }}>
                       {stats.nextDue ? fmtDate(stats.nextDue) : '—'}
@@ -409,7 +410,7 @@ export default function PageAthletesList() {
                       </div>
                     </td>
                     <td style={{ ...td, width: 70 }}>
-                      <IconButton icon="open" label={`Abrir a ficha de ${a.short_name || a.full_name}`} to={`/atletas/${a.id}`} />
+                      <IconButton icon="open" label={trf('Abrir a ficha de {0}', a.short_name || a.full_name)} to={`/atletas/${a.id}`} />
                     </td>
                   </tr>
                 )
@@ -420,7 +421,7 @@ export default function PageAthletesList() {
       </div>
 
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
-        {filtered.length} {filtered.length !== 1 ? 'atletas' : 'atleta'}
+        {filtered.length} {filtered.length !== 1 ? tr('atletas') : tr('atleta')}
       </div>
 
       {showNew && (

@@ -12,6 +12,7 @@
 //       excluir (vermelho)
 
 import { IconButton } from './Icon'
+import { tr } from '../i18n'
 
 /** Uma ação: com `onClick`/`to` fica ativa; sem eles, cinza + motivo. */
 export interface Action {
@@ -79,9 +80,9 @@ export default function RowActions({
     const label = a.label ?? LABELS[key]
     const enabled = !!a.onClick || !!a.to
     return (
-      <IconButton key={key} icon={icon} label={label} tone={tone} small={small}
+      <IconButton key={key} icon={icon} label={tr(label)} tone={tone} small={small}
         to={a.to ?? undefined} onClick={a.onClick}
-        disabled={!enabled} disabledReason={a.reason} />
+        disabled={!enabled} disabledReason={tr(a.reason)} />
     )
   }
 
@@ -135,14 +136,14 @@ export function ActionLegend({ items = ['open', 'edit', 'schedule', 'markPaid', 
     }}>
       {items.map(k => (
         <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-          <IconButton icon={spec[k].icon} label={spec[k].short} tone={spec[k].tone} small onClick={() => {}}
+          <IconButton icon={spec[k].icon} label={tr(spec[k].short)} tone={spec[k].tone} small onClick={() => {}}
             style={{ pointerEvents: 'none' }} />
-          {spec[k].short}
+          {tr(spec[k].short)}
         </span>
       ))}
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-        <IconButton icon="check" label="indisponível" small disabled style={{ pointerEvents: 'none' }} />
-        cinza = indisponível nesta linha
+        <IconButton icon="check" label={tr('indisponível')} small disabled style={{ pointerEvents: 'none' }} />
+        {tr('cinza = indisponível nesta linha')}
       </span>
     </div>
   )

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import { translations, type Lang } from '../i18n/translations'
+import { getLang, setLang, tr, type Lang, locale } from '../i18n'
 
 export type AppCurrency = 'BRL' | 'USD' | 'EUR' | 'GBP' | 'QAR' | 'SAR' | 'AED' | 'RUB'
 
@@ -57,7 +57,10 @@ const AppContext = createContext<AppContextType>(null!)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrency] = useState<AppCurrency>('BRL')
-  const [language, setLanguage] = useState<Lang>('pt')
+  const [language, setLanguageState] = useState<Lang>(getLang)
+  // O idioma é global (i18n): muda antes do re-render para que tudo o que for
+  // remontado já leia o novo idioma.
+  const setLanguage = (l: Lang) => { setLang(l); setLanguageState(l) }
   const [currentPage, setCurrentPage] = useState('atletas')
   const [openAtletaId, setOpenAtletaId] = useState<number | null>(null)
   const [isDark, setIsDark] = useState(false)
@@ -85,26 +88,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const fmtMiC = (brlValue: number): string => {
+    const sfx = language === 'en' ? { bi: 'bn', mi: 'M', mil: 'k' } : { bi: ' Bi', mi: ' Mi', mil: ' Mil' }
     const v = fromBRL(brlValue)
     const sym = symbol
-    if (v === 0) return `${sym} 0,0`
+    if (v === 0) return `${sym} ${(0).toLocaleString(locale(), { minimumFractionDigits: 1 })}`
     const abs = Math.abs(v)
-    if (abs >= 1_000_000_000) return `${sym} ${(v / 1_000_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Bi`
-    if (abs >= 1_000_000) return `${sym} ${(v / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Mi`
-    if (abs >= 1_000) return `${sym} ${(v / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })} Mil`
-    return `${sym} ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+    if (abs >= 1_000_000_000) return `${sym} ${(v / 1_000_000_000).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 2 })}${sfx.bi}`
+    if (abs >= 1_000_000) return `${sym} ${(v / 1_000_000).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 2 })}${sfx.mi}`
+    if (abs >= 1_000) return `${sym} ${(v / 1_000).toLocaleString(locale(), { minimumFractionDigits: 0, maximumFractionDigits: 1 })}${sfx.mil}`
+    return `${sym} ${v.toLocaleString(locale(), { maximumFractionDigits: 0 })}`
   }
 
   const fmtC = (brlValue: number): string => {
     const v = fromBRL(brlValue)
-    return `${symbol} ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+    return `${symbol} ${v.toLocaleString(locale(), { maximumFractionDigits: 0 })}`
   }
 
-  const t = (key: string): string => {
-    const entry = translations[key]
-    if (!entry) return key
-    return entry[language] ?? key
-  }
+  const t = (key: string): string => tr(key)
 
   return (
     <AppContext.Provider value={{ currency, setCurrency, language, setLanguage, symbol, fromBRL, convert, fmtMiC, fmtC, t, currentPage, setCurrentPage, openAtletaId, navigateToAtleta, clearOpenAtleta, isDark, toggleDark }}>

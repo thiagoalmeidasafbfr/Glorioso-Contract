@@ -8,6 +8,7 @@ import { useRef, useState } from 'react'
 import type { Contract, SalaryTrigger } from '../types/athlete-system'
 import { salarySteps } from '../lib/salary'
 import { fmtCurrencyShort, fmtDate, todayISO } from '../lib/format'
+import { tr } from '../i18n'
 
 const fontBody = "var(--font-body)"
 // Série única do DS: --chart-1 (tinta de dados do acento), grade --chart-grid.
@@ -101,7 +102,7 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
         </text>
 
         <line x1={X(todayT)} x2={X(todayT)} y1={padT} y2={padT + ih} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="2 3" />
-        {showTodayLabel && <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">hoje</text>}
+        {showTodayLabel && <text x={X(todayT)} y={padT - 8} textAnchor="middle" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">{tr('hoje')}</text>}
 
         <text x={padL} y={H - 8} textAnchor="start" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">{fmtDate(start)}</text>
         <text x={W - padR} y={H - 8} textAnchor="end" fontFamily={fontBody} fontSize="10" fill="var(--text-muted)">{fmtDate(end)}</text>
@@ -129,19 +130,19 @@ export default function RemunerationChart({ contract, triggers }: { contract: Co
           background: 'var(--surface-card)', color: 'var(--text-primary)', padding: '8px 12px', borderRadius: 'var(--radius-md)',
           whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2, boxShadow: 'var(--shadow-pop)',
         }}>
-          <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}/mês</div>
-          <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)', marginTop: 2 }}>{fmtDate(hv.iso)}{hv.t > todayT ? ' · projeção' : ''}</div>
+          <div style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{fmtCurrencyShort(hv.total, contract.salary_currency)}{tr('/mês')}</div>
+          <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)', marginTop: 2 }}>{fmtDate(hv.iso)}{hv.t > todayT ? tr(' · projeção') : ''}</div>
         </div>
       )}
 
       <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap', alignItems: 'center', fontFamily: fontBody, fontSize: 11, color: 'var(--text-secondary)' }}>
-        <span><span style={{ display: 'inline-block', width: 16, height: 2, background: SERIES, verticalAlign: 'middle', marginRight: 6 }} />Remuneração total/mês</span>
-        <span><span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `2px dashed ${SERIES}`, verticalAlign: 'middle', marginRight: 6 }} />Projeção</span>
-        <span style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>Hoje: {fmtCurrencyShort(currentTotal, contract.salary_currency)}/mês</span>
+        <span><span style={{ display: 'inline-block', width: 16, height: 2, background: SERIES, verticalAlign: 'middle', marginRight: 6 }} />{tr('Remuneração total/mês')}</span>
+        <span><span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `2px dashed ${SERIES}`, verticalAlign: 'middle', marginRight: 6 }} />{tr('Projeção')}</span>
+        <span style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{tr('Hoje:')} {fmtCurrencyShort(currentTotal, contract.salary_currency)}{tr('/mês')}</span>
       </div>
       <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 'var(--radius-control)', background: 'var(--surface-sunken)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
         <span className="eyebrow">
-          Total até o fim do contrato ({nMonths} {nMonths === 1 ? 'mês' : 'meses'})
+          {tr('Total até o fim do contrato (')}{nMonths} {nMonths === 1 ? tr('mês') : tr('meses')})
         </span>
         <span style={{ fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
           {fmtCurrencyShort(totalAteFim, contract.salary_currency)}

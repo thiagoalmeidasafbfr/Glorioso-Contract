@@ -12,6 +12,7 @@ import type {
 } from '../types/athlete-system'
 import { daysFromToday, isOverdue } from './format'
 import { parseRJ } from './judicialRecovery'
+import { trf, trn } from '../i18n'
 
 export type NatureKey =
   | 'SALARIO' | 'IMAGEM' | 'LUVAS' | 'AGENTES' | 'TRANSFER' | 'GATILHOS' | 'ACORDOS' | 'CLUBES'
@@ -256,10 +257,8 @@ export function buildAthleteOverview({
 /** Texto curto do atraso ("12 dias", "2 meses e 3 dias"). */
 export function lateLabel(days: number): string {
   if (days <= 0) return '—'
-  if (days < 31) return `${days} dia${days === 1 ? '' : 's'}`
-  const months = Math.floor(days / 30)
+  if (days < 31) return trn(days, '{0} dia', '{0} dias')
+  const months = trn(Math.floor(days / 30), '{0} mês', '{0} meses')
   const rest = days % 30
-  return rest === 0
-    ? `${months} ${months === 1 ? 'mês' : 'meses'}`
-    : `${months} ${months === 1 ? 'mês' : 'meses'} e ${rest} dia${rest === 1 ? '' : 's'}`
+  return rest === 0 ? months : trf('{0} e {1}', months, trn(rest, '{0} dia', '{0} dias'))
 }

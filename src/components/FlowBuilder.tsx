@@ -15,6 +15,7 @@ import type { Currency } from '../types/athlete-system'
 import { addMonths, todayISO } from '../lib/format'
 import NumberInput from './NumberInput'
 import { Icon, IconButton } from './Icon'
+import { tr, trf, locale, trn } from '../i18n'
 
 export interface FlowLine { due_date: string; value: number }
 
@@ -126,12 +127,12 @@ export default function FlowBuilder({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {/* Cabeçalho: título, moeda e atalho do gerador */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <span style={sectionLbl}>{title} ({lines.length})</span>
+        <span style={sectionLbl}>{tr(title)} ({lines.length})</span>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {onCurrencyChange && (
-            <select aria-label="Moeda das parcelas" style={{ ...input, width: 'auto', padding: '5px 8px', fontSize: 12 }}
+            <select aria-label={tr('Moeda das parcelas')} style={{ ...input, width: 'auto', padding: '5px 8px', fontSize: 12 }}
               value={currency} onChange={e => onCurrencyChange(e.target.value as Currency)}>
-              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {CURRENCIES.map(c => <option key={c} value={c}>{tr(c)}</option>)}
             </select>
           )}
           {showGenerator && <button type="button" onClick={() => setGenOpen(o => !o)}
@@ -141,7 +142,7 @@ export default function FlowBuilder({
               color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer',
             }}>
             <Icon name={genOpen ? 'chevronDown' : 'chevronRight'} size={16} />
-            Gerar automaticamente
+            {tr('Gerar automaticamente')}
           </button>}
         </div>
       </div>
@@ -151,42 +152,42 @@ export default function FlowBuilder({
         <div style={{ borderRadius: 'var(--radius-md)', padding: 12, background: 'var(--bg-subtle)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, alignItems: 'end' }}>
             <div>
-              <label style={lbl}>Base</label>
+              <label style={lbl}>{tr('Base de cálculo')}</label>
               <select style={input} value={mode} onChange={e => setMode(e.target.value as 'total' | 'parcela')}>
-                <option value="total">Valor total</option>
-                <option value="parcela">Valor / parcela</option>
+                <option value="total">{tr('Valor total')}</option>
+                <option value="parcela">{tr('Valor / parcela')}</option>
               </select>
             </div>
             <div>
-              <label style={lbl}>{mode === 'total' ? 'Valor total' : 'Valor por parcela'}</label>
+              <label style={lbl}>{mode === 'total' ? tr('Valor total') : tr('Valor por parcela')}</label>
               <NumberInput style={input} value={amount} onChange={v => setAmount(v)} placeholder="0,00" />
             </div>
             <div>
-              <label style={lbl}>Nº parcelas</label>
+              <label style={lbl}>{tr('Nº parcelas')}</label>
               <input style={input} type="number" min={1} max={600} value={count} onChange={e => setCount(Math.max(1, parseInt(e.target.value) || 1))} />
             </div>
             <div>
-              <label style={lbl}>Periodicidade</label>
+              <label style={lbl}>{tr('Periodicidade')}</label>
               <select style={input} value={period} onChange={e => setPeriod(e.target.value as Period)}>
-                {(Object.keys(PERIOD_LABEL) as Period[]).map(p => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}
+                {(Object.keys(PERIOD_LABEL) as Period[]).map(p => <option key={p} value={p}>{tr(PERIOD_LABEL[p])}</option>)}
               </select>
             </div>
             <div>
-              <label style={lbl}>1ª parcela</label>
+              <label style={lbl}>{tr('1ª parcela')}</label>
               <input style={input} type="date" value={first} onChange={e => setFirst(e.target.value)} />
             </div>
             <div>
-              <label style={lbl}>Dia venc.</label>
+              <label style={lbl}>{tr('Dia venc.')}</label>
               <input style={input} type="number" min={1} max={28} value={dueDay} onChange={e => setDueDay(e.target.value)} placeholder="—" />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-            <button type="button" onClick={() => generate(true)} className="btn btn-primary" style={{ padding: '6px 14px' }}>Gerar (substituir)</button>
-            <button type="button" onClick={() => generate(false)} className="btn btn-outline" style={{ padding: '6px 14px' }}>Gerar (adicionar)</button>
+            <button type="button" onClick={() => generate(true)} className="btn btn-primary" style={{ padding: '6px 14px' }}>{tr('Gerar (substituir)')}</button>
+            <button type="button" onClick={() => generate(false)} className="btn btn-outline" style={{ padding: '6px 14px' }}>{tr('Gerar (adicionar)')}</button>
             {lines.length > 0 && (
               <button type="button" onClick={splitAcrossLines} className="btn btn-ghost" style={{ padding: '6px 12px' }}
-                title="Divide o valor informado entre as parcelas que já estão na lista">
-                Dividir nas {lines.length} linhas
+                title={tr('Divide o valor informado entre as parcelas que já estão na lista')}>
+                {tr('Dividir nas')} {lines.length} {tr('linhas')}
               </button>
             )}
           </div>
@@ -197,25 +198,25 @@ export default function FlowBuilder({
       <div>
         {lines.length === 0 ? (
           <div style={{ padding: '16px 12px', textAlign: 'center', fontFamily: font, fontSize: 12, color: 'var(--text-secondary)', border: '1px dashed var(--divider-strong)', borderRadius: 'var(--radius-md)' }}>
-            Nenhuma parcela ainda. Use o botão abaixo para lançar linha por linha{showGenerator ? ' ou “Gerar automaticamente”' : ''}.
+            {tr('Nenhuma parcela ainda. Use o botão abaixo para lançar linha por linha')}{showGenerator ? tr(' ou “Gerar automaticamente”') : ''}.
           </div>
         ) : (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 1fr 30px', gap: 8, padding: '0 0 4px' }}>
               <span />
-              <span style={lbl}>Vencimento</span>
-              <span style={lbl}>Valor ({currency})</span>
+              <span style={lbl}>{tr('Vencimento')}</span>
+              <span style={lbl}>{tr('Valor (')}{tr(currency)})</span>
               <span />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
               {lines.map((l, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 1fr 30px', gap: 8, alignItems: 'center' }}>
                   <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)', textAlign: 'right' }}>{i + 1}</span>
-                  <input style={input} type="date" aria-label={`Vencimento da parcela ${i + 1}`}
+                  <input style={input} type="date" aria-label={trf('Vencimento da parcela {0}', i + 1)}
                     value={l.due_date} onChange={e => setLine(i, { due_date: e.target.value })} />
                   <NumberInput style={{ ...input, fontFamily: mono }} value={l.value || ''} placeholder="0,00"
                     onChange={v => setLine(i, { value: v ? parseFloat(v) : 0 })} />
-                  <IconButton icon="x" label={`Remover parcela ${i + 1}`} tone="danger" small onClick={() => removeLine(i)} />
+                  <IconButton icon="x" label={trf('Remover parcela {0}', i + 1)} tone="danger" small onClick={() => removeLine(i)} />
                 </div>
               ))}
             </div>
@@ -228,11 +229,11 @@ export default function FlowBuilder({
             padding: '9px 0', borderRadius: 'var(--radius-md)', border: '1px dashed var(--divider-strong)', background: 'transparent',
             color: 'var(--ink-primary)', fontFamily: font, fontSize: 12, fontWeight: 500, cursor: 'pointer',
           }}>
-          <Icon name="plus" size={16} /> Adicionar parcela
+          <Icon name="plus" size={16} /> {tr('Adicionar parcela')}
         </button>
 
         <div style={{ marginTop: 8, textAlign: 'right', fontFamily: mono, fontSize: 12, color: 'var(--ink-primary)' }}>
-          Total: <strong>{currency} {total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> em {lines.length} parcela{lines.length === 1 ? '' : 's'}
+          {tr('Total:')} <strong>{tr(currency)} {total.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> {trn(lines.length, 'em {0} parcela', 'em {0} parcelas')}
         </div>
       </div>
     </div>

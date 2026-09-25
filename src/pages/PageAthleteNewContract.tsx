@@ -14,12 +14,13 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { fetchAthlete, fetchAthleteContracts, createContract, createClause, createClauseInstallments } from '../lib/athleteQueries'
 import type { Athlete, Contract, NewContractInput, NewClauseInput, ContractType, ContractStatus, ClauseType, Currency, LiabilityDirection, SellOnBasis } from '../types/athlete-system'
 import { CLAUSE_TYPE_LABELS, CONTRACT_TYPE_LABELS, TRANSFER_CONTRACT_TYPES, ACCESSORY_CONTRACT_TYPES, isTransferContractType, SELL_ON_CLAUSE_TYPES, SELLON_BASIS_LABELS, sellOnConditionText } from '../types/athlete-system'
-import { todayISO, monthsBetween, addMonths, fmtCurrencyShort } from '../lib/format'
+import { todayISO, monthsBetween, addMonths, fmtCurrencyShort, fmtDec } from '../lib/format'
 import EntityPicker from '../components/EntityPicker'
 import NumberInput from '../components/NumberInput'
 import PageHero from '../components/PageHero'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import { Icon, IconButton } from '../components/Icon'
+import { tr, trf, locale } from '../i18n'
 
 // ── Step types ────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ function dueDayOf(startISO: string, i: number, day: number): string {
   return `${y}-${m}-${String(day).padStart(2, '0')}`
 }
 
-function fmtNum(v: number): string { return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }
+function fmtNum(v: number): string { return v.toLocaleString(locale(), { maximumFractionDigits: 2 }) }
 function fmtDateBR(iso: string): string { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}` }
 
 // Rótulo curto de um contrato para o seletor de "contrato relacionado".
@@ -456,7 +457,7 @@ export default function PageAthleteNewContract() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
-      <PageHero title="Novo contrato"
+      <PageHero title={tr('Novo contrato')}
         crumbs={[{ label: 'Atletas', to: '/atletas', icon: 'athletes' }, { label: athlete?.short_name ?? '…', to: `/atletas/${id}` }]}
         caption={athlete?.full_name} />
 
@@ -480,7 +481,7 @@ export default function PageAthleteNewContract() {
                   {done ? <Icon name="check" size={16} /> : s}
                 </span>
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active ? 500 : 400, color: active ? 'var(--ink-primary)' : 'var(--text-muted)' }}>
-                  {labels[i]}
+                  {tr(labels[i])}
                 </span>
               </button>
             </div>
@@ -493,58 +494,56 @@ export default function PageAthleteNewContract() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {existingContracts.length > 0 && (
             <div style={cardStyle}>
-              <div style={{ ...sectionTitle, marginBottom: 12 }}>Contrato relacionado (opcional)</div>
-              <label style={labelStyle}>Atrelar este contrato a um vínculo existente</label>
+              <div style={{ ...sectionTitle, marginBottom: 12 }}>{tr('Contrato relacionado (opcional)')}</div>
+              <label style={labelStyle}>{tr('Atrelar este contrato a um vínculo existente')}</label>
               <select value={relatedId} onChange={e => setRelatedId(e.target.value)} style={inputStyle}>
-                <option value="">— nenhum (contrato independente) —</option>
-                {existingContracts.map(c => <option key={c.id} value={c.id}>{contractLabel(c)}</option>)}
+                <option value="">{tr('— nenhum (contrato independente) —')}</option>
+                {existingContracts.map(c => <option key={c.id} value={c.id}>{tr(contractLabel(c))}</option>)}
               </select>
               <div style={{ ...hintStyle, marginTop: 10 }}>
-                Use quando este contrato deriva de outro — ex.: o <strong>contrato de intermediação</strong> de
-                uma compra/venda, ou uma cláusula de <strong>Sell-on Fee</strong> ligada à transferência. O novo
-                contrato fica agrupado sob o vínculo escolhido no histórico do atleta.
+                {tr('Use quando este contrato deriva de outro — ex.: o')} <strong>{tr('contrato de intermediação')}</strong> {tr('de uma compra/venda, ou uma cláusula de')} <strong>{tr('Sell-on Fee')}</strong> {tr('ligada à transferência. O novo contrato fica agrupado sob o vínculo escolhido no histórico do atleta.')}
               </div>
               {relatedContract && (
                 <div style={{ ...noteBox, marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Icon name="link" size={16} /> vinculado a: {contractLabel(relatedContract)}
+                  <Icon name="link" size={16} /> {tr('vinculado a:')} {tr(contractLabel(relatedContract))}
                 </div>
               )}
             </div>
           )}
 
           <div style={cardStyle}>
-            <div style={{ ...sectionTitle, marginBottom: 16 }}>Dados do vínculo</div>
+            <div style={{ ...sectionTitle, marginBottom: 16 }}>{tr('Dados do vínculo')}</div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div>
-                <label style={labelStyle}>Tipo de vínculo</label>
+                <label style={labelStyle}>{tr('Tipo de vínculo')}</label>
                 <select value={contract.type} onChange={e => setContractField('type', e.target.value as ContractType)} style={inputStyle}>
-                  <optgroup label="Transferência">
-                    {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+                  <optgroup label={tr('Transferência')}>
+                    {TRANSFER_CONTRACT_TYPES.map(t => <option key={t} value={t}>{tr(CONTRACT_TYPE_LABELS[t])}</option>)}
                   </optgroup>
-                  <optgroup label="Contratos acessórios / vinculados">
-                    {ACCESSORY_CONTRACT_TYPES.map(t => <option key={t} value={t}>{CONTRACT_TYPE_LABELS[t]}</option>)}
+                  <optgroup label={tr('Contratos acessórios / vinculados')}>
+                    {ACCESSORY_CONTRACT_TYPES.map(t => <option key={t} value={t}>{tr(CONTRACT_TYPE_LABELS[t])}</option>)}
                   </optgroup>
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Status</label>
+                <label style={labelStyle}>{tr('Status')}</label>
                 <select value={contract.status} onChange={e => setContractField('status', e.target.value as ContractStatus)} style={inputStyle}>
-                  <option value="ATIVO">Ativo</option>
-                  <option value="ENCERRADO">Encerrado</option>
-                  <option value="RESCINDIDO">Rescindido</option>
+                  <option value="ATIVO">{tr('Ativo')}</option>
+                  <option value="ENCERRADO">{tr('Encerrado')}</option>
+                  <option value="RESCINDIDO">{tr('Rescindido')}</option>
                 </select>
               </div>
               {hideClub ? (
                 <div style={{ gridColumn: '1 / -1', ...noteBox, fontFamily: "var(--font-body)", fontSize: 12 }}>
-                  Contraparte herdada do vínculo: <strong>{relatedContract?.counterpart_club || '—'}</strong>. O agente/intermediário é informado na seção abaixo.
+                  {tr('Contraparte herdada do vínculo:')} <strong>{relatedContract?.counterpart_club || '—'}</strong>{tr('. O agente/intermediário é informado na seção abaixo.')}
                 </div>
               ) : (
                 <>
                   <div>
                     <EntityPicker
                       kind="clube"
-                      label={isTransferContractType(contract.type) ? 'Clube / Contraparte *' : 'Clube / Contraparte'}
+                      label={isTransferContractType(contract.type) ? tr('Clube / Contraparte *') : tr('Clube / Contraparte')}
                       value={contract.counterpart_club}
                       onChange={(name, sub) => {
                         setContractField('counterpart_club', name)
@@ -553,17 +552,17 @@ export default function PageAthleteNewContract() {
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>País da contraparte</label>
-                    <input value={contract.counterpart_country} onChange={e => setContractField('counterpart_country', e.target.value)} placeholder="Ex: Espanha" style={inputStyle} />
+                    <label style={labelStyle}>{tr('País da contraparte')}</label>
+                    <input value={contract.counterpart_country} onChange={e => setContractField('counterpart_country', e.target.value)} placeholder={tr('Ex: Espanha')} style={inputStyle} />
                   </div>
                 </>
               )}
               <div>
-                <label style={labelStyle}>Data de início *</label>
+                <label style={labelStyle}>{tr('Data de início *')}</label>
                 <input type="date" value={contract.start_date} onChange={e => setContractField('start_date', e.target.value)} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Data de término</label>
+                <label style={labelStyle}>{tr('Data de término')}</label>
                 <input type="date" value={contract.end_date} onChange={e => setContractField('end_date', e.target.value)} style={inputStyle} />
               </div>
             </div>
@@ -571,45 +570,44 @@ export default function PageAthleteNewContract() {
 
           {isTransferContractType(contract.type) && (<>
           <div style={cardStyle}>
-            <div style={{ ...sectionTitle, marginBottom: 6 }}>Transferência e parcelas</div>
+            <div style={{ ...sectionTitle, marginBottom: 6 }}>{tr('Transferência e parcelas')}</div>
             <div style={{ ...hintStyle, marginBottom: 14 }}>
-              Informe o valor total e gere as parcelas — cada vencimento e valor fica editável abaixo.
-              Deixe em branco se não houver taxa de transferência.
+              {tr('Informe o valor total e gere as parcelas — cada vencimento e valor fica editável abaixo. Deixe em branco se não houver taxa de transferência.')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, alignItems: 'end' }}>
               <div>
-                <label style={labelStyle}>Valor total</label>
+                <label style={labelStyle}>{tr('Valor total')}</label>
                 <NumberInput
                   value={contract.transfer_fee_gross ?? ''}
                   onChange={v => setContractField('transfer_fee_gross', v ? parseFloat(v) : null)}
-                  placeholder="Ex: 30.000.000"
+                  placeholder={tr('Ex: 30.000.000')}
                   style={inputStyle}
                 />
               </div>
               <div>
-                <label style={labelStyle}>Moeda</label>
+                <label style={labelStyle}>{tr('Moeda')}</label>
                 <select value={contract.transfer_currency} onChange={e => setContractField('transfer_currency', e.target.value as Currency)} style={inputStyle}>
-                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {CURRENCIES.map(c => <option key={c} value={c}>{tr(c)}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Nº parcelas</label>
+                <label style={labelStyle}>{tr('Nº parcelas')}</label>
                 <input type="number" min={1} max={120} value={transferInst}
                   onChange={e => setTransferInst(Math.max(1, parseInt(e.target.value) || 1))} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Periodicidade</label>
+                <label style={labelStyle}>{tr('Periodicidade')}</label>
                 <select value={transferPeriod} onChange={e => setTransferPeriod(e.target.value as TransferPeriod)} style={inputStyle}>
-                  {(Object.keys(PERIOD_LABEL) as TransferPeriod[]).map(p => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}
+                  {(Object.keys(PERIOD_LABEL) as TransferPeriod[]).map(p => <option key={p} value={p}>{tr(PERIOD_LABEL[p])}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>1ª parcela</label>
+                <label style={labelStyle}>{tr('1ª parcela')}</label>
                 <input type="date" value={transferFirstDate} onChange={e => setTransferFirst(e.target.value)} style={inputStyle} />
               </div>
               <button type="button" onClick={generateTransferLines} className="btn btn-outline"
                 disabled={!transferTotalField} style={{ justifyContent: 'center', whiteSpace: 'nowrap' }}>
-                <Icon name="flow" size={16} /> Gerar parcelas
+                <Icon name="flow" size={16} /> {tr('Gerar parcelas')}
               </button>
             </div>
 
@@ -620,42 +618,42 @@ export default function PageAthleteNewContract() {
                 lines={transferLines} onChange={setTransferLines}
                 defaultFirst={transferFirstDate}
                 periodicity={transferPeriod}
-                title="Parcelas da transferência"
+                title={tr('Parcelas da transferência')}
                 showGenerator={false}
               />
             </div>
             {willGenTransfer && (
               <div style={{ ...noteBox, marginTop: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 <span><strong>{transferValid.length || 1}×</strong></span>
-                <span>Total {contract.transfer_currency} {fmtNum(transferTotal)}</span>
-                <span>1º venc. {fmtDateBR(transferValid[0]?.due_date ?? transferFirstDate)}</span>
-                {transferValid.length > 1 && <span>último {fmtDateBR(transferValid[transferValid.length - 1].due_date)}</span>}
+                <span>{tr('Total')} {tr(contract.transfer_currency)} {fmtNum(transferTotal)}</span>
+                <span>{tr('1º venc.')} {fmtDateBR(transferValid[0]?.due_date ?? transferFirstDate)}</span>
+                {transferValid.length > 1 && <span>{tr('último')} {fmtDateBR(transferValid[transferValid.length - 1].due_date)}</span>}
               </div>
             )}
           </div>
 
           <div style={cardStyle}>
-            <div style={{ ...sectionTitle, marginBottom: 16 }}>Remuneração mensal (paga pelo Botafogo)</div>
+            <div style={{ ...sectionTitle, marginBottom: 16 }}>{tr('Remuneração mensal (paga pelo Botafogo)')}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
               <div>
-                <label style={labelStyle}>Salário CLT</label>
+                <label style={labelStyle}>{tr('Salário CLT')}</label>
                 <NumberInput value={contract.base_salary ?? ''}
-                  onChange={v => setContractField('base_salary', v ? parseFloat(v) : null)} placeholder="Ex: 200.000" style={inputStyle} />
+                  onChange={v => setContractField('base_salary', v ? parseFloat(v) : null)} placeholder={tr('Ex: 200.000')} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Direito de imagem</label>
+                <label style={labelStyle}>{tr('Direito de imagem')}</label>
                 <NumberInput value={contract.image_value ?? ''}
-                  onChange={v => setContractField('image_value', v ? parseFloat(v) : null)} placeholder="Ex: 200.000" style={inputStyle} />
+                  onChange={v => setContractField('image_value', v ? parseFloat(v) : null)} placeholder={tr('Ex: 200.000')} style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Outros (moradia/aux.)</label>
+                <label style={labelStyle}>{tr('Outros (moradia/aux.)')}</label>
                 <NumberInput value={contract.other_value ?? ''}
                   onChange={v => setContractField('other_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Moeda</label>
+                <label style={labelStyle}>{tr('Moeda')}</label>
                 <select value={contract.salary_currency} onChange={e => setContractField('salary_currency', e.target.value as Currency)} style={inputStyle}>
-                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {CURRENCIES.map(c => <option key={c} value={c}>{tr(c)}</option>)}
                 </select>
               </div>
             </div>
@@ -667,18 +665,17 @@ export default function PageAthleteNewContract() {
                   if (base > 0) { setContractField('base_salary', base / 2); setContractField('image_value', base / 2) }
                 }}
                 className="btn btn-outline" style={{ padding: '5px 12px', fontSize: 12 }}>
-                Dividir 50% CLT / 50% imagem
+                {tr('Dividir 50% CLT / 50% imagem')}
               </button>
               <span style={{ fontFamily: "var(--font-label)", fontSize: 12, color: 'var(--ink-secondary)' }}>
-                Total: {(((contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0))).toLocaleString('pt-BR')} {contract.salary_currency}/mês
+                {tr('Total:')} {(((contract.base_salary ?? 0) + (contract.image_value ?? 0) + (contract.other_value ?? 0))).toLocaleString(locale())} {tr(contract.salary_currency)}{tr('/mês')}
               </span>
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                 <input type="checkbox" checked={autoRemFlow} onChange={e => setAutoRemFlow(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
-                  <strong>Gerar o fluxo mensal automaticamente</strong> pela vigência do contrato — uma parcela por mês, sem lançar mês a mês.
-                  Salário CLT vence <strong>dia {SALARY_DUE_DAY}</strong> e imagem vence <strong>dia {IMAGE_DUE_DAY}</strong> do mês subsequente.
+                  <strong>{tr('Gerar o fluxo mensal automaticamente')}</strong> {tr('pela vigência do contrato — uma parcela por mês, sem lançar mês a mês. Salário CLT vence')} <strong>{tr('dia')} {SALARY_DUE_DAY}</strong> {tr('e imagem vence')} <strong>{tr('dia')} {IMAGE_DUE_DAY}</strong> {tr('do mês subsequente.')}
                 </span>
               </label>
 
@@ -686,18 +683,18 @@ export default function PageAthleteNewContract() {
                 <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   {willGenSalary && (
                     <div style={noteBox}>
-                      Salário: {vigMonths}× {contract.salary_currency} {fmtNum(salaryMonthly)} · venc. dia {SALARY_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, SALARY_DUE_DAY))}
+                      {tr('Salário:')} {vigMonths}× {tr(contract.salary_currency)} {fmtNum(salaryMonthly)} {tr('· venc. dia')} {SALARY_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, SALARY_DUE_DAY))}
                     </div>
                   )}
                   {willGenImage && (
                     <div style={noteBox}>
-                      Imagem: {vigMonths}× {contract.salary_currency} {fmtNum(imageMonthly)} · venc. dia {IMAGE_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, IMAGE_DUE_DAY))}
+                      {tr('Imagem:')} {vigMonths}× {tr(contract.salary_currency)} {fmtNum(imageMonthly)} {tr('· venc. dia')} {IMAGE_DUE_DAY} · 1º {fmtDateBR(dueDayOf(contract.start_date, 0, IMAGE_DUE_DAY))}
                     </div>
                   )}
                 </div>
               ) : autoRemFlow ? (
                 <div style={{ ...hintStyle, marginTop: 8 }}>
-                  Preencha salário e/ou imagem e as <strong>datas de início e término</strong> para gerar o fluxo.
+                  {tr('Preencha salário e/ou imagem e as')} <strong>{tr('datas de início e término')}</strong> {tr('para gerar o fluxo.')}
                 </div>
               ) : null}
             </div>
@@ -706,26 +703,23 @@ export default function PageAthleteNewContract() {
 
           {hasFxCurrency && (
             <div style={cardStyle}>
-              <div style={{ ...sectionTitle, marginBottom: 10 }}>PTAX do contrato</div>
+              <div style={{ ...sectionTitle, marginBottom: 10 }}>{tr('PTAX do contrato')}</div>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                 <input type="checkbox" checked={fixPtax} onChange={e => setFixPtax(e.target.checked)}
                   style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                 <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
-                  <strong>PTAX fixada</strong> — trava a taxa de câmbio deste contrato para evitar distorções cambiais.
-                  Quando marcada, todos os valores em moeda estrangeira geradas por este vínculo (transferência,
-                  salário, imagem, agentes e cláusulas) usam a taxa informada abaixo na conversão para BRL nos
-                  relatórios. Se desmarcada, o sistema usa a PTAX corrente do Banco Central (dia atual).
+                  <strong>{tr('PTAX fixada')}</strong> {tr('— trava a taxa de câmbio deste contrato para evitar distorções cambiais. Quando marcada, todos os valores em moeda estrangeira geradas por este vínculo (transferência, salário, imagem, agentes e cláusulas) usam a taxa informada abaixo na conversão para BRL nos relatórios. Se desmarcada, o sistema usa a PTAX corrente do Banco Central (dia atual).')}
                 </span>
               </label>
               {fixPtax && (
                 <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
                   <div>
-                    <label style={labelStyle}>PTAX (moeda/BRL)</label>
+                    <label style={labelStyle}>{tr('PTAX (moeda/BRL)')}</label>
                     <NumberInput decimals={4} grouping={false} value={fixPtaxRate}
-                      onChange={v => setFixPtaxRate(v)} placeholder="Ex: 5,5000" style={inputStyle} />
+                      onChange={v => setFixPtaxRate(v)} placeholder={tr('Ex: 5,5000')} style={inputStyle} />
                   </div>
                   <div style={{ ...noteBox, fontFamily: "var(--font-body)", fontSize: 12 }}>
-                    Exemplo: contrato em EUR com PTAX fixada em <strong>6,10</strong> — 1 EUR sempre valerá R$ 6,10 nos relatórios.
+                    {tr('Exemplo: contrato em EUR com PTAX fixada em')} <strong>{fmtDec(6.1, 2)}</strong> {trf('— 1 EUR sempre valerá R$ {0} nos relatórios.', fmtDec(6.1, 2))}
                   </div>
                 </div>
               )}
@@ -735,16 +729,16 @@ export default function PageAthleteNewContract() {
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10, flexWrap: 'wrap' }}>
               <div style={sectionTitle}>
-                {isTransferContractType(contract.type) ? 'Agentes desta transação' : 'Agentes / intermediários'}
+                {isTransferContractType(contract.type) ? tr('Agentes desta transação') : tr('Agentes / intermediários')}
               </div>
               <button type="button" onClick={addAgent} className="btn btn-outline">
-                <Icon name="plus" size={16} /> Adicionar agente
+                <Icon name="plus" size={16} /> {tr('Adicionar agente')}
               </button>
             </div>
 
             {agents.length === 0 && (
               <div style={hintStyle}>
-                Nenhum agente nesta transação. Um vínculo pode ter vários agentes, com valores e fluxos diferentes.
+                {tr('Nenhum agente nesta transação. Um vínculo pode ter vários agentes, com valores e fluxos diferentes.')}
               </div>
             )}
 
@@ -755,42 +749,42 @@ export default function PageAthleteNewContract() {
                 return (
                   <div key={i} style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontFamily: "var(--font-label)", fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Agente {i + 1}</span>
-                      <IconButton icon="trash" label={`Remover agente ${i + 1}`} tone="danger" onClick={() => removeAgent(i)} />
+                      <span style={{ fontFamily: "var(--font-label)", fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Agente')} {i + 1}</span>
+                      <IconButton icon="trash" label={trf('Remover agente {0}', i + 1)} tone="danger" onClick={() => removeAgent(i)} />
                     </div>
-                    <EntityPicker kind="intermediario" label="Agente" value={ag.name} onChange={name => setAgent(i, { name })} />
+                    <EntityPicker kind="intermediario" label={tr('Agente')} value={ag.name} onChange={name => setAgent(i, { name })} />
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginTop: 12 }}>
                       {!ag.futureSale && (
                         <div>
-                          <label style={labelStyle}>Comissão / valor</label>
+                          <label style={labelStyle}>{tr('Comissão / valor')}</label>
                           <NumberInput value={ag.amount} onChange={v => setAgent(i, { amount: v })} placeholder="0,00" style={inputStyle}
                             disabled={agValid.length > 0} />
                         </div>
                       )}
                       {ag.futureSale && (
                         <div>
-                          <label style={labelStyle}>% da venda futura</label>
-                          <NumberInput decimals={2} grouping={false} value={ag.futurePct} onChange={v => setAgent(i, { futurePct: v })} placeholder="Ex: 10" style={inputStyle} />
+                          <label style={labelStyle}>{tr('% da venda futura')}</label>
+                          <NumberInput decimals={2} grouping={false} value={ag.futurePct} onChange={v => setAgent(i, { futurePct: v })} placeholder={tr('Ex: 10')} style={inputStyle} />
                         </div>
                       )}
                       <div>
-                        <label style={labelStyle}>Moeda</label>
+                        <label style={labelStyle}>{tr('Moeda')}</label>
                         <select value={ag.currency} onChange={e => setAgent(i, { currency: e.target.value as Currency })} style={inputStyle}>
-                          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          {CURRENCIES.map(c => <option key={c} value={c}>{tr(c)}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={labelStyle}>Direção</label>
+                        <label style={labelStyle}>{tr('Direção')}</label>
                         <select value={ag.direction} onChange={e => setAgent(i, { direction: e.target.value as LiabilityDirection })} style={inputStyle}>
-                          <option value="A_PAGAR">A pagar</option>
-                          <option value="A_RECEBER">A receber</option>
+                          <option value="A_PAGAR">{tr('A pagar')}</option>
+                          <option value="A_RECEBER">{tr('A receber')}</option>
                         </select>
                       </div>
                       {ag.futureSale && (
                         <div>
-                          <label style={labelStyle}>Base de cálculo</label>
+                          <label style={labelStyle}>{tr('Base de cálculo')}</label>
                           <select value={ag.futureBasis} onChange={e => setAgent(i, { futureBasis: e.target.value as SellOnBasis })} style={inputStyle}>
-                            {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+                            {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{tr(SELLON_BASIS_LABELS[b])}</option>)}
                           </select>
                         </div>
                       )}
@@ -802,9 +796,7 @@ export default function PageAthleteNewContract() {
                           onChange={e => setAgent(i, { futureSale: e.target.checked, amount: e.target.checked ? '' : ag.amount, lines: e.target.checked ? [] : ag.lines, flowOpen: e.target.checked ? false : ag.flowOpen })}
                           style={{ marginTop: 2, accentColor: 'var(--action-inverse)', width: 16, height: 16 }} />
                         <span style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-secondary)' }}>
-                          <strong>Comissão sobre a venda futura deste atleta.</strong> Igual ao mecanismo de Sell-On do clube:
-                          se este atleta for vendido, o agente recebe a % informada sobre o valor (ou mais-valia) da transferência.
-                          Nada é gerado agora — a cláusula fica registrada e é acionada quando ocorrer a venda.
+                          <strong>{tr('Comissão sobre a venda futura deste atleta.')}</strong> {tr('Igual ao mecanismo de Sell-On do clube: se este atleta for vendido, o agente recebe a % informada sobre o valor (ou mais-valia) da transferência. Nada é gerado agora — a cláusula fica registrada e é acionada quando ocorrer a venda.')}
                         </span>
                       </label>
                     </div>
@@ -813,7 +805,7 @@ export default function PageAthleteNewContract() {
                     {!ag.futureSale && <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--divider)' }}>
                       {!ag.flowOpen ? (
                         <button type="button" onClick={() => setAgent(i, { flowOpen: true })} className="btn btn-outline">
-                          <Icon name="flow" size={16} /> Parcelar esta comissão
+                          <Icon name="flow" size={16} /> {tr('Parcelar esta comissão')}
                         </button>
                       ) : (
                         <>
@@ -822,14 +814,14 @@ export default function PageAthleteNewContract() {
                             onCurrencyChange={c => setAgent(i, { currency: c })}
                             lines={ag.lines} onChange={lines => setAgent(i, { lines })}
                             defaultFirst={contract.start_date} seedRows={4}
-                            title={`Parcelas do agente ${i + 1}`}
+                            title={trf('Parcelas do agente {0}', i + 1)}
                           />
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 10, flexWrap: 'wrap' }}>
                             <span style={hintStyle}>
-                              Com parcelas, o valor da comissão passa a ser a soma delas: <strong>{fmtCurrencyShort(agTotal, ag.currency)}</strong>.
+                              {tr('Com parcelas, o valor da comissão passa a ser a soma delas:')} <strong>{fmtCurrencyShort(agTotal, ag.currency)}</strong>.
                             </span>
                             <button type="button" onClick={() => setAgent(i, { flowOpen: false, lines: [] })} className="btn btn-ghost">
-                              Remover parcelamento
+                              {tr('Remover parcelamento')}
                             </button>
                           </div>
                         </>
@@ -840,13 +832,13 @@ export default function PageAthleteNewContract() {
               })}
             </div>
             <div style={{ ...hintStyle, marginTop: 12 }}>
-              Cada agente fica vinculado a este atleta, aparece no cadastro de Agentes e no relatório — e cada parcela entra no consolidado.
+              {tr('Cada agente fica vinculado a este atleta, aparece no cadastro de Agentes e no relatório — e cada parcela entra no consolidado.')}
             </div>
           </div>
 
           <div style={cardStyle}>
-            <label style={labelStyle}>Descrição / observações</label>
-            <textarea value={contract.description} onChange={e => setContractField('description', e.target.value)} rows={3} placeholder="Notas gerais sobre o vínculo..." style={{ ...inputStyle, resize: 'vertical' }} />
+            <label style={labelStyle}>{tr('Descrição / observações')}</label>
+            <textarea value={contract.description} onChange={e => setContractField('description', e.target.value)} rows={3} placeholder={tr('Notas gerais sobre o vínculo...')} style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
         </div>
       )}
@@ -857,15 +849,14 @@ export default function PageAthleteNewContract() {
           {conflict && (
             <div role="alert" style={{ background: 'var(--surface-warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
               <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-primary)' }}>
-                <strong style={{ color: 'var(--text-warning)' }}>Atenção — conflito Sell-On:</strong> você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.
+                <strong style={{ color: 'var(--text-warning)' }}>{tr('Atenção — conflito Sell-On:')}</strong> {tr('você adicionou tanto "Sell-On Fee (a pagar)" quanto "Sell-On Fee (a receber)". Verifique se isso reflete cláusulas de contratos distintos e não um erro de cadastro.')}
               </div>
             </div>
           )}
 
           {clauses.length === 0 && (
             <div style={{ ...cardStyle, textAlign: 'center', padding: '32px 20px', color: 'var(--text-secondary)', fontFamily: "var(--font-body)", fontSize: 13 }}>
-              Nenhuma cláusula extra. Salário, imagem, transferência e agentes já foram tratados no passo anterior —
-              use este passo para sell-on, bônus, solidariedade, rescisória e afins.
+              {tr('Nenhuma cláusula extra. Salário, imagem, transferência e agentes já foram tratados no passo anterior — use este passo para sell-on, bônus, solidariedade, rescisória e afins.')}
             </div>
           )}
 
@@ -875,62 +866,62 @@ export default function PageAthleteNewContract() {
             return (
               <div key={idx} style={cardStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <div style={sectionTitle}>Cláusula {idx + 1}</div>
-                  <IconButton icon="trash" label={`Remover cláusula ${idx + 1}`} tone="danger" onClick={() => removeClause(idx)} />
+                  <div style={sectionTitle}>{tr('Cláusula')} {idx + 1}</div>
+                  <IconButton icon="trash" label={trf('Remover cláusula {0}', idx + 1)} tone="danger" onClick={() => removeClause(idx)} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Tipo</label>
+                    <label style={labelStyle}>{tr('Tipo')}</label>
                     <select value={cl.clause_type} onChange={e => setClauseField(idx, 'clause_type', e.target.value as ClauseType)} style={inputStyle}>
-                      {CLAUSE_TYPES.map(t => <option key={t} value={t}>{CLAUSE_TYPE_LABELS[t]}</option>)}
+                      {CLAUSE_TYPES.map(t => <option key={t} value={t}>{tr(CLAUSE_TYPE_LABELS[t])}</option>)}
                     </select>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Descrição *</label>
-                    <input value={cl.description ?? ''} onChange={e => setClauseField(idx, 'description', e.target.value)} placeholder="Descreva a cláusula..." style={inputStyle} />
+                    <label style={labelStyle}>{tr('Descrição *')}</label>
+                    <input value={cl.description ?? ''} onChange={e => setClauseField(idx, 'description', e.target.value)} placeholder={tr('Descreva a cláusula...')} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Credor</label>
+                    <label style={labelStyle}>{tr('Credor')}</label>
                     <input value={cl.creditor_party ?? ''} onChange={e => setClauseField(idx, 'creditor_party', e.target.value)} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Devedor</label>
+                    <label style={labelStyle}>{tr('Devedor')}</label>
                     <input value={cl.debtor_party ?? ''} onChange={e => setClauseField(idx, 'debtor_party', e.target.value)} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Valor</label>
+                    <label style={labelStyle}>{tr('Valor')}</label>
                     <NumberInput value={cl.original_value ?? ''} onChange={v => setClauseField(idx, 'original_value', v ? parseFloat(v) : null)} placeholder="0,00" style={inputStyle} disabled={clValid.length > 0} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Moeda</label>
+                    <label style={labelStyle}>{tr('Moeda')}</label>
                     <select value={cl.currency ?? 'EUR'} onChange={e => setClauseField(idx, 'currency', e.target.value as Currency)} style={inputStyle}>
-                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      {CURRENCIES.map(c => <option key={c} value={c}>{tr(c)}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={labelStyle}>% (se aplicável)</label>
-                    <NumberInput decimals={2} grouping={false} value={cl.percentage_value ?? ''} onChange={v => setClauseField(idx, 'percentage_value', v ? parseFloat(v) : null)} placeholder="Ex: 15" style={inputStyle} />
+                    <label style={labelStyle}>{tr('% (se aplicável)')}</label>
+                    <NumberInput decimals={2} grouping={false} value={cl.percentage_value ?? ''} onChange={v => setClauseField(idx, 'percentage_value', v ? parseFloat(v) : null)} placeholder={tr('Ex: 15')} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Vencimento (parcela única)</label>
+                    <label style={labelStyle}>{tr('Vencimento (parcela única)')}</label>
                     <input type="date" value={cl.due_date ?? ''} onChange={e => setClauseField(idx, 'due_date', e.target.value)} style={inputStyle} disabled={clValid.length > 0} />
                   </div>
                   {SELL_ON_CLAUSE_TYPES.includes(cl.clause_type as ClauseType) ? (
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Base de cálculo do Sell-on</label>
+                      <label style={labelStyle}>{tr('Base de cálculo do Sell-on')}</label>
                       <select value={cl.condition_description === sellOnConditionText('VALOR_TOTAL') ? 'VALOR_TOTAL' : 'MAIS_VALIA'} onChange={e => setClauseField(idx, 'condition_description', sellOnConditionText(e.target.value as SellOnBasis))} style={inputStyle}>
-                        {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{SELLON_BASIS_LABELS[b]}</option>)}
+                        {(Object.keys(SELLON_BASIS_LABELS) as SellOnBasis[]).map(b => <option key={b} value={b}>{tr(SELLON_BASIS_LABELS[b])}</option>)}
                       </select>
                     </div>
                   ) : (
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Condição / gatilho</label>
-                      <input value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder="Ex: Aprovação em 25 jogos na liga" style={inputStyle} />
+                      <label style={labelStyle}>{tr('Condição / gatilho')}</label>
+                      <input value={cl.condition_description ?? ''} onChange={e => setClauseField(idx, 'condition_description', e.target.value)} placeholder={tr('Ex: Aprovação em 25 jogos na liga')} style={inputStyle} />
                     </div>
                   )}
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Notas</label>
+                    <label style={labelStyle}>{tr('Notas')}</label>
                     <input value={cl.notes ?? ''} onChange={e => setClauseField(idx, 'notes', e.target.value)} style={inputStyle} />
                   </div>
                 </div>
@@ -939,7 +930,7 @@ export default function PageAthleteNewContract() {
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
                   {!cl.flowOpen ? (
                     <button type="button" onClick={() => setClauseRow(idx, { flowOpen: true })} className="btn btn-outline">
-                      <Icon name="flow" size={16} /> Parcelar esta cláusula
+                      <Icon name="flow" size={16} /> {tr('Parcelar esta cláusula')}
                     </button>
                   ) : (
                     <>
@@ -948,11 +939,11 @@ export default function PageAthleteNewContract() {
                         onCurrencyChange={c => setClauseField(idx, 'currency', c)}
                         lines={cl.lines} onChange={lines => setClauseRow(idx, { lines })}
                         defaultFirst={cl.due_date || contract.start_date} seedRows={4}
-                        title={`Parcelas da cláusula ${idx + 1}`}
+                        title={trf('Parcelas da cláusula {0}', idx + 1)}
                       />
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 10, flexWrap: 'wrap' }}>
-                        <span style={hintStyle}>Valor da cláusula = soma das parcelas: <strong>{fmtCurrencyShort(clTotal, (cl.currency ?? 'EUR') as Currency)}</strong>.</span>
-                        <button type="button" onClick={() => setClauseRow(idx, { flowOpen: false, lines: [] })} className="btn btn-ghost">Remover parcelamento</button>
+                        <span style={hintStyle}>{tr('Valor da cláusula = soma das parcelas:')} <strong>{fmtCurrencyShort(clTotal, (cl.currency ?? 'EUR') as Currency)}</strong>.</span>
+                        <button type="button" onClick={() => setClauseRow(idx, { flowOpen: false, lines: [] })} className="btn btn-ghost">{tr('Remover parcelamento')}</button>
                       </div>
                     </>
                   )}
@@ -970,7 +961,7 @@ export default function PageAthleteNewContract() {
               color: 'var(--ink-primary)', cursor: 'pointer',
             }}
           >
-            <Icon name="plus" size={16} /> Adicionar cláusula
+            <Icon name="plus" size={16} /> {tr('Adicionar cláusula')}
           </button>
         </div>
       )}
@@ -981,58 +972,58 @@ export default function PageAthleteNewContract() {
           {conflict && (
             <div role="alert" style={{ background: 'var(--surface-warning-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
               <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: 'var(--text-primary)' }}>
-                <strong style={{ color: 'var(--text-warning)' }}>Conflito Sell-On detectado.</strong> Revise antes de salvar.
+                <strong style={{ color: 'var(--text-warning)' }}>{tr('Conflito Sell-On detectado.')}</strong> {tr('Revise antes de salvar.')}
               </div>
             </div>
           )}
 
           <div style={cardStyle}>
-            <div style={{ ...sectionTitle, marginBottom: 14 }}>Vínculo</div>
+            <div style={{ ...sectionTitle, marginBottom: 14 }}>{tr('Vínculo')}</div>
             <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '6px 16px', fontFamily: "var(--font-body)", fontSize: 13, margin: 0 }}>
               {relatedContract && (<>
-                <dt style={dtStyle}>Vinculado a</dt><dd style={ddStyle}>{contractLabel(relatedContract)}</dd>
+                <dt style={dtStyle}>{tr('Vinculado a')}</dt><dd style={ddStyle}>{tr(contractLabel(relatedContract))}</dd>
               </>)}
-              <dt style={dtStyle}>Tipo</dt><dd style={ddStyle}>{CONTRACT_TYPE_LABELS[contract.type]}</dd>
-              <dt style={dtStyle}>Clube</dt><dd style={ddStyle}>{contract.counterpart_club || '—'}</dd>
-              <dt style={dtStyle}>País</dt><dd style={ddStyle}>{contract.counterpart_country || '—'}</dd>
-              <dt style={dtStyle}>Início</dt><dd style={ddStyle}>{fmtDateBR(contract.start_date)}</dd>
-              <dt style={dtStyle}>Término</dt><dd style={ddStyle}>{contract.end_date ? fmtDateBR(contract.end_date) : '—'}</dd>
+              <dt style={dtStyle}>{tr('Tipo')}</dt><dd style={ddStyle}>{tr(CONTRACT_TYPE_LABELS[contract.type])}</dd>
+              <dt style={dtStyle}>{tr('Clube')}</dt><dd style={ddStyle}>{contract.counterpart_club || '—'}</dd>
+              <dt style={dtStyle}>{tr('País')}</dt><dd style={ddStyle}>{contract.counterpart_country || '—'}</dd>
+              <dt style={dtStyle}>{tr('Início')}</dt><dd style={ddStyle}>{fmtDateBR(contract.start_date)}</dd>
+              <dt style={dtStyle}>{tr('Término')}</dt><dd style={ddStyle}>{contract.end_date ? fmtDateBR(contract.end_date) : '—'}</dd>
             </dl>
           </div>
 
           {(willGenTransfer || willGenSalary || willGenImage || agents.some(a => a.name.trim()) || clauses.length > 0) && (
             <div style={cardStyle}>
-              <div style={{ ...sectionTitle, marginBottom: 10 }}>Fluxos que serão gerados</div>
+              <div style={{ ...sectionTitle, marginBottom: 10 }}>{tr('Fluxos que serão gerados')}</div>
               <ul style={{ margin: 0, paddingLeft: 18, fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--ink-primary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {willGenTransfer && (
-                  <li>Transferência: <strong>{transferValid.length || 1}× </strong>
-                    total {contract.transfer_currency} {fmtNum(transferTotal)}, 1º venc. {fmtDateBR(transferValid[0]?.due_date ?? transferFirstDate)}.</li>
+                  <li>{tr('Transferência:')} <strong>{transferValid.length || 1}× </strong>
+                    {tr('total')} {tr(contract.transfer_currency)} {fmtNum(transferTotal)}{tr(', 1º venc.')} {fmtDateBR(transferValid[0]?.due_date ?? transferFirstDate)}.</li>
                 )}
                 {willGenSalary && (
-                  <li>Salário CLT: <strong>{vigMonths}× {contract.salary_currency} {fmtNum(salaryMonthly)}/mês</strong>, vencimento dia {SALARY_DUE_DAY} (total {contract.salary_currency} {fmtNum(salaryMonthly * vigMonths)}).</li>
+                  <li>{tr('Salário CLT:')} <strong>{vigMonths}× {tr(contract.salary_currency)} {fmtNum(salaryMonthly)}{tr('/mês')}</strong>{tr(', vencimento dia')} {SALARY_DUE_DAY} {tr('(total')} {tr(contract.salary_currency)} {fmtNum(salaryMonthly * vigMonths)}).</li>
                 )}
                 {willGenImage && (
-                  <li>Direito de imagem: <strong>{vigMonths}× {contract.salary_currency} {fmtNum(imageMonthly)}/mês</strong>, vencimento dia {IMAGE_DUE_DAY} (total {contract.salary_currency} {fmtNum(imageMonthly * vigMonths)}).</li>
+                  <li>{tr('Direito de imagem:')} <strong>{vigMonths}× {tr(contract.salary_currency)} {fmtNum(imageMonthly)}{tr('/mês')}</strong>{tr(', vencimento dia')} {IMAGE_DUE_DAY} {tr('(total')} {tr(contract.salary_currency)} {fmtNum(imageMonthly * vigMonths)}).</li>
                 )}
                 {agents.filter(a => a.name.trim()).map((a, i) => {
                   if (a.futureSale) {
                     return (
-                      <li key={i}>Agente <strong>{a.name}</strong>: <strong>{a.futurePct || '—'}%</strong> sobre a <em>venda futura</em> deste atleta
-                        {' '}({SELLON_BASIS_LABELS[a.futureBasis]}, {a.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}).</li>
+                      <li key={i}>{tr('Agente')} <strong>{a.name}</strong>: <strong>{tr(a.futurePct) || '—'}%</strong> {tr('sobre a')} <em>{tr('venda futura')}</em> {tr('deste atleta')}
+                        {' '}({tr(SELLON_BASIS_LABELS[a.futureBasis])}, {a.direction === 'A_PAGAR' ? tr('a pagar') : tr('a receber')}).</li>
                     )
                   }
                   const v = validLines(a.lines)
                   const total = v.length ? v.reduce((s, l) => s + l.value, 0) : (a.amount ? parseFloat(a.amount) : 0)
                   return (
-                    <li key={i}>Agente <strong>{a.name}</strong>: {v.length ? `${v.length}× ` : 'parcela única · '}
-                      {fmtCurrencyShort(total, a.currency)} ({a.direction === 'A_PAGAR' ? 'a pagar' : 'a receber'}).</li>
+                    <li key={i}>{tr('Agente')} <strong>{a.name}</strong>: {v.length ? `${v.length}× ` : tr('parcela única · ')}
+                      {fmtCurrencyShort(total, a.currency)} ({a.direction === 'A_PAGAR' ? tr('a pagar') : tr('a receber')}).</li>
                   )
                 })}
                 {clauses.filter(c => c.description?.trim()).map((c, i) => {
                   const v = validLines(c.lines)
                   const total = v.length ? v.reduce((s, l) => s + l.value, 0) : (c.original_value ?? 0)
                   return (
-                    <li key={`c${i}`}>{CLAUSE_TYPE_LABELS[c.clause_type!]}: {c.description}
+                    <li key={`c${i}`}>{tr(CLAUSE_TYPE_LABELS[c.clause_type!])}: {tr(c.description)}
                       {total ? ` — ${v.length ? `${v.length}× ` : ''}${fmtCurrencyShort(total, (c.currency ?? 'EUR') as Currency)}` : ''}
                       {c.percentage_value != null ? ` · ${c.percentage_value}%` : ''}</li>
                   )
@@ -1043,7 +1034,7 @@ export default function PageAthleteNewContract() {
 
           {error && (
             <div role="alert" style={{ background: 'var(--surface-negative-soft)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontFamily: "var(--font-body)", fontSize: 13, color: 'var(--text-negative)' }}>
-              {error}
+              {tr(error)}
             </div>
           )}
         </div>
@@ -1053,18 +1044,18 @@ export default function PageAthleteNewContract() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 26, gap: 10, flexWrap: 'wrap' }}>
         <div>
           {step > 1 && (
-            <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline"><Icon name="chevronLeft" size={16} /> Voltar</button>
+            <button onClick={() => setStep(s => (s - 1) as Step)} className="btn btn-outline"><Icon name="chevronLeft" size={16} /> {tr('Voltar')}</button>
           )}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link to={`/atletas/${id}`} className="btn btn-ghost">Cancelar</Link>
+          <Link to={`/atletas/${id}`} className="btn btn-ghost">{tr('Cancelar')}</Link>
           {step < 3 ? (
             <button onClick={() => setStep(s => (s + 1) as Step)} disabled={step === 1 && !step1Valid} className="btn btn-primary">
-              Próximo →
+              {tr('Próximo →')}
             </button>
           ) : (
             <button onClick={handleSave} disabled={saving} className="btn btn-primary">
-              {saving ? 'Salvando…' : 'Salvar vínculo'}
+              {saving ? tr('Salvando…') : tr('Salvar vínculo')}
             </button>
           )}
         </div>

@@ -5,6 +5,7 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { tr } from '../i18n'
 
 interface Props {
   to?: string | null
@@ -21,7 +22,7 @@ export default function RefLink({ to, children, title, style, stopPropagation = 
   return (
     <Link
       to={to}
-      title={title ?? 'Abrir página'}
+      title={tr(title) ?? tr('Abrir página')}
       onClick={e => { if (stopPropagation) e.stopPropagation() }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}

@@ -27,6 +27,7 @@ import { Icon } from '../components/Icon'
 import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
+import { tr, trf, trn, trCols } from '../i18n'
 
 const METRIC_LABEL: Record<TriggerMetric, string> = {
   JOGOS: 'Jogos', GOLS: 'Gols', ASSISTENCIAS: 'Assistências',
@@ -80,8 +81,8 @@ export default function PageRelGatilhos() {
     // rateio de empréstimo NÃO aparecem aqui — são um mecanismo, não uma meta.
     for (const t of triggers.filter((t: SalaryTrigger) => !isLoanShareTrigger(t))) {
       const impact = t.new_image_value != null
-        ? `Salário → ${fmtCurrencyShort(t.new_salary, t.currency)} · Imagem → ${fmtCurrencyShort(t.new_image_value, t.currency)}`
-        : `Salário → ${fmtCurrencyShort(t.new_salary, t.currency)}`
+        ? trf('Salário → {0} · Imagem → {1}', fmtCurrencyShort(t.new_salary, t.currency), fmtCurrencyShort(t.new_image_value, t.currency))
+        : trf('Salário → {0}', fmtCurrencyShort(t.new_salary, t.currency))
       built.push({
         id: `t-${t.id}`, clauseId: null, athleteId: t.athlete_id,
         atleta: nameOf.get(t.athlete_id) ?? '—',
@@ -155,10 +156,10 @@ export default function PageRelGatilhos() {
       { key: 'achievedDate', header: 'Atingido em' }, { key: 'impact', header: 'Impacto' },
     ]
     exportWorkbook([{
-      name: 'Gatilhos', cols,
+      name: tr('Gatilhos'), cols: trCols(cols),
       rows: filtered.map(r => ({
-        ...r, origin: ORIGIN_LABEL[r.origin],
-        status: STATUS_STYLE[r.status].label,
+        ...r, origin: tr(ORIGIN_LABEL[r.origin]),
+        status: tr(STATUS_STYLE[r.status].label),
         achievedDate: r.achievedDate ?? '',
       })) as unknown as Record<string, unknown>[],
     }], 'relatorio-gatilhos.xlsx')
@@ -169,38 +170,38 @@ export default function PageRelGatilhos() {
   const tdMono: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Gatilhos e Metas" section="Relatórios" subtitle="Consolidado de metas esportivas, bônus de performance e cláusulas rescisórias">
-        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
+      <PageHero title={tr('Gatilhos e Metas')} section={tr('Relatórios')} subtitle={tr('Consolidado de metas esportivas, bônus de performance e cláusulas rescisórias')}>
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> {tr('Exportar')}</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, descrição, métrica..."
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Atleta, descrição, métrica...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Origem</div>
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Origem')}</div>
           <select value={originFilter} onChange={e => setOriginFilter(e.target.value as typeof originFilter)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
-            <option value="Todos">Todas</option>
-            {(['REMUNERACAO', 'BONUS', 'RESCISORIA'] as const).map(o => <option key={o} value={o}>{ORIGIN_LABEL[o]}</option>)}
+            <option value="Todos">{tr('Todas')}</option>
+            {(['REMUNERACAO', 'BONUS', 'RESCISORIA'] as const).map(o => <option key={o} value={o}>{tr(ORIGIN_LABEL[o])}</option>)}
           </select>
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Status')}</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
-            <option value="Todos">Todos</option>
+            <option value="Todos">{tr('Todos')}</option>
             {(['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA'] as const).map(s => (
-              <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
+              <option key={s} value={s}>{tr(STATUS_STYLE[s].label)}</option>
             ))}
           </select>
         </div>
         <div className="kpi-group">
-          <KpiPill label="Pendentes" value={String(stats.pendente)} tone={stats.pendente > 0 ? 'warn' : 'neutral'} />
-          <KpiPill label="Atingidas" value={String(stats.atingida)} tone="pos" />
-          <KpiPill label="Não atingidas" value={String(stats.naoAtingida)} tone={stats.naoAtingida > 0 ? 'neg' : 'neutral'} />
+          <KpiPill label={tr('Pendentes')} value={String(stats.pendente)} tone={stats.pendente > 0 ? 'warn' : 'neutral'} />
+          <KpiPill label={tr('Atingidas')} value={String(stats.atingida)} tone="pos" />
+          <KpiPill label={tr('Não atingidas')} value={String(stats.naoAtingida)} tone={stats.naoAtingida > 0 ? 'neg' : 'neutral'} />
         </div>
       </div>
 
@@ -209,34 +210,34 @@ export default function PageRelGatilhos() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={th}>Atleta</th>
-                <th style={th}>Origem</th>
-                <th style={th}>Descrição</th>
-                <th style={th}>Métrica</th>
-                <th style={th}>Alvo</th>
-                <th style={th}>Status</th>
-                <th style={th}>Atingido em</th>
-                <th style={th}>Impacto</th>
-                <th style={{ ...th, textAlign: 'right' }}>Ações</th>
+                <th style={th}>{tr('Atleta')}</th>
+                <th style={th}>{tr('Origem')}</th>
+                <th style={th}>{tr('Descrição')}</th>
+                <th style={th}>{tr('Métrica')}</th>
+                <th style={th}>{tr('Alvo')}</th>
+                <th style={th}>{tr('Status')}</th>
+                <th style={th}>{tr('Atingido em')}</th>
+                <th style={th}>{tr('Impacto')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Ações')}</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum gatilho registrado.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum gatilho registrado.')}</td></tr>}
               {filtered.map(r => {
                 const st = STATUS_STYLE[r.status]
                 return (
                   <tr key={r.id}>
-                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
-                    <td style={td}><span style={badgeStyle(r.origin === 'BONUS' ? 'warning' : r.origin === 'RESCISORIA' ? 'negative' : 'info')}>{ORIGIN_LABEL[r.origin]}</span></td>
-                    <td style={{ ...td, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.description}>{r.description}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.metric}</td>
-                    <td style={{ ...tdMono, color: 'var(--text-secondary)', maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.threshold}>{r.threshold}</td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={trf('Abrir {0}', r.atleta)}>{tr(r.atleta)}</RefLink></td>
+                    <td style={td}><span style={badgeStyle(r.origin === 'BONUS' ? 'warning' : r.origin === 'RESCISORIA' ? 'negative' : 'info')}>{tr(ORIGIN_LABEL[r.origin])}</span></td>
+                    <td style={{ ...td, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tr(r.description)}>{tr(r.description)}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{tr(r.metric)}</td>
+                    <td style={{ ...tdMono, color: 'var(--text-secondary)', maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tr(r.threshold)}>{tr(r.threshold)}</td>
                     <td style={td}>
-                      <span style={badgeStyle(st)}>{st.label}</span>
+                      <span style={badgeStyle(st)}>{tr(st.label)}</span>
                     </td>
                     <td style={{ ...tdMono, color: 'var(--text-secondary)' }}>{r.achievedDate ? fmtDate(r.achievedDate) : '—'}</td>
-                    <td style={{ ...tdMono, fontWeight: 500, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.impact}>{r.impact}</td>
+                    <td style={{ ...tdMono, fontWeight: 500, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tr(r.impact)}>{tr(r.impact)}</td>
                     <td style={{ ...td, textAlign: 'right' }}>
                       <RowActions open={r.clauseId ? { to: `/obrigacoes/${r.clauseId}`, label: 'Abrir a cláusula' } : { to: `/atletas/${r.athleteId}?tab=gatilhos`, label: 'Abrir a aba de gatilhos do atleta' }} />
                     </td>
@@ -247,7 +248,7 @@ export default function PageRelGatilhos() {
           </table>
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>{filtered.length} gatilho(s)</div>
+      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>{trn(filtered.length, '{0} gatilho', '{0} gatilhos')}</div>
     </div>
   )
 }

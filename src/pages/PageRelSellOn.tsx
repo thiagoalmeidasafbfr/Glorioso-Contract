@@ -19,6 +19,7 @@ import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import RowActions from '../components/RowActions'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
+import { tr, trf, trn, trCols } from '../i18n'
 
 // Direção "a pagar" / "a receber" a partir do tipo (SELL_ON_FEE = Botafogo paga
 // a antigo dono; SELL_ON_FEE_RECEBER = Botafogo recebe em revenda futura).
@@ -117,9 +118,9 @@ export default function PageRelSellOn() {
       { key: 'status', header: 'Status' }, { key: 'achievedDate', header: 'Atingido em' },
     ]
     exportWorkbook([{
-      name: 'Sell-on', cols,
+      name: 'Sell-on', cols: trCols(cols),
       rows: filtered.map(r => ({
-        ...r, dir: r.dir === 'A_PAGAR' ? 'A pagar' : 'A receber',
+        ...r, dir: r.dir === 'A_PAGAR' ? tr('A pagar') : tr('A receber'),
         tipo: CLAUSE_TYPE_LABELS[r.clauseType],
         status: STATUS_STYLE[r.status].label,
         achievedDate: r.achievedDate ?? '',
@@ -132,33 +133,33 @@ export default function PageRelSellOn() {
   const tdNum: React.CSSProperties = { ...td, fontFamily: 'var(--font-data)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Vendas Futuras (Sell-on)" section="Relatórios" subtitle="Consolidado de % de vendas futuras · a pagar e a receber" />
+      <PageHero title={tr('Vendas Futuras (Sell-on)')} section={tr('Relatórios')} subtitle={tr('Consolidado de % de vendas futuras · a pagar e a receber')} />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> {tr('Exportar')}</button>
       </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Atleta, contraparte, condição..."
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Atleta, contraparte, condição...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }} />
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Direção</div>
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Direção')}</div>
           <select value={dirFilter} onChange={e => setDirFilter(e.target.value as 'Todos' | Dir)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
-            <option value="Todos">Todos</option>
-            <option value="A_PAGAR">A pagar</option>
-            <option value="A_RECEBER">A receber</option>
+            <option value="Todos">{tr('Todos')}</option>
+            <option value="A_PAGAR">{tr('A pagar')}</option>
+            <option value="A_RECEBER">{tr('A receber')}</option>
           </select>
         </div>
         <div>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Status</div>
+          <div style={{ fontSize: 10, fontFamily: 'var(--font-label)', letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{tr('Status')}</div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}
             style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: 'var(--font-body)', color: 'var(--ink-primary)' }}>
-            <option value="Todos">Todos</option>
+            <option value="Todos">{tr('Todos')}</option>
             {(['PENDENTE', 'ATINGIDA', 'NAO_ATINGIDA', 'NAO_APLICAVEL'] as const).map(s => (
-              <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
+              <option key={s} value={s}>{tr(STATUS_STYLE[s].label)}</option>
             ))}
           </select>
         </div>
@@ -169,34 +170,34 @@ export default function PageRelSellOn() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={th}>Atleta</th>
-                <th style={th}>Direção</th>
-                <th style={th}>Contraparte</th>
+                <th style={th}>{tr('Atleta')}</th>
+                <th style={th}>{tr('Direção')}</th>
+                <th style={th}>{tr('Contraparte')}</th>
                 <th style={{ ...th, textAlign: 'right' }}>%</th>
-                <th style={{ ...th, textAlign: 'right' }}>Valor fixo</th>
-                <th style={th}>Base</th>
-                <th style={th}>Condição</th>
-                <th style={th}>Status</th>
-                <th style={{ ...th, textAlign: 'right' }}>Ações</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Valor fixo')}</th>
+                <th style={th}>{tr('Base de cálculo')}</th>
+                <th style={th}>{tr('Condição')}</th>
+                <th style={th}>{tr('Status')}</th>
+                <th style={{ ...th, textAlign: 'right' }}>{tr('Ações')}</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum sell-on registrado.</td></tr>}
+              {loading && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum sell-on registrado.')}</td></tr>}
               {filtered.map(r => {
                 const st = STATUS_STYLE[r.status]
                 return (
                   <tr key={r.id}>
-                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={`Abrir ${r.atleta}`}>{r.atleta}</RefLink></td>
-                    <td style={{ ...td, fontSize: 10, fontFamily: 'var(--font-label)', color: r.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{r.dir === 'A_PAGAR' ? 'a pagar' : 'a receber'}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.contraparte}</td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={trf('Abrir {0}', r.atleta)}>{tr(r.atleta)}</RefLink></td>
+                    <td style={{ ...td, fontSize: 10, fontFamily: 'var(--font-label)', color: r.dir === 'A_PAGAR' ? 'var(--neg)' : 'var(--pos)' }}>{r.dir === 'A_PAGAR' ? tr('a pagar') : tr('a receber')}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{tr(r.contraparte)}</td>
                     <td style={tdNum}>{r.percentage != null ? `${r.percentage}%` : '—'}</td>
                     <td style={tdNum}>{r.fixedValue != null ? fmtCurrencyShort(r.fixedValue, r.currency) : '—'}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.basis}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.condition}>{r.condition || '—'}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{tr(r.basis)}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11, maxWidth: 320, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tr(r.condition)}>{tr(r.condition) || '—'}</td>
                     <td style={td}>
-                      <span style={badgeStyle(st)}>{st.label}</span>
-                      {r.achievedDate && <span style={{ marginLeft: 8, fontSize: 10, fontFamily: 'var(--font-data)', color: 'var(--text-secondary)' }}>em {fmtDate(r.achievedDate)}</span>}
+                      <span style={badgeStyle(st)}>{tr(st.label)}</span>
+                      {r.achievedDate && <span style={{ marginLeft: 8, fontSize: 10, fontFamily: 'var(--font-data)', color: 'var(--text-secondary)' }}>{tr('em')} {fmtDate(r.achievedDate)}</span>}
                     </td>
                     <td style={{ ...td, textAlign: 'right' }}>
                       <RowActions open={{ to: `/obrigacoes/${r.id}`, label: 'Abrir a cláusula' }} />
@@ -209,7 +210,7 @@ export default function PageRelSellOn() {
         </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'var(--font-label)' }}>
-        {filtered.length} cláusula(s) · {stats.atletas} atleta(s)
+        {trn(filtered.length, '{0} cláusula ·', '{0} cláusulas ·')} {trn(stats.atletas, '{0} atleta', '{0} atletas')}
       </div>
     </div>
   )

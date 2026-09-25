@@ -38,6 +38,7 @@ import KpiPill from '../components/KpiPill'
 import AthleteAvatar from '../components/AthleteAvatar'
 import Flag from '../components/Flag'
 import { Icon } from '../components/Icon'
+import { tr, trf, locale, trn, trCols } from '../i18n'
 
 const HOME_CLUB = HOLDER_TYPE_LABELS.BFR
 
@@ -226,9 +227,9 @@ function matchesSituacao(a: Athlete, s: Situacao): boolean {
 /** Valor compacto na moeda do topo: "R$ 515k", "R$ 26,8M", "R$ 0". */
 function compactMoney(v: number, sym: string): string {
   const abs = Math.abs(v)
-  if (abs >= 999_500) return `${sym} ${(v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`
-  if (abs >= 999.5) return `${sym} ${Math.round(v / 1e3).toLocaleString('pt-BR')}k`
-  return `${sym} ${Math.round(v).toLocaleString('pt-BR')}`
+  if (abs >= 999_500) return `${sym} ${(v / 1e6).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`
+  if (abs >= 999.5) return `${sym} ${Math.round(v / 1e3).toLocaleString(locale())}k`
+  return `${sym} ${Math.round(v).toLocaleString(locale())}`
 }
 
 function splitName(name: string): [string, string] {
@@ -239,10 +240,9 @@ function splitName(name: string): [string, string] {
 /** "7 anos restantes" · "1 ano restante" (atenção) · "expirando" / "vencido" (vermelho). */
 function contractLeft(endISO: string): { label: string; color: string } {
   const diff = Number(endISO.slice(0, 4)) - new Date().getFullYear()
-  if (endISO < todayISO()) return { label: 'vencido', color: 'var(--text-negative)' }
-  if (diff <= 0) return { label: 'expirando', color: 'var(--text-negative)' }
-  if (diff === 1) return { label: '1 ano restante', color: 'var(--text-warning)' }
-  return { label: `${diff} anos restantes`, color: 'var(--text-secondary)' }
+  if (endISO < todayISO()) return { label: tr('vencido'), color: 'var(--text-negative)' }
+  if (diff <= 0) return { label: tr('expirando'), color: 'var(--text-negative)' }
+  return { label: trn(diff, '{0} ano restante', '{0} anos restantes'), color: diff === 1 ? 'var(--text-warning)' : 'var(--text-secondary)' }
 }
 
 // ── Células ────────────────────────────────────────────────────────────────
@@ -268,8 +268,8 @@ function SortTh({ k, label, sort, onSort, align = 'left', info, title, minWidth 
   return (
     <th aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
       style={{ textAlign: align, whiteSpace: 'normal', verticalAlign: 'middle', minWidth }}>
-      <button type="button" className="th-sort" onClick={() => onSort(k)} title={title}>
-        <span>{label}</span>
+      <button type="button" className="th-sort" onClick={() => onSort(k)} title={tr(title)}>
+        <span>{tr(label)}</span>
         {info && <Icon name="info" size={12} />}
         {active && <Icon name={sort.dir === 'asc' ? 'chevronUp' : 'chevronDown'} size={12} />}
       </button>
@@ -336,7 +336,7 @@ export default function PageDetalhamentoJogadores() {
     ]
     const r2 = (v: number | null) => v == null ? '' : Math.round(v * 100) / 100
     exportWorkbook([{
-      name: 'Detalhamento de jogadores', cols,
+      name: tr('Detalhamento de jogadores'), cols: trCols(cols),
       rows: visible.map((r, i) => ({
         rank: i + 1, jogador: r.name, nome: r.athlete.full_name, nacionalidade: r.athlete.nationality ?? '',
         clube: r.club?.name ?? '', posicao: r.athlete.position ?? '', idade: r.age ?? '',
@@ -347,41 +347,41 @@ export default function PageDetalhamentoJogadores() {
     }], 'detalhamento-jogadores.xlsx')
   }
 
-  const pct = (v: number) => `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+  const pct = (v: number) => `${(v * 100).toLocaleString(locale(), { maximumFractionDigits: 1 })}%`
   const COLS = 12
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Detalhamento de jogadores" section="Relatórios"
-        caption="Remuneração do elenco, custo anual para o clube e valor contábil de cada jogador">
+      <PageHero title={tr('Detalhamento de jogadores')} section={tr('Relatórios')}
+        caption={tr('Remuneração do elenco, custo anual para o clube e valor contábil de cada jogador')}>
         <button type="button" onClick={exportXlsx} className="btn btn-outline" disabled={loading || !visible.length}>
-          <Icon name="download" size={16} /> Exportar
+          <Icon name="download" size={16} /> {tr('Exportar')}
         </button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
         <label style={{ flex: 1, minWidth: 220 }}>
-          <span className="eyebrow" style={fieldLabel}>Busca</span>
+          <span className="eyebrow" style={fieldLabel}>{tr('Busca')}</span>
           <input type="search" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Jogador ou clube…" style={{ width: '100%' }} />
+            placeholder={tr('Jogador ou clube…')} style={{ width: '100%' }} />
         </label>
         <label>
-          <span className="eyebrow" style={fieldLabel}>Posição</span>
+          <span className="eyebrow" style={fieldLabel}>{tr('Posição')}</span>
           <select value={pos} onChange={e => setPos(e.target.value as PosGroup | '')}>
-            <option value="">Todas</option>
-            {POS_GROUPS.map(g => <option key={g} value={g}>{POS_LABEL[g]}</option>)}
+            <option value="">{tr('Todas')}</option>
+            {POS_GROUPS.map(g => <option key={g} value={g}>{tr(POS_LABEL[g])}</option>)}
           </select>
         </label>
         <label>
-          <span className="eyebrow" style={fieldLabel}>Situação</span>
+          <span className="eyebrow" style={fieldLabel}>{tr('Situação')}</span>
           <select value={situacao} onChange={e => setSituacao(e.target.value as Situacao)}>
-            {(Object.keys(SITUACAO_LABEL) as Situacao[]).map(s => <option key={s} value={s}>{SITUACAO_LABEL[s]}</option>)}
+            {(Object.keys(SITUACAO_LABEL) as Situacao[]).map(s => <option key={s} value={s}>{tr(SITUACAO_LABEL[s])}</option>)}
           </select>
         </label>
         <div className="kpi-group">
-          <KpiPill label="Folha mensal" value={money(totals.monthly)} />
-          <KpiPill label="Custo anual do clube" value={money(totals.cost)} />
-          <KpiPill label="Valor contábil" value={money(totals.book)} />
+          <KpiPill label={tr('Folha mensal')} value={money(totals.monthly)} />
+          <KpiPill label={tr('Custo anual do clube')} value={money(totals.cost)} />
+          <KpiPill label={tr('Valor contábil')} value={money(totals.book)} />
         </div>
       </div>
 
@@ -391,39 +391,39 @@ export default function PageDetalhamentoJogadores() {
             <thead>
               <tr>
                 <th style={{ width: 28, verticalAlign: 'middle' }}>#</th>
-                <SortTh k="name" label="Jogador" sort={sort} onSort={onSort} />
-                <SortTh k="club" label="Clube" sort={sort} onSort={onSort} />
-                <SortTh k="pos" label="Posição" sort={sort} onSort={onSort} />
-                <SortTh k="age" label="Idade" sort={sort} onSort={onSort} align="center" />
-                <SortTh k="status" label="Status CBF" sort={sort} onSort={onSort}
-                  title="Estrangeiros ocupam vaga no limite de estrangeiros da CBF" />
-                <SortTh k="monthly" label="Salário mensal" sort={sort} onSort={onSort} align="center" info
-                  title="Remuneração mensal vigente (CLT + imagem)" />
-                <SortTh k="annual" label="Salário anual" sort={sort} onSort={onSort} align="right" info
-                  title="Remuneração mensal vigente (CLT + imagem) × 12" />
-                <SortTh k="cost" label="Custo anual do clube" sort={sort} onSort={onSort} align="right"
-                  title="CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses" />
-                <SortTh k="amort" label="Amortização" sort={sort} onSort={onSort} align="right"
-                  title="Amortização do intangível nos próximos 12 meses" />
-                <SortTh k="book" label="Valor contábil" sort={sort} onSort={onSort} align="right"
-                  title="Intangível ainda não amortizado (saldo no balanço)" />
-                <SortTh k="end" label="Fim do contrato" sort={sort} onSort={onSort} align="right"
-                  title="Término do vínculo de trabalho" />
+                <SortTh k="name" label={tr('Jogador')} sort={sort} onSort={onSort} />
+                <SortTh k="club" label={tr('Clube')} sort={sort} onSort={onSort} />
+                <SortTh k="pos" label={tr('Posição')} sort={sort} onSort={onSort} />
+                <SortTh k="age" label={tr('Idade')} sort={sort} onSort={onSort} align="center" />
+                <SortTh k="status" label={tr('Status CBF')} sort={sort} onSort={onSort}
+                  title={tr('Estrangeiros ocupam vaga no limite de estrangeiros da CBF')} />
+                <SortTh k="monthly" label={tr('Salário mensal')} sort={sort} onSort={onSort} align="center" info
+                  title={tr('Remuneração mensal vigente (CLT + imagem)')} />
+                <SortTh k="annual" label={tr('Salário anual')} sort={sort} onSort={onSort} align="right" info
+                  title={tr('Remuneração mensal vigente (CLT + imagem) × 12')} />
+                <SortTh k="cost" label={tr('Custo anual do clube')} sort={sort} onSort={onSort} align="right"
+                  title={tr('CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses')} />
+                <SortTh k="amort" label={tr('Amortização')} sort={sort} onSort={onSort} align="right"
+                  title={tr('Amortização do intangível nos próximos 12 meses')} />
+                <SortTh k="book" label={tr('Valor contábil')} sort={sort} onSort={onSort} align="right"
+                  title={tr('Intangível ainda não amortizado (saldo no balanço)')} />
+                <SortTh k="end" label={tr('Fim do contrato')} sort={sort} onSort={onSort} align="right"
+                  title={tr('Término do vínculo de trabalho')} />
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={COLS} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando PTAX e cadastros…</td></tr>
+                <tr><td colSpan={COLS} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando PTAX e cadastros…')}</td></tr>
               )}
               {!loading && visible.length === 0 && (
-                <tr><td colSpan={COLS} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum jogador encontrado.</td></tr>
+                <tr><td colSpan={COLS} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum jogador encontrado.')}</td></tr>
               )}
               {!loading && visible.map((r, i) => {
                 const [first, rest] = splitName(r.name)
                 const left = r.contractEnd ? contractLeft(r.contractEnd) : null
                 const loanTitle = r.loan?.dir === 'OUT'
-                  ? `Emprestado pelo ${HOME_CLUB}${r.club ? ` ao ${r.club.name}` : ''}`
-                  : r.loan?.dir === 'IN' ? `Emprestado ao ${HOME_CLUB}${r.loan.other ? ` pelo ${r.loan.other}` : ''}` : undefined
+                  ? (r.club ? trf('Emprestado pelo {0} ao {1}', HOME_CLUB, r.club.name) : trf('Emprestado pelo {0}', HOME_CLUB))
+                  : r.loan?.dir === 'IN' ? (r.loan.other ? trf('Emprestado ao {0} pelo {1}', HOME_CLUB, r.loan.other) : trf('Emprestado ao {0}', HOME_CLUB)) : undefined
                 return (
                   <tr key={r.athlete.id}>
                     <td style={{ color: 'var(--text-secondary)' }}>{i + 1}</td>
@@ -434,13 +434,13 @@ export default function PageDetalhamentoJogadores() {
                           <Flag nationality={r.athlete.nationality} size={12} round
                             style={{ position: 'absolute', right: -4, bottom: -4, boxShadow: '0 0 0 2px var(--surface-card)' }} />
                         </span>
-                        <Link to={`/atletas/${r.athlete.id}`} title={`Abrir ${r.athlete.full_name}`}
+                        <Link to={`/atletas/${r.athlete.id}`} title={trf('Abrir {0}', r.athlete.full_name)}
                           style={{ fontSize: 'var(--ui-text-size)', fontWeight: 500, lineHeight: 1.25 }}>
-                          {first}{rest && <><br />{rest}</>}
+                          {tr(first)}{rest && <><br />{tr(rest)}</>}
                         </Link>
                       </div>
                     </td>
-                    <td title={loanTitle}>
+                    <td title={tr(loanTitle)}>
                       {r.club ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                           <ClubCrest club={r.club} />
@@ -448,21 +448,21 @@ export default function PageDetalhamentoJogadores() {
                             {r.club.id
                               ? <Link to={`/clubes/${r.club.id}`}>{r.club.name}</Link>
                               : <span>{r.club.name}</span>}
-                            {r.loan && <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>empréstimo</div>}
+                            {r.loan && <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>{tr('empréstimo')}</div>}
                           </div>
                         </div>
                       ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                     </td>
                     <td>
                       {r.pos
-                        ? <span style={badgeStyle('neutral')} title={r.athlete.position ?? undefined}>{POS_LABEL[r.pos]}</span>
+                        ? <span style={badgeStyle('neutral')} title={tr(r.athlete.position) ?? undefined}>{tr(POS_LABEL[r.pos])}</span>
                         : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                     </td>
                     <td style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{r.age ?? '—'}</td>
                     <td>
                       {r.foreign == null
                         ? <span style={{ color: 'var(--text-secondary)' }}>—</span>
-                        : <span style={badgeStyle(r.foreign ? 'outline' : 'accent')}>{r.foreign ? 'Estrangeiro' : 'Nacional'}</span>}
+                        : <span style={badgeStyle(r.foreign ? 'outline' : 'accent')}>{r.foreign ? tr('Estrangeiro') : tr('Nacional')}</span>}
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       {r.monthlyBRL == null ? <span style={{ color: 'var(--text-secondary)' }}>—</span> : (
@@ -483,7 +483,7 @@ export default function PageDetalhamentoJogadores() {
                       {r.contractEnd && left ? (
                         <>
                           <div>{r.contractEnd.slice(0, 4)}</div>
-                          <div style={{ fontSize: 'var(--text-caption-size)', color: left.color }}>{left.label}</div>
+                          <div style={{ fontSize: 'var(--text-caption-size)', color: left.color }}>{tr(left.label)}</div>
                         </>
                       ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                     </td>
@@ -496,12 +496,7 @@ export default function PageDetalhamentoJogadores() {
       </div>
 
       <p style={{ margin: 'var(--space-3) 0 0', fontSize: 'var(--text-caption-size)', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: 980 }}>
-        {visible.length} jogador{visible.length === 1 ? '' : 'es'} · Salário = remuneração mensal vigente do vínculo de
-        trabalho (CLT + imagem, com gatilhos e rateio de empréstimo aplicados); anual = mensal × 12.
-        Custo anual do clube = CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses;
-        encargos das premissas do atleta ou, sem premissa, {pct(DEFAULT_ENCARGOS)} (INSS, FGTS, 13º e férias).
-        Amortização linear do intangível (transfer fee, intermediação e luvas do contrato de entrada) pelo prazo do contrato;
-        valor contábil = intangível − amortização acumulada. Moedas estrangeiras pela PTAX do dia.
+        {trn(visible.length, '{0} jogador', '{0} jogadores')} {tr('· Salário = remuneração mensal vigente do vínculo de trabalho (CLT + imagem, com gatilhos e rateio de empréstimo aplicados); anual = mensal × 12. Custo anual do clube = CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses; encargos das premissas do atleta ou, sem premissa,')} {pct(DEFAULT_ENCARGOS)} {tr('(INSS, FGTS, 13º e férias). Amortização linear do intangível (transfer fee, intermediação e luvas do contrato de entrada) pelo prazo do contrato; valor contábil = intangível − amortização acumulada. Moedas estrangeiras pela PTAX do dia.')}
       </p>
     </div>
   )

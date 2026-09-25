@@ -29,6 +29,7 @@ import RefLink from '../components/RefLink'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
 import { badgeStyle, PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, humanizeEnum } from '../lib/tones'
+import { tr, trf, trn, trCols } from '../i18n'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -86,7 +87,7 @@ export default function PageRecuperacaoJudicial() {
         atleta: nameOf.get(it.athlete_id) ?? '—',
         natureza: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela',
         credor: c?.creditor_party ?? '—',
-        descricao: c ? `${c.description} — parc. ${it.installment_number}` : `Parcela ${it.installment_number}`,
+        descricao: c ? trf('{0} — parc. {1}', c.description, it.installment_number) : trf('Parcela {0}', it.installment_number),
         dueDate: it.due_date, valor: it.original_value, moeda: it.currency,
         status: it.payment_status, filedAt: rj.filedAt, notes: it.notes ?? null,
         fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
@@ -237,7 +238,7 @@ export default function PageRecuperacaoJudicial() {
 
   async function unmark(r: RJRow) {
     if (!canEdit) return
-    if (!confirm(`Retirar "${r.descricao || r.natureza}" da Recuperação Judicial?`)) return
+    if (!confirm(trf('Retirar "{0}" da Recuperação Judicial?', r.descricao || tr(r.natureza)))) return
     await unmarkItemRJ({ kind: r.kind, id: r.id }, r.notes)
     await load()
   }
@@ -259,7 +260,7 @@ export default function PageRecuperacaoJudicial() {
         atrasoDias: d !== null && d < 0 && OPEN.has(r.status) ? -d : 0,
       }
     })
-    exportWorkbook([{ name: 'Recuperação Judicial', cols, rows: data }], 'recuperacao-judicial.xlsx')
+    exportWorkbook([{ name: tr('Recuperação Judicial'), cols: trCols(cols), rows: data }], 'recuperacao-judicial.xlsx')
   }
 
   const th: React.CSSProperties = { padding: '8px 12px', fontSize: 10, fontWeight: 400, textTransform: 'uppercase', background: 'var(--tbl-head)', color: 'var(--text-muted)', borderBottom: '1px solid var(--divider-strong)', fontFamily: mono, letterSpacing: 'var(--text-overline-tracking)', whiteSpace: 'nowrap', textAlign: 'left' }
@@ -267,66 +268,66 @@ export default function PageRecuperacaoJudicial() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Recuperação Judicial" section="Relatórios" subtitle="Passivos incluídos no processo — credores, valores e atraso">
-        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> Exportar</button>
+      <PageHero title={tr('Recuperação Judicial')} section={tr('Relatórios')} subtitle={tr('Passivos incluídos no processo — credores, valores e atraso')}>
+        <button onClick={exportXlsx} className="btn btn-outline"><Icon name="download" size={16} /> {tr('Exportar')}</button>
       </PageHero>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
-        <KpiPill label="Devido em RJ (BRL PTAX)" value={fmtCurrencyShort(totals.total, 'BRL')} tone="warn" />
-        <KpiPill label="Vencido em RJ (BRL PTAX)" value={fmtCurrencyShort(totals.overdueTotal, 'BRL')} tone="neg" />
-        <KpiPill label="Credores" value={String(totals.creditors)} tone="neutral" />
-        <KpiPill label="Lançamentos" value={String(totals.count)} tone="neutral" />
-        <KpiPill label="Atraso médio ponderado" value={totals.avgDelay > 0 ? `${totals.avgDelay} dias` : '—'} tone={totals.avgDelay > 0 ? 'neg' : 'neutral'} />
-        <KpiPill label="Protocolo mais antigo" value={totals.earliestFiled ? fmtDate(totals.earliestFiled) : '—'} tone="neutral" />
+        <KpiPill label={tr('Devido em RJ (BRL PTAX)')} value={fmtCurrencyShort(totals.total, 'BRL')} tone="warn" />
+        <KpiPill label={tr('Vencido em RJ (BRL PTAX)')} value={fmtCurrencyShort(totals.overdueTotal, 'BRL')} tone="neg" />
+        <KpiPill label={tr('Credores')} value={String(totals.creditors)} tone="neutral" />
+        <KpiPill label={tr('Lançamentos')} value={String(totals.count)} tone="neutral" />
+        <KpiPill label={tr('Atraso médio ponderado')} value={totals.avgDelay > 0 ? trn(totals.avgDelay, '{0} dia', '{0} dias') : '—'} tone={totals.avgDelay > 0 ? 'neg' : 'neutral'} />
+        <KpiPill label={tr('Protocolo mais antigo')} value={totals.earliestFiled ? fmtDate(totals.earliestFiled) : '—'} tone="neutral" />
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Busca</label>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Atleta, credor, descrição..."
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Busca')}</label>
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={tr('Atleta, credor, descrição...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Credor</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Credor')}</label>
           <select value={credorF} onChange={e => setCredorF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)', maxWidth: 240 }}>
-            {credores.map(s => <option key={s} value={s}>{s}</option>)}
+            {credores.map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+          <label style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{tr('Status')}</label>
           <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', fontFamily: font, fontSize: 'var(--ui-text-size)', backgroundColor: 'var(--surface)', color: 'var(--ink-primary)' }}>
-            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            {statuses.map(s => <option key={s} value={s}>{tr(s)}</option>)}
           </select>
         </div>
       </div>
 
       {/* ── Agrupamento por credor ─────────────────────────────────────── */}
       <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '6px 0 10px' }}>
-        Detalhamento por credor
+        {tr('Detalhamento por credor')}
       </div>
       <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, minWidth: 180 }}>Credor</th>
-              <th style={{ ...th, minWidth: 130 }}>Natureza predominante</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Lançamentos</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Vencidos</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Atraso máx.</th>
-              <th style={{ ...th, minWidth: 120 }}>Próx. vencimento</th>
-              <th style={{ ...th, minWidth: 120 }}>Protocolo RJ</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>Total (BRL PTAX)</th>
+              <th style={{ ...th, minWidth: 180 }}>{tr('Credor')}</th>
+              <th style={{ ...th, minWidth: 130 }}>{tr('Natureza predominante')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>{tr('Lançamentos')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>{tr('Vencidos')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>{tr('Atraso máx.')}</th>
+              <th style={{ ...th, minWidth: 120 }}>{tr('Próx. vencimento')}</th>
+              <th style={{ ...th, minWidth: 120 }}>{tr('Protocolo RJ')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 130 }}>{tr('Total (BRL PTAX)')}</th>
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum lançamento marcado como Recuperação Judicial.</td></tr>}
+              {loading && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && byCreditor.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum lançamento marcado como Recuperação Judicial.')}</td></tr>}
               {byCreditor.map(g => (
                 <tr key={g.credor}>
-                  <td style={{ ...td, fontWeight: 500 }}>{g.credor}</td>
-                  <td style={{ ...td, color: 'var(--text-secondary)' }}>{g.topNatureza}</td>
+                  <td style={{ ...td, fontWeight: 500 }}>{tr(g.credor)}</td>
+                  <td style={{ ...td, color: 'var(--text-secondary)' }}>{tr(g.topNatureza)}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono }}>{g.count}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.overdueCount > 0 ? 'var(--neg)' : 'var(--text-muted)', fontWeight: g.overdueCount > 0 ? 500 : 400 }}>{g.overdueCount}</td>
-                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.maxDelayDays > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{g.maxDelayDays > 0 ? `${g.maxDelayDays} dias` : '—'}</td>
+                  <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: g.maxDelayDays > 0 ? 'var(--neg)' : 'var(--text-muted)' }}>{g.maxDelayDays > 0 ? trf('{0} dias', g.maxDelayDays) : '—'}</td>
                   <td style={{ ...td, fontFamily: mono, fontSize: 11 }}>{g.nextDue ? fmtDate(g.nextDue) : '—'}</td>
                   <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(g.earliestFiledAt)}</td>
                   <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(g.total, 'BRL')}</td>
@@ -339,50 +340,50 @@ export default function PageRecuperacaoJudicial() {
 
       {/* ── Detalhe por lançamento ─────────────────────────────────────── */}
       <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '6px 0 10px' }}>
-        Lançamentos incluídos
+        {tr('Lançamentos incluídos')}
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
-              <th style={{ ...th, minWidth: 100 }}>Vencimento</th>
-              <th style={{ ...th, minWidth: 140 }}>Atleta</th>
-              <th style={{ ...th, minWidth: 150 }}>Credor</th>
-              <th style={{ ...th, minWidth: 130 }}>Natureza</th>
-              <th style={{ ...th, minWidth: 200 }}>Descrição</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>Valor</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>Valor (BRL PTAX)</th>
-              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>Atraso</th>
-              <th style={{ ...th, minWidth: 110 }}>Protocolo</th>
-              <th style={{ ...th, minWidth: 90 }}>Status</th>
-              {canEdit && <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>Ações</th>}
+              <th style={{ ...th, minWidth: 100 }}>{tr('Vencimento')}</th>
+              <th style={{ ...th, minWidth: 140 }}>{tr('Atleta')}</th>
+              <th style={{ ...th, minWidth: 150 }}>{tr('Credor')}</th>
+              <th style={{ ...th, minWidth: 130 }}>{tr('Natureza')}</th>
+              <th style={{ ...th, minWidth: 200 }}>{tr('Descrição')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 110 }}>{tr('Valor')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 120 }}>{tr('Valor (BRL PTAX)')}</th>
+              <th style={{ ...th, textAlign: 'right', minWidth: 100 }}>{tr('Atraso')}</th>
+              <th style={{ ...th, minWidth: 110 }}>{tr('Protocolo')}</th>
+              <th style={{ ...th, minWidth: 90 }}>{tr('Status')}</th>
+              {canEdit && <th style={{ ...th, textAlign: 'right', minWidth: 90 }}>{tr('Ações')}</th>}
             </tr></thead>
             <tbody>
-              {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Carregando…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>Nenhum lançamento em RJ.</td></tr>}
+              {loading && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Carregando…')}</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={canEdit ? 11 : 10} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>{tr('Nenhum lançamento em RJ.')}</td></tr>}
               {filtered.map(r => {
                 const d = r.dueDate ? daysFromToday(r.dueDate) : null
                 const isLate = d !== null && d < 0 && OPEN.has(r.status)
                 return (
                   <tr key={`${r.kind}-${r.id}`}>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: isLate ? 'var(--neg)' : 'var(--ink-secondary)', fontWeight: isLate ? 500 : 400 }}>{r.dueDate ? fmtDate(r.dueDate) : '—'}</td>
-                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title="Abrir atleta">{r.atleta}</RefLink></td>
-                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.credor}</td>
-                    <td style={td}>{r.natureza}</td>
-                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{r.descricao}</td>
+                    <td style={{ ...td, fontWeight: 500 }}><RefLink to={`/atletas/${r.athleteId}`} title={tr('Abrir atleta')}>{tr(r.atleta)}</RefLink></td>
+                    <td style={{ ...td, color: 'var(--text-secondary)' }}>{tr(r.credor)}</td>
+                    <td style={td}>{tr(r.natureza)}</td>
+                    <td style={{ ...td, color: 'var(--text-secondary)', fontSize: 11 }}>{tr(r.descricao)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, fontWeight: 500 }}>{fmtCurrencyShort(r.valor, r.moeda)}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: 'var(--ink-secondary)' }}>{fmtCurrencyShort(brlOf(r), 'BRL')}</td>
-                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: isLate ? 'var(--neg)' : 'var(--text-muted)', fontWeight: isLate ? 500 : 400 }}>{isLate ? `${-d!} dias` : '—'}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: mono, color: isLate ? 'var(--neg)' : 'var(--text-muted)', fontWeight: isLate ? 500 : 400 }}>{isLate ? trf('{0} dias', -d!) : '—'}</td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)' }}>{fmtDate(r.filedAt)}</td>
                     <td style={td}>
-                      <span style={badgeStyle(PAYMENT_STATUS_TONE[r.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{PAYMENT_STATUS_LABEL[r.status] ?? humanizeEnum(r.status)}</span>
+                      <span style={badgeStyle(PAYMENT_STATUS_TONE[r.status as keyof typeof PAYMENT_STATUS_TONE] ?? 'neutral')}>{tr(PAYMENT_STATUS_LABEL[r.status]) ?? tr(humanizeEnum(r.status))}</span>
                     </td>
                     {canEdit && (
                       <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button onClick={() => unmark(r)}
                           style={{ background: 'transparent', border: '1px solid var(--divider-strong)', borderRadius: 'var(--radius-xs)', padding: '3px 8px', fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer' }}
-                          title="Retirar este lançamento da Recuperação Judicial">
-                          Retirar da RJ
+                          title={tr('Retirar este lançamento da Recuperação Judicial')}>
+                          {tr('Retirar da RJ')}
                         </button>
                       </td>
                     )}
@@ -394,7 +395,7 @@ export default function PageRecuperacaoJudicial() {
         </div>
       </div>
       <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-secondary)', fontFamily: mono }}>
-        {filtered.length} lançamento(s) · {byCreditor.length} credor(es)
+        {trn(filtered.length, '{0} lançamento ·', '{0} lançamentos ·')} {trn(byCreditor.length, '{0} credor', '{0} credores')}
       </div>
     </div>
   )

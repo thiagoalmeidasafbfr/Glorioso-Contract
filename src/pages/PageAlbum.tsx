@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllEconomicRights, fetchAllClauses,
 } from '../lib/athleteQueries'
-import { calcAge } from '../lib/format'
+import { calcAge, fmtDec } from '../lib/format'
 import { bfrShare } from '../lib/ownership'
 import OwnershipBar from '../components/OwnershipBar'
 import PageHero from '../components/PageHero'
 import type { Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause } from '../types/athlete-system'
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import { ATHLETE_STATUS_TONE, badgeStyle } from '../lib/tones'
+import { tr } from '../i18n'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -91,12 +92,12 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
         <StickerPhoto athlete={athlete} />
         {/* Badge de status sobreposto */}
         <span style={{ ...badgeStyle(tone), position: 'absolute', top: 8, right: 8 }}>
-          {STATUS_LABELS[athlete.current_status]}
+          {tr(STATUS_LABELS[athlete.current_status])}
         </span>
         {/* Posição sobreposta */}
         {athlete.position && (
           <span style={{ ...badgeStyle('inverse'), position: 'absolute', bottom: 8, left: 8 }}>
-            {athlete.position}
+            {tr(athlete.position)}
           </span>
         )}
       </div>
@@ -121,13 +122,13 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
         {/* Info curta em pílulas */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
           {athlete.nationality && (
-            <span style={pill}>{athlete.nationality}</span>
+            <span style={pill}>{tr(athlete.nationality)}</span>
           )}
           {age !== null && (
-            <span style={pill}>{age} anos</span>
+            <span style={pill}>{age} {tr('anos')}</span>
           )}
           <span style={pill}>
-            {activeClauses} {activeClauses === 1 ? 'cláusula' : 'cláusulas'}
+            {activeClauses} {activeClauses === 1 ? tr('cláusula') : tr('cláusulas')}
           </span>
         </div>
 
@@ -137,15 +138,15 @@ function AthleteSticker({ athlete, rights, activeClauses, onOpen }: CardProps) {
             <OwnershipBar rights={rights} compact showLegend={false} />
             {bfr !== null && (
               <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>
-                Botafogo detém <span style={{ color: 'var(--text-positive)', fontWeight: 500 }}>
-                  {Number.isInteger(bfr) ? bfr : bfr.toFixed(1).replace('.', ',')}%
+                {tr('Botafogo detém')} <span style={{ color: 'var(--text-positive)', fontWeight: 500 }}>
+                  {Number.isInteger(bfr) ? bfr : fmtDec(bfr)}%
                 </span>
               </div>
             )}
           </div>
         ) : (
           <div style={{ fontSize: 'var(--text-caption-size)', color: 'var(--text-secondary)' }}>
-            Titularidade não cadastrada
+            {tr('Titularidade não cadastrada')}
           </div>
         )}
       </div>
@@ -249,52 +250,52 @@ export default function PageAlbum() {
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      <PageHero title="Portfolio de Atletas" subtitle="Plantel · Botafogo SAF"
-        caption="Cada atleta traz foto e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade." />
+      <PageHero title={tr('Portfolio de Atletas')} subtitle={tr('Plantel · Botafogo SAF')}
+        caption={tr('Cada atleta traz foto e um resumo. Clique para abrir a ficha completa com contratos, cláusulas e titularidade.')} />
 
       {/* Toolbar de filtros */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 180 }}>
-          <div style={selLabel}>Busca</div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome do atleta..."
+          <div style={selLabel}>{tr('Busca')}</div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Nome do atleta...')}
             style={{ width: '100%', padding: '4px 10px', borderRadius: 'var(--ui-control-radius)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--cream-card)', fontSize: 'var(--ui-text-size)', fontFamily: font, color: 'var(--ink-primary)', boxSizing: 'border-box' }} />
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Posição</div>
+          <div style={selLabel}>{tr('Posição')}</div>
           <select value={filterPosition} onChange={e => setFilterPosition(e.target.value)} style={selStyle}>
-            {positionOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            {positionOptions.map(p => <option key={p} value={p}>{tr(p)}</option>)}
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Nacionalidade</div>
+          <div style={selLabel}>{tr('Nacionalidade')}</div>
           <select value={filterNationality} onChange={e => setFilterNationality(e.target.value)} style={selStyle}>
-            {nationalityOptions.map(n => <option key={n} value={n}>{n}</option>)}
+            {nationalityOptions.map(n => <option key={n} value={n}>{tr(n)}</option>)}
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Categoria</div>
+          <div style={selLabel}>{tr('Categoria')}</div>
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value as typeof filterCategory)} style={selStyle}>
-            <option value="Todos">Todas</option>
+            <option value="Todos">{tr('Todas')}</option>
             {(Object.keys(ATHLETE_CATEGORY_LABELS) as AthleteCategory[]).map(c => (
-              <option key={c} value={c}>{ATHLETE_CATEGORY_LABELS[c]}</option>
+              <option key={c} value={c}>{tr(ATHLETE_CATEGORY_LABELS[c])}</option>
             ))}
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Status</div>
+          <div style={selLabel}>{tr('Status')}</div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)} style={selStyle}>
-            <option value="Todos">Todos</option>
+            <option value="Todos">{tr('Todos')}</option>
             {(['ATIVO','EMPRESTADO','VENDIDO','DESLIGADO'] as AthleteStatus[]).map(s => (
-              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+              <option key={s} value={s}>{tr(STATUS_LABELS[s])}</option>
             ))}
           </select>
         </div>
         <div style={selWrap}>
-          <div style={selLabel}>Titularidade</div>
+          <div style={selLabel}>{tr('Titularidade')}</div>
           <select value={filterOwnership} onChange={e => setFilterOwnership(e.target.value as OwnershipFilter)} style={selStyle}>
-            <option value="Todos">Todas</option>
-            <option value="COM_BFR">Com participação do Botafogo</option>
-            <option value="SEM_BFR">Sem participação do Botafogo</option>
+            <option value="Todos">{tr('Todas')}</option>
+            <option value="COM_BFR">{tr('Com participação do Botafogo')}</option>
+            <option value="SEM_BFR">{tr('Sem participação do Botafogo')}</option>
           </select>
         </div>
       </div>
@@ -302,11 +303,11 @@ export default function PageAlbum() {
       {/* Figurinhas agrupadas por posição */}
       {loading ? (
         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: fontMono, fontSize: 12, padding: 60 }}>
-          Carregando…
+          {tr('Carregando…')}
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: font, fontSize: 13, padding: 60 }}>
-          Nenhum atleta encontrado com os filtros atuais.
+          {tr('Nenhum atleta encontrado com os filtros atuais.')}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -314,9 +315,9 @@ export default function PageAlbum() {
             <section key={g.pos}>
               {/* Cabeçalho da posição */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <h2 style={{ fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', margin: 0 }}>{g.pos}</h2>
+                <h2 style={{ fontFamily: font, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, letterSpacing: '-.01em', color: 'var(--ink-primary)', margin: 0 }}>{tr(g.pos)}</h2>
                 <span style={badgeStyle('neutral')}>
-                  {g.athletes.length} {g.athletes.length === 1 ? 'atleta' : 'atletas'}
+                  {g.athletes.length} {g.athletes.length === 1 ? tr('atleta') : tr('atletas')}
                 </span>
                 <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
               </div>
@@ -337,7 +338,7 @@ export default function PageAlbum() {
       )}
 
       <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-secondary)', fontFamily: fontMono }}>
-        {filtered.length} {filtered.length !== 1 ? 'figurinhas' : 'figurinha'} · {groups.length} {groups.length === 1 ? 'posição' : 'posições'}
+        {filtered.length} {filtered.length !== 1 ? tr('figurinhas') : tr('figurinha')} · {groups.length} {groups.length === 1 ? tr('posição') : tr('posições')}
       </div>
     </div>
   )

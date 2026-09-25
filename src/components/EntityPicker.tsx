@@ -11,6 +11,7 @@ import {
 import type { Club, Intermediary } from '../types/athlete-system'
 import { Icon } from './Icon'
 import { modalInput, modalLabel } from './modals/styles'
+import { tr } from '../i18n'
 
 const fontBody = "var(--font-body)"
 
@@ -101,12 +102,12 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      {label && <label style={lblStyle}>{label}</label>}
+      {label && <label style={lblStyle}>{tr(label)}</label>}
       <input
         type="text"
         style={inp}
         value={query}
-        placeholder={placeholderText}
+        placeholder={tr(placeholderText)}
         onFocus={() => setOpen(true)}
         onChange={e => {
           setQuery(e.target.value)
@@ -143,7 +144,7 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                   onMouseLeave={e => (e.currentTarget.style.background = x.name === value ? 'var(--gray-150)' : 'transparent')}
                 >
                   <div style={{ fontWeight: 500 }}>{x.name}</div>
-                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{x.sub}</div>}
+                  {x.sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{tr(x.sub)}</div>}
                 </button>
               ))}
             </div>
@@ -161,41 +162,41 @@ export default function EntityPicker({ kind, value, onChange, label, placeholder
                 fontFamily: fontBody, fontSize: 13, color: 'var(--text-primary)', fontWeight: 500,
               }}>
               <Icon name="plus" size={16} />
-              Cadastrar {isClube ? 'novo clube' : 'novo agente'} "{query.trim()}"
+              {tr('Cadastrar')} {isClube ? tr('novo clube') : tr('novo agente')} "{query.trim()}"
             </button>
           )}
 
           {filtered.length === 0 && !query.trim() && (
             <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody }}>
-              Nenhum {isClube ? 'clube' : 'agente'} cadastrado ainda.
+              {tr('Nenhum')} {isClube ? tr('clube') : tr('agente')} {tr('cadastrado ainda.')}
             </div>
           )}
 
           {creating && (
             <div style={{ padding: 12, marginTop: 4, borderRadius: 'var(--radius-sm)', background: 'var(--surface-sunken)' }}>
               <div className="eyebrow" style={{ marginBottom: 8 }}>
-                Novo {isClube ? 'clube' : 'agente'}
+                {tr('Novo')} {isClube ? tr('clube') : tr('agente')}
               </div>
               <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--ink-primary)', marginBottom: 8 }}>
-                Nome: <strong>{query.trim()}</strong>
+                {tr('Nome:')} <strong>{query.trim()}</strong>
               </div>
               <input
                 style={{ ...inp, marginBottom: 8 }}
                 value={newSub}
                 onChange={e => setNewSub(e.target.value)}
-                placeholder={isClube ? 'País (opcional)' : 'Contato (opcional)'}
+                placeholder={isClube ? tr('País (opcional)') : tr('Contato (opcional)')}
                 onMouseDown={e => e.stopPropagation()}
               />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={() => { setCreating(false); setNewSub('') }}
                   className="btn btn-outline btn-sm">
-                  Cancelar
+                  {tr('Cancelar')}
                 </button>
                 <button type="button" onMouseDown={e => e.preventDefault()}
                   onClick={createNow} disabled={!query.trim() || busy}
                   className="btn btn-primary btn-sm">
-                  {busy ? 'Criando…' : 'Criar e selecionar'}
+                  {busy ? tr('Criando…') : tr('Criar e selecionar')}
                 </button>
               </div>
             </div>
