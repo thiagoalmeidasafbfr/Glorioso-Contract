@@ -26,6 +26,7 @@ function withDefaults(p: Partial<PremissaAtleta>): NewPremissaInput {
     decimo_terceiro_pct:     p.decimo_terceiro_pct     ?? ENCARGOS_DEFAULT.decimo_terceiro_pct,
     ferias_pct:              p.ferias_pct              ?? ENCARGOS_DEFAULT.ferias_pct,
     outros_encargos_pct:     p.outros_encargos_pct     ?? ENCARGOS_DEFAULT.outros_encargos_pct,
+    irpf_pct:                p.irpf_pct                ?? ENCARGOS_DEFAULT.irpf_pct,
     luvas_total_brl:         p.luvas_total_brl ?? 0,
     luvas_cronograma:        p.luvas_cronograma ?? null,
     intermediacao_total_brl: p.intermediacao_total_brl ?? 0,

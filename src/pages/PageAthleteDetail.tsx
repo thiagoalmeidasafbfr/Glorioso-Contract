@@ -18,6 +18,8 @@ import {
   fetchAthleteImageRights,
 } from '../lib/athleteQueries'
 import { buildNameIndex, norm } from '../lib/importHelpers'
+import { fetchPremissaByAtleta } from '../lib/premissasQueries'
+import { payroll, payrollRates, type PayrollRates } from '../lib/payroll'
 import RefLink from '../components/RefLink'
 import NumberInput from '../components/NumberInput'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
@@ -1201,6 +1203,18 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
   const other = contract.other_value ?? 0
   const total = salaryNow + image + other
 
+  // Folha CLT: alíquotas da premissa do atleta ou, sem premissa, as da SAF.
+  const [rates, setRates] = useState<PayrollRates>(() => payrollRates())
+  useEffect(() => {
+    let alive = true
+    fetchPremissaByAtleta(contract.athlete_id)
+      .then(p => { if (alive) setRates(payrollRates(p)) })
+      .catch(() => { /* sem premissa: padrão da SAF */ })
+    return () => { alive = false }
+  }, [contract.athlete_id])
+  const folha = payroll(salaryNow, rates)
+  const pctLabel = (v: number) => `${(v * 100).toLocaleString(locale(), { maximumFractionDigits: 2 })}%`
+
   async function save() {
     setSaving(true)
     try {
@@ -1269,6 +1283,24 @@ function SalaryImageEditor({ contract, triggers, clauses, installments, pjs, ath
           {kcard('Direito de imagem', fmtCurrencyShort(image, contract.salary_currency))}
           {kcard('Outros (moradia/aux.)', fmtCurrencyShort(other, contract.salary_currency))}
           {kcard('Remuneração total/mês', fmtCurrencyShort(total, contract.salary_currency), true)}
+        </div>
+      )}
+
+      {salaryNow > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ marginBottom: 8, fontSize: 10, fontFamily: fontMono, letterSpacing: 'var(--text-overline-tracking)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{tr('Folha CLT — encargos, provisões e líquido (mensal)')}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+            {kcard(trf('INSS ({0})', pctLabel(rates.inss_patronal_pct)), fmtCurrencyShort(folha.inss, contract.salary_currency))}
+            {kcard(trf('FGTS ({0})', pctLabel(rates.fgts_pct)), fmtCurrencyShort(folha.fgts, contract.salary_currency))}
+            {kcard('Provisão 13º', fmtCurrencyShort(folha.prov13, contract.salary_currency))}
+            {kcard('Provisão férias', fmtCurrencyShort(folha.provFerias, contract.salary_currency))}
+            {kcard('Custo mensal CLT', fmtCurrencyShort(folha.custoMensal, contract.salary_currency))}
+            {kcard(trf('IRPF ({0})', pctLabel(rates.irpf_pct)), fmtCurrencyShort(folha.irpf, contract.salary_currency))}
+            {kcard('Salário líquido', fmtCurrencyShort(folha.liquido, contract.salary_currency), true)}
+          </div>
+          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-secondary)' }}>
+            {tr('Sobre o salário CLT, sem imagem e auxílios. 13º = 1/12; férias = 1/12 + 1/3; INSS e FGTS incidem sobre CLT + provisões; líquido = CLT − IRPF.')}
+          </div>
         </div>
       )}
 

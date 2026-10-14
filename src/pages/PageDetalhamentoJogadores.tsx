@@ -9,7 +9,10 @@
 //     mensal × 12;
 //   • Custo anual do clube: CLT × 12 × (1 + encargos) + (imagem + outros) × 12
 //     + amortização dos próximos 12 meses. Encargos das premissas do atleta ou,
-//     sem premissa, o padrão (INSS, FGTS, 13º e férias);
+//     sem premissa, o padrão da SAF (INSS 4,5%, FGTS 8%, 13º e férias) — ver
+//     lib/payroll;
+//   • Visão "Folha CLT": INSS, FGTS, provisões de 13º e férias, IRPF e salário
+//     líquido de cada jogador, tudo sobre o salário CLT;
 //   • Amortização e valor contábil: lib/intangible — a mesma conta da
 //     calculadora de amortização;
 //   • Fim do contrato: término do vínculo de trabalho e anos restantes.
@@ -29,7 +32,8 @@ import { isForeign } from '../lib/nationality'
 import { isBFRparty } from '../lib/entityObligations'
 import { badgeStyle } from '../lib/tones'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
-import { ENCARGOS_DEFAULT, type PremissaAtleta } from '../types/premissas'
+import type { PremissaAtleta } from '../types/premissas'
+import { encargosRate, payroll, payrollRates, type PayrollBreakdown } from '../lib/payroll'
 import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
 import type { Athlete, Clause, Club, Contract, SalaryTrigger } from '../types/athlete-system'
 import { useApp } from '../context/AppContext'
@@ -60,13 +64,8 @@ function positionGroup(position: string | null): PosGroup | null {
   return POS_GROUPS.find(g => words.some(w => POS_WORDS[g].test(w))) ?? null
 }
 
-// ── Encargos sobre o CLT (fração: 0,4744 = 47,44%) ─────────────────────────
-function encargosOf(p: PremissaAtleta | undefined): number {
-  const e = p ?? ENCARGOS_DEFAULT
-  return (e.inss_patronal_pct ?? 0) + (e.fgts_pct ?? 0) + (e.decimo_terceiro_pct ?? 0)
-    + (e.ferias_pct ?? 0) + (e.outros_encargos_pct ?? 0)
-}
-const DEFAULT_ENCARGOS = encargosOf(undefined)
+// ── Encargos + provisões sobre o CLT (fração: 0,34375 = 34,4%) ─────────────
+const DEFAULT_ENCARGOS = encargosRate()
 
 // ── Modelo da linha ────────────────────────────────────────────────────────
 interface ClubRef { name: string; logo: string | null; id: string | null }
@@ -83,6 +82,8 @@ interface Row {
   monthlyBRL: number | null
   annualBRL: number | null
   clubCostBRL: number | null
+  /** Folha CLT do mês em BRL (encargos, provisões, IRPF, líquido). */
+  folha: PayrollBreakdown | null
   amortBRL: number
   bookBRL: number
   contractEnd: string | null
@@ -143,6 +144,7 @@ function buildRows(
       let monthlyBRL: number | null = null
       let annualBRL: number | null = null
       let clubCostBRL: number | null = null
+      let folha: PayrollBreakdown | null = null
       const intangible = computeIntangible(a.id, cs, clauses, ptax, today)
       const amortBRL = intangible.monthlyAmortBRL * Math.min(12, intangible.monthsRemaining)
       if (emp && emp.status === 'ATIVO') {
@@ -155,8 +157,9 @@ function buildRows(
         if (monthly > 0) {
           monthlyBRL = monthly
           annualBRL = monthly * 12
-          const encargos = encargosOf(premissaOf.get(a.id))
-          clubCostBRL = cltBRL * 12 * (1 + encargos) + (imageBRL + otherBRL) * 12 + amortBRL
+          const rates = payrollRates(premissaOf.get(a.id))
+          clubCostBRL = cltBRL * 12 * (1 + encargosRate(rates)) + (imageBRL + otherBRL) * 12 + amortBRL
+          if (cltBRL > 0) folha = payroll(cltBRL, rates)
         }
       }
 
@@ -167,7 +170,7 @@ function buildRows(
         club, loan,
         pos: positionGroup(a.position),
         age: calcAge(a.birth_date),
-        monthlyBRL, annualBRL, clubCostBRL,
+        monthlyBRL, annualBRL, clubCostBRL, folha,
         amortBRL, bookBRL: intangible.residualBRL,
         contractEnd: emp?.end_date ?? null,
       }
@@ -176,6 +179,7 @@ function buildRows(
 
 // ── Ordenação ──────────────────────────────────────────────────────────────
 type SortKey = 'name' | 'club' | 'pos' | 'age' | 'status' | 'monthly' | 'annual' | 'cost' | 'amort' | 'book' | 'end'
+  | 'clt' | 'inss' | 'fgts' | 'prov13' | 'provFerias' | 'custoMensal' | 'irpf' | 'liquido'
 type SortDir = 'asc' | 'desc'
 interface Sort { key: SortKey; dir: SortDir }
 
@@ -191,12 +195,38 @@ const SORT_VALUE: Record<SortKey, (r: Row) => number | string | null> = {
   amort: r => r.amortBRL,
   book: r => r.bookBRL,
   end: r => r.contractEnd,
+  clt: r => r.folha?.clt ?? null,
+  inss: r => r.folha?.inss ?? null,
+  fgts: r => r.folha?.fgts ?? null,
+  prov13: r => r.folha?.prov13 ?? null,
+  provFerias: r => r.folha?.provFerias ?? null,
+  custoMensal: r => r.folha?.custoMensal ?? null,
+  irpf: r => r.folha?.irpf ?? null,
+  liquido: r => r.folha?.liquido ?? null,
 }
 // Primeiro clique: texto, idade e fim do contrato em ordem crescente; valores do maior para o menor.
 const FIRST_DIR: Record<SortKey, SortDir> = {
   name: 'asc', club: 'asc', pos: 'asc', age: 'asc', status: 'asc', end: 'asc',
   monthly: 'desc', annual: 'desc', cost: 'desc', amort: 'desc', book: 'desc',
+  clt: 'desc', inss: 'desc', fgts: 'desc', prov13: 'desc', provFerias: 'desc',
+  custoMensal: 'desc', irpf: 'desc', liquido: 'desc',
 }
+
+// ── Visões da tabela ───────────────────────────────────────────────────────
+type Visao = 'GERAL' | 'FOLHA'
+const VISAO_LABEL: Record<Visao, string> = { GERAL: 'Visão geral', FOLHA: 'Folha CLT' }
+
+/** Colunas de valor da visão Folha CLT (todas mensais, em BRL na origem). */
+const FOLHA_COLS: { k: SortKey; label: string; title: string; pick: (f: PayrollBreakdown) => number; strong?: boolean }[] = [
+  { k: 'clt', label: 'Salário CLT', title: 'Salário CLT bruto vigente (sem imagem e auxílios)', pick: f => f.clt },
+  { k: 'inss', label: 'INSS', title: 'INSS do clube sobre CLT + provisões de 13º e férias', pick: f => f.inss },
+  { k: 'fgts', label: 'FGTS', title: 'FGTS sobre CLT + provisões de 13º e férias', pick: f => f.fgts },
+  { k: 'prov13', label: 'Provisão 13º', title: '1/12 do CLT por mês', pick: f => f.prov13 },
+  { k: 'provFerias', label: 'Provisão férias', title: '1/12 do CLT + 1/3 constitucional por mês', pick: f => f.provFerias },
+  { k: 'custoMensal', label: 'Custo mensal CLT', title: 'CLT + provisões + encargos', pick: f => f.custoMensal },
+  { k: 'irpf', label: 'IRPF', title: 'IRPF retido do atleta sobre o CLT', pick: f => f.irpf },
+  { k: 'liquido', label: 'Salário líquido', title: 'CLT − IRPF', pick: f => f.liquido, strong: true },
+]
 
 function compareRows(a: Row, b: Row, { key, dir }: Sort): number {
   const va = SORT_VALUE[key](a), vb = SORT_VALUE[key](b)
@@ -288,6 +318,7 @@ export default function PageDetalhamentoJogadores() {
   const [pos, setPos] = useState<PosGroup | ''>('')
   const [situacao, setSituacao] = useState<Situacao>('ELENCO')
   const [sort, setSort] = useState<Sort>({ key: 'monthly', dir: 'desc' })
+  const [visao, setVisao] = useState<Visao>('GERAL')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -317,7 +348,10 @@ export default function PageDetalhamentoJogadores() {
     monthly: t.monthly + (r.monthlyBRL ?? 0),
     cost: t.cost + (r.clubCostBRL ?? 0),
     book: t.book + r.bookBRL,
-  }), { monthly: 0, cost: 0, book: 0 }), [visible])
+    clt: t.clt + (r.folha?.clt ?? 0),
+    encProv: t.encProv + (r.folha ? r.folha.custoMensal - r.folha.clt : 0),
+    liquido: t.liquido + (r.folha?.liquido ?? 0),
+  }), { monthly: 0, cost: 0, book: 0, clt: 0, encProv: 0, liquido: 0 }), [visible])
   const maxMonthly = useMemo(() => Math.max(0, ...visible.map(r => r.monthlyBRL ?? 0)), [visible])
 
   const money = (brl: number | null) => brl == null ? '—' : compactMoney(fromBRL(brl), symbol)
@@ -333,6 +367,10 @@ export default function PageDetalhamentoJogadores() {
       { key: 'mensal', header: 'Salário mensal (BRL)' }, { key: 'anual', header: 'Salário anual (BRL)' },
       { key: 'custo', header: 'Custo anual do clube (BRL)' }, { key: 'amort', header: 'Amortização 12 meses (BRL)' },
       { key: 'contabil', header: 'Valor contábil (BRL)' }, { key: 'fim', header: 'Fim do contrato' },
+      { key: 'clt', header: 'Salário CLT (BRL)' }, { key: 'inss', header: 'INSS (BRL)' }, { key: 'fgts', header: 'FGTS (BRL)' },
+      { key: 'prov13', header: 'Provisão 13º (BRL)' }, { key: 'provFerias', header: 'Provisão férias (BRL)' },
+      { key: 'custoMensal', header: 'Custo mensal CLT (BRL)' }, { key: 'irpf', header: 'IRPF (BRL)' },
+      { key: 'liquido', header: 'Salário líquido (BRL)' },
     ]
     const r2 = (v: number | null) => v == null ? '' : Math.round(v * 100) / 100
     exportWorkbook([{
@@ -343,12 +381,18 @@ export default function PageDetalhamentoJogadores() {
         status: r.foreign == null ? '' : r.foreign ? 'Estrangeiro' : 'Nacional',
         mensal: r2(r.monthlyBRL), anual: r2(r.annualBRL), custo: r2(r.clubCostBRL),
         amort: r2(r.amortBRL), contabil: r2(r.bookBRL), fim: r.contractEnd ?? '',
+        clt: r2(r.folha?.clt ?? null), inss: r2(r.folha?.inss ?? null), fgts: r2(r.folha?.fgts ?? null),
+        prov13: r2(r.folha?.prov13 ?? null), provFerias: r2(r.folha?.provFerias ?? null),
+        custoMensal: r2(r.folha?.custoMensal ?? null), irpf: r2(r.folha?.irpf ?? null),
+        liquido: r2(r.folha?.liquido ?? null),
       })),
     }], 'detalhamento-jogadores.xlsx')
   }
 
   const pct = (v: number) => `${(v * 100).toLocaleString(locale(), { maximumFractionDigits: 1 })}%`
-  const COLS = 12
+  const folhaView = visao === 'FOLHA'
+  const COLS = folhaView ? 3 + FOLHA_COLS.length : 12
+  const safRates = payrollRates()
 
   return (
     <div style={{ padding: '24px 28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -378,11 +422,26 @@ export default function PageDetalhamentoJogadores() {
             {(Object.keys(SITUACAO_LABEL) as Situacao[]).map(s => <option key={s} value={s}>{tr(SITUACAO_LABEL[s])}</option>)}
           </select>
         </label>
-        <div className="kpi-group">
-          <KpiPill label={tr('Folha mensal')} value={money(totals.monthly)} />
-          <KpiPill label={tr('Custo anual do clube')} value={money(totals.cost)} />
-          <KpiPill label={tr('Valor contábil')} value={money(totals.book)} />
+        <div className="seg-tabs" role="tablist" aria-label={tr('Visão')}>
+          {(Object.keys(VISAO_LABEL) as Visao[]).map(v => (
+            <button key={v} type="button" role="tab" aria-selected={visao === v} className="seg-tab" onClick={() => setVisao(v)}>
+              {tr(VISAO_LABEL[v])}
+            </button>
+          ))}
         </div>
+        {folhaView ? (
+          <div className="kpi-group">
+            <KpiPill label={tr('Folha CLT mensal')} value={money(totals.clt)} />
+            <KpiPill label={tr('Encargos + provisões/mês')} value={money(totals.encProv)} />
+            <KpiPill label={tr('Líquido mensal')} value={money(totals.liquido)} />
+          </div>
+        ) : (
+          <div className="kpi-group">
+            <KpiPill label={tr('Folha mensal')} value={money(totals.monthly)} />
+            <KpiPill label={tr('Custo anual do clube')} value={money(totals.cost)} />
+            <KpiPill label={tr('Valor contábil')} value={money(totals.book)} />
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -393,6 +452,10 @@ export default function PageDetalhamentoJogadores() {
                 <th style={{ width: 28, verticalAlign: 'middle' }}>#</th>
                 <SortTh k="name" label={tr('Jogador')} sort={sort} onSort={onSort} />
                 <SortTh k="club" label={tr('Clube')} sort={sort} onSort={onSort} />
+                {folhaView && FOLHA_COLS.map(c => (
+                  <SortTh key={c.k} k={c.k} label={c.label} sort={sort} onSort={onSort} align="right" title={c.title} />
+                ))}
+                {!folhaView && <>
                 <SortTh k="pos" label={tr('Posição')} sort={sort} onSort={onSort} />
                 <SortTh k="age" label={tr('Idade')} sort={sort} onSort={onSort} align="center" />
                 <SortTh k="status" label={tr('Status CBF')} sort={sort} onSort={onSort}
@@ -409,6 +472,7 @@ export default function PageDetalhamentoJogadores() {
                   title={tr('Intangível ainda não amortizado (saldo no balanço)')} />
                 <SortTh k="end" label={tr('Fim do contrato')} sort={sort} onSort={onSort} align="right"
                   title={tr('Término do vínculo de trabalho')} />
+                </>}
               </tr>
             </thead>
             <tbody>
@@ -453,6 +517,12 @@ export default function PageDetalhamentoJogadores() {
                         </div>
                       ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                     </td>
+                    {folhaView && FOLHA_COLS.map(c => (
+                      <td key={c.k} style={{ textAlign: 'right', whiteSpace: 'nowrap', fontWeight: c.strong ? 500 : undefined }}>
+                        {r.folha ? money(c.pick(r.folha)) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
+                      </td>
+                    ))}
+                    {!folhaView && <>
                     <td>
                       {r.pos
                         ? <span style={badgeStyle('neutral')} title={tr(r.athlete.position) ?? undefined}>{tr(POS_LABEL[r.pos])}</span>
@@ -487,6 +557,7 @@ export default function PageDetalhamentoJogadores() {
                         </>
                       ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
                     </td>
+                    </>}
                   </tr>
                 )
               })}
@@ -496,7 +567,11 @@ export default function PageDetalhamentoJogadores() {
       </div>
 
       <p style={{ margin: 'var(--space-3) 0 0', fontSize: 'var(--text-caption-size)', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: 980 }}>
+        {folhaView ? <>
+        {trn(visible.length, '{0} jogador', '{0} jogadores')} {tr('· Folha CLT mensal: tudo incide só sobre o salário CLT vigente (imagem, moradia e auxílios ficam de fora). Provisão 13º = 1/12 do CLT; provisão férias = 1/12 do CLT + 1/3. INSS e FGTS incidem sobre CLT + provisões; custo mensal CLT = CLT + provisões + encargos. IRPF retido do atleta sobre o CLT; salário líquido = CLT − IRPF. Alíquotas das premissas do atleta ou, sem premissa, o padrão da SAF:')} {trf('INSS {0} · FGTS {1} · IRPF {2}.', pct(safRates.inss_patronal_pct), pct(safRates.fgts_pct), pct(safRates.irpf_pct))} {tr('Moedas estrangeiras pela PTAX do dia.')}
+        </> : <>
         {trn(visible.length, '{0} jogador', '{0} jogadores')} {tr('· Salário = remuneração mensal vigente do vínculo de trabalho (CLT + imagem, com gatilhos e rateio de empréstimo aplicados); anual = mensal × 12. Custo anual do clube = CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses; encargos das premissas do atleta ou, sem premissa,')} {pct(DEFAULT_ENCARGOS)} {tr('(INSS, FGTS, 13º e férias). Amortização linear do intangível (transfer fee, intermediação e luvas do contrato de entrada) pelo prazo do contrato; valor contábil = intangível − amortização acumulada. Moedas estrangeiras pela PTAX do dia.')}
+        </>}
       </p>
     </div>
   )

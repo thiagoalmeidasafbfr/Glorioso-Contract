@@ -47,6 +47,8 @@ export interface PremissaAtleta {
   decimo_terceiro_pct: number
   ferias_pct: number
   outros_encargos_pct: number
+  /** IRPF retido do atleta sobre o CLT (não é custo do clube). */
+  irpf_pct: number
 
   luvas_total_brl: number
   luvas_cronograma: CronogramaItem[] | null
@@ -81,13 +83,15 @@ export interface PremissaAtleta {
   updated_at?: string
 }
 
-// Defaults dos encargos (INSS/FGTS/13º/férias) para uma nova premissa.
+// Alíquotas da SAF sobre o salário CLT (INSS/FGTS/13º/férias/IRPF) — padrão
+// de uma nova premissa e de atletas sem premissa. Ver lib/payroll.
 export const ENCARGOS_DEFAULT = {
-  inss_patronal_pct:   0.20,
+  inss_patronal_pct:   0.045,
   fgts_pct:            0.08,
   decimo_terceiro_pct: 1 / 12,
   ferias_pct:          (1 / 12) * (4 / 3),   // 1/12 + 1/3 sobre férias
   outros_encargos_pct: 0,
+  irpf_pct:            0.275,                // retido do atleta
 } as const
 
 export const ANTECIPACAO_DEFAULT = {

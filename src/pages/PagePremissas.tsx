@@ -15,6 +15,7 @@ import { ENCARGOS_DEFAULT, ANTECIPACAO_DEFAULT, DECISAO_LABELS } from '../types/
 import type { PremissaAtleta, PremissaDecisao } from '../types/premissas'
 import type { Athlete } from '../types/athlete-system'
 import { useAuth } from '../context/AuthContext'
+import { encargosRate, payrollRates } from '../lib/payroll'
 import { tr, trf } from '../i18n'
 
 const fontBody = "var(--font-body)"
@@ -226,9 +227,8 @@ export default function PagePremissas() {
     })
   }, [rows, filter, search, nameOf])
 
-  const totalEncargos = (r: Row) =>
-    (r.inss_patronal_pct ?? 0) + (r.fgts_pct ?? 0) +
-    (r.decimo_terceiro_pct ?? 0) + (r.ferias_pct ?? 0) + (r.outros_encargos_pct ?? 0)
+  // Encargos + provisões como % do CLT (INSS/FGTS também incidem sobre 13º e férias).
+  const totalEncargos = (r: Row) => encargosRate(payrollRates(r))
 
   // Vincular a um atleta existente.
   const linkToAthlete = useCallback((r: Row, athleteId: string) => {
@@ -306,6 +306,7 @@ export default function PagePremissas() {
               <Head width={90}>{tr('Férias %')}</Head>
               <Head width={90}>{tr('Outros %')}</Head>
               <Head width={70}>{tr('Σ enc.')}</Head>
+              <Head width={90}>{tr('IRPF %')}</Head>
               <Head width={130}>{tr('Luvas total (BRL)')}</Head>
               <Head width={140}>{tr('Intermediação (BRL)')}</Head>
               <Head width={150}>{tr('Decisão')}</Head>
@@ -327,10 +328,10 @@ export default function PagePremissas() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={31} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>{tr('Carregando…')}</td></tr>
+              <tr><td colSpan={32} style={{ padding: 20, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontMono, fontSize: 11 }}>{tr('Carregando…')}</td></tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td colSpan={31} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13 }}>
+              <tr><td colSpan={32} style={{ padding: 32, textAlign: 'center', color: 'var(--ink-secondary)', fontFamily: fontBody, fontSize: 13 }}>
                 {tr('Nenhuma premissa cadastrada. Clique em')} <b>{tr('+ Atleta existente')}</b> {tr('ou')} <b>{tr('+ Nova contratação')}</b> {tr('para começar.')}
               </td></tr>
             )}
@@ -409,6 +410,8 @@ export default function PagePremissas() {
                       {fmtPct(totalEncargos(r))}%
                     </span>
                   </Cell>
+                  <Cell align="right"><CellInput type="number" step="0.01" value={fmtPct(r.irpf_pct ?? ENCARGOS_DEFAULT.irpf_pct)} disabled={disabled} align="right"
+                    onCommit={v => void patch(r.id, { irpf_pct: toPct(v) ?? 0 })} /></Cell>
                   <Cell align="right"><CellInput type="number" value={r.luvas_total_brl} disabled={disabled} align="right"
                     onCommit={v => void patch(r.id, { luvas_total_brl: toNum(v) ?? 0 })} /></Cell>
                   <Cell align="right"><CellInput type="number" value={r.intermediacao_total_brl} disabled={disabled} align="right"
@@ -502,7 +505,7 @@ export default function PagePremissas() {
       </div>
 
       <p style={{ marginTop: 12, fontFamily: fontMono, fontSize: 10, color: 'var(--ink-secondary)' }}>
-        {tr('Encargos padrão: INSS')} {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}{tr('% · FGTS')} {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}{tr('% · férias')} {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}{tr('%. Antecipação padrão: CDI')} {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}{tr('% a.a.')}
+        {tr('Encargos padrão: INSS')} {fmtPct(ENCARGOS_DEFAULT.inss_patronal_pct)}{tr('% · FGTS')} {fmtPct(ENCARGOS_DEFAULT.fgts_pct)}% · 13º {fmtPct(ENCARGOS_DEFAULT.decimo_terceiro_pct)}{tr('% · férias')} {fmtPct(ENCARGOS_DEFAULT.ferias_pct)}{tr('% · IRPF (retido do atleta)')} {fmtPct(ENCARGOS_DEFAULT.irpf_pct)}{tr('%. INSS e FGTS incidem sobre o CLT e as provisões de 13º e férias; imagem e auxílios ficam de fora')}{tr('. Antecipação padrão: CDI')} {fmtPct(ANTECIPACAO_DEFAULT.cdi_pct_aa)}% + {fmtPct(ANTECIPACAO_DEFAULT.spread_pct_aa)}{tr('% a.a.')}
       </p>
     </div>
   )
