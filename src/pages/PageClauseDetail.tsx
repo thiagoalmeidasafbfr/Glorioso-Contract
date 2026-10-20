@@ -49,8 +49,8 @@ const lbl = modalLabel
 export default function PageClauseDetail() {
   const { clauseId } = useParams<{ clauseId: string }>()
   const navigate = useNavigate()
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { can } = useAuth()
+  const canEdit = can('atletas', 'edit')
 
   const [clause, setClause] = useState<Clause | null>(null)
   const [athlete, setAthlete] = useState<Athlete | null>(null)

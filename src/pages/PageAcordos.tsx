@@ -52,8 +52,8 @@ interface Row {
 }
 
 export default function PageAcordos() {
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { can } = useAuth()
+  const canEdit = can('atletas', 'edit')
   const [rows, setRows] = useState<Row[]>([])
   const [acordoClauses, setAcordoClauses] = useState<Clause[]>([])
   const [editId, setEditId] = useState<string | null>(null)

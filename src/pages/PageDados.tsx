@@ -31,6 +31,7 @@ import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import type { AthleteCategory } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
+import { useAuth } from '../context/AuthContext'
 import { tr, trf } from '../i18n'
 
 // Categoria a partir de rótulo ("Profissional") ou enum ("PROFISSIONAL").
@@ -285,6 +286,10 @@ export default function PageDados() {
   const [confirmWipe, setConfirmWipe] = useState(false)
   const [wipeText, setWipeText] = useState('')
   const [wiping, setWiping] = useState(false)
+  const { can } = useAuth()
+  const canImport = can('dados', 'edit')
+  // Apagar a base inteira: só administradores (edição em "Usuários e acessos").
+  const canWipe = canImport && can('usuarios', 'edit')
 
   function downloadTemplate(d: Descriptor) {
     exportWorkbook([{ name: d.key.slice(0, 28), cols: d.cols, rows: [] }], `modelo-${d.key.toLowerCase()}.xlsx`)
@@ -324,12 +329,14 @@ export default function PageDados() {
         <button onClick={exportAll} disabled={exportingAll} className="btn btn-accent">
           <Icon name="download" size={16} /> {exportingAll ? tr('Exportando…') : tr('Exportar toda a base')}
         </button>
-        <button onClick={() => { setConfirmWipe(true); setMsg(null) }} className="btn btn-danger">
-          <Icon name="trash" size={16} /> {tr('Apagar toda a base')}
-        </button>
+        {canWipe && (
+          <button onClick={() => { setConfirmWipe(true); setMsg(null) }} className="btn btn-danger">
+            <Icon name="trash" size={16} /> {tr('Apagar toda a base')}
+          </button>
+        )}
       </PageHero>
 
-      {confirmWipe && (
+      {confirmWipe && canWipe && (
         <div role="alertdialog" aria-label={tr('Apagar toda a base')} style={{ background: 'var(--surface-negative-soft)', borderRadius: 'var(--radius-card)', padding: 'var(--gutter-card)', marginBottom: 'var(--space-6)' }}>
           <div style={{ fontFamily: fontBody, fontSize: 'var(--text-subtitle-size)', fontWeight: 400, color: 'var(--text-negative)', marginBottom: 6 }}>{tr('Apagar toda a base?')}</div>
           <div style={{ fontFamily: fontBody, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, maxWidth: 720 }}>
@@ -369,7 +376,7 @@ export default function PageDados() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button onClick={() => downloadTemplate(d)} className="btn btn-outline">{tr('Baixar modelo')}</button>
               <button onClick={() => exportData(d)} className="btn btn-outline">{tr('Exportar')}</button>
-              <ImportButton onDone={(text, ok) => setMsg({ key: d.key, text, ok })} d={d} />
+              {canImport && <ImportButton onDone={(text, ok) => setMsg({ key: d.key, text, ok })} d={d} />}
             </div>
             {msg?.key === d.key && (
               <div style={{ marginTop: 10, fontSize: 12, fontFamily: fontBody, color: msg.ok ? 'var(--pos)' : 'var(--neg)' }}>{tr(msg.text)}</div>

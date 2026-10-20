@@ -60,8 +60,10 @@ const APPROX_BRL: Record<string, number> = { BRL: 1, EUR: 6.10, USD: 5.55, GBP: 
 export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { can } = useAuth()
+  // Obrigações e contratos são dados de atletas; o cadastro em si, de cadastros.
+  const canEdit = can('atletas', 'edit')
+  const canEditEntity = can('cadastros', 'edit')
   const isClube = kind === 'clube'
   const basePath = isClube ? '/clubes' : '/intermediarios'
 
@@ -212,7 +214,7 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
 
       {/* Cabeçalho com logo */}
       <div className="card" style={{ padding: 'var(--gutter-card)', marginBottom: 16, display: 'flex', gap: 22, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <ImageUpload value={logo} onChange={saveLogo} fallbackText={name} size={92} rounded={!isClube} editable={canEdit} />
+        <ImageUpload value={logo} onChange={saveLogo} fallbackText={name} size={92} rounded={!isClube} editable={canEditEntity} />
         <div style={{ flex: 1, minWidth: 240 }}>
           {editing ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 460 }}>
@@ -231,8 +233,8 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <h1 style={{ fontFamily: fontBody, fontSize: 'var(--text-title-size)', fontWeight: 400, color: 'var(--ink-primary)', margin: 0 }}>{name}</h1>
-                {canEdit && <IconButton icon="edit" label={tr('Editar cadastro')} onClick={() => setEditing(true)} />}
-                {canEdit && <IconButton icon="trash" label={trf('Excluir {0}', isClube ? tr('clube') : tr('agente'))} tone="danger" onClick={handleDeleteEntity} />}
+                {canEditEntity && <IconButton icon="edit" label={tr('Editar cadastro')} onClick={() => setEditing(true)} />}
+                {canEditEntity && <IconButton icon="trash" label={trf('Excluir {0}', isClube ? tr('clube') : tr('agente'))} tone="danger" onClick={handleDeleteEntity} />}
               </div>
               {sub && <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: fontBody, marginTop: 2 }}>{isClube ? tr(sub) : trf('Contato: {0}', sub)}</div>}
               {notes && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)', fontFamily: fontBody, background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', padding: '6px 10px' }}>{tr(notes)}</div>}

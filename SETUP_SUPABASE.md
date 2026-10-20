@@ -44,6 +44,7 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 16. `016_gatilho_imagem.sql`
 17. `017_ptax_fixada.sql`
 18. `018_premissas_atleta.sql`  ← **aba de PREMISSAS por atleta (Fase 1 do modelo do CFO)**
+19. `019_usuarios_acessos.sql`  ← **usuários, perfis de acesso e restrição por módulo** (ver `docs/USUARIOS_E_ACESSOS.md`)
 
 > **IMPORTANTE:** rode **todas** as migrations acima, em ordem. Se pular alguma,
 > a aba correspondente falha com um erro do tipo *"Could not find the table
@@ -54,22 +55,53 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 > Se preferir a CLI do Supabase: `supabase link --project-ref <ref>` e depois
 > `supabase db push` (aplica tudo de `supabase/migrations/` em ordem).
 
-## 3. Criar usuários e definir papéis
+## 3. Usuários e acessos
 
-1. **Authentication → Users → Add user**: crie o(s) e-mail(s) de acesso.
-2. O papel de cada usuário fica na tabela `profiles` (criada em `001`/`004`).
-   Defina o papel no **SQL Editor** (troque o e-mail):
+O controle de acesso fica no módulo **Administração → Usuários e acessos** do
+app (migração `019` + Edge Function `admin-users`). Detalhes em
+[`docs/USUARIOS_E_ACESSOS.md`](docs/USUARIOS_E_ACESSOS.md).
 
-   ```sql
-   update public.profiles
-   set role = 'master'      -- ou 'juridico'
-   where email = 'thiago.almeida@safbfr.com.br';
+1. **Publique a Edge Function** (cria usuários, troca senhas e exclui — usa a
+   service role, que nunca vai para o navegador):
+
+   ```bash
+   supabase link --project-ref <ref>
+   supabase functions deploy admin-users
    ```
 
-   - `master` e `juridico` podem **editar** (inserir/alterar/excluir).
-   - Qualquer usuário autenticado pode **ler**.
-   - As policies de RLS já estão nas migrações (leitura para autenticados,
-     escrita para `master`/`juridico`).
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` já existem
+   no ambiente das Edge Functions; não é preciso configurar segredos.
+
+2. **Primeiro administrador.**
+   - Projeto que já tinha usuários: depois da `019` todos continuam com o
+     mesmo papel (`master` / `juridico`) e ativos.
+   - Projeto novo: crie o primeiro login em **Authentication → Users → Add
+     user** — o primeiro usuário do projeto vira **Master** automaticamente.
+     Os seguintes entram **inativos** até um administrador liberar.
+   - Se precisar promover alguém pelo SQL Editor:
+
+     ```sql
+     update public.profiles set role = 'master', ativo = true
+     where email = 'thiago.almeida@safbfr.com.br';
+     ```
+
+3. **Desligue o cadastro público**: em **Authentication → Sign In / Providers**,
+   desmarque *Allow new users to sign up*. Mesmo ligado, quem se cadastrar
+   sozinho entra inativo e sem acesso a nada, mas não há motivo para deixar.
+
+4. **URLs de retorno** (convite e "esqueci a senha"): em **Authentication →
+   URL Configuration**, coloque o endereço do app em *Site URL* e em
+   *Redirect URLs*.
+
+Perfis que já vêm prontos (editáveis em **Perfis e permissões**, exceto o
+Master):
+
+| Perfil | Pode |
+|--------|------|
+| **Master** | Tudo, inclusive administrar usuários e perfis. |
+| **Jurídico** | Editar atletas, contratos, obrigações, clubes/agentes e importar planilhas; consultar o modelo financeiro. |
+| **Financeiro** | Editar as premissas do modelo financeiro; consultar o resto. |
+| **Consulta** | Somente leitura. |
 
 ## 4. Ligar o app ao Supabase
 

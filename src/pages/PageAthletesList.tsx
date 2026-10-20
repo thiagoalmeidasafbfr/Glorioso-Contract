@@ -20,6 +20,7 @@ import { ATHLETE_STATUS_TONE, badgeStyle } from '../lib/tones'
 import SheetIO from '../components/SheetIO'
 import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteConsolidado'
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
+import { useAuth } from '../context/AuthContext'
 import { tr, trf, trn } from '../i18n'
 
 const font     = "var(--font-body)"
@@ -171,6 +172,7 @@ export default function PageAthletesList() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<AthleteStatus | 'Todos'>('Todos')
   const [showNew, setShowNew] = useState(false)
+  const canEdit = useAuth().can('atletas', 'edit')
   const [rightsByAthlete, setRightsByAthlete] = useState<Record<string, EconomicRight[]>>({})
   const [clauses, setClauses] = useState<Clause[]>([])
   const [installments, setInstallments] = useState<ClauseInstallment[]>([])
@@ -273,13 +275,15 @@ export default function PageAthletesList() {
             ))}
           </select>
         </div>
-        <button onClick={() => setShowNew(true)} className="btn btn-primary">
-          <Icon name="plus" size={16} /> {tr('Novo atleta')}
-        </button>
+        {canEdit && (
+          <button onClick={() => setShowNew(true)} className="btn btn-primary">
+            <Icon name="plus" size={16} /> {tr('Novo atleta')}
+          </button>
+        )}
         <SheetIO
           exportFilename="atletas.xlsx"
           exportSheets={[{ name: 'Atletas', cols: COLS_ATHLETES, rows: athletes as unknown as Record<string, unknown>[] }]}
-          onImport={async sheets => {
+          onImport={!canEdit ? undefined : async sheets => {
             setImportMsg(null)
             // Aba consolidada (exportada de dentro de um atleta): cria novos
             // atletas com TODOS os vínculos. Caso contrário, planilha simples.
@@ -354,7 +358,7 @@ export default function PageAthletesList() {
                       ? tr('Nenhum atleta cadastrado ainda.')
                       : tr('Nenhum atleta corresponde aos filtros.')}
                   </div>
-                  {athletes.length === 0 && (
+                  {athletes.length === 0 && canEdit && (
                     <button className="btn btn-primary" onClick={() => setShowNew(true)}>
                       <Icon name="plus" size={16} /> {tr('Cadastrar o primeiro atleta')}
                     </button>

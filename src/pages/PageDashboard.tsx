@@ -6,6 +6,7 @@ import type { Alert, Athlete, Clause, EconomicRight } from '../types/athlete-sys
 import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO, fmtDec, monthShort } from '../lib/format'
 import { isOwnershipValid } from '../lib/ownership'
 import { useApp } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
 import PageHero from '../components/PageHero'
 import Badge from '../components/Badge'
 import { Icon } from '../components/Icon'
@@ -38,6 +39,7 @@ interface MonthBucket {
 
 export default function PageDashboard() {
   const { fmtMiC } = useApp()
+  const canEdit = useAuth().can('atletas', 'edit')
 
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [athletes, setAthletes] = useState<Athlete[]>([])
@@ -316,9 +318,11 @@ export default function PageDashboard() {
                         </Link>
                       </div>
                     </div>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleMarkRead(alert.id)} style={{ flexShrink: 0 }}>
-                      {tr('Marcar lido')}
-                    </button>
+                    {canEdit && (
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleMarkRead(alert.id)} style={{ flexShrink: 0 }}>
+                        {tr('Marcar lido')}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

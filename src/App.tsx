@@ -7,6 +7,9 @@ import { USE_SUPABASE } from './lib/supabase'
 import Layout from './components/Layout'
 import Wordmark from './components/Wordmark'
 import PageLogin from './pages/PageLogin'
+import PageDefinirSenha from './pages/PageDefinirSenha'
+import { RequireAccess, HomeRedirect, AccessPending } from './components/AccessGuard'
+import { homePath, type AccessLevel, type ModuleKey } from './lib/access'
 
 // Sistema de atletas
 import PageDashboard from './pages/PageDashboard'
@@ -35,6 +38,9 @@ import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
 import PageAmortizacao from './pages/PageAmortizacao'
 import PageDetalhamentoJogadores from './pages/PageDetalhamentoJogadores'
 import PagePremissas from './pages/PagePremissas'
+
+// Administração
+import PageUsuarios from './pages/PageUsuarios'
 import { tr } from './i18n'
 
 // Troca de idioma remonta a árvore: todo texto passa por tr() no render, e
@@ -45,8 +51,14 @@ function LanguageBoundary({ children }: { children: ReactNode }) {
   return <Fragment key={language}>{children}</Fragment>
 }
 
+// Rota restrita a um módulo (ver lib/access.ts). Telas que só servem para
+// criar/importar exigem 'edit'; as demais, 'view'.
+function guard(module: ModuleKey, element: ReactNode, level: Exclude<AccessLevel, 'none'> = 'view') {
+  return <RequireAccess module={module} level={level}>{element}</RequireAccess>
+}
+
 function AppRoutes() {
-  const { session, loading } = useAuth()
+  const { session, profile, permissions, loading, mustSetPassword } = useAuth()
 
   if (USE_SUPABASE && loading) {
     return (
@@ -68,51 +80,61 @@ function AppRoutes() {
     )
   }
 
+  if (USE_SUPABASE && mustSetPassword) return <PageDefinirSenha />
+  // Entrou, mas está desativado (ou sem perfil): não vê nada — a RLS também
+  // não devolve dados para ele.
+  if (USE_SUPABASE && !profile?.ativo) return <AccessPending />
+  // Perfil sem nenhuma tela liberada.
+  if (USE_SUPABASE && !homePath(permissions)) return <AccessPending noModules />
+
   return (
     <AppProvider>
       <LanguageBoundary>
       <Layout>
         <Routes>
-          <Route path="/" element={<Navigate to="/atletas" replace />} />
-          <Route path="/criar" element={<PageWizard />} />
-          <Route path="/dashboards" element={<PageDashboards />} />
+          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/criar" element={guard('atletas', <PageWizard />, 'edit')} />
+          <Route path="/dashboards" element={guard('dashboards', <PageDashboards />)} />
 
           {/* Atletas */}
-          <Route path="/dashboard" element={<PageDashboard />} />
-          <Route path="/album" element={<PageAlbum />} />
-          <Route path="/atletas" element={<PageAthletesList />} />
-          <Route path="/atletas/:id" element={<PageAthleteDetail />} />
-          <Route path="/atletas/:id/contratos/novo" element={<PageAthleteNewContract />} />
-          <Route path="/obrigacoes/:clauseId" element={<PageClauseDetail />} />
+          <Route path="/dashboard" element={guard('dashboards', <PageDashboard />)} />
+          <Route path="/album" element={guard('atletas', <PageAlbum />)} />
+          <Route path="/atletas" element={guard('atletas', <PageAthletesList />)} />
+          <Route path="/atletas/:id" element={guard('atletas', <PageAthleteDetail />)} />
+          <Route path="/atletas/:id/contratos/novo" element={guard('atletas', <PageAthleteNewContract />, 'edit')} />
+          <Route path="/obrigacoes/:clauseId" element={guard('atletas', <PageClauseDetail />)} />
 
           {/* Cadastros */}
-          <Route path="/clubes" element={<PageCadastros kind="clube" />} />
-          <Route path="/clubes/:id" element={<PageCadastroDetail kind="clube" />} />
-          <Route path="/intermediarios" element={<PageCadastros kind="intermediario" />} />
-          <Route path="/intermediarios/:id" element={<PageCadastroDetail kind="intermediario" />} />
+          <Route path="/clubes" element={guard('cadastros', <PageCadastros kind="clube" />)} />
+          <Route path="/clubes/:id" element={guard('cadastros', <PageCadastroDetail kind="clube" />)} />
+          <Route path="/intermediarios" element={guard('cadastros', <PageCadastros kind="intermediario" />)} />
+          <Route path="/intermediarios/:id" element={guard('cadastros', <PageCadastroDetail kind="intermediario" />)} />
 
           {/* Relatórios */}
-          <Route path="/relatorios/visao-atletas" element={<PageVisaoAtletas />} />
-          <Route path="/relatorios/consolidado" element={<PageConsolidado />} />
-          <Route path="/relatorios/acordos" element={<PageAcordos />} />
-          <Route path="/relatorios/sell-on" element={<PageRelSellOn />} />
-          <Route path="/relatorios/direitos-economicos" element={<PageRelDirEconomicos />} />
-          <Route path="/relatorios/gatilhos" element={<PageRelGatilhos />} />
-          <Route path="/relatorios/recuperacao-judicial" element={<PageRecuperacaoJudicial />} />
-          <Route path="/relatorios/amortizacao" element={<PageAmortizacao />} />
-          <Route path="/relatorios/jogadores" element={<PageDetalhamentoJogadores />} />
+          <Route path="/relatorios/visao-atletas" element={guard('relatorios', <PageVisaoAtletas />)} />
+          <Route path="/relatorios/consolidado" element={guard('relatorios', <PageConsolidado />)} />
+          <Route path="/relatorios/acordos" element={guard('relatorios', <PageAcordos />)} />
+          <Route path="/relatorios/sell-on" element={guard('relatorios', <PageRelSellOn />)} />
+          <Route path="/relatorios/direitos-economicos" element={guard('relatorios', <PageRelDirEconomicos />)} />
+          <Route path="/relatorios/gatilhos" element={guard('relatorios', <PageRelGatilhos />)} />
+          <Route path="/relatorios/recuperacao-judicial" element={guard('relatorios', <PageRecuperacaoJudicial />)} />
+          <Route path="/relatorios/amortizacao" element={guard('relatorios', <PageAmortizacao />)} />
+          <Route path="/relatorios/jogadores" element={guard('relatorios', <PageDetalhamentoJogadores />)} />
           <Route path="/relatorios/salarios" element={<Navigate to="/relatorios/jogadores" replace />} />
 
           {/* Modelo financeiro (CFO) */}
-          <Route path="/modelo/premissas" element={<PagePremissas />} />
+          <Route path="/modelo/premissas" element={guard('modelo', <PagePremissas />)} />
           {/* Compat: redireciona os relatórios antigos por natureza ao consolidado. */}
           <Route path="/relatorios/:kind" element={<Navigate to="/relatorios/consolidado" replace />} />
 
           {/* Importar / Exportar */}
-          <Route path="/dados" element={<PageDados />} />
-          <Route path="/dados/planilhas" element={<PageImportarPlanilhas />} />
+          <Route path="/dados" element={guard('dados', <PageDados />)} />
+          <Route path="/dados/planilhas" element={guard('dados', <PageImportarPlanilhas />, 'edit')} />
 
-          <Route path="*" element={<Navigate to="/atletas" replace />} />
+          {/* Administração */}
+          <Route path="/usuarios" element={guard('usuarios', <PageUsuarios />)} />
+
+          <Route path="*" element={<HomeRedirect />} />
         </Routes>
       </Layout>
       </LanguageBoundary>
