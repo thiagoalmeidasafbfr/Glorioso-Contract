@@ -1832,4 +1832,6 @@ export const EN: Record<string, string> = {
   'É preciso manter ao menos um administrador ativo.': 'At least one active administrator must remain.',
   'Você não pode excluir o próprio usuário.': 'You cannot delete your own user.',
   'Sessão inválida. Entre novamente.': 'Invalid session. Please sign in again.',
+  'Semimaster': 'Semi-master',
+  'Acesso livre a atletas, contratos, cadastros, modelo financeiro e importações; não administra usuários nem apaga a base.': 'Full access to athletes, contracts, records, the financial model and imports; does not manage users or wipe the database.',
 }

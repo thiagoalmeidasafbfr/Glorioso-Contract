@@ -32,6 +32,19 @@ têm acesso total. Instalação: `SETUP_SUPABASE.md`, passos 2 (migração `019`
   `ac_entidades` (clubes, agentes e PJs de imagem) aceita escrita de quem edita
   `atletas` **ou** `cadastros`, porque o cadastro de PJ nasce na ficha do atleta.
 
+## Perfis prontos
+
+| Perfil | Dashboards | Atletas | Cadastros | Modelo | Relatórios | Dados | Usuários |
+|--------|-----------|---------|-----------|--------|------------|-------|----------|
+| Master | consultar | editar | editar | editar | consultar | editar | editar |
+| Semimaster (020) | consultar | editar | editar | editar | consultar | editar | consultar |
+| Jurídico | consultar | editar | editar | consultar | consultar | editar | — |
+| Financeiro | consultar | consultar | consultar | editar | consultar | consultar | — |
+| Consulta | consultar | consultar | consultar | consultar | consultar | consultar | — |
+
+"Apagar toda a base" (tela Importar / exportar) exige editar em Dados **e** em
+Usuários — só o Master (ou outro perfil administrador).
+
 ## O que o banco garante (migração 019)
 
 - **Leitura**: qualquer usuário **ativo** lê os dados — os relatórios e
@@ -44,7 +57,7 @@ têm acesso total. Instalação: `SETUP_SUPABASE.md`, passos 2 (migração `019`
 - **Sempre sobra um administrador ativo** (perfil com editar em `usuarios`):
   desativar, rebaixar ou excluir o último é recusado.
 - O perfil **Master** tem sempre acesso total; perfis do sistema (Master,
-  Jurídico, Financeiro, Consulta) não podem ser excluídos; perfil em uso
+  Semimaster, Jurídico, Financeiro, Consulta) não podem ser excluídos; perfil em uso
   também não.
 - **Cadastro público** não dá papel nenhum: o papel enviado no sign-up é
   ignorado e o usuário entra inativo. Exceção: o primeiro usuário de um
