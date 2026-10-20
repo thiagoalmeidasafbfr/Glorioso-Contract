@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useApp, CURRENCY_OPTIONS, type AppCurrency } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { USE_SUPABASE } from '../lib/supabase'
+import { editModuleForPath, moduleForPath, type AccessLevel } from '../lib/access'
 import { Icon, type IconName } from './Icon'
+import Badge from './Badge'
 import Wordmark from './Wordmark'
 import { tr } from '../i18n'
 
@@ -14,19 +16,22 @@ import { tr } from '../i18n'
 //  • TopBar de 56px (--layout-topbar) com moeda e idioma à direita, fixa no
 //    topo da área de conteúdo;
 //  • usuário logado no rodapé da navegação (canto inferior esquerdo): avatar,
-//    nome, perfil e o "sair" discreto.
+//    nome, perfil e o "sair" discreto;
+//  • só aparecem os itens que o perfil de acesso libera (lib/access.ts); na
+//    tela em que o perfil só consulta, o TopBar mostra "Somente leitura".
 
 const SIDEBAR_W_OPEN = 240
 const SIDEBAR_W_COLLAPSED = 64
 const COLLAPSE_KEY = 'sidebar-collapsed'
 
-type NavItemDef = { to: string; label: string; icon: IconName }
+/** `level`: nível exigido no módulo da rota (padrão 'view'). */
+type NavItemDef = { to: string; label: string; icon: IconName; level?: Exclude<AccessLevel, 'none'> }
 
 const NAV_SECTIONS: { label: string | null; items: NavItemDef[] }[] = [
   {
     label: null,
     items: [
-      { to: '/criar',          label: 'Criar (assistente)',    icon: 'create' },
+      { to: '/criar',          label: 'Criar (assistente)',    icon: 'create', level: 'edit' },
       { to: '/dashboards',     label: 'Dashboards',            icon: 'dashboard' },
       { to: '/atletas',        label: 'Atletas',               icon: 'athletes' },
       { to: '/album',          label: 'Portfolio de atletas',  icon: 'portfolio' },
@@ -58,7 +63,13 @@ const NAV_SECTIONS: { label: string | null; items: NavItemDef[] }[] = [
     label: 'Dados',
     items: [
       { to: '/dados',           label: 'Importar / exportar',      icon: 'transfer' },
-      { to: '/dados/planilhas', label: 'Importar ativos/passivos', icon: 'spreadsheet' },
+      { to: '/dados/planilhas', label: 'Importar ativos/passivos', icon: 'spreadsheet', level: 'edit' },
+    ],
+  },
+  {
+    label: 'Administração',
+    items: [
+      { to: '/usuarios', label: 'Usuários e acessos', icon: 'users' },
     ],
   },
 ]
@@ -84,7 +95,8 @@ function initials(s: string): string {
 
 export default function Layout({ children }: Props) {
   const { currency, setCurrency, language, setLanguage } = useApp()
-  const { profile, signOut } = useAuth()
+  const { profile, roleName, signOut, can } = useAuth()
+  const { pathname } = useLocation()
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
   })
@@ -97,7 +109,11 @@ export default function Layout({ children }: Props) {
 
   const toggle = () => setCollapsed(c => !c)
   const userName = profile?.nome || profile?.email || ''
-  const roleLabel = profile?.role === 'master' ? tr('Master') : tr('Jurídico')
+  const roleLabel = tr(roleName ?? profile?.role ?? '')
+  const sections = NAV_SECTIONS
+    .map(section => ({ ...section, items: section.items.filter(it => can(moduleForPath(it.to), it.level)) }))
+    .filter(section => section.items.length > 0)
+  const readOnly = can(moduleForPath(pathname)) && !can(editModuleForPath(pathname), 'edit')
 
   return (
     <div className="app-shell">
@@ -126,7 +142,7 @@ export default function Layout({ children }: Props) {
               <Icon name="panelOpen" size={16} />
             </button>
           )}
-          {NAV_SECTIONS.map((section, i) => (
+          {sections.map((section, i) => (
             <div key={i} className="nav-section">
               {section.label && !collapsed && <div className="eyebrow nav-section__label">{tr(section.label)}</div>}
               {section.label && collapsed && <div className="nav-section__rule" />}
@@ -158,6 +174,12 @@ export default function Layout({ children }: Props) {
       {/* ── Conteúdo ── */}
       <div className="app-main">
         <header className="app-topbar">
+          {readOnly && (
+            <Badge tone="outline" size="md" title="Seu perfil de acesso só permite consultar esta tela."
+              style={{ marginRight: 'auto' }}>
+              <Icon name="eye" size={12} /> {tr('Somente leitura')}
+            </Badge>
+          )}
           <select aria-label={tr('Moeda de exibição')} value={currency} onChange={e => setCurrency(e.target.value as AppCurrency)}
             className="app-topbar__select">
             {CURRENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{tr(opt.label)}</option>)}

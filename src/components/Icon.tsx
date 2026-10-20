@@ -8,10 +8,10 @@ import { Link } from 'react-router-dom'
 import {
   ArrowLeftRight, Banknote, Briefcase, Calculator, CalendarDays, ChartLine,
   ChartPie, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CirclePlus, Clock,
-  Download, Ellipsis, ExternalLink, FileSpreadsheet, Folder, Handshake, Images, Info, Layers,
-  LayoutDashboard, LayoutGrid, Link2, List, LogOut, PanelLeftClose, PanelLeftOpen, Pencil,
+  Download, Ellipsis, ExternalLink, Eye, FileSpreadsheet, Folder, Handshake, Images, Info, KeyRound, Layers,
+  LayoutDashboard, LayoutGrid, Link2, List, Lock, LogOut, Mail, PanelLeftClose, PanelLeftOpen, Pencil,
   Plus, Scale, Search, Shield, Split, TableProperties, Target, Trash2, TrendingUp, TriangleAlert, Undo2,
-  Upload, UserRound, Users, X, type LucideIcon,
+  Upload, UserCog, UserPlus, UserRound, Users, X, type LucideIcon,
 } from 'lucide-react'
 import { tr } from '../i18n'
 
@@ -41,6 +41,11 @@ const ICONS = {
   clock: Clock,               // vencimento próximo
   info: Info,                 // como o valor é calculado (tooltip)
   gavel: Scale,               // recuperação judicial
+  key: KeyRound,              // senha
+  mail: Mail,                 // convite / link por e-mail
+  lock: Lock,                 // sem acesso / desativar
+  eye: Eye,                   // somente leitura
+  userPlus: UserPlus,         // novo usuário
   // Navegação / estrutura
   create: CirclePlus,
   dashboard: LayoutDashboard,
@@ -58,6 +63,7 @@ const ICONS = {
   amortization: ChartLine,
   playerTable: TableProperties,
   transfer: ArrowLeftRight,
+  users: UserCog,             // usuários e acessos
   spreadsheet: FileSpreadsheet,
   folder: Folder,
   grid: LayoutGrid,

@@ -394,8 +394,8 @@ function umbrellaContract(contracts: Contract[]): Contract | null {
 export default function PageAthleteDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { profile } = useAuth()
-  const canEdit = !profile || profile.role === 'master' || profile.role === 'juridico'
+  const { can } = useAuth()
+  const canEdit = can('atletas', 'edit')
 
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [contracts, setContracts] = useState<Contract[]>([])

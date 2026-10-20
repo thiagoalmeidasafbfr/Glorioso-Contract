@@ -23,6 +23,7 @@ import { Icon } from '../components/Icon'
 import { fmtCurrencyShort } from '../lib/format'
 import { ModalShell } from '../components/modals/EditModals'
 import { modalInput, modalLabel } from '../components/modals/styles'
+import { useAuth } from '../context/AuthContext'
 import { tr, trf, trn } from '../i18n'
 
 const fontBody = "var(--font-body)"
@@ -47,6 +48,7 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
   const [search, setSearch] = useState('')
   const [showNew, setShowNew] = useState(false)
   const [sort, setSort] = useState<'nome' | 'valor'>('nome')
+  const canEdit = useAuth().can('cadastros', 'edit')
 
   const isClube = kind === 'clube'
   const title = isClube ? 'Clubes' : 'Agentes'
@@ -91,9 +93,11 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
       <PageHero title={tr(title)} section={tr('Cadastros')}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Buscar...')} aria-label={tr('Buscar')}
           style={{ minWidth: 220 }} />
-        <button onClick={() => setShowNew(true)} className="btn btn-outline">
-          <Icon name="plus" size={16} /> {isClube ? tr('Novo clube') : tr('Novo agente')}
-        </button>
+        {canEdit && (
+          <button onClick={() => setShowNew(true)} className="btn btn-outline">
+            <Icon name="plus" size={16} /> {isClube ? tr('Novo clube') : tr('Novo agente')}
+          </button>
+        )}
       </PageHero>
 
       {/* Resumo + ordenação */}

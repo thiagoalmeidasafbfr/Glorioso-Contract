@@ -10,8 +10,11 @@
 //       abrir (preto) · editar (preto) · parcelas (azul: cronograma ou gerar)
 //       marcar paga (verde) · registrar pagamento (verde) · desfazer (âmbar)
 //       excluir (vermelho)
+//   • sem permissão de edição em "Atletas e contratos" (perfil de acesso), só
+//     "abrir" fica ativo — as ações das linhas sempre alteram dados de atletas.
 
 import { IconButton } from './Icon'
+import { useAuth } from '../context/AuthContext'
 import { tr } from '../i18n'
 
 /** Uma ação: com `onClick`/`to` fica ativa; sem eles, cinza + motivo. */
@@ -63,6 +66,7 @@ const LABELS = {
 export default function RowActions({
   open, edit, schedule, generate, markPaid, pay, revert, rj, remove, small = true, align = 'right',
 }: RowActionsProps) {
+  const canEdit = useAuth().can('atletas', 'edit')
   // Cronograma e "gerar parcelas" ocupam o MESMO lugar na linha: são dois estados
   // do mesmo assunto (as parcelas da obrigação), com ícones e tooltips distintos.
   const parcels = schedule?.onClick ? { action: schedule, icon: 'schedule' as const, key: 'schedule' as const }
@@ -78,11 +82,12 @@ export default function RowActions({
   ) => {
     if (!a) return null
     const label = a.label ?? LABELS[key]
-    const enabled = !!a.onClick || !!a.to
+    const allowed = key === 'open' || canEdit
+    const enabled = allowed && (!!a.onClick || !!a.to)
     return (
       <IconButton key={key} icon={icon} label={tr(label)} tone={tone} small={small}
         to={a.to ?? undefined} onClick={a.onClick}
-        disabled={!enabled} disabledReason={tr(a.reason)} />
+        disabled={!enabled} disabledReason={tr(allowed ? a.reason : 'sem permissão de edição')} />
     )
   }
 
