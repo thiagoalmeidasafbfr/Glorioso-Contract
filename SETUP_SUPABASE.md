@@ -45,6 +45,7 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 17. `017_ptax_fixada.sql`
 18. `018_premissas_atleta.sql`  ← **aba de PREMISSAS por atleta (Fase 1 do modelo do CFO)**
 19. `019_usuarios_acessos.sql`  ← **usuários, perfis de acesso e restrição por módulo** (ver `docs/USUARIOS_E_ACESSOS.md`)
+20. `020_perfil_semimaster.sql`  ← **perfil Semimaster** (opera tudo, sem administrar usuários)
 
 > **IMPORTANTE:** rode **todas** as migrations acima, em ordem. Se pular alguma,
 > a aba correspondente falha com um erro do tipo *"Could not find the table
@@ -99,6 +100,7 @@ Master):
 | Perfil | Pode |
 |--------|------|
 | **Master** | Tudo, inclusive administrar usuários e perfis. |
+| **Semimaster** | Tudo sobre atletas, contratos, obrigações, pagamentos, clubes/agentes, modelo financeiro e importações; vê a lista de usuários, mas não cria/edita usuários nem perfis e não apaga a base. |
 | **Jurídico** | Editar atletas, contratos, obrigações, clubes/agentes e importar planilhas; consultar o modelo financeiro. |
 | **Financeiro** | Editar as premissas do modelo financeiro; consultar o resto. |
 | **Consulta** | Somente leitura. |
