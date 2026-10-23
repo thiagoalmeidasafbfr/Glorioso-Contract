@@ -61,6 +61,7 @@ import {
   badgeStyle, humanizeEnum, type BadgeTone, type ToneStyle,
 } from '../lib/tones'
 import { tr, trf, locale, trn, trParts } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -431,18 +432,23 @@ export default function PageAthleteDetail() {
   const loadData = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, agents, pjList, imgs, inst] = await Promise.all([
-      fetchAthlete(id), fetchAthleteContracts(id), fetchAthleteClauses(id), fetchAthleteAlerts(id),
-      fetchAthleteEconomicRights(id), fetchAthleteSalaryTriggers(id),
-      fetchAthleteClubLiabilities(id), fetchAthleteIntermediaryLiabilities(id),
-      fetchClubs(), fetchIntermediaries(),
-      fetchAthletePJs(id), fetchAthleteImageRights(id), fetchAthleteInstallments(id),
-    ])
-    setAthlete(ath); setContracts(contr); setClauses(cls); setAlerts(alrt)
-    setRights(rght); setTriggers(trg); setClubLiabs(clb); setIntermLiabs(itm)
-    setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
-    setPjs(pjList); setImageRights(imgs); setInstallments(inst)
-    setLoading(false)
+    try {
+      const [ath, contr, cls, alrt, rght, trg, clb, itm, clubs, agents, pjList, imgs, inst] = await Promise.all([
+        fetchAthlete(id), fetchAthleteContracts(id), fetchAthleteClauses(id), fetchAthleteAlerts(id),
+        fetchAthleteEconomicRights(id), fetchAthleteSalaryTriggers(id),
+        fetchAthleteClubLiabilities(id), fetchAthleteIntermediaryLiabilities(id),
+        fetchClubs(), fetchIntermediaries(),
+        fetchAthletePJs(id), fetchAthleteImageRights(id), fetchAthleteInstallments(id),
+      ])
+      setAthlete(ath); setContracts(contr); setClauses(cls); setAlerts(alrt)
+      setRights(rght); setTriggers(trg); setClubLiabs(clb); setIntermLiabs(itm)
+      setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
+      setPjs(pjList); setImageRights(imgs); setInstallments(inst)
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [id])
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de dados no mount
   useEffect(() => { loadData() }, [loadData])

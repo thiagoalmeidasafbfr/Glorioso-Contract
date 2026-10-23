@@ -11,6 +11,8 @@ import type { Athlete, AthleteStatus, AthleteCategory, EconomicRight, Clause } f
 import { ATHLETE_CATEGORY_LABELS } from '../types/athlete-system'
 import { ATHLETE_STATUS_TONE, badgeStyle } from '../lib/tones'
 import { tr } from '../i18n'
+import { useAthletePhoto } from '../lib/athletePhotos'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -32,7 +34,8 @@ function getInitials(name: string): string {
 // a placa creme com filete — o dispositivo mais reconhecível do sistema.
 function StickerPhoto({ athlete }: { athlete: Athlete }) {
   const [err, setErr] = useState(false)
-  const hasPhoto = athlete.profile_photo_url && !err
+  const photo = useAthletePhoto(athlete)
+  const hasPhoto = photo && !err
   return (
     <div style={{
       position: 'relative', width: '100%', aspectRatio: '3 / 4',
@@ -42,7 +45,7 @@ function StickerPhoto({ athlete }: { athlete: Athlete }) {
     }}>
       {hasPhoto ? (
         <img
-          src={athlete.profile_photo_url!}
+          src={photo!}
           alt={athlete.short_name}
           onError={() => setErr(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
@@ -180,13 +183,13 @@ export default function PageAlbum() {
   const [clauses, setClauses] = useState<Clause[]>([])
 
   useEffect(() => {
-    fetchAthletes().then(data => { setAthletes(data); setLoading(false) }).catch(() => setLoading(false))
+    fetchAthletes().then(setAthletes).catch(reportLoadError).finally(() => setLoading(false))
     fetchAllEconomicRights().then(rows => {
       const map: Record<string, EconomicRight[]> = {}
       for (const r of rows) (map[r.athlete_id] ??= []).push(r)
       setRightsByAthlete(map)
-    }).catch(() => {})
-    fetchAllClauses().then(setClauses).catch(() => {})
+    }).catch(reportLoadError)
+    fetchAllClauses().then(setClauses).catch(reportLoadError)
   }, [])
 
   // Opções dinâmicas de posição e nacionalidade a partir dos dados.

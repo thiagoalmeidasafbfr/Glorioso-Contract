@@ -28,6 +28,7 @@ import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 import { tr, trf, trn, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -70,12 +71,17 @@ export default function PageVisaoAtletas() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, clauses, installments, clubLiabs, intermLiabs] = await Promise.all([
-      fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
-      fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
-    ])
-    setRows(buildAthleteOverview({ athletes, clauses, installments, clubLiabs, intermLiabs }))
-    setLoading(false)
+    try {
+      const [athletes, clauses, installments, clubLiabs, intermLiabs] = await Promise.all([
+        fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
+        fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
+      ])
+      setRows(buildAthleteOverview({ athletes, clauses, installments, clubLiabs, intermLiabs }))
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount

@@ -295,4 +295,12 @@ export const ES: Record<string, string> = {
   'Sessão inválida. Entre novamente.': 'Sesión inválida. Inicie sesión de nuevo.',
   'Semimaster': 'Semimaster',
   'Acesso livre a atletas, contratos, cadastros, modelo financeiro e importações; não administra usuários nem apaga a base.': 'Acceso libre a atletas, contratos, registros, modelo financiero e importaciones; no administra usuarios ni borra la base.',
+  'Não foi possível carregar os dados desta tela.': 'No se pudieron cargar los datos de esta pantalla.',
+  'Tentar novamente': 'Intentar de nuevo',
+  'Sem conexão': 'Sin conexión',
+  'Não foi possível falar com o servidor para carregar o seu perfil.': 'No fue posible contactar al servidor para cargar su perfil.',
+  'Tempo de resposta esgotado': 'Tiempo de respuesta agotado',
+  'Cadastra e edita atletas, contratos, obrigações e cadastros.': 'Registra y edita atletas, contratos, obligaciones y registros.',
+  'Consulta atletas, cadastros, painéis e relatórios e exporta planilhas.': 'Consulta atletas, registros, paneles e informes y exporta planillas.',
+  'Acesso livre a atletas, contratos, cadastros e importações; não administra usuários nem apaga a base.': 'Acceso libre a atletas, contratos, registros e importaciones; no administra usuarios ni borra la base.',
 }

@@ -8,7 +8,7 @@ import Layout from './components/Layout'
 import Wordmark from './components/Wordmark'
 import PageLogin from './pages/PageLogin'
 import PageDefinirSenha from './pages/PageDefinirSenha'
-import { RequireAccess, HomeRedirect, AccessPending } from './components/AccessGuard'
+import { RequireAccess, HomeRedirect, AccessPending, ConnectionError } from './components/AccessGuard'
 import { homePath, type AccessLevel, type ModuleKey } from './lib/access'
 
 // Sistema de atletas
@@ -37,7 +37,6 @@ import PageDados from './pages/PageDados'
 import PageImportarPlanilhas from './pages/PageImportarPlanilhas'
 import PageAmortizacao from './pages/PageAmortizacao'
 import PageDetalhamentoJogadores from './pages/PageDetalhamentoJogadores'
-import PagePremissas from './pages/PagePremissas'
 
 // Administração
 import PageUsuarios from './pages/PageUsuarios'
@@ -58,7 +57,7 @@ function guard(module: ModuleKey, element: ReactNode, level: Exclude<AccessLevel
 }
 
 function AppRoutes() {
-  const { session, profile, permissions, loading, mustSetPassword } = useAuth()
+  const { session, profile, permissions, loading, authError, mustSetPassword } = useAuth()
 
   if (USE_SUPABASE && loading) {
     return (
@@ -80,6 +79,7 @@ function AppRoutes() {
     )
   }
 
+  if (USE_SUPABASE && authError && !profile) return <ConnectionError />
   if (USE_SUPABASE && mustSetPassword) return <PageDefinirSenha />
   // Entrou, mas está desativado (ou sem perfil): não vê nada — a RLS também
   // não devolve dados para ele.
@@ -122,8 +122,8 @@ function AppRoutes() {
           <Route path="/relatorios/jogadores" element={guard('relatorios', <PageDetalhamentoJogadores />)} />
           <Route path="/relatorios/salarios" element={<Navigate to="/relatorios/jogadores" replace />} />
 
-          {/* Modelo financeiro (CFO) */}
-          <Route path="/modelo/premissas" element={guard('modelo', <PagePremissas />)} />
+          {/* Premissas por atleta foram removidas: links antigos vão para o início. */}
+          <Route path="/modelo/*" element={<HomeRedirect />} />
           {/* Compat: redireciona os relatórios antigos por natureza ao consolidado. */}
           <Route path="/relatorios/:kind" element={<Navigate to="/relatorios/consolidado" replace />} />
 

@@ -20,7 +20,7 @@ import type {
 import { buildRemunerationFlow } from './remflow'
 import { effectiveRemuneration } from './salary'
 import {
-  createClause, createClauseInstallments, updateClause, deleteInstallment, deleteClause,
+  createClause, createClauseInstallments, updateClause, deleteInstallments, deleteClause,
 } from './athleteQueries'
 
 const SALARY_DUE_DAY = 5
@@ -109,7 +109,7 @@ async function regenType(
   // Canônica existe: apaga só as parcelas NÃO pagas e reinsere as pendentes.
   const canonInsts = installments.filter(i => i.clause_id === canonical.id)
   const kept = canonInsts.filter(isPaid).sort((a, b) => a.due_date.localeCompare(b.due_date))
-  for (const i of canonInsts) if (!isPaid(i)) await deleteInstallment(i.id)
+  await deleteInstallments(canonInsts.filter(i => !isPaid(i)).map(i => i.id))
 
   // Renumera: parcelas pagas primeiro (por data), depois as novas pendentes.
   const merged = [

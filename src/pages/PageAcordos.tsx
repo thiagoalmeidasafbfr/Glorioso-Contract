@@ -21,6 +21,7 @@ import RenegotiationEditModal from '../components/modals/RenegotiationEditModal'
 import { useAuth } from '../context/AuthContext'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 import { tr, trf, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -65,35 +66,40 @@ export default function PageAcordos() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, clauses, installments] = await Promise.all([
-      fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
-    ])
-    const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
-    const built: Row[] = []
-    const acordos = clauses.filter(isAcordo)
-    setAcordoClauses(acordos)
-    for (const c of acordos) {
-      const meta = decodeAcordo(c.notes)
-      const parc = installments.filter((i: ClauseInstallment) => i.clause_id === c.id)
-      const paid = parc.filter(p => p.payment_status === 'PAGA').length
-      const late = parc.some(p => isOverdue(p.due_date, p.payment_status))
-      const andamento: Andamento = paid >= parc.length && parc.length > 0 ? 'QUITADO'
-        : late ? 'EM_ATRASO' : paid > 0 ? 'EM_ANDAMENTO' : 'PENDENTE'
-      built.push({
-        id: c.id, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
-        credor: meta?.creditor ?? c.creditor_party, devedor: meta?.debtor ?? c.debtor_party,
-        data: meta?.createdAt ?? c.created_at?.slice(0, 10) ?? '',
-        originalTotal: meta?.originalTotal ?? (c.original_value ?? 0),
-        newTotal: meta?.newTotal ?? (c.original_value ?? 0),
-        discount: meta?.discount ?? 0,
-        currency: (meta?.currency ?? c.currency) as Currency,
-        count: parc.length || c.installments_total, paid, andamento,
-        note: meta?.userNote ?? '',
-      })
+    try {
+      const [athletes, clauses, installments] = await Promise.all([
+        fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
+      ])
+      const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
+      const built: Row[] = []
+      const acordos = clauses.filter(isAcordo)
+      setAcordoClauses(acordos)
+      for (const c of acordos) {
+        const meta = decodeAcordo(c.notes)
+        const parc = installments.filter((i: ClauseInstallment) => i.clause_id === c.id)
+        const paid = parc.filter(p => p.payment_status === 'PAGA').length
+        const late = parc.some(p => isOverdue(p.due_date, p.payment_status))
+        const andamento: Andamento = paid >= parc.length && parc.length > 0 ? 'QUITADO'
+          : late ? 'EM_ATRASO' : paid > 0 ? 'EM_ANDAMENTO' : 'PENDENTE'
+        built.push({
+          id: c.id, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
+          credor: meta?.creditor ?? c.creditor_party, devedor: meta?.debtor ?? c.debtor_party,
+          data: meta?.createdAt ?? c.created_at?.slice(0, 10) ?? '',
+          originalTotal: meta?.originalTotal ?? (c.original_value ?? 0),
+          newTotal: meta?.newTotal ?? (c.original_value ?? 0),
+          discount: meta?.discount ?? 0,
+          currency: (meta?.currency ?? c.currency) as Currency,
+          count: parc.length || c.installments_total, paid, andamento,
+          note: meta?.userNote ?? '',
+        })
+      }
+      built.sort((a, b) => b.data.localeCompare(a.data))
+      setRows(built)
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
     }
-    built.sort((a, b) => b.data.localeCompare(a.data))
-    setRows(built)
-    setLoading(false)
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount

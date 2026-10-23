@@ -28,6 +28,7 @@ import EntityPicker from '../components/EntityPicker'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
 import { tr, trn } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -116,7 +117,7 @@ export default function PageWizard() {
 
   const [description, setDescription] = useState('')
 
-  useEffect(() => { fetchAthletes().then(setAthletes) }, [])
+  useEffect(() => { fetchAthletes().then(setAthletes).catch(reportLoadError) }, [])
 
   // Ao escolher natureza, aplica direção/beneficiário/moeda padrão e avança.
   function pickNature(n: Nature) {

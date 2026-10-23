@@ -28,6 +28,7 @@ import KpiPill from '../components/KpiPill'
 import RowActions from '../components/RowActions'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 import { tr, trf, trn, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const METRIC_LABEL: Record<TriggerMetric, string> = {
   JOGOS: 'Jogos', GOLS: 'Gols', ASSISTENCIAS: 'Assistências',
@@ -71,61 +72,66 @@ export default function PageRelGatilhos() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, triggers, clauses] = await Promise.all([
-      fetchAthletes(), fetchAllSalaryTriggers(), fetchAllClauses(),
-    ])
-    const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
-    const built: Row[] = []
+    try {
+      const [athletes, triggers, clauses] = await Promise.all([
+        fetchAthletes(), fetchAllSalaryTriggers(), fetchAllClauses(),
+      ])
+      const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
+      const built: Row[] = []
 
-    // Gatilhos de remuneração (SalaryTrigger). Gatilhos internos criados pelo
-    // rateio de empréstimo NÃO aparecem aqui — são um mecanismo, não uma meta.
-    for (const t of triggers.filter((t: SalaryTrigger) => !isLoanShareTrigger(t))) {
-      const impact = t.new_image_value != null
-        ? trf('Salário → {0} · Imagem → {1}', fmtCurrencyShort(t.new_salary, t.currency), fmtCurrencyShort(t.new_image_value, t.currency))
-        : trf('Salário → {0}', fmtCurrencyShort(t.new_salary, t.currency))
-      built.push({
-        id: `t-${t.id}`, clauseId: null, athleteId: t.athlete_id,
-        atleta: nameOf.get(t.athlete_id) ?? '—',
-        origin: 'REMUNERACAO', description: t.description,
-        metric: METRIC_LABEL[t.metric] ?? String(t.metric),
-        threshold: t.threshold != null ? String(t.threshold) : '—',
-        status: t.status, achievedDate: t.achieved_date,
-        impact, currency: t.currency,
-      })
+      // Gatilhos de remuneração (SalaryTrigger). Gatilhos internos criados pelo
+      // rateio de empréstimo NÃO aparecem aqui — são um mecanismo, não uma meta.
+      for (const t of triggers.filter((t: SalaryTrigger) => !isLoanShareTrigger(t))) {
+        const impact = t.new_image_value != null
+          ? trf('Salário → {0} · Imagem → {1}', fmtCurrencyShort(t.new_salary, t.currency), fmtCurrencyShort(t.new_image_value, t.currency))
+          : trf('Salário → {0}', fmtCurrencyShort(t.new_salary, t.currency))
+        built.push({
+          id: `t-${t.id}`, clauseId: null, athleteId: t.athlete_id,
+          atleta: nameOf.get(t.athlete_id) ?? '—',
+          origin: 'REMUNERACAO', description: t.description,
+          metric: METRIC_LABEL[t.metric] ?? String(t.metric),
+          threshold: t.threshold != null ? String(t.threshold) : '—',
+          status: t.status, achievedDate: t.achieved_date,
+          impact, currency: t.currency,
+        })
+      }
+
+      // Cláusulas condicionadas (bônus e rescisórias).
+      for (const c of clauses as Clause[]) {
+        const origin: Origin | null =
+          c.clause_type === 'BONUS_PERFORMANCE_ATLETA' ? 'BONUS' :
+          c.clause_type === 'CLAUSULA_RESCISORIA'      ? 'RESCISORIA' : null
+        if (!origin) continue
+        const value = c.original_value != null
+          ? fmtCurrencyShort(c.original_value, c.currency)
+          : c.percentage_value != null ? `${c.percentage_value}%` : '—'
+        built.push({
+          id: `c-${c.id}`, clauseId: c.id, athleteId: c.athlete_id,
+          atleta: nameOf.get(c.athlete_id) ?? '—',
+          origin, description: c.description, metric: CLAUSE_TYPE_LABELS[c.clause_type],
+          threshold: c.condition_description || '—',
+          status: c.achievement_status === 'ATINGIDA' ? 'ATINGIDA'
+            : c.achievement_status === 'NAO_ATINGIDA' ? 'NAO_ATINGIDA'
+            : 'PENDENTE',
+          achievedDate: c.achievement_date,
+          impact: value, currency: c.currency,
+        })
+      }
+
+      // Pendentes primeiro (ação necessária), depois atingidas por data (recentes
+      // primeiro), depois não atingidas.
+      const statusOrder: Record<TriggerStatus, number> = { PENDENTE: 0, ATINGIDA: 1, NAO_ATINGIDA: 2 }
+      built.sort((a, b) =>
+        statusOrder[a.status] - statusOrder[b.status]
+        || (b.achievedDate ?? '').localeCompare(a.achievedDate ?? '')
+        || a.atleta.localeCompare(b.atleta))
+
+      setRows(built)
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
     }
-
-    // Cláusulas condicionadas (bônus e rescisórias).
-    for (const c of clauses as Clause[]) {
-      const origin: Origin | null =
-        c.clause_type === 'BONUS_PERFORMANCE_ATLETA' ? 'BONUS' :
-        c.clause_type === 'CLAUSULA_RESCISORIA'      ? 'RESCISORIA' : null
-      if (!origin) continue
-      const value = c.original_value != null
-        ? fmtCurrencyShort(c.original_value, c.currency)
-        : c.percentage_value != null ? `${c.percentage_value}%` : '—'
-      built.push({
-        id: `c-${c.id}`, clauseId: c.id, athleteId: c.athlete_id,
-        atleta: nameOf.get(c.athlete_id) ?? '—',
-        origin, description: c.description, metric: CLAUSE_TYPE_LABELS[c.clause_type],
-        threshold: c.condition_description || '—',
-        status: c.achievement_status === 'ATINGIDA' ? 'ATINGIDA'
-          : c.achievement_status === 'NAO_ATINGIDA' ? 'NAO_ATINGIDA'
-          : 'PENDENTE',
-        achievedDate: c.achievement_date,
-        impact: value, currency: c.currency,
-      })
-    }
-
-    // Pendentes primeiro (ação necessária), depois atingidas por data (recentes
-    // primeiro), depois não atingidas.
-    const statusOrder: Record<TriggerStatus, number> = { PENDENTE: 0, ATINGIDA: 1, NAO_ATINGIDA: 2 }
-    built.sort((a, b) =>
-      statusOrder[a.status] - statusOrder[b.status]
-      || (b.achievedDate ?? '').localeCompare(a.achievedDate ?? '')
-      || a.atleta.localeCompare(b.atleta))
-
-    setRows(built)
-    setLoading(false)
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount

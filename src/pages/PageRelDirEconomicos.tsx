@@ -16,6 +16,7 @@ import { Icon, IconButton } from '../components/Icon'
 import RowActions from '../components/RowActions'
 import { badgeStyle } from '../lib/tones'
 import { tr, trf, trn, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 interface HolderRow { holderType: HolderType; holderName: string; percentage: number }
 interface AthleteRow {
@@ -47,31 +48,36 @@ export default function PageRelDirEconomicos() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, rights] = await Promise.all([fetchAthletes(), fetchAllEconomicRights()])
-    const byAth = new Map<string, EconomicRight[]>()
-    for (const r of rights) {
-      const arr = byAth.get(r.athlete_id); if (arr) arr.push(r); else byAth.set(r.athlete_id, [r])
+    try {
+      const [athletes, rights] = await Promise.all([fetchAthletes(), fetchAllEconomicRights()])
+      const byAth = new Map<string, EconomicRight[]>()
+      for (const r of rights) {
+        const arr = byAth.get(r.athlete_id); if (arr) arr.push(r); else byAth.set(r.athlete_id, [r])
+      }
+      const built: AthleteRow[] = athletes.map(a => {
+        const list = (byAth.get(a.id) ?? []).slice()
+          .sort((x, y) => y.percentage - x.percentage)
+        const holders: HolderRow[] = list.map(r => ({
+          holderType: r.holder_type,
+          holderName: r.holder_name || HOLDER_TYPE_LABELS[r.holder_type],
+          percentage: r.percentage,
+        }))
+        const total = holders.reduce((s, h) => s + h.percentage, 0)
+        const bfrPct = holders.filter(h => h.holderType === 'BFR').reduce((s, h) => s + h.percentage, 0)
+        const status: AthleteRow['status'] = holders.length === 0 ? 'SEM_LANCAMENTO'
+          : total < 99.99 ? 'PARCIAL'
+          : 'OK'
+        return { athlete: a, holders, total, status, bfrPct }
+      })
+      // Botafogo primeiro (%), depois quem tem parceria (BFR<100), depois quem
+      // ainda não tem lançamento.
+      built.sort((a, b) => b.bfrPct - a.bfrPct || a.athlete.full_name.localeCompare(b.athlete.full_name))
+      setRows(built)
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
     }
-    const built: AthleteRow[] = athletes.map(a => {
-      const list = (byAth.get(a.id) ?? []).slice()
-        .sort((x, y) => y.percentage - x.percentage)
-      const holders: HolderRow[] = list.map(r => ({
-        holderType: r.holder_type,
-        holderName: r.holder_name || HOLDER_TYPE_LABELS[r.holder_type],
-        percentage: r.percentage,
-      }))
-      const total = holders.reduce((s, h) => s + h.percentage, 0)
-      const bfrPct = holders.filter(h => h.holderType === 'BFR').reduce((s, h) => s + h.percentage, 0)
-      const status: AthleteRow['status'] = holders.length === 0 ? 'SEM_LANCAMENTO'
-        : total < 99.99 ? 'PARCIAL'
-        : 'OK'
-      return { athlete: a, holders, total, status, bfrPct }
-    })
-    // Botafogo primeiro (%), depois quem tem parceria (BFR<100), depois quem
-    // ainda não tem lançamento.
-    built.sort((a, b) => b.bfrPct - a.bfrPct || a.athlete.full_name.localeCompare(b.athlete.full_name))
-    setRows(built)
-    setLoading(false)
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount

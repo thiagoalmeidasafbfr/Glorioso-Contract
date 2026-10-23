@@ -32,6 +32,7 @@ import type { Currency, ClauseType } from '../types/athlete-system'
 import PageHero from '../components/PageHero'
 import { Icon } from '../components/Icon'
 import { tr } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font = 'var(--font-body)'
 const display = 'var(--font-display)'
@@ -98,64 +99,69 @@ export default function PageDashboards() {
   useEffect(() => {
     (async () => {
       setLoading(true)
-      const [clauses, installments, clubLiabs, interLiabs] = await Promise.all([
-        fetchAllClauses(), fetchAllInstallments(), fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
-      ])
-      const clauseById = new Map(clauses.map(c => [c.id, c]))
-      const withInst = new Set(installments.map(i => i.clause_id))
-      const list: Item[] = []
-      // RJ é regra-mestra: um item em RJ nunca é "late" e não entra nas
-      // agregações de A pagar/A receber (viraria dupla contagem).
-      for (const it of installments) {
-        const c = clauseById.get(it.clause_id); if (!c) continue
-        const pagar = isBFR(c.debtor_party)
-        const rj = !!parseRJ(it.notes) || !!parseRJ(c.notes)
-        list.push({
-          ym: (it.due_date ?? '').slice(0, 7),
-          group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
-          dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
-          brl: brlOf(it.original_value, it.currency), status: it.payment_status,
-          parte: pagar ? c.creditor_party : c.debtor_party,
-          late: !rj && isOverdue(it.due_date, it.payment_status),
-          dueDate: it.due_date, paidDate: it.payment_date, rj,
-        })
+      try {
+        const [clauses, installments, clubLiabs, interLiabs] = await Promise.all([
+          fetchAllClauses(), fetchAllInstallments(), fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
+        ])
+        const clauseById = new Map(clauses.map(c => [c.id, c]))
+        const withInst = new Set(installments.map(i => i.clause_id))
+        const list: Item[] = []
+        // RJ é regra-mestra: um item em RJ nunca é "late" e não entra nas
+        // agregações de A pagar/A receber (viraria dupla contagem).
+        for (const it of installments) {
+          const c = clauseById.get(it.clause_id); if (!c) continue
+          const pagar = isBFR(c.debtor_party)
+          const rj = !!parseRJ(it.notes) || !!parseRJ(c.notes)
+          list.push({
+            ym: (it.due_date ?? '').slice(0, 7),
+            group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
+            dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
+            brl: brlOf(it.original_value, it.currency), status: it.payment_status,
+            parte: pagar ? c.creditor_party : c.debtor_party,
+            late: !rj && isOverdue(it.due_date, it.payment_status),
+            dueDate: it.due_date, paidDate: it.payment_date, rj,
+          })
+        }
+        for (const c of clauses) {
+          if (withInst.has(c.id) || c.original_value == null) continue
+          const pagar = isBFR(c.debtor_party)
+          const rj = !!parseRJ(c.notes)
+          list.push({
+            ym: (c.due_date ?? '').slice(0, 7),
+            group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
+            dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
+            brl: brlOf(c.original_value, c.currency), status: c.payment_status,
+            parte: pagar ? c.creditor_party : c.debtor_party,
+            late: !rj && isOverdue(c.due_date, c.payment_status),
+            dueDate: c.due_date, paidDate: c.payment_date, rj,
+          })
+        }
+        for (const l of clubLiabs) {
+          const rj = !!parseRJ(l.notes)
+          list.push({
+            ym: (l.due_date ?? '').slice(0, 7),
+            group: 'clube', natureza: 'Obrigação clube',
+            dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+            parte: l.club_name, late: !rj && isOverdue(l.due_date, l.status),
+            dueDate: l.due_date, paidDate: l.settled_date, rj,
+          })
+        }
+        for (const l of interLiabs) {
+          const rj = !!parseRJ(l.notes)
+          list.push({
+            ym: (l.due_date ?? '').slice(0, 7),
+            group: 'agente', natureza: 'Intermediação',
+            dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
+            parte: l.intermediary_name, late: !rj && isOverdue(l.due_date, l.status),
+            dueDate: l.due_date, paidDate: l.settled_date, rj,
+          })
+        }
+        setItems(list)
+      } catch (err) {
+        reportLoadError(err)
+      } finally {
+        setLoading(false)
       }
-      for (const c of clauses) {
-        if (withInst.has(c.id) || c.original_value == null) continue
-        const pagar = isBFR(c.debtor_party)
-        const rj = !!parseRJ(c.notes)
-        list.push({
-          ym: (c.due_date ?? '').slice(0, 7),
-          group: groupOf(c.clause_type), natureza: CLAUSE_TYPE_LABELS[c.clause_type],
-          dir: pagar ? 'A_PAGAR' : 'A_RECEBER',
-          brl: brlOf(c.original_value, c.currency), status: c.payment_status,
-          parte: pagar ? c.creditor_party : c.debtor_party,
-          late: !rj && isOverdue(c.due_date, c.payment_status),
-          dueDate: c.due_date, paidDate: c.payment_date, rj,
-        })
-      }
-      for (const l of clubLiabs) {
-        const rj = !!parseRJ(l.notes)
-        list.push({
-          ym: (l.due_date ?? '').slice(0, 7),
-          group: 'clube', natureza: 'Obrigação clube',
-          dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
-          parte: l.club_name, late: !rj && isOverdue(l.due_date, l.status),
-          dueDate: l.due_date, paidDate: l.settled_date, rj,
-        })
-      }
-      for (const l of interLiabs) {
-        const rj = !!parseRJ(l.notes)
-        list.push({
-          ym: (l.due_date ?? '').slice(0, 7),
-          group: 'agente', natureza: 'Intermediação',
-          dir: l.direction, brl: brlOf(l.amount, l.currency), status: l.status,
-          parte: l.intermediary_name, late: !rj && isOverdue(l.due_date, l.status),
-          dueDate: l.due_date, paidDate: l.settled_date, rj,
-        })
-      }
-      setItems(list)
-      setLoading(false)
     })()
   }, [])
 

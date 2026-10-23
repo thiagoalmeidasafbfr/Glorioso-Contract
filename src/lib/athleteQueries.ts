@@ -15,6 +15,7 @@
 
 import { supabase, USE_SUPABASE } from './supabase'
 import { local } from './localStore'
+import { cached } from './queryCache'
 import type {
   Athlete, Contract, Clause, ClauseInstallment, Alert, EconomicRight,
   SalaryTrigger, ClubLiability, IntermediaryLiability, ImageRight,
@@ -78,6 +79,38 @@ function nn<T>(v: T): T {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>
+
+// ── Leitura completa e paginada ─────────────────────────────────────────────
+// O Supabase devolve no máximo "Max rows" linhas por requisição (1000 por
+// padrão) e CORTA o resto sem erro. Os fluxos mensais de salário/imagem geram
+// milhares de parcelas — os relatórios ficavam incompletos. selectAll pede o
+// total na primeira página e busca as demais até completar; `refine` aplica
+// filtros e a ordem principal, e a chave (`id`) desempata para a paginação
+// ser estável.
+const PAGE_SIZE = 1000
+// Ids por requisição no `in(...)`: a lista vai na URL, que tem limite de tamanho.
+const IN_CHUNK = 100
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Query = any
+
+async function selectAll(table: string, refine: (q: Query) => Query = q => q, opts: { columns?: string; key?: string } = {}): Promise<Row[]> {
+  const rows: Row[] = []
+  let total: number | null = null
+  for (let first = true; ; first = false) {
+    const base: Query = supabase.from(table).select(opts.columns ?? '*', first ? { count: 'exact' } : undefined)
+    const res: { data: Row[] | null; error: Error | null; count: number | null } =
+      await refine(base).order(opts.key ?? 'id').range(rows.length, rows.length + PAGE_SIZE - 1)
+    const { data, error, count } = res
+    if (error) throw error
+    if (first && count != null) total = count
+    if (!data || data.length === 0) break
+    rows.push(...data)
+    // Com o total conhecido, para ao completá-lo; sem ele (cabeçalho de
+    // contagem ausente), para na primeira página incompleta.
+    if (total != null ? rows.length >= total : data.length < PAGE_SIZE) break
+  }
+  return rows
+}
 
 function toAcFK(patch: Row): Row {
   const o: Row = { ...patch }
@@ -228,9 +261,8 @@ function toAcInter(c: Partial<Intermediary>): Row {
 
 export async function fetchClubs(): Promise<Club[]> {
   if (!USE_SUPABASE) return local.all<Club>(T.clubs).sort((a, b) => a.name.localeCompare(b.name))
-  const { data, error } = await supabase.from(AC.entidades).select('*').in('tipo', ['CLUBE', 'CLUBE_PROPRIO']).order('nome')
-  if (error) throw error
-  return data.map(fromAcClub)
+  return cached('clubs', async () =>
+    (await selectAll(AC.entidades, q => q.in('tipo', ['CLUBE', 'CLUBE_PROPRIO']).order('nome'))).map(fromAcClub))
 }
 
 export async function fetchClub(id: string): Promise<Club | null> {
@@ -265,9 +297,8 @@ export async function deleteClub(id: string): Promise<void> {
 
 export async function fetchIntermediaries(): Promise<Intermediary[]> {
   if (!USE_SUPABASE) return local.all<Intermediary>(T.intermediaries).sort((a, b) => a.name.localeCompare(b.name))
-  const { data, error } = await supabase.from(AC.entidades).select('*').eq('tipo', 'AGENTE').order('nome')
-  if (error) throw error
-  return data.map(fromAcInter)
+  return cached('agents', async () =>
+    (await selectAll(AC.entidades, q => q.eq('tipo', 'AGENTE').order('nome'))).map(fromAcInter))
 }
 
 export async function fetchIntermediary(id: string): Promise<Intermediary | null> {
@@ -300,11 +331,26 @@ export async function deleteIntermediary(id: string): Promise<void> {
 
 // ── Athletes ──────────────────────────────────────────────────────────────
 
+// A lista NÃO traz as fotos: elas ficam em base64 na própria linha (dezenas
+// de KB cada) e quase nenhuma tela as mostra. Quem mostra usa
+// useAthletePhoto (lib/athletePhotos), que baixa as fotos uma vez só.
+// fetchAthlete (um atleta) continua trazendo a foto.
+const ATHLETE_LIST_COLUMNS = 'id, external_ref, nome_completo, nome, data_nascimento, nacionalidade, cpf, passaporte, ' +
+  'agente_nome, agente_contato, status, categoria, posicao, observacoes, created_at, updated_at'
+
 export async function fetchAthletes(): Promise<Athlete[]> {
   if (!USE_SUPABASE) return local.all<Athlete>(T.athletes).sort((a, b) => a.full_name.localeCompare(b.full_name))
-  const { data, error } = await supabase.from(AC.athletes).select('*').order('nome_completo')
-  if (error) throw error
-  return data.map(fromAcAthlete)
+  return cached('athletes', async () =>
+    (await selectAll(AC.athletes, q => q.order('nome_completo'), { columns: ATHLETE_LIST_COLUMNS })).map(fromAcAthlete))
+}
+
+/** Fotos de todos os atletas (id → data URL). Só no Supabase; guardadas até
+ *  alguma alteração na tabela de atletas. */
+export async function fetchAthletePhotos(): Promise<Map<string, string>> {
+  return cached('athlete-photos', async () => {
+    const rows = await selectAll(AC.athletes, q => q.not('foto_url', 'is', null), { columns: 'id, foto_url' })
+    return new Map(rows.map(r => [r.id as string, r.foto_url as string]))
+  }, { tag: 'photos', ttl: 30 * 60_000 })
 }
 
 export async function fetchAthlete(id: string): Promise<Athlete | null> {
@@ -383,9 +429,7 @@ export async function fetchAthleteEconomicRights(athleteId: string): Promise<Eco
 
 export async function fetchAllEconomicRights(): Promise<EconomicRight[]> {
   if (!USE_SUPABASE) return local.all<EconomicRight>(T.economicRights)
-  const { data, error } = await supabase.from(AC.titular).select('*')
-  if (error) throw error
-  return data.map(r => fromAcFK<EconomicRight>(r))
+  return cached('economic-rights', async () => (await selectAll(AC.titular)).map(r => fromAcFK<EconomicRight>(r)))
 }
 
 export async function createEconomicRight(athleteId: string, input: NewEconomicRightInput): Promise<EconomicRight> {
@@ -434,9 +478,7 @@ export async function fetchContract(id: string): Promise<Contract | null> {
 
 export async function fetchAllContracts(): Promise<Contract[]> {
   if (!USE_SUPABASE) return local.all<Contract>(T.contracts)
-  const { data, error } = await supabase.from(AC.contracts).select('*')
-  if (error) throw error
-  return data.map(fromAcContract)
+  return cached('contracts', async () => (await selectAll(AC.contracts)).map(fromAcContract))
 }
 
 export async function createContract(athleteId: string, input: NewContractInput): Promise<Contract> {
@@ -503,9 +545,7 @@ export async function fetchAthleteSalaryTriggers(athleteId: string): Promise<Sal
 
 export async function fetchAllSalaryTriggers(): Promise<SalaryTrigger[]> {
   if (!USE_SUPABASE) return local.all<SalaryTrigger>(T.salaryTriggers)
-  const { data, error } = await supabase.from(AC.triggers).select('*')
-  if (error) throw error
-  return data.map(r => fromAcFK<SalaryTrigger>(r))
+  return cached('salary-triggers', async () => (await selectAll(AC.triggers)).map(r => fromAcFK<SalaryTrigger>(r)))
 }
 
 export async function createSalaryTrigger(athleteId: string, input: NewSalaryTriggerInput): Promise<SalaryTrigger> {
@@ -562,9 +602,7 @@ export async function fetchAthleteClubLiabilities(athleteId: string): Promise<Cl
 
 export async function fetchAllClubLiabilities(): Promise<ClubLiability[]> {
   if (!USE_SUPABASE) return local.all<ClubLiability>(T.clubLiabilities)
-  const { data, error } = await supabase.from(AC.clubLiab).select('*')
-  if (error) throw error
-  return data.map(r => fromAcFK<ClubLiability>(r))
+  return cached('club-liabilities', async () => (await selectAll(AC.clubLiab)).map(r => fromAcFK<ClubLiability>(r)))
 }
 
 export async function createClubLiability(athleteId: string, input: NewClubLiabilityInput): Promise<ClubLiability> {
@@ -614,9 +652,7 @@ export async function fetchAthleteIntermediaryLiabilities(athleteId: string): Pr
 
 export async function fetchAllIntermediaryLiabilities(): Promise<IntermediaryLiability[]> {
   if (!USE_SUPABASE) return local.all<IntermediaryLiability>(T.intermediaryLiabilities)
-  const { data, error } = await supabase.from(AC.interLiab).select('*')
-  if (error) throw error
-  return data.map(r => fromAcFK<IntermediaryLiability>(r))
+  return cached('agent-liabilities', async () => (await selectAll(AC.interLiab)).map(r => fromAcFK<IntermediaryLiability>(r)))
 }
 
 export async function createIntermediaryLiability(athleteId: string, input: NewIntermediaryLiabilityInput): Promise<IntermediaryLiability> {
@@ -668,9 +704,7 @@ export async function fetchAthleteImageRights(athleteId: string): Promise<ImageR
 
 export async function fetchAllImageRights(): Promise<ImageRight[]> {
   if (!USE_SUPABASE) return local.all<ImageRight>(T.imageRights)
-  const { data, error } = await supabase.from(AC.image).select('*')
-  if (error) throw error
-  return data.map(r => fromAcFK<ImageRight>(r))
+  return cached('image-rights', async () => (await selectAll(AC.image)).map(r => fromAcFK<ImageRight>(r)))
 }
 
 export async function createImageRight(athleteId: string, input: NewImageRightInput): Promise<ImageRight> {
@@ -738,15 +772,17 @@ function fromAcPJ(ent: Row, ext: Row): AthletePJ {
 }
 
 async function loadPJs(filter: { athleteId?: string }): Promise<AthletePJ[]> {
-  let q = supabase.from(AC.pjs).select('entidade_id, atleta_id, cnpj')
-  if (filter.athleteId) q = q.eq('atleta_id', filter.athleteId)
-  const { data: exts, error: e1 } = await q
-  if (e1) throw e1
-  if (!exts || exts.length === 0) return []
+  const exts = await selectAll(AC.pjs, q => (filter.athleteId ? q.eq('atleta_id', filter.athleteId) : q),
+    { columns: 'entidade_id, atleta_id, cnpj', key: 'entidade_id' })
+  if (exts.length === 0) return []
   const ids = exts.map(e => e.entidade_id)
-  const { data: ents, error: e2 } = await supabase.from(AC.entidades).select('*').in('id', ids)
-  if (e2) throw e2
-  const entById = new Map((ents ?? []).map(e => [e.id, e]))
+  const ents: Row[] = []
+  for (let i = 0; i < ids.length; i += IN_CHUNK) {
+    const { data, error } = await supabase.from(AC.entidades).select('*').in('id', ids.slice(i, i + IN_CHUNK))
+    if (error) throw error
+    ents.push(...(data ?? []))
+  }
+  const entById = new Map(ents.map(e => [e.id, e]))
   return exts
     .map(ext => { const ent = entById.get(ext.entidade_id); return ent ? fromAcPJ(ent, ext) : null })
     .filter((p): p is AthletePJ => p !== null)
@@ -761,7 +797,7 @@ export async function fetchAthletePJs(athleteId: string): Promise<AthletePJ[]> {
 
 export async function fetchAllPJs(): Promise<AthletePJ[]> {
   if (!USE_SUPABASE) return local.all<AthletePJ>(T.athletePjs)
-  return loadPJs({})
+  return cached('pjs', () => loadPJs({}))
 }
 
 export async function createPJ(athleteId: string, input: NewAthletePJInput): Promise<AthletePJ> {
@@ -821,9 +857,7 @@ export async function fetchAthleteClauses(athleteId: string): Promise<Clause[]> 
 
 export async function fetchAllClauses(): Promise<Clause[]> {
   if (!USE_SUPABASE) return local.all<Clause>(T.clauses)
-  const { data, error } = await supabase.from(AC.clauses).select('*')
-  if (error) throw error
-  return data.map(fromAcClause)
+  return cached('clauses', async () => (await selectAll(AC.clauses)).map(fromAcClause))
 }
 
 export async function fetchClause(id: string): Promise<Clause | null> {
@@ -895,9 +929,7 @@ export async function fetchAthleteInstallments(athleteId: string): Promise<Claus
 
 export async function fetchAllInstallments(): Promise<ClauseInstallment[]> {
   if (!USE_SUPABASE) return local.all<ClauseInstallment>(T.installments)
-  const { data, error } = await supabase.from(AC.installments).select('*')
-  if (error) throw error
-  return data.map(r => fromAcFK<ClauseInstallment>(r))
+  return cached('installments', async () => (await selectAll(AC.installments)).map(r => fromAcFK<ClauseInstallment>(r)))
 }
 
 export async function fetchClauseInstallments(clauseId: string): Promise<ClauseInstallment[]> {
@@ -962,6 +994,16 @@ export async function deleteInstallment(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** Apaga várias parcelas de uma vez (lotes de IN_CHUNK ids por requisição). */
+export async function deleteInstallments(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  if (!USE_SUPABASE) { for (const id of ids) local.remove(T.installments, id); return }
+  for (let i = 0; i < ids.length; i += IN_CHUNK) {
+    const { error } = await supabase.from(AC.installments).delete().in('id', ids.slice(i, i + IN_CHUNK))
+    if (error) throw error
+  }
+}
+
 // Apaga todas as parcelas de uma cláusula (usado ao regenerar o fluxo de pagamento).
 export async function deleteClauseInstallments(clauseId: string): Promise<void> {
   if (!USE_SUPABASE) {
@@ -1019,9 +1061,8 @@ export async function fetchAllAlerts(): Promise<Alert[]> {
     if (sev[a.severity] !== sev[b.severity]) return sev[a.severity] - sev[b.severity]
     return b.created_at.localeCompare(a.created_at)
   })
-  const { data, error } = await supabase.from(AC.alerts).select('*').order('severity').order('created_at', { ascending: false })
-  if (error) throw error
-  return data.map(r => fromAcFK<Alert>(r))
+  return cached('alerts', async () =>
+    (await selectAll(AC.alerts, q => q.order('severity').order('created_at', { ascending: false }))).map(r => fromAcFK<Alert>(r)))
 }
 
 export async function markAlertRead(id: string): Promise<void> {

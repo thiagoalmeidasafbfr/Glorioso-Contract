@@ -30,6 +30,7 @@ import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
 import { badgeStyle, PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, humanizeEnum } from '../lib/tones'
 import { tr, trf, trn, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -67,80 +68,85 @@ export default function PageRecuperacaoJudicial() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, clauses, insts, clubLiabs, interLiabs] = await Promise.all([
-      fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
-      fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
-    ])
-    const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
-    const clauseById = new Map(clauses.map(c => [c.id, c]))
-    const withInst = new Set(insts.map(i => i.clause_id))
-    const built: RJRow[] = []
+    try {
+      const [athletes, clauses, insts, clubLiabs, interLiabs] = await Promise.all([
+        fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
+        fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
+      ])
+      const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
+      const clauseById = new Map(clauses.map(c => [c.id, c]))
+      const withInst = new Set(insts.map(i => i.clause_id))
+      const built: RJRow[] = []
 
-    for (const it of insts) {
-      const rj = parseRJ(it.notes)
-      if (!rj) continue
-      const c = clauseById.get(it.clause_id)
-      // RJ é sobre passivos: só considera dívida do clube.
-      if (c && !isBFR(c.debtor_party)) continue
-      built.push({
-        id: it.id, kind: 'inst', athleteId: it.athlete_id,
-        atleta: nameOf.get(it.athlete_id) ?? '—',
-        natureza: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela',
-        credor: c?.creditor_party ?? '—',
-        descricao: c ? trf('{0} — parc. {1}', c.description, it.installment_number) : trf('Parcela {0}', it.installment_number),
-        dueDate: it.due_date, valor: it.original_value, moeda: it.currency,
-        status: it.payment_status, filedAt: rj.filedAt, notes: it.notes ?? null,
-        fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
-      })
-    }
-    for (const c of clauses) {
-      if (withInst.has(c.id)) continue
-      const rj = parseRJ(c.notes)
-      if (!rj) continue
-      if (!isBFR(c.debtor_party)) continue
-      if (c.original_value == null) continue
-      built.push({
-        id: c.id, kind: 'clause', athleteId: c.athlete_id,
-        atleta: nameOf.get(c.athlete_id) ?? '—',
-        natureza: CLAUSE_TYPE_LABELS[c.clause_type],
-        credor: c.creditor_party, descricao: c.description,
-        dueDate: c.due_date, valor: c.original_value, moeda: c.currency,
-        status: c.payment_status, filedAt: rj.filedAt, notes: c.notes ?? null,
-        fixedRate: c.fixed_exchange_rate ?? null,
-      })
-    }
-    for (const l of clubLiabs) {
-      const rj = parseRJ(l.notes)
-      if (!rj) continue
-      if (l.direction !== 'A_PAGAR') continue
-      built.push({
-        id: l.id, kind: 'club', athleteId: l.athlete_id,
-        atleta: nameOf.get(l.athlete_id) ?? '—',
-        natureza: 'Obrigação clube', credor: l.club_name,
-        descricao: l.description ?? '',
-        dueDate: l.due_date, valor: l.amount, moeda: l.currency,
-        status: l.status, filedAt: rj.filedAt, notes: l.notes ?? null,
-        fixedRate: null,
-      })
-    }
-    for (const l of interLiabs) {
-      const rj = parseRJ(l.notes)
-      if (!rj) continue
-      if (l.direction !== 'A_PAGAR') continue
-      built.push({
-        id: l.id, kind: 'agent', athleteId: l.athlete_id,
-        atleta: nameOf.get(l.athlete_id) ?? '—',
-        natureza: 'Intermediação', credor: l.intermediary_name,
-        descricao: l.description ?? '',
-        dueDate: l.due_date, valor: l.amount, moeda: l.currency,
-        status: l.status, filedAt: rj.filedAt, notes: l.notes ?? null,
-        fixedRate: null,
-      })
-    }
+      for (const it of insts) {
+        const rj = parseRJ(it.notes)
+        if (!rj) continue
+        const c = clauseById.get(it.clause_id)
+        // RJ é sobre passivos: só considera dívida do clube.
+        if (c && !isBFR(c.debtor_party)) continue
+        built.push({
+          id: it.id, kind: 'inst', athleteId: it.athlete_id,
+          atleta: nameOf.get(it.athlete_id) ?? '—',
+          natureza: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela',
+          credor: c?.creditor_party ?? '—',
+          descricao: c ? trf('{0} — parc. {1}', c.description, it.installment_number) : trf('Parcela {0}', it.installment_number),
+          dueDate: it.due_date, valor: it.original_value, moeda: it.currency,
+          status: it.payment_status, filedAt: rj.filedAt, notes: it.notes ?? null,
+          fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
+        })
+      }
+      for (const c of clauses) {
+        if (withInst.has(c.id)) continue
+        const rj = parseRJ(c.notes)
+        if (!rj) continue
+        if (!isBFR(c.debtor_party)) continue
+        if (c.original_value == null) continue
+        built.push({
+          id: c.id, kind: 'clause', athleteId: c.athlete_id,
+          atleta: nameOf.get(c.athlete_id) ?? '—',
+          natureza: CLAUSE_TYPE_LABELS[c.clause_type],
+          credor: c.creditor_party, descricao: c.description,
+          dueDate: c.due_date, valor: c.original_value, moeda: c.currency,
+          status: c.payment_status, filedAt: rj.filedAt, notes: c.notes ?? null,
+          fixedRate: c.fixed_exchange_rate ?? null,
+        })
+      }
+      for (const l of clubLiabs) {
+        const rj = parseRJ(l.notes)
+        if (!rj) continue
+        if (l.direction !== 'A_PAGAR') continue
+        built.push({
+          id: l.id, kind: 'club', athleteId: l.athlete_id,
+          atleta: nameOf.get(l.athlete_id) ?? '—',
+          natureza: 'Obrigação clube', credor: l.club_name,
+          descricao: l.description ?? '',
+          dueDate: l.due_date, valor: l.amount, moeda: l.currency,
+          status: l.status, filedAt: rj.filedAt, notes: l.notes ?? null,
+          fixedRate: null,
+        })
+      }
+      for (const l of interLiabs) {
+        const rj = parseRJ(l.notes)
+        if (!rj) continue
+        if (l.direction !== 'A_PAGAR') continue
+        built.push({
+          id: l.id, kind: 'agent', athleteId: l.athlete_id,
+          atleta: nameOf.get(l.athlete_id) ?? '—',
+          natureza: 'Intermediação', credor: l.intermediary_name,
+          descricao: l.description ?? '',
+          dueDate: l.due_date, valor: l.amount, moeda: l.currency,
+          status: l.status, filedAt: rj.filedAt, notes: l.notes ?? null,
+          fixedRate: null,
+        })
+      }
 
-    built.sort((a, b) => (a.dueDate ?? '9999-99-99').localeCompare(b.dueDate ?? '9999-99-99'))
-    setRows(built)
-    setLoading(false)
+      built.sort((a, b) => (a.dueDate ?? '9999-99-99').localeCompare(b.dueDate ?? '9999-99-99'))
+      setRows(built)
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial

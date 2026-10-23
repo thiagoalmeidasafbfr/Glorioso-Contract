@@ -67,3 +67,24 @@ export function AccessPending({ noModules = false }: { noModules?: boolean }) {
     </AuthScreen>
   )
 }
+
+/** Tela cheia: o perfil não pôde ser carregado (rede/servidor). Antes isso
+ *  aparecia como "Acesso pendente" — parecia bloqueio, era só a conexão. */
+export function ConnectionError() {
+  const { authError, refreshProfile, signOut } = useAuth()
+  return (
+    <AuthScreen heading={tr('Sem conexão')}
+      footer={<button type="button" className="btn btn-ghost" onClick={() => signOut()}>{tr('Sair')}</button>}>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+        <span style={{ color: 'var(--text-secondary)', marginTop: 2 }}><Icon name="alert" size={20} /></span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <div style={{ fontSize: 'var(--ui-text-size)', color: 'var(--text-primary)' }}>
+            {tr('Não foi possível falar com o servidor para carregar o seu perfil.')}
+          </div>
+          {authError && <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--text-secondary)' }}>{tr(authError)}</div>}
+          <div><button type="button" className="btn btn-primary" onClick={() => refreshProfile()}>{tr('Tentar novamente')}</button></div>
+        </div>
+      </div>
+    </AuthScreen>
+  )
+}

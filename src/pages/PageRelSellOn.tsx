@@ -20,6 +20,7 @@ import { Icon } from '../components/Icon'
 import RowActions from '../components/RowActions'
 import { BADGE_TONES, badgeStyle, type ToneStyle } from '../lib/tones'
 import { tr, trf, trn, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 // Direção "a pagar" / "a receber" a partir do tipo (SELL_ON_FEE = Botafogo paga
 // a antigo dono; SELL_ON_FEE_RECEBER = Botafogo recebe em revenda futura).
@@ -58,34 +59,39 @@ export default function PageRelSellOn() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [athletes, clauses] = await Promise.all([fetchAthletes(), fetchAllClauses()])
-    const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
-    const built: Row[] = clauses
-      .filter(c => SELL_ON_CLAUSE_TYPES.includes(c.clause_type))
-      .map(c => {
-        const dir = dirOf(c.clause_type)
-        const contraparte = dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party
-        // Base do cálculo é uma convenção textual armazenada em condition_description
-        // (ver sellOnConditionText em types/athlete-system.ts). Extraímos o rótulo
-        // "sobre mais-valia" ou "sobre valor total" quando presente.
-        const cond = (c.condition_description || '').toLowerCase()
-        const basis = cond.includes('mais-valia') ? 'sobre a mais-valia'
-          : cond.includes('valor total') ? 'sobre o valor total da revenda'
-          : '—'
-        return {
-          id: c.id, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
-          dir, contraparte, clauseType: c.clause_type,
-          percentage: c.percentage_value ?? null,
-          fixedValue: c.original_value ?? null,
-          currency: c.currency, basis,
-          condition: c.condition_description ?? '',
-          status: c.achievement_status,
-          achievedDate: c.achievement_date,
-        }
-      })
-    built.sort((a, b) => (a.dir === b.dir ? a.atleta.localeCompare(b.atleta) : a.dir === 'A_PAGAR' ? -1 : 1))
-    setRows(built)
-    setLoading(false)
+    try {
+      const [athletes, clauses] = await Promise.all([fetchAthletes(), fetchAllClauses()])
+      const nameOf = new Map<string, string>(athletes.map((a: Athlete) => [a.id, a.short_name || a.full_name]))
+      const built: Row[] = clauses
+        .filter(c => SELL_ON_CLAUSE_TYPES.includes(c.clause_type))
+        .map(c => {
+          const dir = dirOf(c.clause_type)
+          const contraparte = dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party
+          // Base do cálculo é uma convenção textual armazenada em condition_description
+          // (ver sellOnConditionText em types/athlete-system.ts). Extraímos o rótulo
+          // "sobre mais-valia" ou "sobre valor total" quando presente.
+          const cond = (c.condition_description || '').toLowerCase()
+          const basis = cond.includes('mais-valia') ? 'sobre a mais-valia'
+            : cond.includes('valor total') ? 'sobre o valor total da revenda'
+            : '—'
+          return {
+            id: c.id, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
+            dir, contraparte, clauseType: c.clause_type,
+            percentage: c.percentage_value ?? null,
+            fixedValue: c.original_value ?? null,
+            currency: c.currency, basis,
+            condition: c.condition_description ?? '',
+            status: c.achievement_status,
+            achievedDate: c.achievement_date,
+          }
+        })
+      built.sort((a, b) => (a.dir === b.dir ? a.atleta.localeCompare(b.atleta) : a.dir === 'A_PAGAR' ? -1 : 1))
+      setRows(built)
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount

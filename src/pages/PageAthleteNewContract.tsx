@@ -21,6 +21,7 @@ import PageHero from '../components/PageHero'
 import FlowBuilder, { type FlowLine } from '../components/FlowBuilder'
 import { Icon, IconButton } from '../components/Icon'
 import { tr, trf, locale } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 // ── Step types ────────────────────────────────────────────────────────────
 
@@ -194,8 +195,8 @@ export default function PageAthleteNewContract() {
 
   useEffect(() => {
     if (!id) return
-    fetchAthlete(id).then(setAthlete)
-    fetchAthleteContracts(id).then(setExistingContracts)
+    fetchAthlete(id).then(setAthlete).catch(reportLoadError)
+    fetchAthleteContracts(id).then(setExistingContracts).catch(reportLoadError)
   }, [id])
 
   // Contrato acessório atrelado a um vínculo: a contraparte vem do vínculo pai —

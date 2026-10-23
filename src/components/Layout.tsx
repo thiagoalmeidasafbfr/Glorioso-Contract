@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useApp, CURRENCY_OPTIONS, type AppCurrency } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { USE_SUPABASE } from '../lib/supabase'
 import { editModuleForPath, moduleForPath, type AccessLevel } from '../lib/access'
+import { onLoadError } from '../lib/loadErrors'
+import { invalidateCache } from '../lib/queryCache'
 import { Icon, type IconName } from './Icon'
 import Badge from './Badge'
 import Wordmark from './Wordmark'
@@ -18,7 +20,9 @@ import { tr } from '../i18n'
 //  • usuário logado no rodapé da navegação (canto inferior esquerdo): avatar,
 //    nome, perfil e o "sair" discreto;
 //  • só aparecem os itens que o perfil de acesso libera (lib/access.ts); na
-//    tela em que o perfil só consulta, o TopBar mostra "Somente leitura".
+//    tela em que o perfil só consulta, o TopBar mostra "Somente leitura";
+//  • se o carregamento de uma tela falha, uma faixa avisa e "Tentar novamente"
+//    recarrega só o conteúdo (limpa o cache e remonta a tela) — sem F5.
 
 const SIDEBAR_W_OPEN = 240
 const SIDEBAR_W_COLLAPSED = 64
@@ -37,12 +41,6 @@ const NAV_SECTIONS: { label: string | null; items: NavItemDef[] }[] = [
       { to: '/album',          label: 'Portfolio de atletas',  icon: 'portfolio' },
       { to: '/clubes',         label: 'Clubes',                icon: 'clubs' },
       { to: '/intermediarios', label: 'Agentes',               icon: 'agents' },
-    ],
-  },
-  {
-    label: 'Modelo financeiro',
-    items: [
-      { to: '/modelo/premissas', label: 'Premissas por atleta', icon: 'model' },
     ],
   },
   {
@@ -97,6 +95,17 @@ export default function Layout({ children }: Props) {
   const { currency, setCurrency, language, setLanguage } = useApp()
   const { profile, roleName, signOut, can } = useAuth()
   const { pathname } = useLocation()
+  const [loadError, setLoadError] = useState<{ path: string; message: string } | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
+  useEffect(() => onLoadError(message => setLoadError({ path: window.location.pathname, message })), [])
+  // A faixa vale para a tela em que o erro aconteceu; ao navegar, some.
+  const visibleError = loadError?.path === pathname ? loadError : null
+  function retry() {
+    invalidateCache()
+    setLoadError(null)
+    setRetryKey(k => k + 1)
+  }
+
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
   })
@@ -196,7 +205,21 @@ export default function Layout({ children }: Props) {
 
         </header>
         <main className="app-content">
-          {children}
+          {visibleError && (
+            <div role="alert" style={{
+              margin: 'var(--space-4) 28px 0', padding: '10px 14px', borderRadius: 'var(--radius-control)',
+              background: 'var(--surface-negative-soft)', color: 'var(--text-negative)',
+              fontSize: 'var(--text-body-sm-size)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+            }}>
+              <Icon name="alert" size={16} />
+              <span style={{ flex: 1, minWidth: 200 }}>
+                {tr('Não foi possível carregar os dados desta tela.')}
+                <span style={{ color: 'var(--text-secondary)' }}> {tr(visibleError.message)}</span>
+              </span>
+              <button type="button" className="btn btn-outline btn-sm" onClick={retry}>{tr('Tentar novamente')}</button>
+            </div>
+          )}
+          <Fragment key={retryKey}>{children}</Fragment>
         </main>
       </div>
     </div>

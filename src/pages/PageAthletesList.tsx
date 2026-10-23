@@ -22,6 +22,7 @@ import { importConsolidatedAthletes, isConsolidatedSheet } from '../lib/athleteC
 import { COLS_ATHLETES } from '../lib/xlsx-utils'
 import { useAuth } from '../context/AuthContext'
 import { tr, trf, trn } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font     = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -180,15 +181,15 @@ export default function PageAthletesList() {
   const [importMsg, setImportMsg] = useState<string | null>(null)
 
   function loadAll() {
-    fetchAthletes().then(data => { setAthletes(data); setLoading(false) }).catch(() => setLoading(false))
+    fetchAthletes().then(setAthletes).catch(reportLoadError).finally(() => setLoading(false))
     fetchAllEconomicRights().then(rows => {
       const map: Record<string, EconomicRight[]> = {}
       for (const r of rows) (map[r.athlete_id] ??= []).push(r)
       setRightsByAthlete(map)
-    }).catch(() => {})
-    fetchAllClauses().then(setClauses).catch(() => {})
-    fetchAllInstallments().then(setInstallments).catch(() => {})
-    fetchAllAlerts().then(setAlerts).catch(() => {})
+    }).catch(reportLoadError)
+    fetchAllClauses().then(setClauses).catch(reportLoadError)
+    fetchAllInstallments().then(setInstallments).catch(reportLoadError)
+    fetchAllAlerts().then(setAlerts).catch(reportLoadError)
   }
 
   useEffect(() => { loadAll() }, [])

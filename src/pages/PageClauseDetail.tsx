@@ -30,6 +30,7 @@ import { useAuth } from '../context/AuthContext'
 import { modalInput, modalLabel } from '../components/modals/styles'
 import { PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, badgeStyle, humanizeEnum } from '../lib/tones'
 import { tr, trf, trn } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -71,22 +72,27 @@ export default function PageClauseDetail() {
   const load = useCallback(async () => {
     if (!clauseId) return
     setLoading(true)
-    const cl = await fetchClause(clauseId)
-    if (!cl) { setNotFound(true); setLoading(false); return }
-    setClause(cl)
-    const [ath, insts, contracts, clubs, agents] = await Promise.all([
-      fetchAthlete(cl.athlete_id),
-      fetchClauseInstallments(cl.id),
-      fetchAthleteContracts(cl.athlete_id),
-      fetchClubs(), fetchIntermediaries(),
-    ])
-    setAthlete(ath)
-    setInstallments(insts)
-    setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
-    const ct = cl.contract_id ? contracts.find(c => c.id === cl.contract_id) ?? null : null
-    setContract(ct)
-    setParent(ct?.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null)
-    setLoading(false)
+    try {
+      const cl = await fetchClause(clauseId)
+      if (!cl) { setNotFound(true); setLoading(false); return }
+      setClause(cl)
+      const [ath, insts, contracts, clubs, agents] = await Promise.all([
+        fetchAthlete(cl.athlete_id),
+        fetchClauseInstallments(cl.id),
+        fetchAthleteContracts(cl.athlete_id),
+        fetchClubs(), fetchIntermediaries(),
+      ])
+      setAthlete(ath)
+      setInstallments(insts)
+      setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
+      const ct = cl.contract_id ? contracts.find(c => c.id === cl.contract_id) ?? null : null
+      setContract(ct)
+      setParent(ct?.related_contract_id ? contracts.find(c => c.id === ct.related_contract_id) ?? null : null)
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [clauseId])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect

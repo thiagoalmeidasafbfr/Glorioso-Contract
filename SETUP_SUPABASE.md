@@ -43,15 +43,17 @@ No painel do Supabase, abra **SQL Editor → New query** e execute os arquivos d
 15. `015_contrato_vinculo_relacionado.sql`
 16. `016_gatilho_imagem.sql`
 17. `017_ptax_fixada.sql`
-18. `018_premissas_atleta.sql`  ← **aba de PREMISSAS por atleta (Fase 1 do modelo do CFO)**
+18. `018_premissas_atleta.sql`  ← tabela de premissas por atleta (a tela foi removida na `022`; a tabela continua)
 19. `019_usuarios_acessos.sql`  ← **usuários, perfis de acesso e restrição por módulo** (ver `docs/USUARIOS_E_ACESSOS.md`)
 20. `020_perfil_semimaster.sql`  ← **perfil Semimaster** (opera tudo, sem administrar usuários)
+21. `021_desempenho.sql`  ← **índices e gatilho de status em lote** (desempenho)
+22. `022_remove_premissas.sql`  ← tira o módulo "Modelo financeiro" dos perfis (a tela foi removida)
 
 > **IMPORTANTE:** rode **todas** as migrations acima, em ordem. Se pular alguma,
 > a aba correspondente falha com um erro do tipo *"Could not find the table
 > 'public.<nome>' in the schema cache"* — isso significa que a migration que cria
 > essa tabela ainda não foi aplicada no banco. Rode a migration que falta e
-> recarregue a página. (Ex.: a aba **Premissas** exige a `018`.)
+> recarregue a página.
 
 > Se preferir a CLI do Supabase: `supabase link --project-ref <ref>` e depois
 > `supabase db push` (aplica tudo de `supabase/migrations/` em ordem).
@@ -100,9 +102,9 @@ Master):
 | Perfil | Pode |
 |--------|------|
 | **Master** | Tudo, inclusive administrar usuários e perfis. |
-| **Semimaster** | Tudo sobre atletas, contratos, obrigações, pagamentos, clubes/agentes, modelo financeiro e importações; vê a lista de usuários, mas não cria/edita usuários nem perfis e não apaga a base. |
-| **Jurídico** | Editar atletas, contratos, obrigações, clubes/agentes e importar planilhas; consultar o modelo financeiro. |
-| **Financeiro** | Editar as premissas do modelo financeiro; consultar o resto. |
+| **Semimaster** | Tudo sobre atletas, contratos, obrigações, pagamentos, clubes/agentes e importações; vê a lista de usuários, mas não cria/edita usuários nem perfis e não apaga a base. |
+| **Jurídico** | Editar atletas, contratos, obrigações, clubes/agentes e importar planilhas. |
+| **Financeiro** | Consultar tudo e exportar planilhas (sem editar). |
 | **Consulta** | Somente leitura. |
 
 ## 4. Ligar o app ao Supabase

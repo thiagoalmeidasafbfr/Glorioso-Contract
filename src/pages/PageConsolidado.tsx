@@ -33,6 +33,7 @@ import { markManyRJ, unmarkItemRJ, parseRJ } from '../lib/judicialRecovery'
 import { useAuth } from '../context/AuthContext'
 import { badgeStyle, PAYMENT_STATUS_TONE, PAYMENT_STATUS_LABEL, humanizeEnum } from '../lib/tones'
 import { tr, trf, trn, locale, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font = "var(--font-body)"
 const mono = "var(--font-label)"
@@ -95,69 +96,74 @@ export default function PageConsolidado() {
   const load = useCallback(async () => {
     {
       setLoading(true)
-      const [athletes, clauses, installments, clubLiabs, interLiabs, clubs, agents] = await Promise.all([
-        fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
-        fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
-        fetchClubs(), fetchIntermediaries(),
-      ])
-      setClauses(clauses); setInsts(installments); setCLiabs(clubLiabs); setILiabs(interLiabs)
-      setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
-      const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
-      setPosByAth(new Map(athletes.map(a => [a.id, a.position ?? '—'])))
-      const clauseById = new Map(clauses.map(c => [c.id, c]))
-      const withInst = new Set(installments.map(i => i.clause_id))
-      const list: Mov[] = []
+      try {
+        const [athletes, clauses, installments, clubLiabs, interLiabs, clubs, agents] = await Promise.all([
+          fetchAthletes(), fetchAllClauses(), fetchAllInstallments(),
+          fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
+          fetchClubs(), fetchIntermediaries(),
+        ])
+        setClauses(clauses); setInsts(installments); setCLiabs(clubLiabs); setILiabs(interLiabs)
+        setClubIdx(buildNameIndex(clubs)); setAgentIdx(buildNameIndex(agents))
+        const nameOf = new Map(athletes.map(a => [a.id, a.full_name]))
+        setPosByAth(new Map(athletes.map(a => [a.id, a.position ?? '—'])))
+        const clauseById = new Map(clauses.map(c => [c.id, c]))
+        const withInst = new Set(installments.map(i => i.clause_id))
+        const list: Mov[] = []
 
-      // Parcelas de cláusulas
-      for (const it of installments) {
-        const c = clauseById.get(it.clause_id)
-        const dir: Mov['dir'] = c && isBFR(c.debtor_party) ? 'A_PAGAR' : c ? 'A_RECEBER' : 'A_PAGAR'
-        list.push({
-          id: it.id, kind: 'inst', clauseId: it.clause_id,
-          date: it.due_date, athleteId: it.athlete_id, atleta: nameOf.get(it.athlete_id) ?? '—',
-          natureza: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela',
-          contraparte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—',
-          descricao: c ? trf('{0} — parc. {1}', c.description, it.installment_number) : trf('Parcela {0}', it.installment_number),
-          dir, valor: it.original_value, moeda: it.currency, status: it.payment_status,
-          fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
-          notes: it.notes ?? null, rjFiledAt: parseRJ(it.notes)?.filedAt ?? null,
+        // Parcelas de cláusulas
+        for (const it of installments) {
+          const c = clauseById.get(it.clause_id)
+          const dir: Mov['dir'] = c && isBFR(c.debtor_party) ? 'A_PAGAR' : c ? 'A_RECEBER' : 'A_PAGAR'
+          list.push({
+            id: it.id, kind: 'inst', clauseId: it.clause_id,
+            date: it.due_date, athleteId: it.athlete_id, atleta: nameOf.get(it.athlete_id) ?? '—',
+            natureza: c ? CLAUSE_TYPE_LABELS[c.clause_type] : 'Parcela',
+            contraparte: c ? (dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party) : '—',
+            descricao: c ? trf('{0} — parc. {1}', c.description, it.installment_number) : trf('Parcela {0}', it.installment_number),
+            dir, valor: it.original_value, moeda: it.currency, status: it.payment_status,
+            fixedRate: it.fixed_exchange_rate ?? c?.fixed_exchange_rate ?? null,
+            notes: it.notes ?? null, rjFiledAt: parseRJ(it.notes)?.filedAt ?? null,
+          })
+        }
+        // Cláusulas de pagamento único (sem parcelas geradas)
+        for (const c of clauses) {
+          if (withInst.has(c.id)) continue
+          if (c.original_value == null) continue
+          const dir: Mov['dir'] = isBFR(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
+          list.push({
+            id: c.id, kind: 'clause', clauseId: c.id,
+            date: c.due_date, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
+            natureza: CLAUSE_TYPE_LABELS[c.clause_type], contraparte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party,
+            descricao: c.description, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status,
+            fixedRate: c.fixed_exchange_rate ?? null,
+            notes: c.notes ?? null, rjFiledAt: parseRJ(c.notes)?.filedAt ?? null,
+          })
+        }
+        // Obrigações com clube / agente
+        for (const l of clubLiabs) list.push({
+          id: l.id, kind: 'club', clauseId: null,
+          date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
+          natureza: 'Obrigação clube', contraparte: l.club_name, descricao: l.description ?? '',
+          dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
+          fixedRate: null,
+          notes: l.notes ?? null, rjFiledAt: parseRJ(l.notes)?.filedAt ?? null,
         })
-      }
-      // Cláusulas de pagamento único (sem parcelas geradas)
-      for (const c of clauses) {
-        if (withInst.has(c.id)) continue
-        if (c.original_value == null) continue
-        const dir: Mov['dir'] = isBFR(c.debtor_party) ? 'A_PAGAR' : 'A_RECEBER'
-        list.push({
-          id: c.id, kind: 'clause', clauseId: c.id,
-          date: c.due_date, athleteId: c.athlete_id, atleta: nameOf.get(c.athlete_id) ?? '—',
-          natureza: CLAUSE_TYPE_LABELS[c.clause_type], contraparte: dir === 'A_PAGAR' ? c.creditor_party : c.debtor_party,
-          descricao: c.description, dir, valor: c.original_value, moeda: c.currency, status: c.payment_status,
-          fixedRate: c.fixed_exchange_rate ?? null,
-          notes: c.notes ?? null, rjFiledAt: parseRJ(c.notes)?.filedAt ?? null,
+        for (const l of interLiabs) list.push({
+          id: l.id, kind: 'agent', clauseId: l.contract_id ? null : null,
+          date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
+          natureza: 'Intermediação', contraparte: l.intermediary_name, descricao: l.description ?? '',
+          dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
+          fixedRate: null,
+          notes: l.notes ?? null, rjFiledAt: parseRJ(l.notes)?.filedAt ?? null,
         })
-      }
-      // Obrigações com clube / agente
-      for (const l of clubLiabs) list.push({
-        id: l.id, kind: 'club', clauseId: null,
-        date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
-        natureza: 'Obrigação clube', contraparte: l.club_name, descricao: l.description ?? '',
-        dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
-        fixedRate: null,
-        notes: l.notes ?? null, rjFiledAt: parseRJ(l.notes)?.filedAt ?? null,
-      })
-      for (const l of interLiabs) list.push({
-        id: l.id, kind: 'agent', clauseId: l.contract_id ? null : null,
-        date: l.due_date, athleteId: l.athlete_id, atleta: nameOf.get(l.athlete_id) ?? '—',
-        natureza: 'Intermediação', contraparte: l.intermediary_name, descricao: l.description ?? '',
-        dir: l.direction, valor: l.amount, moeda: l.currency, status: l.status,
-        fixedRate: null,
-        notes: l.notes ?? null, rjFiledAt: parseRJ(l.notes)?.filedAt ?? null,
-      })
 
-      list.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
-      setMovs(list)
-      setLoading(false)
+        list.sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'))
+        setMovs(list)
+      } catch (err) {
+        reportLoadError(err)
+      } finally {
+        setLoading(false)
+      }
     }
   }, [])
 

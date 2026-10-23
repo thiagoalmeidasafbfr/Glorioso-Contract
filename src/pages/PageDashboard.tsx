@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { fetchAllAlerts, fetchAthletes, fetchAthleteClauses, markAlertRead, fetchAllEconomicRights } from '../lib/athleteQueries'
+import { fetchAllAlerts, fetchAthletes, fetchAllClauses, markAlertRead, fetchAllEconomicRights } from '../lib/athleteQueries'
 import type { Alert, Athlete, Clause, EconomicRight } from '../types/athlete-system'
 import { fmtDate, isDueSoon, isOverdue, addMonths, todayISO, fmtDec, monthShort } from '../lib/format'
 import { isOwnershipValid } from '../lib/ownership'
@@ -11,6 +11,7 @@ import PageHero from '../components/PageHero'
 import Badge from '../components/Badge'
 import { Icon } from '../components/Icon'
 import { tr, locale } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -48,17 +49,18 @@ export default function PageDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Uma consulta para todas as cláusulas (antes: uma por atleta).
     Promise.all([
       fetchAllAlerts(),
       fetchAthletes(),
       fetchAllEconomicRights(),
-    ]).then(async ([alts, aths, rights]) => {
+      fetchAllClauses(),
+    ]).then(([alts, aths, rights, clauses]) => {
       setAlerts(alts)
       setAthletes(aths)
       setEconomicRights(rights)
-      const clauseArrays = await Promise.all(aths.map(a => fetchAthleteClauses(a.id)))
-      setAllClauses(clauseArrays.flat())
-    }).finally(() => setLoading(false))
+      setAllClauses(clauses)
+    }).catch(reportLoadError).finally(() => setLoading(false))
   }, [])
 
   // Atletas com titularidade cadastrada mas soma ≠ 100%

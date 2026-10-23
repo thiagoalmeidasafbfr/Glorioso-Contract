@@ -8,8 +8,8 @@
 //     (CLT + imagem, com gatilhos e rateio de empréstimo já aplicados) e
 //     mensal × 12;
 //   • Custo anual do clube: CLT × 12 × (1 + encargos) + (imagem + outros) × 12
-//     + amortização dos próximos 12 meses. Encargos das premissas do atleta ou,
-//     sem premissa, o padrão (INSS, FGTS, 13º e férias);
+//     + amortização dos próximos 12 meses. Encargos: o padrão (INSS, FGTS,
+//     13º e férias);
 //   • Amortização e valor contábil: lib/intangible — a mesma conta da
 //     calculadora de amortização;
 //   • Fim do contrato: término do vínculo de trabalho e anos restantes.
@@ -20,7 +20,6 @@ import { Link } from 'react-router-dom'
 import {
   fetchAthletes, fetchAllContracts, fetchAllClauses, fetchAllSalaryTriggers, fetchClubs,
 } from '../lib/athleteQueries'
-import { fetchPremissas } from '../lib/premissasQueries'
 import { fetchPtaxRates, ptaxRateFor } from '../lib/ptax'
 import { computeIntangible } from '../lib/intangible'
 import { effectiveRemuneration, employmentContract } from '../lib/salary'
@@ -29,7 +28,6 @@ import { isForeign } from '../lib/nationality'
 import { isBFRparty } from '../lib/entityObligations'
 import { badgeStyle } from '../lib/tones'
 import { exportWorkbook, type ColDef } from '../lib/xlsx-utils'
-import { ENCARGOS_DEFAULT, type PremissaAtleta } from '../types/premissas'
 import { HOLDER_TYPE_LABELS } from '../types/athlete-system'
 import type { Athlete, Clause, Club, Contract, SalaryTrigger } from '../types/athlete-system'
 import { useApp } from '../context/AppContext'
@@ -39,6 +37,7 @@ import AthleteAvatar from '../components/AthleteAvatar'
 import Flag from '../components/Flag'
 import { Icon } from '../components/Icon'
 import { tr, trf, locale, trn, trCols } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const HOME_CLUB = HOLDER_TYPE_LABELS.BFR
 
@@ -61,12 +60,8 @@ function positionGroup(position: string | null): PosGroup | null {
 }
 
 // ── Encargos sobre o CLT (fração: 0,4744 = 47,44%) ─────────────────────────
-function encargosOf(p: PremissaAtleta | undefined): number {
-  const e = p ?? ENCARGOS_DEFAULT
-  return (e.inss_patronal_pct ?? 0) + (e.fgts_pct ?? 0) + (e.decimo_terceiro_pct ?? 0)
-    + (e.ferias_pct ?? 0) + (e.outros_encargos_pct ?? 0)
-}
-const DEFAULT_ENCARGOS = encargosOf(undefined)
+// INSS patronal 20% + FGTS 8% + 13º (1/12) + férias com 1/3 (1/12 × 4/3).
+const DEFAULT_ENCARGOS = 0.20 + 0.08 + 1 / 12 + (1 / 12) * (4 / 3)
 
 // ── Modelo da linha ────────────────────────────────────────────────────────
 interface ClubRef { name: string; logo: string | null; id: string | null }
@@ -102,13 +97,12 @@ function groupByAthlete<T extends { athlete_id: string }>(items: T[]): Map<strin
 
 function buildRows(
   athletes: Athlete[], contracts: Contract[], clauses: Clause[], triggers: SalaryTrigger[],
-  clubs: Club[], premissas: PremissaAtleta[], ptax: Record<string, number>,
+  clubs: Club[], ptax: Record<string, number>,
 ): Row[] {
   const today = new Date()
   const asOf = todayISO()
   const contractsOf = groupByAthlete(contracts)
   const triggersOf = groupByAthlete(triggers)
-  const premissaOf = new Map(premissas.filter(p => p.atleta_id).map(p => [p.atleta_id as string, p]))
 
   const clubByName = new Map(clubs.map(c => [foldText(c.name), c]))
   const homeClub = clubs.find(c => isBFRparty(c.name)) ?? null
@@ -155,8 +149,7 @@ function buildRows(
         if (monthly > 0) {
           monthlyBRL = monthly
           annualBRL = monthly * 12
-          const encargos = encargosOf(premissaOf.get(a.id))
-          clubCostBRL = cltBRL * 12 * (1 + encargos) + (imageBRL + otherBRL) * 12 + amortBRL
+          clubCostBRL = cltBRL * 12 * (1 + DEFAULT_ENCARGOS) + (imageBRL + otherBRL) * 12 + amortBRL
         }
       }
 
@@ -291,14 +284,19 @@ export default function PageDetalhamentoJogadores() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const rates = await fetchPtaxRates().catch(() => ({} as Record<string, number>))
-    const [athletes, contracts, clauses, triggers, clubs, premissas] = await Promise.all([
-      fetchAthletes(), fetchAllContracts(), fetchAllClauses(), fetchAllSalaryTriggers(),
-      fetchClubs().catch(() => [] as Club[]),
-      fetchPremissas().catch(() => [] as PremissaAtleta[]),
-    ])
-    setRows(buildRows(athletes, contracts, clauses, triggers, clubs, premissas, rates))
-    setLoading(false)
+    try {
+      // PTAX em paralelo com os dados (antes: esperava o BC para só então buscar).
+      const [rates, athletes, contracts, clauses, triggers, clubs] = await Promise.all([
+        fetchPtaxRates().catch(() => ({} as Record<string, number>)),
+        fetchAthletes(), fetchAllContracts(), fetchAllClauses(), fetchAllSalaryTriggers(),
+        fetchClubs().catch(() => [] as Club[]),
+      ])
+      setRows(buildRows(athletes, contracts, clauses, triggers, clubs, rates))
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount
@@ -496,7 +494,7 @@ export default function PageDetalhamentoJogadores() {
       </div>
 
       <p style={{ margin: 'var(--space-3) 0 0', fontSize: 'var(--text-caption-size)', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: 980 }}>
-        {trn(visible.length, '{0} jogador', '{0} jogadores')} {tr('· Salário = remuneração mensal vigente do vínculo de trabalho (CLT + imagem, com gatilhos e rateio de empréstimo aplicados); anual = mensal × 12. Custo anual do clube = CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses; encargos das premissas do atleta ou, sem premissa,')} {pct(DEFAULT_ENCARGOS)} {tr('(INSS, FGTS, 13º e férias). Amortização linear do intangível (transfer fee, intermediação e luvas do contrato de entrada) pelo prazo do contrato; valor contábil = intangível − amortização acumulada. Moedas estrangeiras pela PTAX do dia.')}
+        {trn(visible.length, '{0} jogador', '{0} jogadores')} {tr('· Salário = remuneração mensal vigente do vínculo de trabalho (CLT + imagem, com gatilhos e rateio de empréstimo aplicados); anual = mensal × 12. Custo anual do clube = CLT × 12 × (1 + encargos) + (imagem + outros) × 12 + amortização dos próximos 12 meses; encargos de')} {pct(DEFAULT_ENCARGOS)} {tr('(INSS, FGTS, 13º e férias). Amortização linear do intangível (transfer fee, intermediação e luvas do contrato de entrada) pelo prazo do contrato; valor contábil = intangível − amortização acumulada. Moedas estrangeiras pela PTAX do dia.')}
       </p>
     </div>
   )

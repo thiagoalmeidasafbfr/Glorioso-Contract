@@ -43,6 +43,7 @@ import { useAuth } from '../context/AuthContext'
 import { badgeStyle } from '../lib/tones'
 import KpiPill from '../components/KpiPill'
 import { tr, trf, trn } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -97,27 +98,32 @@ export default function PageCadastroDetail({ kind }: { kind: Kind }) {
   const load = useCallback(async () => {
     if (!id) return
     setLoading(true)
-    const [athletesList, cls, insts, contracts, cLiabs, iLiabs] = await Promise.all([
-      fetchAthletes(), fetchAllClauses(), fetchAllInstallments(), fetchAllContracts(),
-      fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
-    ])
-    setAthletes(athletesList)
-    setNameOf(new Map(athletesList.map((a: Athlete) => [a.id, a.short_name || a.full_name])))
-    setClauses(cls); setInstallments(insts); setClubLiabs(cLiabs); setIntermLiabs(iLiabs)
+    try {
+      const [athletesList, cls, insts, contracts, cLiabs, iLiabs] = await Promise.all([
+        fetchAthletes(), fetchAllClauses(), fetchAllInstallments(), fetchAllContracts(),
+        fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
+      ])
+      setAthletes(athletesList)
+      setNameOf(new Map(athletesList.map((a: Athlete) => [a.id, a.short_name || a.full_name])))
+      setClauses(cls); setInstallments(insts); setClubLiabs(cLiabs); setIntermLiabs(iLiabs)
 
-    const entity = isClube ? await fetchClub(id) : await fetchIntermediary(id)
-    if (!entity) { setNotFound(true); setLoading(false); return }
-    const entityName = entity.name
-    setName(entityName)
-    setSub(isClube ? (entity as { country: string | null }).country : (entity as { contact: string | null }).contact)
-    setLogo(entity.logo_url); setNotes(entity.notes)
+      const entity = isClube ? await fetchClub(id) : await fetchIntermediary(id)
+      if (!entity) { setNotFound(true); setLoading(false); return }
+      const entityName = entity.name
+      setName(entityName)
+      setSub(isClube ? (entity as { country: string | null }).country : (entity as { contact: string | null }).contact)
+      setLogo(entity.logo_url); setNotes(entity.notes)
 
-    setRows(buildEntityObligations({
-      entityName, kind, clauses: cls, installments: insts,
-      clubLiabs: cLiabs, intermLiabs: iLiabs, labels: CLAUSE_TYPE_LABELS,
-    }))
-    setEntityContracts(contractsOfEntity(entityName, contracts))
-    setLoading(false)
+      setRows(buildEntityObligations({
+        entityName, kind, clauses: cls, installments: insts,
+        clubLiabs: cLiabs, intermLiabs: iLiabs, labels: CLAUSE_TYPE_LABELS,
+      }))
+      setEntityContracts(contractsOfEntity(entityName, contracts))
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [id, isClube, kind])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial de dados no mount

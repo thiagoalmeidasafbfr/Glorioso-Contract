@@ -6,18 +6,20 @@
 
 import { useState } from 'react'
 import type { Athlete } from '../types/athlete-system'
+import { useAthletePhoto } from '../lib/athletePhotos'
 
 function getInitials(name: string): string {
   return name.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('')
 }
 
 export default function AthleteAvatar({ athlete, size = 38 }: {
-  athlete: Pick<Athlete, 'short_name' | 'profile_photo_url'>; size?: number
+  athlete: Pick<Athlete, 'id' | 'short_name' | 'profile_photo_url'>; size?: number
 }) {
   const [err, setErr] = useState(false)
-  if (athlete.profile_photo_url && !err) {
+  const photo = useAthletePhoto(athlete)
+  if (photo && !err) {
     return (
-      <img src={athlete.profile_photo_url} alt={athlete.short_name}
+      <img src={photo} alt={athlete.short_name}
         onError={() => setErr(true)}
         style={{
           width: size, height: size, maxWidth: 'none', borderRadius: 'var(--radius-sm)', objectFit: 'cover', objectPosition: 'center top', flexShrink: 0,

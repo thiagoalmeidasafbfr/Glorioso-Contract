@@ -25,6 +25,7 @@ import { ModalShell } from '../components/modals/EditModals'
 import { modalInput, modalLabel } from '../components/modals/styles'
 import { useAuth } from '../context/AuthContext'
 import { tr, trf, trn } from '../i18n'
+import { reportLoadError } from '../lib/loadErrors'
 
 const fontBody = "var(--font-body)"
 const fontMono = "var(--font-label)"
@@ -56,25 +57,30 @@ export default function PageCadastros({ kind }: { kind: Kind }) {
 
   async function load() {
     setLoading(true)
-    const [clauses, installments] = await Promise.all([fetchAllClauses(), fetchAllInstallments()])
-    if (isClube) {
-      const [clubs, liabs] = await Promise.all([fetchClubs(), fetchAllClubLiabilities()])
-      setEntries(clubs.map((c: Club) => {
-        const rows = buildEntityObligations({
-          entityName: c.name, kind, clauses, installments, clubLiabs: liabs, labels: CLAUSE_TYPE_LABELS,
-        })
-        return { id: c.id, name: c.name, sub: c.country, logo: c.logo_url, ...summarize(rows) }
-      }))
-    } else {
-      const [inters, liabs] = await Promise.all([fetchIntermediaries(), fetchAllIntermediaryLiabilities()])
-      setEntries(inters.map((it: Intermediary) => {
-        const rows = buildEntityObligations({
-          entityName: it.name, kind, clauses, installments, intermLiabs: liabs, labels: CLAUSE_TYPE_LABELS,
-        })
-        return { id: it.id, name: it.name, sub: it.contact, logo: it.logo_url, ...summarize(rows) }
-      }))
+    try {
+      const [clauses, installments] = await Promise.all([fetchAllClauses(), fetchAllInstallments()])
+      if (isClube) {
+        const [clubs, liabs] = await Promise.all([fetchClubs(), fetchAllClubLiabilities()])
+        setEntries(clubs.map((c: Club) => {
+          const rows = buildEntityObligations({
+            entityName: c.name, kind, clauses, installments, clubLiabs: liabs, labels: CLAUSE_TYPE_LABELS,
+          })
+          return { id: c.id, name: c.name, sub: c.country, logo: c.logo_url, ...summarize(rows) }
+        }))
+      } else {
+        const [inters, liabs] = await Promise.all([fetchIntermediaries(), fetchAllIntermediaryLiabilities()])
+        setEntries(inters.map((it: Intermediary) => {
+          const rows = buildEntityObligations({
+            entityName: it.name, kind, clauses, installments, intermLiabs: liabs, labels: CLAUSE_TYPE_LABELS,
+          })
+          return { id: it.id, name: it.name, sub: it.contact, logo: it.logo_url, ...summarize(rows) }
+        }))
+      }
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => { load() }, [kind]) // eslint-disable-line react-hooks/exhaustive-deps

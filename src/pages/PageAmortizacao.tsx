@@ -32,6 +32,7 @@ import KpiPill from '../components/KpiPill'
 import { Icon } from '../components/Icon'
 import { tr, trf, locale } from '../i18n'
 import { humanizeEnum } from '../lib/tones'
+import { reportLoadError } from '../lib/loadErrors'
 
 const font = 'var(--font-body)'
 const mono = 'var(--font-label)'
@@ -203,14 +204,20 @@ export default function PageAmortizacao() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const rates = await fetchPtaxRates().catch(() => ({} as Record<string, number>))
-    setPtax(rates)
-    const [athletes, contracts, clauses, clubLiabs, intermLiabs] = await Promise.all([
-      fetchAthletes(), fetchAllContracts(), fetchAllClauses(),
-      fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
-    ])
-    setRows(buildAthleteCalcs(athletes, contracts, clauses, clubLiabs, intermLiabs, rates))
-    setLoading(false)
+    try {
+      // PTAX em paralelo com os dados (antes: esperava o BC para só então buscar).
+      const [rates, athletes, contracts, clauses, clubLiabs, intermLiabs] = await Promise.all([
+        fetchPtaxRates().catch(() => ({} as Record<string, number>)),
+        fetchAthletes(), fetchAllContracts(), fetchAllClauses(),
+        fetchAllClubLiabilities(), fetchAllIntermediaryLiabilities(),
+      ])
+      setPtax(rates)
+      setRows(buildAthleteCalcs(athletes, contracts, clauses, clubLiabs, intermLiabs, rates))
+    } catch (err) {
+      reportLoadError(err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial no mount

@@ -24,7 +24,6 @@ têm acesso total. Instalação: `SETUP_SUPABASE.md`, passos 2 (migração `019`
   | `dashboards` | Dashboards | `/dashboards`, `/dashboard` | — (só leitura) |
   | `atletas` | Atletas e contratos | atletas, portfólio, obrigações, assistente `/criar` | todas as demais tabelas de dados (`ac_*` e legadas) |
   | `cadastros` | Clubes e agentes | `/clubes`, `/intermediarios` | `clubs`, `intermediaries`, `ac_entidades*` |
-  | `modelo` | Modelo financeiro | `/modelo/premissas` | `ac_premissas_atleta` |
   | `relatorios` | Relatórios | `/relatorios/*` | — (as ações nas linhas seguem `atletas`) |
   | `dados` | Importar / exportar | `/dados` (consultar exporta), `/dados/planilhas` (exige editar) | — (a importação grava nas tabelas acima, conferida módulo a módulo) |
   | `usuarios` | Usuários e acessos | `/usuarios` | `profiles`, `access_roles` |
@@ -34,13 +33,17 @@ têm acesso total. Instalação: `SETUP_SUPABASE.md`, passos 2 (migração `019`
 
 ## Perfis prontos
 
-| Perfil | Dashboards | Atletas | Cadastros | Modelo | Relatórios | Dados | Usuários |
-|--------|-----------|---------|-----------|--------|------------|-------|----------|
-| Master | consultar | editar | editar | editar | consultar | editar | editar |
-| Semimaster (020) | consultar | editar | editar | editar | consultar | editar | consultar |
-| Jurídico | consultar | editar | editar | consultar | consultar | editar | — |
-| Financeiro | consultar | consultar | consultar | editar | consultar | consultar | — |
-| Consulta | consultar | consultar | consultar | consultar | consultar | consultar | — |
+| Perfil | Dashboards | Atletas | Cadastros | Relatórios | Dados | Usuários |
+|--------|-----------|---------|-----------|------------|-------|----------|
+| Master | consultar | editar | editar | consultar | editar | editar |
+| Semimaster (020) | consultar | editar | editar | consultar | editar | consultar |
+| Jurídico | consultar | editar | editar | consultar | editar | — |
+| Financeiro | consultar | consultar | consultar | consultar | consultar | — |
+| Consulta | consultar | consultar | consultar | consultar | consultar | — |
+
+O módulo **Modelo financeiro** (`modelo`, tela de premissas por atleta) foi
+removido na migração `022`; a tabela `ac_premissas_atleta` continua no banco,
+só para escrita de quem tiver `modelo` = editar (hoje, apenas o Master).
 
 "Apagar toda a base" (tela Importar / exportar) exige editar em Dados **e** em
 Usuários — só o Master (ou outro perfil administrador).
@@ -69,7 +72,7 @@ Tabela nova? Aplique o mesmo padrão na migração dela:
 select public.apply_access_policies('minha_tabela', array['atletas']);
 ```
 
-Funções úteis no SQL: `public.my_access('modelo')` → `none|view|edit`,
+Funções úteis no SQL: `public.my_access('atletas')` → `none|view|edit`,
 `public.can_view(m)`, `public.can_edit(m)`, `public.is_active_user()`.
 
 ## Fluxos
